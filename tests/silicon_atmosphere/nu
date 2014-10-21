@@ -1,0 +1,68 @@
+../../src/exec/emission.cpp:  int ilam  = emis[p->ind].sample(gsl_rng_uniform(rangen));
+../../src/exec/emission.cpp:  p->nu = nu_grid.sample(ilam,gsl_rng_uniform(rangen));
+../../src/exec/emission.cpp:  if (p->nu > 1e20) std::cout << "pnu " << p->nu << "\n";
+../../src/exec/locate_array.cpp:    int n = ceil( (stop-start)/del );
+../../src/exec/relativity.cpp:  double vdd    = v_dot_d(v_rel, p->D);
+../../src/exec/relativity.cpp:  p->e  *= dshift; 
+../../src/exec/relativity.cpp:  p->nu *= dshift;
+../../src/exec/relativity.cpp:  p->D[0] = 1.0/dshift * (p->D[0] - gamma*v_rel[0]/pc::c * (1 - gamma*vdd/pc::c/(gamma+1)) );
+../../src/exec/relativity.cpp:  p->D[1] = 1.0/dshift * (p->D[1] - gamma*v_rel[1]/pc::c * (1 - gamma*vdd/pc::c/(gamma+1)) );
+../../src/exec/relativity.cpp:  p->D[2] = 1.0/dshift * (p->D[2] - gamma*v_rel[2]/pc::c * (1 - gamma*vdd/pc::c/(gamma+1)) );
+../../src/exec/relativity.cpp:  double norm = p->D[0]*p->D[0] + p->D[1]*p->D[1] + p->D[2]*p->D[2];
+../../src/exec/relativity.cpp:  p->D[0] /= norm;
+../../src/exec/relativity.cpp:  p->D[1] /= norm;
+../../src/exec/relativity.cpp:  p->D[2] /= norm;
+../../src/exec/relativity.cpp:  if(p->ind < 0){
+../../src/exec/relativity.cpp:    std::cout << p->r()-1e7<< std::endl;
+../../src/exec/relativity.cpp:    std::cout << p->ind<< std::endl;
+../../src/exec/relativity.cpp:  assert(p->ind >= 0);
+../../src/exec/relativity.cpp:  grid->velocity_vector(p->ind,p->x,v); // v_comoving - v_lab
+../../src/exec/relativity.cpp:  double vdd = v_dot_d(v, p->D);
+../../src/exec/relativity.cpp:  grid->velocity_vector(p->ind,p->x,v); // v_comoving - v_lab
+../../src/exec/relativity.cpp:  double vdd = v_dot_d(v, p->D);
+../../src/exec/relativity.cpp:  grid->velocity_vector(p->ind,p->x,v); // v_comoving - v_lab
+../../src/exec/relativity.cpp:  grid->velocity_vector(p->ind,p->x,v); // v_comoving - v_lab
+../../src/exec/scatter.cpp:  zone *zone = &(grid->z[p->ind]);
+../../src/exec/scatter.cpp:  if (p->type == photon)
+../../src/exec/scatter.cpp:  if (p->type == gammaray)
+../../src/exec/scatter.cpp:      p->type = photon;
+../../src/exec/scatter.cpp:      p->D[0] = smu*cos(phi);
+../../src/exec/scatter.cpp:      p->D[1] = smu*sin(phi);
+../../src/exec/scatter.cpp:      p->D[2] = mu;
+../../src/exec/scatter.cpp:  assert(p->ind >= 0);
+../../src/exec/scatter.cpp:  p->e  *= dshift_in;
+../../src/exec/scatter.cpp:  p->nu *= dshift_in;
+../../src/exec/scatter.cpp:    double cost = p->D[0]*D_new[0] + p->D[1]*D_new[1] + p->D[2]*D_new[2];
+../../src/exec/scatter.cpp:    E_ratio = 1/(1 + p->nu/pc::m_e_MeV*(1 - cost));
+../../src/exec/scatter.cpp:  p->nu = p->nu*E_ratio;
+../../src/exec/scatter.cpp:  if (p->type == gammaray) grid->z[p->ind].L_radio_dep += p->e*(1 - E_ratio);
+../../src/exec/scatter.cpp:    p->type = photon;
+../../src/exec/scatter.cpp:  p->D[0] = D_new[0];
+../../src/exec/scatter.cpp:  p->D[1] = D_new[1];
+../../src/exec/scatter.cpp:  p->D[2] = D_new[2];
+../../src/exec/scatter.cpp://   assert(p->ind >= 0);
+../../src/exec/scatter.cpp://   p->e  *= dshift_in; 
+../../src/exec/scatter.cpp://   p->nu *= dshift_in;
+../../src/exec/scatter.cpp://   p->D[0] = smu*cos(phi);
+../../src/exec/scatter.cpp://   p->D[1] = smu*sin(phi);
+../../src/exec/scatter.cpp://   p->D[2] = mu;
+../../src/exec/scatter.cpp://     int ilam  = emis[p->ind].sample(gsl_rng_uniform(rangen));
+../../src/exec/scatter.cpp://     p->nu = nu_grid.sample(ilam,gsl_rng_uniform(rangen));
+../../src/exec/scatter.cpp:  //grid->velocity_vector(p->ind,p->x,V);
+../../src/exec/scatter.cpp:  V[0] = p->x[0]/t_secs;
+../../src/exec/scatter.cpp:  V[1] = p->x[1]/t_secs;
+../../src/exec/scatter.cpp:  V[2] = p->x[2]/t_secs; 
+../../src/exec/scatter.cpp:  double vdotD  = V[0]*p->D[0] + V[1]*p->D[1] + V[2]*p->D[2];
+../../src/exec/scatter.cpp:  p->e  = p->e*dshift_in;
+../../src/exec/scatter.cpp:  p->nu = p->e*dshift_in;
+../../src/exec/scatter.cpp:  p->D[0] = 1.0/vd_out*(D_new[0] - gamma*V[0]/pc::c*(1 - gamma*vdp/pc::c/(gamma+1)));
+../../src/exec/scatter.cpp:  p->D[1] = 1.0/vd_out*(D_new[1] - gamma*V[1]/pc::c*(1 - gamma*vdp/pc::c/(gamma+1)));
+../../src/exec/scatter.cpp:  p->D[2] = 1.0/vd_out*(D_new[2] - gamma*V[2]/pc::c*(1 - gamma*vdp/pc::c/(gamma+1)));
+../../src/exec/scatter.cpp:  double norm = sqrt(p->D[0]*p->D[0] + p->D[1]*p->D[1] + p->D[2]*p->D[2]);
+../../src/exec/scatter.cpp:  p->D[0] = p->D[0]/norm;
+../../src/exec/scatter.cpp:  p->D[1] = p->D[1]/norm;
+../../src/exec/scatter.cpp:  p->D[2] = p->D[2]/norm;
+../../src/exec/scatter.cpp:  p->e  = p->e*vd_out;
+../../src/exec/scatter.cpp:  p->nu = p->nu*vd_out;
+../../src/exec/xy_array.cpp:  int n = (int)((stop-start)/delta) + 1;
+../../src/exec/xy_array.cpp:  if (n <= 1) {n = 1; delta = stop-start;}
