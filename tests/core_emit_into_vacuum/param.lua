@@ -13,7 +13,7 @@ nu_grid  = {0.2e14,5.0e15,0.2e14}
 
 -- inner source
 init_particles = 0
-n_emit_core  = 1e4
+n_emit_core  = 1e5
 r_core       = 0.5e15
 L_core       = 1e43
 T_core       = 1.0e4
@@ -33,6 +33,6 @@ grey_opacity = 0.00001
 radiative_eq   = 1
 steady_iterate = 1
 write_out      = 1
+epsilon        = 1
 
-
-
+atomic_data = ""

@@ -2,7 +2,7 @@
 import os
 
 ## executable
-executable = "../src/gomc"
+executable = "../src/exec/gomc"
 print "TESTING EXECUTABLE: " + executable
 
 
