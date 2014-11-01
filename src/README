@@ -1,0 +1,10 @@
+To make:
+
+Create your own Make.inc file that gives location of necessary
+libraries and options (example is make.inc.tagore)
+
+Edit Makefile so that it points to your Make.inc
+
+Compilation will take place in the EXEC directory, producing the
+executable gomc
+
