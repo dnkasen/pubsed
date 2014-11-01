@@ -5,7 +5,8 @@
 # put your make.inc here
 MAKE_INC = make.inc.tagore
 
-EXECDIR = ./exec
+# executable directory where compiliation takes place
+EXECDIR = ./EXEC
 
 all:
 	cp -p main.cpp $(EXECDIR)
@@ -19,5 +20,7 @@ all:
 	cd $(EXECDIR); make
 
 clean:
-	rm -f $(EXECDIR)/*.o gomc
+	rm -f $(EXECDIR)/*.o $(EXECDIR)/gomc
 
+realclean:
+	rm -f $(EXECDIR)/*.o $(EXECDIR)/*.cpp $(EXECDIR)/*.h $(EXECDIR)/gomc $(EXECDIR)/Makefile $(EXECDIR)/make.inc
