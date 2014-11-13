@@ -18,7 +18,7 @@ executable = "../src/EXEC/gomc"
 plotup = False
 
 ## tests to run
-core_emit_into_vacuum = True
+core_emit_into_vacuum = False
 lucy_test             = True
 
 ########################################

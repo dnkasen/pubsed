@@ -15,7 +15,7 @@ nlte_gas::nlte_gas()
 // set up all of the atoms making up the gas
 //-----------------------------------------------------------
 void nlte_gas::init
-(std::string datadir, std::vector<int> e, std::vector<int> A, locate_array ng)
+(std::string atomfile, std::vector<int> e, std::vector<int> A, locate_array ng)
 {
   // verbosity
   int my_rank;
@@ -33,11 +33,10 @@ void nlte_gas::init
   atoms.resize(elem_Z.size());
   for (int i=0;i<atoms.size();i++) 
   {
-    std::string fname = datadir + "/" + std::to_string(elem_Z[i]) + "/";
-    fname = fname + std::to_string(elem_Z[i]) + ".comb";
-    int success = atoms[i].Init(fname, ng); 
-    if (!success) 
-      if (verbose) std::cout << "# Can't open data file " << fname << "\n";
+    int error = atoms[i].Init(atomfile, elem_Z[i],ng); 
+    if ((error)&&(verbose))
+      std::cout << "# ERROR: incomplete data for atom Z=" << elem_Z[i] <<
+	" in file " << atomfile << "\n";
   }
 }
 
@@ -51,7 +50,7 @@ int nlte_gas::read_fuzzfile(std::string fuzzfile)
   // make a map of the elements
   int map[100];
   for (int i=0;i<100;i++) map[i] = -1;
-  for (int i=0;i<elem_Z.size();i++) map[atoms[i].Z] = i;
+  for (int i=0;i<elem_Z.size();i++) map[atoms[i].atomic_number] = i;
 
   // open up the fuzz file
   FILE *in = fopen(fuzzfile.c_str(),"r");

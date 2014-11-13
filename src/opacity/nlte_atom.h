@@ -91,7 +91,7 @@ private:
 public:
 
   
-  int Z;              // Atomic number of atom 
+  int atomic_number;   // Atomic number of atom 
 
   int n_ions;          // Number of ionic stages considered 
   int n_levels;        // number of energy levels
@@ -111,7 +111,7 @@ public:
   
   // Constructor and Init
   nlte_atom();
-  int Init(std::string, locate_array);
+  int Init(std::string, int, locate_array);
   
   // solve state
   void solve_lte (double T, double ne, double time);

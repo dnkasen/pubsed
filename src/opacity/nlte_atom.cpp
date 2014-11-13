@@ -37,150 +37,6 @@ nlte_atom::nlte_atom()
   use_betas = 0;
 }
 
-int nlte_atom::Init(std::string fname, locate_array nu_grid)
-{
-  // set up data
-  FILE *in = fopen(fname.c_str(),"r");
-  if (in == NULL) { return -1; }
-
-  fscanf(in,"%d\n",&Z);
-  fscanf(in,"%d %d %d\n",&n_ions,&n_levels,&n_lines);
-  
-  // ----------------------------------------
-  // read ions
-  // ----------------------------------------
-  ions = new nlte_ion[n_ions];
-  for (int i=0;i<n_ions;i++)
-  {
-    int is,ig; double chi;
-    fscanf(in,"%d %d %lf\n",&is,&ig,&chi);
-    ions[i].stage  = is;
-    ions[i].ground = ig;
-    ions[i].chi    = chi;
-    ions[i].part   = 0;
-    ions[i].frac   = 0;
-    //ion_map[istage[i]] = i;
-  }
-  
-  // ----------------------------------------
-  // read levels
-  // ----------------------------------------
-  levels = new nlte_level[n_levels];
-  for (int i=0;i<n_levels;i++) 
-  {
-    int nl, istage,g;   double e_ex;
-    fscanf(in,"%d %d %d %lf\n",&nl,&istage,&g,&e_ex);
-    levels[i].id    = i;
-    levels[i].ion   = istage;
-    levels[i].g     = g;
-    levels[i].E     = e_ex;
-    levels[i].n     = 0.0;
-    levels[i].E_ion = ions[levels[i].ion].chi - levels[i].E;
-
-    // set 0 g's to 1
-    if (levels[i].g == 0) levels[i].g = 1;
-    
-    // find the level that this ionizes to (= -1 if none)
-    levels[i].ic = -1;
-    for (int j=0;j<n_ions;j++)
-      if (ions[j].stage == levels[i].ion + 1)
-	levels[i].ic  = ions[j].ground;
-  } 
-
-  // ----------------------------------------
-  // read lines
-  // ----------------------------------------
-  lines = new nlte_line[n_lines];
-  for (int i=0;i<n_lines;i++) 
-  {
-    int ll,lu; double A;
-    fscanf(in,"%d %d %lf\n",&ll,&lu,&A);
-    lines[i].ll = ll;
-    lines[i].lu = lu;
-
-    // get wavelength
-    double delta_E = levels[lu].E - levels[ll].E;
-    double nu      = delta_E*pc::ev_to_ergs/pc::h;
-    lines[i].lam   = pc::c/nu*pc::cm_to_angs;
-
-    // set Einstein Coeficients
-    int gl = levels[ll].g;
-    int gu = levels[lu].g;
-    lines[i].A_ul = A;
-    lines[i].B_ul = A*pc::c*pc::c/2.0/pc::h/nu/nu/nu; 
-    lines[i].B_lu = lines[i].B_ul*gu/gl;
-
-    // set oscillator strength (see e.g., Rutten page 24)
-    double lam_cm = lines[i].lam*pc::angs_to_cm;
-    lines[i].f_lu = lam_cm*lam_cm*A*gu/gl/(8*pc::pi*pc::sigma_tot);
-
-    // find index of bin in deal
-    lines[i].bin = nu_grid.locate(nu);
-  
-    // default init tau and beta
-    lines[i].tau  = 0;
-    lines[i].beta = 1;
-  }
-  
-  // ----------------------------------------
-  // read photoionization cross-sections
-  // if not available, just use hydrogenic approx
-  // ----------------------------------------
-  int npts     = 1000;
-  double E_max = 300;
-  for (int i=0;i<n_levels;i++) 
-  {
-    // set photoionization cross-section
-    double E_ion = levels[i].E_ion;
-    double dE = (E_max - E_ion)/npts;
-    levels[i].s_photo.init(E_ion,E_max, dE);
-    for (int j=0;j<npts;j++) 
-    {
-      double E = levels[i].s_photo.x[j];
-      double sigma = 6e-18*pow(E/E_ion,-2);
-      levels[i].s_photo.y[j] = sigma;
-    }
-
-    // set recombination rates
-    levels[i].a_rec.init(1e3,1e5,5e3);
-    for (int j=0;j<levels[i].a_rec.size();j++)
-    {
-      double temp = levels[i].a_rec.x[j];
-      //debug cut this out for now
-      // levels[i].a_rec.y[j] = Calculate_Milne(i,temp);
-    }
-  }
-
-  fclose(in);
-
-
-  //----------------------------------------------
-  // allocate memory for arrays
-  //----------------------------------------------
-  rates = new double*[n_levels];
-  for (int i=0;i<n_levels;i++) rates[i] = new double[n_levels];
-
-  // matrix to solve
-  M_nlte = gsl_matrix_calloc(n_levels,n_levels);
-  gsl_matrix_set_zero(M_nlte);
-
-  // vector of level populations
-  x_nlte = gsl_vector_calloc(n_levels);
-  gsl_vector_set_zero(x_nlte);
-
-  // right hand side vector
-  b_nlte = gsl_vector_calloc(n_levels);
-  gsl_vector_set_zero(b_nlte);
-
-  // permuation vector, used internally for linear algebra solve
-  p_nlte = gsl_permutation_alloc(n_levels);
-  gsl_permutation_init(p_nlte);
-  //---------------------------------------------------
-
-  return 1;
-}
-
-
 
 
 void nlte_atom::solve_lte(double T, double ne, double time)
@@ -607,17 +463,19 @@ double nlte_atom::Calculate_Milne(int lev, double temp)
 void nlte_atom::print()
 {
 
-  cout << "-------------------------- levels -----------------------------\n";
-  cout << "# ion \t part \t frac \n";
+  cout << "--------------------- ions; n = " << n_ions << " ---------------------\n";
+  cout << "# ion \t part \t frac \t chi (eV)\n";
   cout << "#---------------------------------------------------------------\n";
 
   
   for (int i=0;i<n_ions;i++)
-    cout <<  ions[i].stage << "\t" << ions[i].part << "\t" << ions[i].frac 
-	 << endl;
+    cout << "#   "<<  ions[i].stage << "\t" << ions[i].part << "\t" << ions[i].frac 
+	 << "\t" << ions[i].chi << endl;
  
 
-  cout << "-------------------------- levels -----------------------------\n";
+  cout << "\n";
+  cout << "--------------------------------------------------------------------\n";
+  cout << "--------------------levels; n = " << n_levels << "------------------------\n";
   cout << "# lev   ion     E_ex        g      pop          b_i       ion_to\n";
   cout << "#---------------------------------------------------------------\n";
 
@@ -633,9 +491,9 @@ void nlte_atom::print()
 
   for (int i=0;i<n_lines;i++)
   {
-    //    printf("%8d %4d %4d %12.3e %12.3e %12.3e %12.3e %12.3e %12.3e\n",
-    //	   i,lines[i].ll,lines[i].lu,lines[i].lam,lines[i].f_lu,
-    //	   lines[i].A_ul,lines[i].B_ul,lines[i].B_lu,lines[i].J);
+    printf("%8d %4d %4d %12.3e %12.3e %12.3e %12.3e %12.3e\n",
+    	   i,lines[i].ll,lines[i].lu,lines[i].lam,lines[i].f_lu,
+    	   lines[i].A_ul,lines[i].B_ul,lines[i].B_lu);
   }
 
   printf("\n--- line optical depths\n");

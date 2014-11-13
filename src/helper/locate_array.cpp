@@ -112,6 +112,7 @@ int locate_array::locate(const double xval) const
 //---------------------------------------------------------
 double locate_array::interpolate_between(const double xval, const int i1, const int i2, const vector<double>& y) const 
 {
+  if (x.size() == 1) return y[0];
   double slope = (y[i2]-y[i1]) / (x[i2]-x[i1]);
   double yval = y[i1] + slope*(xval - x[i1]);
   return yval;
@@ -123,6 +124,8 @@ double locate_array::interpolate_between(const double xval, const int i1, const 
 //---------------------------------------------------------
 double locate_array::log_interpolate_between(const double xval, const int i1, const int i2, const vector<double>& y) const
 {
+  if (x.size() == 1) return y[0];
+
   // safeguard against equal opacities
   if(y[i1]==y[i2]) return y[i1];
 
@@ -141,6 +144,7 @@ double locate_array::log_interpolate_between(const double xval, const int i1, co
 //---------------------------------------------------------
 double locate_array::sample(const int i, const double rand) const
 {
+  if (x.size() == 1) return 0;
   if (i == 0) return min    + (x[0] - min   )*rand;
   else return        x[i-1] + (x[i] - x[i-1])*rand;
 }
@@ -165,6 +169,9 @@ void locate_array::print() const
 double locate_array::value_at(const double xval, const vector<double>& y) const{
   int ind = locate(xval);
   int i1, i2;
+
+  if (x.size() == 1) return y[0];
+
   if(ind == 0){                // If off left side of grid
     i1 = 0;
     i2 = 1;
