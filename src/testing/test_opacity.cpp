@@ -12,7 +12,7 @@ int main(int argc, char **argv)
 {
   void LTE_Ionization_Test(std::string);
 
-  std::string atomdata = "/Users/kasen/codes/sedona6/data/atomdata.hdf5";
+  std::string atomdata = "/Users/kasen/codes/sedona6/data/cmfgen_atomdata.hdf5";
 
   // initialize MPI parallelism
   MPI_Init( &argc, &argv );

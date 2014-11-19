@@ -10,27 +10,27 @@ include make.inc
 CCOPT = -I$(GSL_INC) -I$(LUA_INC) -I$(HDF_INC)
 CLOPT = -L$(GSL_LIB) -L$(LUA_LIB) -L$(HDF_LIB) -llua -lgsl -lgslcblas -lhdf5 -lhdf5_hl
 
-EXCLUDE=main.cpp grid_3D_cart.cpp thread_RNG.cpp
+EXCLUDE=main.cpp grid_3D_cart.cpp thread_RNG.cpp test_opacity.cpp
 SOURCES=$(filter-out $(EXCLUDE), $(wildcard *.cpp))
 OBJECTS=$(SOURCES:.cpp=.o)
 
 
 all: $(OBJECTS)
 	make gomc
-	make expansion_opacity_test
+	make test_opacity
 
 gomc: $(OBJECTS) main.cpp
-	$(CXX) -o gomc $(OBJECTS) $(CLOPT)
+	$(CXX) -o gomc $(OBJECTS) main.cpp $(CLOPT)
 
 
-expansion_opacity_test: $(OBJECTS) expansion_opacity_test.cpp
-	$(CXX) -o expansion_opacity_test $(OBJECTS) $(CLOPT)
+test_opacity: $(OBJECTS) test_opacity.cpp
+	$(CXX) -o test_opacity test_opacity.cpp $(OBJECTS) $(CLOPT)
 
 .cpp.o: 
 	$(CXX) $(CCOPT) -c -o $@ $<
 
 clean:
-	rm -f $(OBJECTS) a.out
+	rm -f $(OBJECTS) gomc test_opacity
 
 realclean: clean
-	rm -f a.out $(TARGET)
+	rm -f *.cpp *.h
