@@ -11,15 +11,19 @@ import time
 # test_results_%date.pdf
 ########################################
 
-## executable
-executable = "../src/EXEC/gomc"
+## executable directory and file
+exec_dir   = "../src/EXEC/"
+executable = "gomc"
 
 ## plot to screen
 plotup = False
 
-## tests to run
+## sedona main codes tests to run
 core_emit_into_vacuum = False
-lucy_test             = True
+lucy_test             = False
+
+## sedona modules tests to run
+test_opacity          = True
 
 ########################################
 
@@ -32,42 +36,24 @@ print 'OUTPUT WRITTEN TO: ' + outfile
 #############################################
 # Script to run a test in directory: direc
 #############################################
-def run_one(direc):
+def run_one(direc,efile):
 
-    os.system("cp " + executable + " " + direc)
+
+    print "------------------------------------"
+    print "----- RUNNING: " + direc + "------"
+    print "------------------------------------"
+    print "\n\n"
+    os.system("cp " + exec_dir + efile + " " + direc)
     os.chdir(direc)
     runtest = importlib.import_module(direc + ".run_test") 
     runtest.run(pdf,plotup)
     os.chdir("../")
 #############################################
 
-# --------------------------------------
-# Core into vacuum test
-# -------------------------------------
-if (core_emit_into_vacuum):
 
-    print "------------------------------------"
-    print "----- RUNNING: emit core test ------"
-    print "----- takes about 2 minutes --------"
-    print "------------------------------------"
-    print "\n\n"
-    run_one("core_emit_into_vacuum")
-########################################
-
-
-# -----------------------------------------
-# Lucy supernova test
-# ----------------------------------------
-if (lucy_test):
-
-    print "------------------------------------"
-    print "----- RUNNING: Lucy test ------"
-    print "----- takes about 2 minutes --------"
-    print "------------------------------------"
-    print "\n\n"
-    run_one("lucy_sn")
-########################################
-
+if (test_opacity): run_one("test_opacity","test_opacity")
+if (core_emit_into_vacuum): run_one("core_emit_into_vacuum",executable)
+if (lucy_test): run_one("lucy_sn",executable)
 
 pdf.close()
 

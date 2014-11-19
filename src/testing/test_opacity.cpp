@@ -1,10 +1,11 @@
 #include <iostream>
+#include <fstream>
 #include "nlte_gas.h"
 #include "locate_array.h"
 #include "physical_constants.h"
 #include <mpi.h>
 
-using std::cout;
+using namespace std;
 namespace pc = physical_constants;
 
 
@@ -23,6 +24,9 @@ int main(int argc, char **argv)
 
 void LTE_Ionization_Test(std::string atomdata)
 {
+  // density to use
+  double dens = 1e-13;
+
   // set up frequency grid
   double lam_start = 100;
   double lam_stop  = 20000;
@@ -36,12 +40,50 @@ void LTE_Ionization_Test(std::string atomdata)
   // set up composition and abundance
   std::vector<int> Z;
   std::vector<int> A;
+  std::vector<double> mass_frac;
   Z.push_back(1);
-  A.push_back(1.0);
+  A.push_back(1);
 
-  // initialize the gas
-  nlte_gas gas;
-  gas.init(atomdata,Z,A,nu_grid);
-  gas.print();
+  // do hydrogen
+  {
+    // initialize the gas
+    nlte_gas gas;
+    gas.init(atomdata,Z,A,nu_grid);
+    mass_frac.push_back(1.0);
+    gas.set_mass_fractions(mass_frac);
+    
+    ofstream outfile("H_ionization.txt");
+    for (double temp=1000;temp < 20000;temp+=200)
+    {
+      gas.temp = temp;
+      gas.dens = dens;
+      gas.solve_state(1);
+      outfile  << temp << "\t" << gas.get_ionization_state() << "\n";
+    }
+    outfile.close();
+  }
+  
+  // do iron
+  {
+    // initialize the gas
+    nlte_gas gas;
+    Z[0] = 26;
+    A[0] = 56; 
+    gas.init(atomdata,Z,A,nu_grid);
+    mass_frac[0] = 1.0;
+    gas.set_mass_fractions(mass_frac);
+    
+    ofstream outfile("Fe_ionization.txt");
+    for (double temp=1000;temp < 100000;temp+=1000)
+    {
+      gas.temp = temp;
+      gas.dens = dens;
+      gas.solve_state(1);
+      outfile  << temp << "\t" << gas.get_ionization_state() << "\n";
+    }
+    outfile.close();
+  }
+
+  
 
 }

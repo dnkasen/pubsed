@@ -1,6 +1,7 @@
 grid_type  = "grid_1D_sphere"    -- grid geometry; must match input model
 model_file = "vacuum.mod"        -- input model file
 hydro_module = "none"
+atomic_data = "/Users/kasen/codes/sedona6/data/cmfgen_atomdata.hdf5"
 
 -- helper variables
 days = 3600.0*24
@@ -35,4 +36,4 @@ steady_iterate = 1
 write_out      = 1
 epsilon        = 1
 
-atomic_data = ""
+

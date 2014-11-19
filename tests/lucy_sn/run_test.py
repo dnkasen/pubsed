@@ -12,9 +12,6 @@ def run(pdf,plotup):
     # compare the output
     ###########################################
     py.clf()
-    py.xlim(0,60)
-    py.ion()
-    py.show()
 
     x,y,c = py.loadtxt('output_optical.spec',unpack=1,skiprows=1)
     x = x/3600.0/24.0

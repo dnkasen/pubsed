@@ -1,7 +1,6 @@
 grid_type    = "grid_1D_sphere"        -- grid geometry; match input model
 model_file   = "models/lucy_1D.mod"    -- input model file
-atomic_data  = "/Users/kasen/codes/sedona_base/opacity_module/data/atoms"
-
+atomic_data  = "/Users/kasen/codes/sedona6/data/cmfgen_atomdata.hdf5"
 
 hydro_module = "homologous"
 

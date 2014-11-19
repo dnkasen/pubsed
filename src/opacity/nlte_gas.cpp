@@ -1,19 +1,30 @@
 #include "physical_constants.h"
 #include "nlte_gas.h"
 #include <iostream>
+#include <fstream>
 #include <mpi.h>
+
 
 namespace pc = physical_constants;
 
+//----------------------------------------------------------------
+// simple constructor
+//----------------------------------------------------------------
 nlte_gas::nlte_gas()
 {
   e_gamma = 0;
   no_ground_recomb = 0;
 }
 
-//-----------------------------------------------------------
-// set up all of the atoms making up the gas
-//-----------------------------------------------------------
+//----------------------------------------------------------------
+// initialize the gas by specifying the atoms that will
+// compose it, along with datafile and freq. array
+// inputs:
+// std::string atomfile: name of atom data file (in hdf5)
+// std::vector<int> e:  vector of atomic numbers
+// std::vector<int> A:  vector of atomic weights (in atomic units)
+// locate_array ng:  locate_array giving the freq. array
+//---------------------------------------------------------------
 void nlte_gas::init
 (std::string atomfile, std::vector<int> e, std::vector<int> A, locate_array ng)
 {
@@ -29,10 +40,21 @@ void nlte_gas::init
   // copy the nugrid
   nu_grid.copy(ng);
 
+  // check if atomfile is there
+  std::ifstream afile(atomfile);
+  if (!afile) 
+  {
+    if (verbose) std::cout << "Can't open atom datafile " << atomfile 
+			   << "; exiting\n"; 
+    exit(1); 
+  }
+  afile.close();
+
   // read in the atom data
   atoms.resize(elem_Z.size());
   for (int i=0;i<atoms.size();i++) 
   {
+
     int error = atoms[i].Init(atomfile, elem_Z[i],ng); 
     if ((error)&&(verbose))
       std::cout << "# ERROR: incomplete data for atom Z=" << elem_Z[i] <<
@@ -40,10 +62,37 @@ void nlte_gas::init
   }
 }
 
+//-----------------------------------------------------------------
+// Set mass fractions of each element in the gas
+// this function will enforce that the mass fractions are
+// normalize (i.e., add up to 1)
+//
+// input: 
+// std::vector<double> x: vector of mass fractions of each element
+//-----------------------------------------------------------------
+void nlte_gas::set_mass_fractions(std::vector<double> x)
+{ 
+  double norm = 0.0;
+  for (int i=0;i<mass_frac.size();i++) 
+  {
+    mass_frac[i] = x[i]; 
+    norm += x[i];
+  }
+    
+  // make sure it is normalized
+  for (int i=0;i<mass_frac.size();i++) mass_frac[i] /= norm;
+  
+  // find mean weight of gas
+  this->A_mu = 0;
+  for (int i=0;i<mass_frac.size();i++) 
+    A_mu += mass_frac[i]*elem_A[i]; 
+}
+
 
 //-----------------------------------------------------------
 // read fuzz lines from a file
-// for now, this is a ascii file; should really be hdf5
+// input:
+// std::string fuzzfile: name of hdf5 file with fuzz data
 //-----------------------------------------------------------
 int nlte_gas::read_fuzzfile(std::string fuzzfile)
 {
@@ -88,9 +137,24 @@ int nlte_gas::read_fuzzfile(std::string fuzzfile)
 
 }
 
+
+
+//-----------------------------------------------------------
+// return the ionization state, i.e., electron density
+// over total ion number density
+//-----------------------------------------------------------
+double nlte_gas::get_ionization_state()
+{
+  double ni = dens/(A_mu*pc::m_p);
+  return this->ne/ni;
+}
+
 //-----------------------------------------------------------
 // Solve for the gas state (excitation/ionization)
-//  either in LTE or NLTE
+// the level populations will be stored internally for
+// further calculations
+// input:
+// int lte: 1 = do it in LTE, 0 = do it in NLTE
 //-----------------------------------------------------------
 void nlte_gas::solve_state(int lte)
 {
@@ -103,7 +167,7 @@ void nlte_gas::solve_state(int lte)
   }
 
   double max_ne = 10*dens/(A_mu*pc::m_p);
-  double min_ne = 1e-6;
+  double min_ne = 1e-20*dens/(A_mu*pc::m_p);;
   double tol    = 1e-3;
   ne = ne_brent_method(min_ne,max_ne,tol,lte);
 }
@@ -132,7 +196,6 @@ double nlte_gas::charge_conservation(double ne, int lte)
     f += dens*mass_frac[i]/(elem_A[i]*pc::m_p)*atoms[i].get_ion_frac();
   }
 
-  //  printf("%e %e\n",f,ne);
   // total ionization density minus electron density should equal zero
   f = f - ne;
   // return to non-linear solver to iterate this to zero
@@ -155,8 +218,8 @@ double nlte_gas::ne_brent_method(double x1,double x2,double tol,int lte)
   double fb=charge_conservation(b,lte);
   double fc,p,q,r,s,tol1,xm;
   
-  //if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0))
-  //printf("Root must be bracketed in zbrent\n");
+  if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0))
+    if (verbose) printf("# Warning: Root not bracketed in brent charge conservation\n");
   fc=fb;
   for (iter=1;iter<=ITMAX;iter++) {
     if ((fb > 0.0 && fc > 0.0) || (fb < 0.0 && fc < 0.0)) {
@@ -209,7 +272,7 @@ double nlte_gas::ne_brent_method(double x1,double x2,double tol,int lte)
       b += SIGN(tol1,xm);
     fb=charge_conservation(b,lte);
   }
-  printf("Maximum number of iterations exceeded in zbrent");
+  if (verbose) printf("Maximum number of iterations exceeded in zbrent");
   return 0.0;
 }
 

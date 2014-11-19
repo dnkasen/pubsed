@@ -12,6 +12,8 @@ def run(pdf,plotup):
     ###########################################
     # compare the output
     ###########################################
+    py.clf()
+
     h   = 6.6260755e-27    # planck's constant (ergs-s)
     c   = 2.99792458e10    # speed of light (cm/s)
     k   = 1.380658e-16     # boltzmann constant (ergs/K)
