@@ -12,15 +12,67 @@ namespace pc = physical_constants;
 int main(int argc, char **argv)
 {
   void LTE_Ionization_Test(std::string);
+  void Expansion_Opacity_Test(std::string atomdata);
 
   std::string atomdata = "/Users/kasen/codes/sedona6/data/cmfgen_atomdata.hdf5";
 
   // initialize MPI parallelism
   MPI_Init( &argc, &argv );
- 
+
+  Expansion_Opacity_Test(atomdata);
   LTE_Ionization_Test(atomdata);
 
 }
+
+
+void Expansion_Opacity_Test(std::string atomdata)
+{
+  // density to use
+  double dens = 1e-13;
+  double temp = 8000;
+  double texp = 20.0*3600.0*24.0;
+  
+  // set up frequency grid
+  double lam_start = 100;
+  double lam_stop  = 25000;
+  int    n_pts     = 10000;
+  double nu_1 = pc::c/(lam_stop*pc::angs_to_cm);
+  double nu_2 = pc::c/(lam_start*pc::angs_to_cm);
+  double dnu = (nu_2 - nu_1)/(1.0*n_pts);
+  locate_array nu_grid;
+  nu_grid.init(nu_1,nu_2,dnu);
+
+  // set up composition and abundance
+  std::vector<int> Z;
+  std::vector<int> A;
+  std::vector<double> mass_frac;
+  Z.push_back(26);
+  A.push_back(56);
+
+  nlte_gas gas;
+  gas.init(atomdata,Z,A,nu_grid);
+  mass_frac.push_back(1.0);
+
+  gas.set_mass_fractions(mass_frac);
+  gas.time = texp;
+  gas.temp = temp;
+  gas.dens = dens;
+  gas.solve_state(1);
+
+  std::vector<double> opac;
+  opac.resize(n_pts);
+  gas.line_expansion_opacity(opac);
+
+  ofstream outfile("Fe_exp_opac.txt");
+  for (int i=0;i<n_pts;i++)
+  {
+    double lam = pc::c/(nu_grid[i]*pc::angs_to_cm);
+    outfile << lam << "\t" << opac[i]/dens  << "\n";
+  }
+  outfile.close();
+  
+}
+
 
 void LTE_Ionization_Test(std::string atomdata)
 {
@@ -43,6 +95,7 @@ void LTE_Ionization_Test(std::string atomdata)
   std::vector<double> mass_frac;
   Z.push_back(1);
   A.push_back(1);
+  mass_frac.push_back(1.0);
 
   // do hydrogen
   {
