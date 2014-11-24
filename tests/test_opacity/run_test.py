@@ -62,6 +62,24 @@ def run(pdf,plotup):
         py.show()
         j = raw_input()
 
-  ##############################                                                                          
-  # Iron ionization                                                                                       
-    py.clf()
+  ##############################                                               
+  # Iron Expansion opacity test
+    py.clf()  
+    lam,opac_line,opac_fuzz = py.loadtxt('Fe_exp_opac.txt',unpack=1)
+    py.plot(lam,opac_line,color='blue')
+    py.plot(lam,opac_fuzz,color='green')
+    lam,opac_line,opac_fuzz = py.loadtxt('Fe_exp_opac_reference.dat',unpack=1)
+    py.plot(lam,opac_fuzz,color='red')
+
+    py.ylim(1e-5,30.)
+    py.yscale('log')
+    py.ylabel('expansion opacity (cm^2/g)')
+    py.xlabel('wavelength (angstroms)')
+    py.title('iron expansion opacity test')
+    py.legend(['nlte-line opacity','fuzz-line opacity','fuzz opacity reference'])
+    
+    pdf.savefig()
+    if (plotup):
+        py.ion()
+        py.show()
+        j = raw_input()

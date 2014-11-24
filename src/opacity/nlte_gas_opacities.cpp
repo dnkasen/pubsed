@@ -10,6 +10,14 @@ double nlte_gas::electron_scattering_opacity()
 }
 
 
+//----------------------------------------------------------------
+// Calculate a binned expansion opacity based on nlte line data
+// Passed:
+//   opac -- double vector of the same size of the frequency
+//   grid, which will be filled up with the opacities
+// UNITS are cm^{-1} 
+// So this is really an extinction coefficient
+//----------------------------------------------------------------
 void nlte_gas::line_expansion_opacity(std::vector<double>& opac)
 {
   // zero out opacity array
@@ -31,7 +39,14 @@ void nlte_gas::line_expansion_opacity(std::vector<double>& opac)
     opac[i] = opac[i]*nu_grid.center(i)/nu_grid.delta(i)/pc::c/time;
 }
 
-
+//----------------------------------------------------------------
+// Calculate a binned expansion opacity based on fuzz line data
+// Passed:
+//   opac -- double vector of the same size of the frequency
+//   grid, which will be filled up with the opacities
+// UNITS are cm^{-1} 
+// So this is really an extinction coefficient
+//----------------------------------------------------------------
 void nlte_gas::fuzz_expansion_opacity(std::vector<double>& opac)
 {
   double exp_min = 1e-6;

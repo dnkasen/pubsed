@@ -52,7 +52,7 @@ void Expansion_Opacity_Test(std::string atomdata)
   nlte_gas gas;
   gas.init(atomdata,Z,A,nu_grid);
   int nl = gas.read_fuzzfile("/Users/kasen/codes/sedona6/data/kurucz_cd23_fuzz.hdf5");
-  std::cout << nl << "\n";
+  std::cout << "Read and Stored " << nl << " fuzz lines\n";
   mass_frac.push_back(1.0);
 
   gas.set_mass_fractions(mass_frac);
@@ -61,15 +61,19 @@ void Expansion_Opacity_Test(std::string atomdata)
   gas.dens = dens;
   gas.solve_state(1);
 
-  std::vector<double> opac;
-  opac.resize(n_pts);
-  gas.line_expansion_opacity(opac);
+  std::vector<double> line_opac;
+  std::vector<double> fuzz_opac;
+  fuzz_opac.resize(n_pts);
+  line_opac.resize(n_pts);
+  gas.line_expansion_opacity(line_opac);
+  gas.fuzz_expansion_opacity(fuzz_opac);
 
   ofstream outfile("Fe_exp_opac.txt");
   for (int i=0;i<n_pts;i++)
   {
     double lam = pc::c/(nu_grid[i]*pc::angs_to_cm);
-    outfile << lam << "\t" << opac[i]/dens  << "\n";
+    outfile << lam << "\t" << line_opac[i]/dens << " ";
+    outfile << fuzz_opac[i]/dens << "\n";
   }
   outfile.close();
   

@@ -1,0 +1,20 @@
+test_opacity
+-------------------------------------
+
+There are currently 3 tests of the opacity module
+
+H_ionization:
+  Calculate ionization fraction of pure iron as a 
+  function of temperature
+
+Fe_ionization:
+  Calculate ionization fraction of pure iron as a 
+  function of temperature
+		
+Expansion opacity:
+  calculate expansion opacity for pure iron using both the nlte
+  line data, as well as the fuzz line list.  The conditions are
+  rho = 1e-13 g/cm^3,  T = 10^4 K,  time = 20 days  
+
+Others to add... cooling curves, free-free, bound-free
+nlte solves...
