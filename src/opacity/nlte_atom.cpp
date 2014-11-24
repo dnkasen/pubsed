@@ -509,14 +509,6 @@ void nlte_atom::print()
   }
 
 
-  cout << "--- fuzzzzz \n";
-  for (int i=0; i<fuzz_lines.size();i++)
-  {
-    fuzz_line f = fuzz_lines[i];
-    cout << f.nu << " " << f.gf << " " << f.El << endl;
-  }
-
-
 }
 
 //-----------------------------------------------------------------

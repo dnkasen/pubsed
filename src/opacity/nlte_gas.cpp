@@ -55,7 +55,7 @@ void nlte_gas::init
   for (int i=0;i<atoms.size();i++) 
   {
 
-    int error = atoms[i].Init(atomfile, elem_Z[i],ng); 
+    int error = atoms[i].init(atomfile, elem_Z[i],ng); 
     if ((error)&&(verbose))
       std::cout << "# ERROR: incomplete data for atom Z=" << elem_Z[i] <<
 	" in file " << atomfile << "\n";
@@ -96,47 +96,10 @@ void nlte_gas::set_mass_fractions(std::vector<double> x)
 //-----------------------------------------------------------
 int nlte_gas::read_fuzzfile(std::string fuzzfile)
 {
-  // make a map of the elements
-  int map[100];
-  for (int i=0;i<100;i++) map[i] = -1;
-  for (int i=0;i<elem_Z.size();i++) map[atoms[i].atomic_number] = i;
-
-  // open up the fuzz file
-  FILE *in = fopen(fuzzfile.c_str(),"r");
-  if (in == NULL) return -1;
-
-  int n_fuzz, n_store = 0;
-  fscanf(in,"%d\n",&n_fuzz);
-
-  double l,g,e;
-  int i,el,ion;
-  for (i=0;i<n_fuzz;i++)
-  {
-    fscanf(in,"%lf %lf %lf %d %d\n",&l,&g,&e,&el,&ion);
-    double nu = pc::c/(l*pc::angs_to_cm);
-    // find element in the gas, if it exists
-    int ind = map[el];
-    if (ind < 0) continue;
-    // if ionization state and within wavelength bounds, go
-    if ((ion < atoms[ind].n_ions)&&(nu >= nu_grid.minval())
-	&&(nu <= nu_grid.maxval()))
-    {
-      fuzz_line f;
-      f.nu  = nu;
-      f.gf  = g;
-      f.El  = e;
-      f.bin = nu_grid.locate(nu);
-      f.ion = ion;
-      atoms[ind].fuzz_lines.push_back(f);
-      n_store++;
-      std::cout << l << "\t" << e << "\t" << ion << std::endl;
-    }
-  }
-
-  return n_store;
-
+  int n_tot = 0;
+  for (int i=0;i<atoms.size();i++) n_tot += atoms[i].read_fuzzfile(fuzzfile);
+  return n_tot;
 }
-
 
 
 //-----------------------------------------------------------

@@ -9,13 +9,14 @@
 #include "xy_array.h"
 #include "locate_array.h"
 
-struct fuzz_line
+struct fuzz_line_structure
 {
-  double nu;
-  double El;
-  double gf;
-  int ion;
-  int bin;
+  int n_lines;
+  std::vector<double> nu;
+  std::vector<double> El;
+  std::vector<double> gf;
+  std::vector<int>   ion;
+  std::vector<int>   bin;
 };
 
 
@@ -80,6 +81,9 @@ private:
   gsl_vector *x_nlte;
   gsl_permutation *p_nlte;
 
+  // frequency bin array
+  locate_array nu_grid;
+
   // functions for NLTE multidimensional solver
   //  int Rate_Equations();
   //void Set_Rates(double N_e, double T, double *J, double egam, double efrac);
@@ -107,12 +111,13 @@ public:
   nlte_line  *lines;        // array of line data
   nlte_ion   *ions;         // array of ion data
 
-  std::vector<fuzz_line> fuzz_lines; // vector of fuzz lines
+  fuzz_line_structure fuzz_lines; // vector of fuzz lines
   
   // Constructor and Init
   nlte_atom();
-  int Init(std::string, int, locate_array);
-  
+  int init(std::string, int, locate_array);
+  int read_fuzzfile(std::string);
+
   // solve state
   void solve_lte (double T, double ne, double time);
   int  solve_nlte(double T, double ne, double time);

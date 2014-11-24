@@ -62,3 +62,6 @@ def run(pdf,plotup):
         py.show()
         j = raw_input()
 
+  ##############################                                                                          
+  # Iron ionization                                                                                       
+    py.clf()

@@ -29,7 +29,7 @@ void Expansion_Opacity_Test(std::string atomdata)
 {
   // density to use
   double dens = 1e-13;
-  double temp = 8000;
+  double temp = 10000;
   double texp = 20.0*3600.0*24.0;
   
   // set up frequency grid
@@ -51,6 +51,8 @@ void Expansion_Opacity_Test(std::string atomdata)
 
   nlte_gas gas;
   gas.init(atomdata,Z,A,nu_grid);
+  int nl = gas.read_fuzzfile("/Users/kasen/codes/sedona6/data/kurucz_cd23_fuzz.hdf5");
+  std::cout << nl << "\n";
   mass_frac.push_back(1.0);
 
   gas.set_mass_fractions(mass_frac);

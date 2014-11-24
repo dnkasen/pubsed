@@ -13,10 +13,14 @@
 
 namespace pc = physical_constants;
 
-int nlte_atom::Init(std::string fname, int z, locate_array nu_grid)
+int nlte_atom::init(std::string fname, int z, locate_array ng)
 {
+  // set atomic number
   this->atomic_number = z;
   
+  // copy over frequency grid
+  nu_grid.copy(ng);
+
   // open hdf5 file 
   hid_t file_id = H5Fopen (fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   herr_t status;
@@ -163,7 +167,7 @@ int nlte_atom::Init(std::string fname, int z, locate_array nu_grid)
     double lam_cm = lines[i].lam*pc::angs_to_cm;
     lines[i].f_lu = lam_cm*lam_cm*A*gu/gl/(8*pc::pi*pc::sigma_tot);
   
-    // // find index of bin in deal
+    // find index of bin in deal
     lines[i].bin = nu_grid.locate(nu);
     
     // default init tau and beta
@@ -226,7 +230,69 @@ int nlte_atom::Init(std::string fname, int z, locate_array nu_grid)
   gsl_permutation_init(p_nlte);
   //---------------------------------------------------
 
+  H5Fclose(file_id);
+
   return 0;
 }
 
+
+
+int nlte_atom::read_fuzzfile(std::string fname)
+{
+ 
+  // open hdf5 file 
+  hid_t file_id = H5Fopen (fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+  herr_t status;
+
+  // get element group name
+  char atomname[100];
+  sprintf(atomname,"%d/",atomic_number);
+  char dset[1000];
+
+  int nl;
+  status = H5LTget_attribute_int(file_id, atomname, "n_lines", &nl);
+  fuzz_lines.n_lines = nl;
+  
+  fuzz_lines.nu.resize(nl);
+  fuzz_lines.gf.resize(nl);
+  fuzz_lines.El.resize(nl);
+  fuzz_lines.ion.resize(nl);
+  fuzz_lines.bin.resize(nl);
+  
+  // read in arrays
+  double *darr = new double[nl];
+  int    *iarr = new int[nl];
+
+  // read line frequency
+  sprintf(dset,"%s%s",atomname,"nu");
+  status = H5LTread_dataset_double(file_id,dset,darr);
+  for (int i=0;i<nl;i++) fuzz_lines.nu[i] = darr[i];
+
+  // read line gf
+  sprintf(dset,"%s%s",atomname,"gf");
+  status = H5LTread_dataset_double(file_id,dset,darr);
+  for (int i=0;i<nl;i++) fuzz_lines.gf[i] = darr[i];
+
+  // read line lower level excitation energy
+  sprintf(dset,"%s%s",atomname,"El");
+  status = H5LTread_dataset_double(file_id,dset,darr);
+  for (int i=0;i<nl;i++) fuzz_lines.El[i] = darr[i];
+  
+  // read line ionization state
+  sprintf(dset,"%s%s",atomname,"ion");
+  status = H5LTread_dataset_int(file_id,dset,iarr);
+  for (int i=0;i<nl;i++) fuzz_lines.ion[i] = iarr[i];
+
+  // get frequency bin of line
+  for (int i=0;i<nl;i++) 
+    fuzz_lines.bin[i] = nu_grid.locate(fuzz_lines.nu[i]);
+
+  delete darr;
+  delete iarr;
+  H5Fclose(file_id);
+
+  return nl;
+
+}
+  
 

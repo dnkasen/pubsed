@@ -44,18 +44,22 @@ void nlte_gas::fuzz_expansion_opacity(std::vector<double>& opac)
   for (int i=0;i<atoms.size();i++)
   {
     // loop over lines in atom
-    std::vector<fuzz_line>::iterator f;
-    for (f = atoms[i].fuzz_lines.begin();f != atoms[i].fuzz_lines.end();f++)
+    for (int j=0;j<atoms[i].fuzz_lines.n_lines;j++)
     {
+      int   ion = atoms[i].fuzz_lines.ion[j];
+      double gf = atoms[i].fuzz_lines.gf[j];
+      double El = atoms[i].fuzz_lines.El[j];
+      double nu = atoms[i].fuzz_lines.nu[j];
+
       // get sobolev tau
       double n_dens = mass_frac[i]*dens/(elem_A[i]*pc::m_p);
-      double nion   = n_dens*atoms[i].ion_frac(f->ion);
+      double nion   = n_dens*atoms[i].ion_frac(ion);
 
-      double nl = nion*exp(-1.0*f->El/pc::k_ev/temp)/atoms[i].partition(f->ion);
-      double lam = pc::c/f->nu;
-      double stim_cor = (1 - exp(-pc::h*f->nu/pc::k/temp));
-      double tau = pc::sigma_tot*lam*nl*f->gf*stim_cor*time;
-
+      double nl = nion*exp(-1.0*El/pc::k_ev/temp)/atoms[i].partition(ion);
+      double lam = pc::c/nu;
+      double stim_cor = (1 - exp(-pc::h*nu/pc::k/temp));
+      double tau = pc::sigma_tot*lam*nl*gf*stim_cor*time;
+      
       // effeciently calculate exponential of tau
       double etau;
       if (tau < exp_min)      etau = 1 - tau;
@@ -63,8 +67,8 @@ void nlte_gas::fuzz_expansion_opacity(std::vector<double>& opac)
       else                    etau = exp(-tau);
 
       // add in this line to the sum
-      opac[f->bin] += (1 - etau);
-      //printf("%e %e %d %e\n",lam*1e8,f->El,f->bin,tau);
+      int bin = atoms[i].fuzz_lines.bin[j];
+      opac[bin] += (1 - etau);
     }
   }
 
