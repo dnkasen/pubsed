@@ -20,10 +20,10 @@ plotup = False
 
 ## sedona main codes tests to run
 core_emit_into_vacuum = False
-lucy_test             = False
+lucy_test             = True
 
 ## sedona modules tests to run
-test_opacity          = True
+test_opacity          = False
 
 ########################################
 

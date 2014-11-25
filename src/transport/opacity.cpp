@@ -47,10 +47,10 @@ void transport::set_opacity()
 
       // solve for the state (assume LTE now)
       gas.solve_state(1);
-      
+    
       // calculate extinction coeficients
-      gas.line_expansion_opacity(opac);
-      double alpha_es = gas.electron_scattering_opacity();
+      gas.fuzz_expansion_opacity(opac);
+      double alpha_es = 0; //debug gas.electron_scattering_opacity();
     
       // store the opacities
       for (int j=0;j<nu_grid.size();j++)
@@ -60,8 +60,6 @@ void transport::set_opacity()
       	abs_opac[i][j]  = opac[j]*this->epsilon;
 	scat_opac[i][j] = opac[j]*(1 - this->epsilon) + alpha_es;
 	emis[i].set_value(j,abs_opac[i][j]*bb);
-	if (scat_opac[i][j] < 0) std::cout << "AAAAAAA\n";
-	//	std::cout << i << " " << j << " " << abs_opac[i][j] << " " << alpha_es << "\n";
       }
     }
 
@@ -116,7 +114,7 @@ void transport::get_opacity(particle &p, double dshift, double &opac, double &ep
   if (p.type == gammaray)
   {
     double c_opac = compton_opac[p.ind]*klein_nishina(p.nu);
-    double p_opac = 0; // DEBUG photoion_opac[p.ind]*pow(p.nu,-3.5);
+    double p_opac = photoion_opac[p.ind]*pow(p.nu,-3.5);
     opac = c_opac + p_opac;
     eps  = p_opac/(c_opac + p_opac);
   }

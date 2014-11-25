@@ -76,6 +76,10 @@ void transport::init(Lua* l, grid_general *g)
   // initialize nlte_gas
   std::string atomdata = lua->scalar<string>("atomic_data");  
   gas.init(atomdata,grid->elems_Z,grid->elems_A,nu_grid);
+  std::string fuzzfile = lua->scalar<string>("fuzzline_file");  
+  int nl = gas.read_fuzzfile(fuzzfile);
+  if (verbose) std::cout << "# read fuzzfile " << fuzzfile << "; " << 
+		 nl << " lines used\n";
 
   this->t_now = g->t_now;
 
@@ -185,7 +189,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     // step size to next interaction event
     double d_sc  = tau_r/opac;
     if (opac == 0) d_sc = std::numeric_limits<double>::infinity();
-    if (d_sc < 0) cout << "ERROR: negative interaction distance! " << opac << "\n";
+    if (d_sc < 0) cout << "ERROR: negative interaction distance!\n";
   
     // find distance to end of time step
     double d_tm = (tstop - p.t)*pc::c;
