@@ -3,14 +3,15 @@
 
 #include <vector>
 #include <mpi.h>
+
 #include "particle.h"
-#include "Lua.h"
 #include "grid_general.h"
 #include "cdf_array.h"
 #include "locate_array.h"
 #include "thread_RNG.h"
 #include "spectrum_array.h"
 #include "nlte_gas.h"
+#include "ParameterReader.h"
 
 using std::vector;
 
@@ -26,8 +27,8 @@ class transport
   // gas class for opacities
   nlte_gas gas;
 
-  // pointer to parameter lua file to read
-  Lua *lua;
+  // pointer to parameter reader
+  ParameterReader* params_;
   
   // MPI stuff
   int MPI_nprocs;
@@ -51,8 +52,7 @@ class transport
   spectrum_array gamma_spectrum;
 
   // opacity functions
-  void   initialize_opacity(Lua*);
-  void   get_opacity(particle &p, double dshift, double &opac, double &eps);
+  void   get_opacity(particle&, double, double&, double&);
   void   set_opacity();
   double klein_nishina(double);
   double blackbody_nu(double T, double nu);
@@ -135,7 +135,7 @@ class transport
   //----- functions ---------------
   
   // set things up
-  void init(Lua*, grid_general*);
+  void init(ParameterReader*, grid_general*);
   
   // run a transport step
   void step(double dt);

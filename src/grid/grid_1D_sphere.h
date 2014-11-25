@@ -32,7 +32,7 @@ public:
 
   virtual ~grid_1D_sphere() {}
 
-  void read_model_file(Lua *lua);
+  void read_model_file(ParameterReader*);
 
 
   // required functions

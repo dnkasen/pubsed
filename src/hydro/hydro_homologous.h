@@ -12,7 +12,7 @@ class hydro_homologous: public hydro_general
 
  public:
 
-  void   init(Lua* lua, grid_general*);
+  void   init(ParameterReader*, grid_general*);
   double get_time_step();
   void   step(double dt);
 

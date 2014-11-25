@@ -1,8 +1,9 @@
 #include <limits>
+
 #include "hydro_homologous.h"
 #include "grid_1D_sphere.h"
 
-void hydro_homologous::init(Lua *lua, grid_general *g)
+void hydro_homologous::init(ParameterReader *params, grid_general *g)
 {
   this->grid = g;
   this->t_now = g->t_now;

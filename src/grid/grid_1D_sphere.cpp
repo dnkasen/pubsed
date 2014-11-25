@@ -4,9 +4,9 @@
 #include <iomanip>   
 #include <math.h>
 #include <cassert>
+
 #include "grid_1D_sphere.h"
 #include "physical_constants.h"
-#include "Lua.h"
 
 namespace pc = physical_constants;
 
@@ -17,7 +17,7 @@ using std::endl;
 //------------------------------------------------------------
 // initialize the zone geometry from model file
 //------------------------------------------------------------
-void grid_1D_sphere::read_model_file(Lua* lua)
+void grid_1D_sphere::read_model_file(ParameterReader* params)
 {
   // verbocity
   int my_rank;
@@ -25,7 +25,7 @@ void grid_1D_sphere::read_model_file(Lua* lua)
   const int verbose = (my_rank == 0);
 
   // open up the model file, complaining if it fails to open
-  string model_file = lua->scalar<string>("model_file");
+  string model_file = params->getScalar<string>("model_file");
   std::ifstream infile;
   infile.open(model_file.c_str());
   if(infile.fail())

@@ -30,6 +30,9 @@ int nlte_atom::init(std::string fname, int z, locate_array ng)
   sprintf(atomname,"%d/",atomic_number);
   char dset[1000];
   
+  // default, no fuzzlines
+  fuzz_lines.n_lines = 0;
+
   // ----------------------------------------
   // read ions
   // ----------------------------------------

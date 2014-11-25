@@ -17,10 +17,12 @@
 
 #ifndef _GRID_GENERAL_H
 #define _GRID_GENERAL_H 1
+
 #include <string>
 #include <iostream>
+
 #include "zone.h"
-#include "Lua.h"
+#include "ParameterReader.h"
 
 class grid_general
 {
@@ -28,13 +30,12 @@ class grid_general
  protected:
 
   // fill the grid with data from a model file
-  virtual void read_model_file(Lua* lua) = 0;
+  virtual void read_model_file(ParameterReader*) = 0;
   
-
  public:
   
   // set everything up
-  void init(Lua* lua);
+  void init(ParameterReader* params);
 
   // descrption of grid type
   std::string grid_type;

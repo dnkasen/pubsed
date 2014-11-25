@@ -5,9 +5,11 @@
 #include <limits>
 #include <vector>
 #include <cassert>
+
 #include "transport.h"
+#include "ParameterReader.h"
+
 #include "physical_constants.h"
-#include "Lua.h"
 
 using std::cout;
 namespace pc = physical_constants;
@@ -18,10 +20,10 @@ namespace pc = physical_constants;
 // Includes setting up the grid, particles,
 // and MPI work distribution
 //----------------------------------------------------------------------------
-void transport::init(Lua* l, grid_general *g)
+void transport::init(ParameterReader* par, grid_general *g)
 { 
-  this->lua  = l;
-  this->grid = g;
+  params_  = par;
+  grid = g;
 
   // get mpi rank
   MPI_Comm_size( MPI_COMM_WORLD, &MPI_nprocs );
@@ -37,30 +39,30 @@ void transport::init(Lua* l, grid_general *g)
   rangen = gsl_rng_alloc (TypeR);
   
   // read relevant parameters
-  this->radiative_eq = lua->scalar<int>("radiative_eq");
-  this->steady_state = (lua->scalar<int>("steady_iterate") > 0);
-  this->step_size    = lua->scalar<double>("step_size");
-  this->max_total_particles = lua->scalar<int>("max_total_particles");
+  step_size           = params_->getScalar<double>("particles_step_size");
+  max_total_particles = params_->getScalar<int>("particles_max_total");
+  radiative_eq   = params_->getScalar<int>("transport_radiative_equilibrium");
+  steady_state   = (params_->getScalar<int>("transport_steady_iterate") > 0);
 
   // initialize the frequency grid  
-  std::vector<double> nu_dims = lua->vector<double>("nu_grid");
+  std::vector<double> nu_dims = params_->getVector<double>("transport_nu_grid");
   if (nu_dims.size() != 3) {
     cout << "# improperly defined nu_grid; need {nu_1, nu_2, dnu}; exiting\n";
     exit(1); }
   nu_grid.init(nu_dims[0],nu_dims[1],nu_dims[2]);
     
   // intialize output spectrum
-  std::vector<double>stg = lua->vector<double>("spec_time_grid");
-  std::vector<double>sng = lua->vector<double>("spec_nu_grid");
-  int nmu  = lua->scalar<int>("spec_n_mu");
-  int nphi = lua->scalar<int>("spec_n_phi");
+  std::vector<double>stg = params_->getVector<double>("spectrum_time_grid");
+  std::vector<double>sng = params_->getVector<double>("spectrum_nu_grid");
+  int nmu  = params_->getScalar<int>("spectrum_n_mu");
+  int nphi = params_->getScalar<int>("spectrum_n_phi");
   optical_spectrum.init(stg,sng,nmu,nphi);
-  std::vector<double>gng = lua->vector<double>("gamma_nu_grid");  
+  std::vector<double>gng = params_->getVector<double>("gamma_nu_grid");  
   gamma_spectrum.init(stg,sng,nmu,nphi);
 
   // initalize and allocate space for opacities
-  this->epsilon   = lua->scalar<double>("epsilon");
-  this->grey_opac = lua->scalar<double>("grey_opacity");
+  this->epsilon   = params_->getScalar<double>("opacity_epsilon");
+  this->grey_opac = params_->getScalar<double>("opacity_grey_opacity");
   abs_opac.resize(grid->n_zones);
   scat_opac.resize(grid->n_zones);
   emis.resize(grid->n_zones);
@@ -74,17 +76,17 @@ void transport::init(Lua* l, grid_general *g)
   photoion_opac.resize(grid->n_zones);
   
   // initialize nlte_gas
-  std::string atomdata = lua->scalar<string>("atomic_data");  
+  std::string atomdata = params_->getScalar<string>("data_atomic_file");  
   gas.init(atomdata,grid->elems_Z,grid->elems_A,nu_grid);
-  std::string fuzzfile = lua->scalar<string>("fuzzline_file");  
+  std::string fuzzfile = params_->getScalar<string>("data_fuzzline_file");  
   int nl = gas.read_fuzzfile(fuzzfile);
-  if (verbose) std::cout << "# read fuzzfile " << fuzzfile << "; " << 
+  if (verbose) std::cout << "# From fuzzfile \"" << fuzzfile << "\" " << 
 		 nl << " lines used\n";
 
   this->t_now = g->t_now;
 
   // initialize particles
-  int n_parts = lua->scalar<int>("init_particles");
+  int n_parts = params_->getScalar<int>("particles_n_initialize");
   initialize_particles(n_parts);
 
   // allocate memory for core emission
@@ -121,9 +123,9 @@ void transport::step(double dt)
     if ((fate == escaped)||(fate == absorbed)) particles.erase(pIter);
     else pIter++;
   }
-  double per_esc = (100.0*n_escape)/n_active;
+  double per_esc = (1.0*n_escape)/(1.0*n_active);
   if ((verbose)&&(steady_state)) {
-    cout << "# Percent escaped = " << per_esc << "\n";
+    cout << "# Percent particles escaped = " << 100.0*per_esc << "\n";
     optical_spectrum.rescale(1.0/per_esc); }
 
   // normalize and MPI combine radiation tallies
@@ -267,15 +269,22 @@ void transport::output_spectrum(int it)
 {
   string base = "";
   if (it > 0) base = "_" + std::to_string(it);
-  string specname = lua->scalar<string>("spectrum_name");
-  optical_spectrum.set_name(specname + "_optical" + base + ".spec");
-  optical_spectrum.MPI_average();
-  if (verbose) optical_spectrum.print();
+  string specname = params_->getScalar<string>("spectrum_name");
+  if (specname != "") 
+  {
+    optical_spectrum.set_name(specname + base + ".dat");
+    optical_spectrum.MPI_average();
+    if (verbose) optical_spectrum.print();
+  }
   optical_spectrum.wipe();
 
-  gamma_spectrum.set_name(specname + "_gamma" + base + ".spec");
-  gamma_spectrum.MPI_average();
-  if (verbose) gamma_spectrum.print();
+  string gamname = params_->getScalar<string>("gamma_name");
+  if (gamname != "") 
+  {
+    gamma_spectrum.set_name(gamname + base + ".dat");
+    gamma_spectrum.MPI_average();
+    if (verbose) gamma_spectrum.print();
+  }
   gamma_spectrum.wipe();
 
 }

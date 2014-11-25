@@ -36,9 +36,9 @@ def run(pdf,plotup):
     Trad = (L*w/(4.0*pi*r0**2)/sb)**0.25
 
     py.plot(r,trad,'o',color='black')
-    py.plot(r,tgas,'o',color='blue')
+    py.plot(r,tgas,'--',color='blue')
     py.plot(r,Trad,color='red',linewidth=2)
-    py.legend(['sedona','analytic solution'])
+    py.legend(['sedona Trad','sedona Tgas','analytic solution'])
     py.title('core into vacuum test: radiation field')
     py.xlabel('radius (cm)')
     py.ylabel('radiation temperature (aT^4 = erad)')
@@ -51,13 +51,13 @@ def run(pdf,plotup):
     #------------------------------------------
 
     py.clf()
-    data = py.loadtxt('out_optical_1.spec')
+    data = py.loadtxt('spectrum_1.dat')
     nu = data[:,0]
     y  = data[:,1]
     py.plot(nu,y,'o',color='black')
     # blackbody spectrum
     f = 2.0*h*nu**3/c**2/(py.exp(h*nu/k/T) - 1)
-    f = f/max(f)*max(y)
+    f = f/(sb*T**4/pi)*L
     py.plot(nu,f,color='red',linewidth=2)
 
     py.legend(['sedona','analytic blackbody'])
@@ -66,7 +66,7 @@ def run(pdf,plotup):
     py.ylabel('Flux')
     py.yscale('log')
     py.xlim(0,3e15)
-    py.ylim(1e23,1e27)
+    py.ylim(1e25,1e29)
 
     pdf.savefig()
     if (plotup):
@@ -75,5 +75,5 @@ def run(pdf,plotup):
 
 
     # clean results
-    os.system("rm out_optical_1.spec ray_* gomc")
+    os.system("rm spectrum_1.dat ray_* gomc")
        

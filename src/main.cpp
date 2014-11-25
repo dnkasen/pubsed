@@ -2,8 +2,9 @@
 #include <time.h>
 #include <iostream>
 #include <vector>
+
 #include "physical_constants.h"
-#include "Lua.h"
+#include "ParameterReader.h"
 #include "grid_general.h"
 #include "grid_1D_sphere.h"
 #include "hydro_general.h"
@@ -44,12 +45,10 @@ int main(int argc, char **argv)
   // BEGIN SETTING UP 
   //---------------------------------------------------------------------
   
-  // open up the lua parameter file
-  Lua lua;
-  std::string script_file = "param.lua";
-  if( argc > 1 ) script_file = std::string( argv[ 1 ] );
-  // spit out the param file
-  lua.init( script_file );
+  // open up the parameter reader
+  std::string param_file = "param.lua";
+  if( argc > 1 ) param_file = std::string( argv[ 1 ] );
+  ParameterReader params(param_file,verbose);
 
   //---------------------------------------------------------------------
   // SET UP THE GRID 
@@ -57,7 +56,7 @@ int main(int argc, char **argv)
   grid_general *grid;
 
   // read the grid type
-  string grid_type = lua.scalar<string>("grid_type");
+  string grid_type = params.getScalar<string>("grid_type");
 
   // create a grid of the appropriate type
   if     (grid_type == "grid_1D_sphere") grid = new grid_1D_sphere;
@@ -67,35 +66,39 @@ int main(int argc, char **argv)
     exit(3);   }
   
   // initialize the grid (including reading the model file)
-  grid->init(&lua);
+  grid->init(&params);
 
   //---------------------------------------------------------------------
   // SET UP the transport module
   //---------------------------------------------------------------------
   transport mcarlo;
-  mcarlo.init(&lua, grid);
+  mcarlo.init(&params, grid);
 
   //---------------------------------------------------------------------
   // SET UP the hydro module
   //---------------------------------------------------------------------
   hydro_general *hydro = NULL;
-  string hydro_type = lua.scalar<string>("hydro_module");
+  string hydro_type = params.getScalar<string>("hydro_module");
+  
   // create a hydro module of the appropriate type
-  if (hydro_type == "homologous") hydro = new hydro_homologous;
-  else if (hydro_type == "none") hydro = NULL;
+  if (hydro_type == "homologous") 
+    hydro = new hydro_homologous;
+  else if (hydro_type == "none") 
+    hydro = NULL;
   else {
     if (verbose) cout << "# ERROR: the hydro type is not implemented\n";
-    exit(3); }
-  int use_hydro = (hydro != NULL);
+    exit(3); 
+  }
 
-  if (use_hydro) hydro->init(&lua, grid);
+  int use_hydro = (hydro != NULL);
+  if (use_hydro) hydro->init(&params, grid);
 
   //---------------------------------------------------------------------
   // DO TIME/ITERATION LOOP
   //---------------------------------------------------------------------
 
   // read in time stepping parameters
-  int steady_iterate  = lua.scalar<int>("steady_iterate");
+  int steady_iterate  = params.getScalar<int>("transport_steady_iterate");
   if (steady_iterate) use_hydro = 0;
   
   // check for steady state iterative calculation
@@ -103,11 +106,11 @@ int main(int argc, char **argv)
   int n_steps   = steady_iterate;
   double t_stop = 0; 
   if (!steady_iterate)  {
-    n_steps  = lua.scalar<int>("max_tsteps");
-    t_stop   = lua.scalar<double>("t_stop"); }
+    n_steps  = params.getScalar<int>("max_tsteps");
+    t_stop   = params.getScalar<double>("t_stop"); }
 
   // parameters for writing data to file
-  double write_out   = lua.scalar<double>("write_out");
+  double write_out   = params.getScalar<double>("grid_write_out");
   int    iw = 0;
 
   // loop over time/iterations
@@ -117,9 +120,9 @@ int main(int argc, char **argv)
     // get this time step
     if (!steady_iterate)
     {
-      double dt_max  = lua.scalar<double>("dt_max");
-      double dt_min  = lua.scalar<double>("dt_min");
-      double dt_del  = lua.scalar<double>("dt_del");
+      double dt_max  = params.getScalar<double>("dt_max");
+      double dt_min  = params.getScalar<double>("dt_min");
+      double dt_del  = params.getScalar<double>("dt_del");
       dt = dt_max;
       if ((dt_del > 0)&&(t > 0)) if (dt > t*dt_del) dt = t*dt_del;
       if (dt < dt_min) dt =  dt_min;

@@ -1,5 +1,6 @@
 #include <mpi.h>
 #include <math.h>
+
 #include "grid_general.h"
 
 
@@ -7,10 +8,10 @@
 //------------------------------------------------------------
 // initialize the grid
 //------------------------------------------------------------
-void grid_general::init(Lua* lua)
+void grid_general::init(ParameterReader* params)
 {
   // read the model file or fill in custom model
-  read_model_file(lua);
+  read_model_file(params);
 
   // complain if the grid is obviously not right
   if(z.size()==0){

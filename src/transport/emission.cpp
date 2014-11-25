@@ -98,10 +98,7 @@ void transport::initialize_particles(int init_particles)
       for (int q=0;q<init_particles;q++) create_isotropic_particle(i,Ep);
       n_add += init_particles; }
   }
-  if (verbose) cout << "# initializing with " << n_add << " particles\n";
-
-
-  
+  if (verbose) cout << "# initializing with " << n_add << " particles\n";  
 }
 
 
@@ -111,7 +108,7 @@ void transport::initialize_particles(int init_particles)
 void transport::emit_radioactive(double dt)
 {
   // number of radioctive particles to emit
-  int n_emit = lua->scalar<int>("n_emit_radioactive");
+  int n_emit = params_->getScalar<int>("particles_n_emit_radioactive");
   if (n_emit == 0) return;
 
   radioactive radio;
@@ -164,10 +161,7 @@ void transport::emit_radioactive(double dt)
   }
   
   if (verbose) cout << "# added " << n_add_tot << " radiaoctive particles\n";
-
-  
 }
-
 
 
 
@@ -180,11 +174,11 @@ void transport::emit_inner_source(double dt)
 {
   // get the emisison propoerties from lua file
   // this could be set to be a function if we want
-  int n_emit = lua->scalar<int>("n_emit_core");
+  int n_emit    = params_->getScalar<int>("core_n_emit");
   if (n_emit == 0) return;
-  double L_core = lua->scalar<double>("L_core");
-  double T_core = lua->scalar<double>("T_core");
-  this->r_core = lua->scalar<double>("r_core");
+  double L_core = params_->getScalar<double>("core_luminosity");
+  double T_core = params_->getScalar<double>("core_temperature");
+  this->r_core  = params_->getScalar<double>("core_radius");
   
   double Ep  = L_core*dt/n_emit;
   

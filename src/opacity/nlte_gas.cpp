@@ -97,6 +97,11 @@ void nlte_gas::set_mass_fractions(std::vector<double> x)
 int nlte_gas::read_fuzzfile(std::string fuzzfile)
 {
   int n_tot = 0;
+ 
+  // check if fuzzfile exists
+  FILE *fin = fopen(fuzzfile.c_str(),"r");
+  if (fin == NULL) return 0;
+    
   for (int i=0;i<atoms.size();i++) n_tot += atoms[i].read_fuzzfile(fuzzfile);
   return n_tot;
 }
