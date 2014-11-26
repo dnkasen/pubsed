@@ -32,7 +32,7 @@ struct nlte_ion
 struct nlte_line
 {
   int lu,ll;           // index of upper/lower level
-  double lam;          // rest wavelength (angstroms)
+  double nu;           // rest frequency (Hz)
   double f_lu;         // oscillator strength
   double A_ul;         // Einstein A coeficient
   double B_ul;         // Einstein B coeficient

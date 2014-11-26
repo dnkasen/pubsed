@@ -25,7 +25,7 @@ nlte_gas::nlte_gas()
 // std::vector<int> A:  vector of atomic weights (in atomic units)
 // locate_array ng:  locate_array giving the freq. array
 //---------------------------------------------------------------
-void nlte_gas::init
+void nlte_gas::initialize
 (std::string atomfile, std::vector<int> e, std::vector<int> A, locate_array ng)
 {
   // verbosity
@@ -60,6 +60,29 @@ void nlte_gas::init
       std::cout << "# ERROR: incomplete data for atom Z=" << elem_Z[i] <<
 	" in file " << atomfile << "\n";
   }
+
+  // set up the list of atom lines
+  nlteLineList_nlines_.resize(nu_grid.size());
+  nlteLineList_atom_.resize(nu_grid.size());
+  nlteLineList_ID_.resize(nu_grid.size());
+  for (int i=0;i<nu_grid.size();i++) nlteLineList_nlines_[i] = 0;
+  
+  // put maps to all atoms in this
+  for (int i=0;i<atoms.size();i++) 
+  {
+    for (int j=0;j<atoms[i].n_lines;j++)
+    {
+      int bin = atoms[i].lines[j].bin;
+      double nu = atoms[i].lines[j].nu;
+      if (nu < nu_grid.minval()) continue;
+      if (nu > nu_grid.maxval()) continue;
+      nlteLineList_nlines_[bin] += 1;
+      nlteLineList_atom_[bin].push_back(i);
+      nlteLineList_ID_[bin].push_back(j);
+    }
+  }
+
+
 }
 
 //-----------------------------------------------------------------
@@ -109,7 +132,7 @@ int nlte_gas::read_fuzzfile(std::string fuzzfile)
 
 //-----------------------------------------------------------
 // return the ionization state, i.e., electron density
-// over total ion number density
+// ovr total ion number density
 //-----------------------------------------------------------
 double nlte_gas::get_ionization_state()
 {

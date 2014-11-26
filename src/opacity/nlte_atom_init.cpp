@@ -154,11 +154,12 @@ int nlte_atom::init(std::string fname, int z, locate_array ng)
     int ll = lines[i].ll;
     int lu = lines[i].lu;
     
-    // get wavelength
+    // get wavelength/frequency
     double delta_E = levels[lu].E - levels[ll].E;
     double nu      = delta_E*pc::ev_to_ergs/pc::h;
-    lines[i].lam   = pc::c/nu*pc::cm_to_angs;
-    
+    double lam   = pc::c/nu*pc::cm_to_angs;
+    lines[i].nu  = nu;
+
     // set Einstein Coeficients
     int gl = levels[ll].g;
     int gu = levels[lu].g;
@@ -167,7 +168,7 @@ int nlte_atom::init(std::string fname, int z, locate_array ng)
     lines[i].B_lu = lines[i].B_ul*gu/gl;
   
     // set oscillator strength (see e.g., Rutten page 24)
-    double lam_cm = lines[i].lam*pc::angs_to_cm;
+    double lam_cm = lam*pc::angs_to_cm;
     lines[i].f_lu = lam_cm*lam_cm*A*gu/gl/(8*pc::pi*pc::sigma_tot);
   
     // find index of bin in deal

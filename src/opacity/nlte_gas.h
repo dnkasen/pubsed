@@ -16,6 +16,11 @@ class nlte_gas
   locate_array nu_grid;
   int verbose;
 
+  std::vector<std::vector<int> > nlteLineList_atom_;
+  std::vector<std::vector<int> > nlteLineList_ID_;
+  std::vector<int> nlteLineList_nlines_;
+  
+
  public:
 
   std::vector<double>     mass_frac;  // vector of mass fractions
@@ -59,7 +64,8 @@ class nlte_gas
   // std::vector<int> A:  vector of atomic weights (in atomic units)
   // locate_array ng:  locate_array giving the freq. array
   //---------------------------------------------------------------
-  void init(std::string, std::vector<int>, std::vector<int>, locate_array);
+  void initialize
+    (std::string, std::vector<int>, std::vector<int>, locate_array);
 
   
   //-----------------------------------------------------------

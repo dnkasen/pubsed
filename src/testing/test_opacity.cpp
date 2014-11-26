@@ -50,7 +50,7 @@ void Expansion_Opacity_Test(std::string atomdata)
   A.push_back(56);
 
   nlte_gas gas;
-  gas.init(atomdata,Z,A,nu_grid);
+  gas.initialize(atomdata,Z,A,nu_grid);
   int nl = gas.read_fuzzfile("/Users/kasen/codes/sedona6/data/kurucz_cd23_fuzz.hdf5");
   std::cout << "Read and Stored " << nl << " fuzz lines\n";
   mass_frac.push_back(1.0);
@@ -107,7 +107,7 @@ void LTE_Ionization_Test(std::string atomdata)
   {
     // initialize the gas
     nlte_gas gas;
-    gas.init(atomdata,Z,A,nu_grid);
+    gas.initialize(atomdata,Z,A,nu_grid);
     mass_frac.push_back(1.0);
     gas.set_mass_fractions(mass_frac);
     
@@ -128,7 +128,7 @@ void LTE_Ionization_Test(std::string atomdata)
     nlte_gas gas;
     Z[0] = 26;
     A[0] = 56; 
-    gas.init(atomdata,Z,A,nu_grid);
+    gas.initialize(atomdata,Z,A,nu_grid);
     mass_frac[0] = 1.0;
     gas.set_mass_fractions(mass_frac);
     
