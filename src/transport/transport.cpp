@@ -5,6 +5,7 @@
 #include <limits>
 #include <vector>
 #include <cassert>
+#include <list>
 
 #include "transport.h"
 #include "ParameterReader.h"
@@ -129,17 +130,18 @@ void transport::step(double dt)
   wipe_radiation();
 
   // Propagate the particles
-  std::vector<particle>::iterator pIter = particles.begin();
   int n_active = particles.size();
   int n_escape = 0;
+  std::list<particle>::iterator pIter = particles.begin();
   while (pIter != particles.end())
   {
     ParticleFate fate = propagate(*pIter,dt);
     if (fate == escaped) n_escape++;
-    if ((fate == escaped)||(fate == absorbed)) particles.erase(pIter);
+    if ((fate == escaped)||(fate == absorbed)) pIter = particles.erase(pIter);
     else pIter++;
-    std::cout << n_escape/1.0e4 << "\n";
   }
+
+  // calculate percent particles escaped, and rescale if wanted
   double per_esc = (1.0*n_escape)/(1.0*n_active);
   if ((verbose)&&(steady_state)) {
     cout << "# Percent particles escaped = " << 100.0*per_esc << "\n";

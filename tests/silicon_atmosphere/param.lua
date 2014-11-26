@@ -8,7 +8,7 @@ days = 3600.0*24
 transport_nu_grid  = {0.5e14,1.0e15,1e12}
 
 -- inner source
-core_n_emit      = 1e5
+core_n_emit      = 2e5
 core_radius      = 1e9*10*days
 core_luminosity  = 1e42
 core_temperature = 0.6e4

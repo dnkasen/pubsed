@@ -2,6 +2,7 @@
 #define _TRANSPORT_H
 
 #include <vector>
+#include <list>
 #include <mpi.h>
 
 #include "particle.h"
@@ -21,7 +22,7 @@ class transport
  private:
 
   // arrays of particles
-  std::vector<particle> particles;
+  std::list<particle> particles;
   int max_total_particles;
 
   // gas class for opacities
@@ -61,7 +62,7 @@ class transport
   void   emit_particles(double dt);
   void   emit_inner_source(double dt);
   void   emit_radioactive(double dt);
-  void   create_isotropic_particle(int,double);
+  void   create_isotropic_particle(int,PType,double,double);
   void   initialize_particles(int);
   void sample_photon_frequency(particle*);
   

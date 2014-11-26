@@ -21,9 +21,17 @@ void transport::emit_particles(double dt)
 //------------------------------------------------------------
 void transport::sample_photon_frequency(particle *p)
 {
-  int ilam  = emissivity_[p->ind].sample(gsl_rng_uniform(rangen));
-  p->nu = nu_grid.sample(ilam,gsl_rng_uniform(rangen));
-  if (p->nu > 1e20) std::cout << "pnu " << p->nu << "\n";
+  if (p->type == photon)
+  {
+    int ilam  = emissivity_[p->ind].sample(gsl_rng_uniform(rangen));
+    p->nu = nu_grid.sample(ilam,gsl_rng_uniform(rangen));
+    if (p->nu > 1e20) std::cout << "pnu " << p->nu << "\n";
+  }
+  if (p->type == gammaray)
+  {
+    p->nu = 1;
+  }
+
 }
 
 //------------------------------------------------------------
@@ -32,7 +40,8 @@ void transport::sample_photon_frequency(particle *p)
 // Useful for thermal radiation emitted all througout
 // the grid
 //------------------------------------------------------------
-void transport::create_isotropic_particle(int i, double Ep)
+void transport::create_isotropic_particle
+(int i, PType type, double Ep, double t)
 {
   particle p;
 
@@ -68,10 +77,10 @@ void transport::create_isotropic_particle(int i, double Ep)
   transform_comoving_to_lab(&p);
 
   // set time to current
-  p.t  = t_now;
-
+  p.t  = t;
+  
   // set type to photon
-  p.type = photon;
+  p.type = type;
 
   // add to particle vector
   particles.push_back(p);
@@ -95,7 +104,8 @@ void transport::initialize_particles(int init_particles)
 
     // create init_particles particles
     if (E_zone > 0) {
-      for (int q=0;q<init_particles;q++) create_isotropic_particle(i,Ep);
+      for (int q=0;q<init_particles;q++) 
+	create_isotropic_particle(i,photon,Ep,t_now);
       n_add += init_particles; }
   }
   if (verbose) cout << "# initializing with " << n_add << " particles\n";  
@@ -147,14 +157,10 @@ void transport::emit_radioactive(double dt)
       return; }
 
     // setup particles
-    int np = particles.size();
-    for (int q=np;q<np+n_add;q++)
+    for (int q=0;q<n_add;q++) 
     {
-      create_isotropic_particle(i,E_p);
-      particles[q].t     = t_now + dt*gsl_rng_uniform(rangen);
-      particles[q].type  = gammaray;
-      // sample energy from gamma-lines DEBUG
-      particles[q].nu    = 1.0;
+      double t  = t_now + dt*gsl_rng_uniform(rangen);
+      create_isotropic_particle(i,gammaray,E_p,t);
     }
 
     n_add_tot += n_add;
