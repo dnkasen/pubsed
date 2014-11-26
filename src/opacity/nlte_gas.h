@@ -31,6 +31,15 @@ class nlte_gas
   double A_mu;                   // mean atomic weight of the gas
   int no_ground_recomb;          // suppress ground recombinations
 
+  // flags for what opacities to use
+  int use_electron_scattering_opacity;   
+  int use_line_expansion_opacity;
+  int use_fuzz_expansion_opacity;
+  int use_free_free_opacity;
+  int use_bound_free_opacity;
+  
+  double grey_opacity_;
+  double epsilon_;
   
   //***********************************************************
   // INITIALIZATION
@@ -93,6 +102,8 @@ class nlte_gas
   //***********************************************************
   // OPACITIES AND EMISSIVITIES
   //***********************************************************
+  void computeOpacity(std::vector<double>&, std::vector<double>&, 
+		      std::vector<double>&);
   double electron_scattering_opacity();
   void line_expansion_opacity(std::vector<double>&);
   void fuzz_expansion_opacity(std::vector<double>&);

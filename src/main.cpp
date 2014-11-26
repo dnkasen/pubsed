@@ -106,8 +106,8 @@ int main(int argc, char **argv)
   int n_steps   = steady_iterate;
   double t_stop = 0; 
   if (!steady_iterate)  {
-    n_steps  = params.getScalar<int>("max_tsteps");
-    t_stop   = params.getScalar<double>("t_stop"); }
+    n_steps  = params.getScalar<int>("tstep_max_steps");
+    t_stop   = params.getScalar<double>("tstep_time_stop"); }
 
   // parameters for writing data to file
   double write_out   = params.getScalar<double>("grid_write_out");
@@ -120,9 +120,9 @@ int main(int argc, char **argv)
     // get this time step
     if (!steady_iterate)
     {
-      double dt_max  = params.getScalar<double>("dt_max");
-      double dt_min  = params.getScalar<double>("dt_min");
-      double dt_del  = params.getScalar<double>("dt_del");
+      double dt_max  = params.getScalar<double>("tstep_max_dt");
+      double dt_min  = params.getScalar<double>("tstep_min_dt");
+      double dt_del  = params.getScalar<double>("tstep_max_delta");
       dt = dt_max;
       if ((dt_del > 0)&&(t > 0)) if (dt > t*dt_del) dt = t*dt_del;
       if (dt < dt_min) dt =  dt_min;

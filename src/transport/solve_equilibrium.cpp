@@ -38,7 +38,7 @@ double transport::rad_eq_function(int c,double T)
   // Calculate total emission assuming no frequency (grey) opacity
   if (nu_grid.size() == 1)
   {
-    E_emitted = 4.0*pc::pi*abs_opac[c][0]*pc::sb/pc::pi*pow(T,4);
+    E_emitted = 4.0*pc::pi*abs_opacity_[c][0]*pc::sb/pc::pi*pow(T,4);
   }
   // integrate emisison over frequency (angle
   // integration gives the 4*PI) to get total
@@ -50,7 +50,7 @@ double transport::rad_eq_function(int c,double T)
     double dnu  = nu_grid.delta(i);
     double nu   = nu_grid.center(i);
     double B_nu = blackbody_nu(T,nu);
-    double kappa_abs = abs_opac[c][i];
+    double kappa_abs = abs_opacity_[c][i];
     E_emitted += 4.0*pc::pi*kappa_abs*B_nu*dnu;
   }
 

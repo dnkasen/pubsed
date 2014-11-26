@@ -61,20 +61,20 @@ void transport::init(ParameterReader* par, grid_general *g)
   gamma_spectrum.init(stg,sng,nmu,nphi);
 
   // initalize and allocate space for opacities
-  this->epsilon   = params_->getScalar<double>("opacity_epsilon");
-  this->grey_opac = params_->getScalar<double>("opacity_grey_opacity");
-  abs_opac.resize(grid->n_zones);
-  scat_opac.resize(grid->n_zones);
-  emis.resize(grid->n_zones);
-  for (int i=0; i<abs_opac.size();  i++)
+  abs_opacity_.resize(grid->n_zones);
+  scat_opacity_.resize(grid->n_zones);
+  emissivity_.resize(grid->n_zones);
+
+  for (int i=0; i<grid->n_zones;  i++)
   {
-    abs_opac[i].resize(nu_grid.size());
-    scat_opac[i].resize(nu_grid.size());
-    emis[i].resize(nu_grid.size());
+    abs_opacity_[i].resize(nu_grid.size());
+    scat_opacity_[i].resize(nu_grid.size());
+    emissivity_[i].resize(nu_grid.size());
   }
   compton_opac.resize(grid->n_zones);
   photoion_opac.resize(grid->n_zones);
   
+
   // initialize nlte_gas
   std::string atomdata = params_->getScalar<string>("data_atomic_file");  
   gas.init(atomdata,grid->elems_Z,grid->elems_A,nu_grid);
@@ -82,7 +82,23 @@ void transport::init(ParameterReader* par, grid_general *g)
   int nl = gas.read_fuzzfile(fuzzfile);
   if (verbose) std::cout << "# From fuzzfile \"" << fuzzfile << "\" " << 
 		 nl << " lines used\n";
+  
+  // gas opacity flags and parameters
+  gas.epsilon_      = params_->getScalar<double>("opacity_epsilon");
+  gas.grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
+  gas.use_electron_scattering_opacity 
+    = params_->getScalar<int>("opacity_electron_scattering");
+  gas.use_line_expansion_opacity  
+    = params_->getScalar<int>("opacity_line_expansion");
+  gas.use_fuzz_expansion_opacity  
+    = params_->getScalar<int>("opacity_fuzz_expansion");
+  gas.use_bound_free_opacity  
+    = params_->getScalar<int>("opacity_bound_free");
+  gas.use_free_free_opacity  
+    = params_->getScalar<int>("opacity_free_free");
+  
 
+  // initialize time
   this->t_now = g->t_now;
 
   // initialize particles
@@ -122,6 +138,7 @@ void transport::step(double dt)
     if (fate == escaped) n_escape++;
     if ((fate == escaped)||(fate == absorbed)) particles.erase(pIter);
     else pIter++;
+    std::cout << n_escape/1.0e4 << "\n";
   }
   double per_esc = (1.0*n_escape)/(1.0*n_active);
   if ((verbose)&&(steady_state)) {

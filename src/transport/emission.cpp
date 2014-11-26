@@ -21,7 +21,7 @@ void transport::emit_particles(double dt)
 //------------------------------------------------------------
 void transport::sample_photon_frequency(particle *p)
 {
-  int ilam  = emis[p->ind].sample(gsl_rng_uniform(rangen));
+  int ilam  = emissivity_[p->ind].sample(gsl_rng_uniform(rangen));
   p->nu = nu_grid.sample(ilam,gsl_rng_uniform(rangen));
   if (p->nu > 1e20) std::cout << "pnu " << p->nu << "\n";
 }

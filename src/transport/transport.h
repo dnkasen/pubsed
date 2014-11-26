@@ -21,7 +21,7 @@ class transport
  private:
 
   // arrays of particles
-  vector<particle> particles;
+  std::vector<particle> particles;
   int max_total_particles;
 
   // gas class for opacities
@@ -97,10 +97,6 @@ class transport
 
   transport()
   {
-    // defaults
-    //step_size = 0.1;
-    //grey_opac = 0.0;
-    r_core = 0;
   }
 
   // random number generator
@@ -119,9 +115,9 @@ class transport
   cdf_array core_emis;
 
   // the zone opacity/emissivity variables
-  vector< cdf_array      > emis;
-  vector< vector<real> > abs_opac;
-  vector< vector<real> > scat_opac;
+  vector< cdf_array >    emissivity_;
+  vector< vector<real> > abs_opacity_;
+  vector< vector<real> > scat_opacity_;
   vector<real> compton_opac;
   vector<real> photoion_opac;
 

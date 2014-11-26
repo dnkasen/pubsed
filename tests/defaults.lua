@@ -27,14 +27,26 @@ particles_step_size = 0.3
 particles_n_emit_radioactive   = 0
 particles_n_initialize         = 0
 
+-- time stepping
+tstep_max_steps  = 1000
+tstep_time_stop  = 100.0
+tstep_max_dt     = 1000.0
+tstep_min_dt     = 0.0
+tstep_max_delta  = 0.1
+
 -- opacity calculation defaults
-opacity_grey_opacity   = 0
-opacity_epsilon        = 1.0
+opacity_grey_opacity        = 0
+opacity_epsilon             = 1.0
+opacity_electron_scattering = 0
+opacity_line_expansion      = 0
+opacity_fuzz_expansion      = 0
+opacity_bound_free          = 0
+opacity_free_free           = 0
 
 -- output spectrum information
 spectrum_name      = "spectrum";
-spectrum_time_grid = {0,1,100}
-spectrum_nu_grid   = nu_grid
+spectrum_time_grid = {0,1,1}
+spectrum_nu_grid   = {1,1,1}
 spectrum_n_mu      = 1
 spectrum_n_phi     = 1
 

@@ -10,8 +10,8 @@ namespace pc = physical_constants;
 //-----------------------------------------------------------------
 void transport::set_opacity()
 {
-  // vector to hold opacity calcs
-  vector<double> opac(nu_grid.size());
+  // tmp vector to hold emissivity
+  vector<double> emis(nu_grid.size());
 
   // loop over all zones
   for (int i=0;i<grid->n_zones;i++)
@@ -23,48 +23,21 @@ void transport::set_opacity()
     // optical photon opacities
     //------------------------------------------------------
 
-    // do simple grey opacity, if desired
-    if (this->grey_opac > 0)
-    {
-      for (int j=0;j<nu_grid.size();j++)
-      {
-	double nu  = nu_grid[j];
-	double bb  = blackbody_nu(z->T_gas,nu);
-	abs_opac[i][j]  = grey_opac*z->rho*this->epsilon;
-	scat_opac[i][j] = grey_opac*z->rho*(1 - this->epsilon);
-	emis[i].set_value(j,abs_opac[i][j]*bb);
-      }
-    }  
+    // set up the state of the gas in this zone
+    gas.dens = z->rho;
+    gas.temp = z->T_gas;
+    gas.time = t_now;
+    gas.set_mass_fractions(z->X_gas);
 
-    // otherwise do the real thing
-    else
-    {
-      // set up the state of the gas in this zone
-      gas.dens = z->rho;
-      gas.temp = z->T_gas;
-      gas.time = t_now;
-      gas.set_mass_fractions(z->X_gas);
-
-      // solve for the state (assume LTE now)
-      gas.solve_state(1);
+    // solve for the state (assume LTE now)
+    if (!gas.grey_opacity_) gas.solve_state(1);
     
-      // calculate extinction coeficients
-      gas.fuzz_expansion_opacity(opac);
-      double alpha_es = 0; //debug gas.electron_scattering_opacity();
-    
-      // store the opacities
-      for (int j=0;j<nu_grid.size();j++)
-      {
-	double nu  = nu_grid[j];
-	double bb  = blackbody_nu(z->T_gas,nu);
-      	abs_opac[i][j]  = opac[j]*this->epsilon;
-	scat_opac[i][j] = opac[j]*(1 - this->epsilon) + alpha_es;
-	emis[i].set_value(j,abs_opac[i][j]*bb);
-      }
-    }
-
-    // normalize emissivity cdf
-    emis[i].normalize();
+    // calculate the opacities/emissivities
+    gas.computeOpacity(abs_opacity_[i],scat_opacity_[i],emis);
+  
+    // save and normalize emissivity cdf
+    for (int j=0;j<nu_grid.size();j++) emissivity_[i].set_value(j,emis[j]);
+    emissivity_[i].normalize();
   
 
     //------------------------------------------------------
@@ -86,7 +59,6 @@ void transport::set_opacity()
     }
 
   }
-
 }
 
 
@@ -104,8 +76,8 @@ void transport::get_opacity(particle &p, double dshift, double &opac, double &ep
   if (p.type == photon)
   {
     // interpolate opacity at the local comving frame frequency
-    double a_opac = nu_grid.value_at(nu,abs_opac[p.ind]);
-    double s_opac = nu_grid.value_at(nu,scat_opac[p.ind]);
+    double a_opac = nu_grid.value_at(nu,abs_opacity_[p.ind]);
+    double s_opac = nu_grid.value_at(nu,scat_opacity_[p.ind]);
     opac = a_opac + s_opac;
     eps  = a_opac/opac;
   }

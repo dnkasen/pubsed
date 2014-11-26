@@ -15,7 +15,7 @@ core_temperature = 1.0e4
 spectrum_nu_grid   = transport_nu_grid
 
 -- opacity information
-opacity_grey_opacity = 0.00001
+opacity_grey_opacity = 1e-20
 
 
 

@@ -4,6 +4,81 @@
 
 namespace pc = physical_constants;
 
+
+//----------------------------------------------------------------
+// calculate the total absorptive and scattering opacity
+//----------------------------------------------------------------
+void nlte_gas::computeOpacity(std::vector<double>& abs, 
+			      std::vector<double>& scat, 
+			      std::vector<double>& emis)
+{
+  int ns = nu_grid.size();
+  std::vector<double> opac;
+  opac.resize(ns);
+  
+  // zero out passed opacity arrays
+  for (int i=0;i<ns;i++) {abs[i] = 0; scat[i] = 0;}
+  
+  //-----------------------------------------
+  /// if grey opacity, just do simple thing
+  //-----------------------------------------
+  if (grey_opacity_ != 0)
+  {
+    double opac = dens*grey_opacity_;
+    for (int i=0;i<ns;i++) {
+      abs[i]  = opac*epsilon_;
+      scat[i] = opac*(1-epsilon_);
+    }
+  } 
+
+  //-----------------------------------------
+  // else do all the other stuff
+  //-----------------------------------------
+  else
+  {
+    //---
+    if (use_electron_scattering_opacity) 
+    {
+      double es_opac = electron_scattering_opacity();
+      for (int i=0;i<ns;i++) scat[i] += es_opac;
+    }
+
+    //---
+    if (use_line_expansion_opacity) 
+    {
+      line_expansion_opacity(opac);
+      for (int i=0;i<ns;i++) {
+	abs[i]  += epsilon_*opac[i];
+	scat[i] += (1-epsilon_)*opac[i];
+      }
+    }
+  
+    //---
+    if (use_fuzz_expansion_opacity) 
+    {
+      fuzz_expansion_opacity(opac);
+      for (int i=0;i<ns;i++) {
+	abs[i]  += epsilon_*opac[i];
+	scat[i] += (1-epsilon_)*opac[i];
+      }
+    }
+  }
+
+  
+  //-- set emissivity, just thermal now
+  for (int i=0;i<ns;i++)
+  {
+    double nu = nu_grid[i];
+    double zeta = pc::h*nu/pc::k/temp;
+    double bb = 2.0*nu*nu*nu*pc::h/pc::c/pc::c/(exp(zeta)-1);
+    emis[i] = bb*abs[i];
+  }
+}
+
+
+//----------------------------------------------------------------
+// simple electron scattering opacity
+//----------------------------------------------------------------
 double nlte_gas::electron_scattering_opacity()
 {
   return pc::thomson_cs*ne;
@@ -91,3 +166,5 @@ void nlte_gas::fuzz_expansion_opacity(std::vector<double>& opac)
   for (int i=0;i<opac.size();i++) 
     opac[i] = opac[i]*nu_grid.center(i)/nu_grid.delta(i)/pc::c/time;
 }
+
+//---------------
