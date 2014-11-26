@@ -178,7 +178,7 @@ void transport::isotropic_scatter(particle *p, int redist)
   //grid->velocity_vector(p->ind,p->x,V);
 
   // debug
-  double t_secs = t_now;
+  double t_secs = t_now_;
   V[0] = p->x[0]/t_secs;
   V[1] = p->x[1]/t_secs;
   V[2] = p->x[2]/t_secs; 

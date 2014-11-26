@@ -105,7 +105,7 @@ void transport::initialize_particles(int init_particles)
     // create init_particles particles
     if (E_zone > 0) {
       for (int q=0;q<init_particles;q++) 
-	create_isotropic_particle(i,photon,Ep,t_now);
+	create_isotropic_particle(i,photon,Ep,t_now_);
       n_add += init_particles; }
   }
   if (verbose) cout << "# initializing with " << n_add << " particles\n";  
@@ -129,7 +129,7 @@ void transport::emit_radioactive(double dt)
   for (int i=0;i<grid->n_zones;i++)
   {
     double vol  = grid->zone_volume(i);
-    double L_decay = radio.decay(grid->elems_Z,grid->elems_A,grid->z[i].X_gas,t_now,&gfrac);
+    double L_decay = radio.decay(grid->elems_Z,grid->elems_A,grid->z[i].X_gas,t_now_,&gfrac);
     L_decay = grid->z[i].rho*L_decay*vol;
     grid->z[i].L_radio_emit = L_decay;
     L_tot += L_decay;
@@ -159,7 +159,7 @@ void transport::emit_radioactive(double dt)
     // setup particles
     for (int q=0;q<n_add;q++) 
     {
-      double t  = t_now + dt*gsl_rng_uniform(rangen);
+      double t  = t_now_ + dt*gsl_rng_uniform(rangen);
       create_isotropic_particle(i,gammaray,E_p,t);
     }
 
@@ -184,7 +184,7 @@ void transport::emit_inner_source(double dt)
   if (n_emit == 0) return;
   double L_core = params_->getScalar<double>("core_luminosity");
   double T_core = params_->getScalar<double>("core_temperature");
-  this->r_core  = params_->getScalar<double>("core_radius");
+  r_core_  = params_->getScalar<double>("core_radius");
   
   double Ep  = L_core*dt/n_emit;
   
@@ -213,7 +213,7 @@ void transport::emit_inner_source(double dt)
     double cost_core  = 1 - 2.0*gsl_rng_uniform(rangen);
     double sint_core  = sqrt(1-cost_core*cost_core);
     // real spatial coordinates    
-    double a_phot = r_core + r_core*1e-10;
+    double a_phot = r_core_ + r_core_*1e-10;
     p.x[0] = a_phot*sint_core*cosp_core;
     p.x[1] = a_phot*sint_core*sinp_core;
     p.x[2] = a_phot*cost_core;
@@ -247,7 +247,7 @@ void transport::emit_inner_source(double dt)
     transform_comoving_to_lab(&p);
 
     // set time to current
-    p.t  = t_now;
+    p.t  = t_now_;
     
     // set type to photon
     p.type = photon;

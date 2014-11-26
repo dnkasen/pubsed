@@ -26,7 +26,7 @@ void transport::set_opacity()
     // set up the state of the gas in this zone
     gas.dens = z->rho;
     gas.temp = z->T_gas;
-    gas.time = t_now;
+    gas.time = t_now_;
     gas.set_mass_fractions(z->X_gas);
 
     // solve for the state (assume LTE now)

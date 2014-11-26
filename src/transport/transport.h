@@ -37,20 +37,53 @@ class transport
   MPI_Datatype MPI_real;
   
   // simulation parameters
-  double step_size;
+  double step_size_;
   int    steady_state;
   int    radiative_eq;
   int    verbose;
 
   // current time in simulation
-  double t_now;
-
+  double t_now_;
   // inner boundary
-  double r_core;
+  double r_core_;
 
   // class to hold output spectrum
   spectrum_array optical_spectrum;
   spectrum_array gamma_spectrum;
+
+  // random number generator
+  //mutable thread_RNG rangen;
+
+   // random number generator
+  gsl_rng *rangen;
+
+  // pointer to grid
+  grid_general *grid;
+  
+  // the frequency grid for emissivity/opacity (Hz)
+  locate_array nu_grid;
+
+  // the core emissivity (erg/s - units of N)
+  cdf_array core_emis;
+
+  // the zone opacity/emissivity variables
+  vector< cdf_array >    emissivity_;
+  vector< vector<real> > abs_opacity_;
+  vector< vector<real> > scat_opacity_;
+  vector<real> compton_opac;
+  vector<real> photoion_opac;
+
+  // the radiation quantities in the zone
+  vector <real> e_rad;
+  
+  // line data
+  vector <real> line_nu_;
+  vector <int>  line_lowerLevel_;
+  vector <int>  line_upperLevel_;
+  vector <real> line_opacityMultiplier_;
+    vector< vector<real> > line_Jbar_;
+  vector< vector<real> > level_population;
+
 
   // opacity functions
   void   get_opacity(particle&, double, double&, double&);
@@ -89,6 +122,8 @@ class transport
   double rad_eq_function(int,double);
   double temp_brent_method(int);
 
+
+
  public:
   
 
@@ -100,35 +135,6 @@ class transport
   {
   }
 
-  // random number generator
-  //mutable thread_RNG rangen;
-
-   // random number generator
-  gsl_rng *rangen;
-
-  // pointer to grid
-  grid_general *grid;
-  
-  // the frequency grid for emissivity/opacity (Hz)
-  locate_array nu_grid;
-
-  // the core emissivity (erg/s - units of N)
-  cdf_array core_emis;
-
-  // the zone opacity/emissivity variables
-  vector< cdf_array >    emissivity_;
-  vector< vector<real> > abs_opacity_;
-  vector< vector<real> > scat_opacity_;
-  vector<real> compton_opac;
-  vector<real> photoion_opac;
-
-  // the radiation quantities in the zone
-  vector <real> e_rad;
-
-  // grey opacity and absorption fraction
-  double grey_opac;      //(cm^2/g)
-  double epsilon;       //unitless
-  
   //----- functions ---------------
   
   // set things up

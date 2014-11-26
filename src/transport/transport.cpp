@@ -40,7 +40,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   rangen = gsl_rng_alloc (TypeR);
   
   // read relevant parameters
-  step_size           = params_->getScalar<double>("particles_step_size");
+  step_size_          = params_->getScalar<double>("particles_step_size");
   max_total_particles = params_->getScalar<int>("particles_max_total");
   radiative_eq   = params_->getScalar<int>("transport_radiative_equilibrium");
   steady_state   = (params_->getScalar<int>("transport_steady_iterate") > 0);
@@ -100,7 +100,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   
 
   // initialize time
-  this->t_now = g->t_now;
+  t_now_ = g->t_now;
 
   // initialize particles
   int n_parts = params_->getScalar<int>("particles_n_initialize");
@@ -154,7 +154,7 @@ void transport::step(double dt)
   if (radiative_eq) solve_eq_temperature();
    
   // advance time step
-  if (!steady_state) t_now += dt;
+  if (!steady_state) t_now_ += dt;
 }
 
 
@@ -175,7 +175,7 @@ ParticleFate transport::propagate(particle &p, double dt)
   if (p.ind == -2) {return  escaped;}
   
   // time of end of timestep
-  double tstop = t_now + dt;
+  double tstop = t_now_ + dt;
 
   // pointer to current zone
   zone *zone = &(grid->z[p.ind]);
@@ -187,7 +187,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     zone = &(grid->z[p.ind]);
     
     // maximum step size inside zone
-    double d_bn = this->step_size*grid->zone_min_length(p.ind);
+    double d_bn = step_size_*grid->zone_min_length(p.ind);
 
     // determine the doppler shift from comoving to lab
     //double dshift = dshift_comoving_to_lab(&p);
@@ -255,7 +255,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     if (p.ind == -2) fate = escaped;
 
     // check for inner boundary absorption
-    if (p.r() < this->r_core)  {fate = absorbed;}
+    if (p.r() < r_core_)  {fate = absorbed;}
 
     // ---------------------------------
     // do an interaction event
