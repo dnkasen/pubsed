@@ -1,0 +1,11 @@
+### This is the list of tests you would like to run
+### comment out ones with a hash
+
+## sedona main codes tests 
+#core_emit_into_vacuum  
+#lucy_test         
+silicon_atmosphere
+
+## sedona modules tests 
+#test_opacity        
+
