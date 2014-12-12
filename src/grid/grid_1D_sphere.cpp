@@ -54,40 +54,62 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
   vol.resize(n_zones);
 
   // read zone properties for a supernova remnant
-  if(system == "SNR") read_SNR_file(infile,verbose);
+  if (system == "SNR") 
+    read_SNR_file(infile,verbose,1);
+  else if (system == "standard") 
+    read_SNR_file(infile,verbose,0);
+  else {
+    if (verbose) std::cout << " Don't recognize model type " << system << "; Exiting\n";
+    exit(1); }
 
   infile.close();
 }
     
 
-void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose)
+
+void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
 {
-  // general properties
+  // read header, general properties
   double texp;
   infile >> r_out.min;
   infile >> texp;
-
   this->t_now = texp;
 
-  // read element isotopes
+  // convert read in velocity to radius
+  if (snr) r_out.min = r_out.min*texp;
+
+  // read element isotopes, format is Z.A
   infile >> this->n_elems;
   for (int k=0;k<n_elems;k++) 
   {
-    double species;
+    std::string species;
     infile >> species;
-    int el_Z  = floor(species);
-    int el_A = round(100*(species - el_Z));
-    elems_Z.push_back(el_Z);
-    elems_A.push_back(el_A);
+    int ind = species.find(".");
+    std::string el_Z = species.substr(0,ind);
+    std::string el_A = species.substr(ind+1,species.size() - ind);
+    elems_Z.push_back(std::stoi(el_Z));
+    elems_A.push_back(std::stoi(el_A));
   }
 
   // loop over zones and read
   for (int i=0; i<n_zones; i++)
   {
     // read state variables
-    infile >> z[i].v[0];
-    infile >> z[i].rho;
-    infile >> z[i].T_gas;
+    if (snr)
+    {
+      infile >> z[i].v[0];
+      infile >> z[i].rho;
+      infile >> z[i].T_gas;
+      // assume homology for radius
+      r_out[i] = z[i].v[0]*texp;
+    }
+    else
+    {
+      infile >> r_out[i];
+      infile >> z[i].v[0];
+      infile >> z[i].rho;
+      infile >> z[i].T_gas;
+    }
 
     // read composition
     for (int k=0;k<n_elems;k++)
@@ -97,9 +119,6 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose)
       z[i].X_gas.push_back(x);
     }
 
-    // assume homology for radius
-    r_out[i] = z[i].v[0]*texp;
-      
     // assume LTE radiation field to start
     z[i].e_rad = pc::a*pow(z[i].T_gas,4);
       
@@ -113,7 +132,8 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose)
   // print out properties of the model
   if (verbose) 
   {
-    cout << "#\n####### SNR MODEL ##########\n";
+    if (snr) cout << "#\n####### 1D SNR MODEL ##########\n";
+    else cout << "#\n####### 1D STANDARD MODEL ##########\n";
     cout << "# n_x = " << n_zones << endl;
     cout << "# elems (n=" << n_elems << ") ";
     for (int k=0;k<n_elems;k++) cout << elems_Z[k] << "." << elems_A[k] << " ";

@@ -25,7 +25,7 @@ private:
   std::vector<double> vol;
   
   // functions for reading in files
-  void read_SNR_file(std::ifstream &, int);
+  void read_SNR_file(std::ifstream &, int, int);
 
 
 public:
