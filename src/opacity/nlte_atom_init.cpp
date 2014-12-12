@@ -13,7 +13,7 @@
 
 namespace pc = physical_constants;
 
-int nlte_atom::init(std::string fname, int z, locate_array ng)
+int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
 {
   // set atomic number
   this->atomic_number = z;
@@ -97,9 +97,12 @@ int nlte_atom::init(std::string fname, int z, locate_array ng)
   // set other parameters
   for (int i=0;i<n_levels;i++) 
   { 
-    levels[i].id    = i;
-    levels[i].n     = 0.0;
-    levels[i].E_ion = ions[levels[i].ion].chi - levels[i].E;
+    levels[i].n         = 0.0;
+    levels[i].E_ion     = ions[levels[i].ion].chi - levels[i].E;
+
+    // set global ID (among all atoms being used)
+    levels[i].globalID  = levID;
+    levID += 1;
 
     // set 0 g's to 1
     if (levels[i].g == 0) levels[i].g = 1;

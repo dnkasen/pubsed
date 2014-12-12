@@ -16,7 +16,7 @@ ParticleFate transport::do_scatter(particle *p, double eps)
 
   // do photon interaction physics
   if (p->type == photon)
-  {	
+  {
     // debug
     isotropic_scatter(p,0);
     return moving;
@@ -175,13 +175,13 @@ void transport::compton_scatter(particle *p)
 void transport::isotropic_scatter(particle *p, int redist)
 {
   double V[3];
-  //grid->velocity_vector(p->ind,p->x,V);
+  grid->velocity_vector(p->ind,p->x,V);
 
   // debug
-  double t_secs = t_now_;
-  V[0] = p->x[0]/t_secs;
-  V[1] = p->x[1]/t_secs;
-  V[2] = p->x[2]/t_secs; 
+  //double t_secs = t_now_;
+  //V[0] = p->x[0]/t_secs;
+  //V[1] = p->x[1]/t_secs;
+  //V[2] = p->x[2]/t_secs; 
 
   // local velocity vector
   double vdotD  = V[0]*p->D[0] + V[1]*p->D[1] + V[2]*p->D[2];

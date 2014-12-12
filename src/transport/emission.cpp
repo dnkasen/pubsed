@@ -196,7 +196,9 @@ void transport::emit_inner_source(double dt)
   { 
     double nu  = nu_grid.center(j);
     double dnu = nu_grid.delta(j);
-    double bb  = blackbody_nu(T_core,nu)*dnu;
+    double bb;
+    if (T_core == 0) bb = 1;
+    else bb = blackbody_nu(T_core,nu)*dnu;
     core_emis.set_value(j,bb); 
   }
   core_emis.normalize();

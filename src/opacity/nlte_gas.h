@@ -5,6 +5,20 @@
 #include "locate_array.h"
 #include <string>
 
+
+// structure to hold a list of line data
+struct nlteGlobalLine 
+{
+  double nu;                 // line center fequency
+  double f_osc;              // oscillator strength
+  double g1_over_g2;         // ratio of statistical weights
+  int    ion_weight;         // mean atomic mass of the ion
+  int    iLowerLevel;        // global index of lower level
+  int    iUpperLevel;        // global index of upper level
+  int    iAtom;
+  int    iIndex;
+};
+
 class nlte_gas
 {
  
@@ -16,12 +30,15 @@ class nlte_gas
   locate_array nu_grid;
   int verbose;
 
-  std::vector<std::vector<int> > nlteLineList_atom_;
-  std::vector<std::vector<int> > nlteLineList_ID_;
-  std::vector<int> nlteLineList_nlines_;
-  
+  // global list of all levels of all atoms
+  std::vector <int> globalLevelList_atom_;
+  std::vector <int> globalLevelList_index_;
+
 
  public:
+
+  // global list of all lines of all atoms
+  std::vector <nlteGlobalLine> globalLineList_;
 
   std::vector<double>     mass_frac;  // vector of mass fractions
   std::vector<int>           elem_Z;  // vector of element atomic numbers
@@ -85,6 +102,21 @@ class nlte_gas
   //-----------------------------------------------------------------
   void set_mass_fractions(std::vector<double>);
   
+  //-----------------------------------------------------------------
+  // get the data for the global line data
+  // input: vectors that will be resized and set to line data
+  //   std::vector<double> nu         frequncy of lines
+  //   std::vector<double> f_osc,     oscillator strength of lines
+  //   std::vector<double> g1_over_g2 ratio of statisical weights
+  //   std::vector<int> lowerLevel    global index of lower level
+  //   std::vector<int> upperLevel)   global index of upper level
+  //-----------------------------------------------------------------
+  void get_global_line_data(std::vector<double> nu,
+			    std::vector<double> f_osc,
+			    std::vector<double> g1_over_g2,
+			    std::vector<int> iLowerLevel,
+			    std::vector<int> iUpperLevel);
+
   
   //***********************************************************
   // BASIC FUNCTIONALITY

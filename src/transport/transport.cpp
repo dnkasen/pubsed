@@ -9,7 +9,7 @@
 
 #include "transport.h"
 #include "ParameterReader.h"
-
+#include "VoigtProfile.h"
 #include "physical_constants.h"
 
 using std::cout;
@@ -76,14 +76,16 @@ void transport::init(ParameterReader* par, grid_general *g)
   photoion_opac.resize(grid->n_zones);
   
 
-  // initialize nlte_gas
+  // initialize nlte_gas class
   std::string atomdata = params_->getScalar<string>("data_atomic_file");  
-  gas.init(atomdata,grid->elems_Z,grid->elems_A,nu_grid);
+  gas.initialize(atomdata,grid->elems_Z,grid->elems_A,nu_grid);
   std::string fuzzfile = params_->getScalar<string>("data_fuzzline_file");  
   int nl = gas.read_fuzzfile(fuzzfile);
   if (verbose) std::cout << "# From fuzzfile \"" << fuzzfile << "\" " << 
 		 nl << " lines used\n";
   
+  
+
   // gas opacity flags and parameters
   gas.epsilon_      = params_->getScalar<double>("opacity_epsilon");
   gas.grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
@@ -97,6 +99,8 @@ void transport::init(ParameterReader* par, grid_general *g)
     = params_->getScalar<int>("opacity_bound_free");
   gas.use_free_free_opacity  
     = params_->getScalar<int>("opacity_free_free");
+  
+  
   
 
   // initialize time
@@ -168,6 +172,8 @@ ParticleFate transport::propagate(particle &p, double dt)
   enum ParticleEvent {scatter, boundary, tstep};
   ParticleEvent event;
   
+  VoigtProfile voigt;
+
   // To be sure, get initial position of the particle 
   ParticleFate  fate = moving;
   p.ind = grid->get_zone(p.x);
@@ -193,23 +199,44 @@ ParticleFate transport::propagate(particle &p, double dt)
     //double dshift = dshift_comoving_to_lab(&p);
     double dshift = dshift_lab_to_comoving(&p);
 
-    // get local opacity and absorption fraction (epsilon)
-    double opac, eps;
-    get_opacity(p,dshift,opac,eps);
+    // get continuum opacity and absorption fraction (epsilon)
+    double continuum_opac_cmf, eps_absorb_cmf;
+    get_opacity(p,dshift,continuum_opac_cmf,eps_absorb_cmf);
+    
+    // get line data
+    double nu_0       = gas.globalLineList_[576].nu;
+    double f_osc      = gas.globalLineList_[576].f_osc;
+    double g1_over_g2 = gas.globalLineList_[576].g1_over_g2;
+    double m_ion      = pc::m_p*gas.globalLineList_[576].ion_weight;
+    
+    // calculate line profile
+    double v_thermal    = sqrt(2*pc::k*zone->T_gas/m_ion);
+    double dnu_doppler  = nu_0*v_thermal/pc::c;
+    double line_x       = (nu_0 - p.nu*dshift)/dnu_doppler;
+    double line_profile = pc::pi*voigt.getProfile(line_x,0.1)/dnu_doppler;
+
+    // get level densities
+    double n_dens  = zone->rho/pc::m_p;
+   
+    // calculate line cross-section
+    double line_cs = line_profile*pc::sigma_tot*f_osc;
+    double line_opac_cmf = n_dens*line_cs;
+    //std::cout << nu_0 << " " << pc::c/nu_0  << " " << f_osc << " " << v_thermal << "\n";
     
     // convert opacity from comoving to lab frame for the purposes of 
     // determining the interaction distance in the lab frame
     // This corresponds to equation 90.8 in Mihalas&Mihalas. You multiply 
     // the comoving opacity by nu_0 over nu, which is why you
     // multiply by dshift instead of dividing by dshift here
-    opac = opac*dshift;
-
+    double tot_opac_cmf      = continuum_opac_cmf + line_opac_cmf;
+    double tot_opac_labframe = tot_opac_cmf*dshift;
+    
     // random optical depth to next interaction
     double tau_r = -1.0*log(1 - gsl_rng_uniform(rangen));
     
     // step size to next interaction event
-    double d_sc  = tau_r/opac;
-    if (opac == 0) d_sc = std::numeric_limits<double>::infinity();
+    double d_sc  = tau_r/tot_opac_labframe;
+    if (tot_opac_labframe == 0) d_sc = std::numeric_limits<double>::infinity();
     if (d_sc < 0) cout << "ERROR: negative interaction distance!\n";
   
     // find distance to end of time step
@@ -230,14 +257,10 @@ ParticleFate transport::propagate(particle &p, double dt)
     double this_E = p.e*this_d; 
     zone->e_rad  += this_E; 
 
-    // shift opacity back to comoving frame for energy and momentum exchange. 
-    // Radiation energy is still lab frame
-    opac = opac / dshift;
-
     // store absorbed energy in *comoving* frame 
     // (will turn into rate by dividing by dt later)
     // Extra dshift definitely needed here (two total)
-    zone->e_abs  += this_E*dshift*(opac)*eps*dshift; 
+    zone->e_abs  += this_E*dshift*(continuum_opac_cmf)*eps_absorb_cmf*dshift; 
 
     // put back in radiation force tally here
     // fx_rad =
@@ -262,8 +285,10 @@ ParticleFate transport::propagate(particle &p, double dt)
     // ---------------------------------
     if (fate == moving) 
     {
-      if (event == scatter)  fate = do_scatter(&p,eps);
-      else if (event == tstep) fate = stopped;
+      if (event == scatter) 
+	fate = do_scatter(&p,eps_absorb_cmf);
+      else if (event == tstep) 
+	fate = stopped;
     }
   }
 

@@ -46,7 +46,7 @@ struct nlte_line
 
 struct nlte_level
 {
-  int   id;             // id 
+  int   globalID;       // global id 
   int  ion;             // ionization state (0 = neutral)
   int   ic;             // index of level we ionize to
   int    g;             // statistical weight
@@ -115,7 +115,7 @@ public:
   
   // Constructor and Init
   nlte_atom();
-  int init(std::string, int, locate_array);
+  int initialize(std::string, int, locate_array, int&);
   int read_fuzzfile(std::string);
 
   // solve state

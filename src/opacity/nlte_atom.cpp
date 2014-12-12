@@ -268,8 +268,7 @@ int nlte_atom::solve_nlte(double T,double ne,double time)
   // debug; I'm going to set line J's as BB
   for (int i=0;i<n_lines;i++)
   {
-    double lam = lines[i].lam;
-    double nu  = pc::c/(lam*pc::angs_to_cm);
+    double nu  = lines[i].nu;
     double W  = 1.0;
     lines[i].J = W*blackbody_nu(T,nu);
   }
@@ -390,7 +389,7 @@ double nlte_atom::compute_sobolev_tau(int i, double time)
     return 0;
   }
 
-  double lam   = lines[i].lam*pc::angs_to_cm;
+  double lam   = pc::c/lines[i].nu;
   double tau   = nl*n_dens*pc::sigma_tot*lines[i].f_lu*time*lam;
   // correction for stimulated emission
   tau = tau*(1 - nu*gl/(nl*gu));
@@ -482,7 +481,7 @@ void nlte_atom::print()
   for (int i=0;i<n_levels;i++)
   {
     printf("%5d %4d %12.3e %5d %12.3e %12.3e %5d\n",
-	   levels[i].id,levels[i].ion,
+	   levels[i].globalID,levels[i].ion,
 	   levels[i].E,levels[i].g,levels[i].n,
 	   levels[i].b,levels[i].ic);
   }
@@ -492,7 +491,7 @@ void nlte_atom::print()
   for (int i=0;i<n_lines;i++)
   {
     printf("%8d %4d %4d %12.3e %12.3e %12.3e %12.3e %12.3e\n",
-    	   i,lines[i].ll,lines[i].lu,lines[i].lam,lines[i].f_lu,
+    	   i,lines[i].ll,lines[i].lu,lines[i].nu,lines[i].f_lu,
     	   lines[i].A_ul,lines[i].B_ul,lines[i].B_lu);
   }
 
@@ -504,7 +503,7 @@ void nlte_atom::print()
     double nl = levels[ll].n;
 
     printf("%8d %4d %4d %12.3e %12.3e %12.3e\n",
-    	   i,lines[i].ll,lines[i].lu,lines[i].lam,
+    	   i,lines[i].ll,lines[i].lu,lines[i].nu,
 	   lines[i].tau,nl);
   }
 

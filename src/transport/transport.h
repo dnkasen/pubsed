@@ -16,6 +16,17 @@
 
 using std::vector;
 
+
+/* class RelativityData */
+/* { */
+/*   double gamma; */
+/*   double beta; */
+/*   double V[3]; */
+/*   double D[3]; */
+/*   double v_dot_D; */
+/* }; */
+  
+
 class transport
 {
 
@@ -76,13 +87,17 @@ class transport
   // the radiation quantities in the zone
   vector <real> e_rad;
   
-  // line data
+  // line data, has dimensions n_lines
   vector <real> line_nu_;
   vector <int>  line_lowerLevel_;
   vector <int>  line_upperLevel_;
-  vector <real> line_opacityMultiplier_;
-    vector< vector<real> > line_Jbar_;
-  vector< vector<real> > level_population;
+  vector <real> line_f_osc_;
+  vector <real> line_Jbar_;
+
+  // line mean intensity
+  //vector< vector<real> > J_line;
+  // level populations, has dimensions n_levels
+  //vector< vector<real> > level_population;
 
 
   // opacity functions

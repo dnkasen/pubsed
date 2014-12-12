@@ -19,7 +19,7 @@ int main(int argc, char **argv)
   // initialize MPI parallelism
   MPI_Init( &argc, &argv );
 
-  Expansion_Opacity_Test(atomdata);
+  //Expansion_Opacity_Test(atomdata);
   LTE_Ionization_Test(atomdata);
 
 }
