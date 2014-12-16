@@ -61,20 +61,6 @@ void transport::init(ParameterReader* par, grid_general *g)
   std::vector<double>gng = params_->getVector<double>("gamma_nu_grid");  
   gamma_spectrum.init(stg,sng,nmu,nphi);
 
-  // initalize and allocate space for opacities
-  abs_opacity_.resize(grid->n_zones);
-  scat_opacity_.resize(grid->n_zones);
-  emissivity_.resize(grid->n_zones);
-
-  for (int i=0; i<grid->n_zones;  i++)
-  {
-    abs_opacity_[i].resize(nu_grid.size());
-    scat_opacity_[i].resize(nu_grid.size());
-    emissivity_[i].resize(nu_grid.size());
-  }
-  compton_opac.resize(grid->n_zones);
-  photoion_opac.resize(grid->n_zones);
-  
 
   // initialize nlte_gas class
   std::string atomdata = params_->getScalar<string>("data_atomic_file");  
@@ -84,9 +70,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   if (verbose) std::cout << "# From fuzzfile \"" << fuzzfile << "\" " << 
 		 nl << " lines used\n";
   
-  
-
-  // gas opacity flags and parameters
+  // set gas opacity flags and parameters
   gas.epsilon_      = params_->getScalar<double>("opacity_epsilon");
   gas.grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
   gas.use_electron_scattering_opacity 
@@ -99,8 +83,33 @@ void transport::init(ParameterReader* par, grid_general *g)
     = params_->getScalar<int>("opacity_bound_free");
   gas.use_free_free_opacity  
     = params_->getScalar<int>("opacity_free_free");
-  
-  
+
+  // parameters for treatment of detailed lines
+  line_velocity_width_ = params_->getScalar<double>("opacity_line_velocity_width");
+  use_detailed_lines_  = params_->getScalar<double>("opacity_lines");
+
+  // get line frequencies and ion masses
+  line_nu_ = gas.get_line_frequency_list();
+  line_sqrt_Mion_ = gas.get_line_ion_mass_list();
+  for (int i=0;i<line_sqrt_Mion_.size();i++)
+    line_sqrt_Mion_[i] = sqrt(line_sqrt_Mion_[i]);
+
+  // allocate and initalize space for opacities
+  n_lines_ = gas.get_number_of_lines();
+  line_opacity_.resize(grid->n_zones);
+  abs_opacity_.resize(grid->n_zones);
+  scat_opacity_.resize(grid->n_zones);
+  emissivity_.resize(grid->n_zones);
+
+  for (int i=0; i<grid->n_zones;  i++)
+  {
+    line_opacity_[i].resize(n_lines_);
+    abs_opacity_[i].resize(nu_grid.size());
+    scat_opacity_[i].resize(nu_grid.size());
+    emissivity_[i].resize(nu_grid.size());
+  }
+  compton_opac.resize(grid->n_zones);
+  photoion_opac.resize(grid->n_zones);
   
 
   // initialize time
@@ -198,31 +207,53 @@ ParticleFate transport::propagate(particle &p, double dt)
     // determine the doppler shift from comoving to lab
     //double dshift = dshift_comoving_to_lab(&p);
     double dshift = dshift_lab_to_comoving(&p);
+    double nu_cmf = p.nu*dshift;
 
     // get continuum opacity and absorption fraction (epsilon)
     double continuum_opac_cmf, eps_absorb_cmf;
     get_opacity(p,dshift,continuum_opac_cmf,eps_absorb_cmf);
-    
-    // get line data
-    double nu_0       = gas.globalLineList_[576].nu;
-    double f_osc      = gas.globalLineList_[576].f_osc;
-    double g1_over_g2 = gas.globalLineList_[576].g1_over_g2;
-    double m_ion      = pc::m_p*gas.globalLineList_[576].ion_weight;
-    
-    // calculate line profile
-    double v_thermal    = sqrt(2*pc::k*zone->T_gas/m_ion);
-    double dnu_doppler  = nu_0*v_thermal/pc::c;
-    double line_x       = (nu_0 - p.nu*dshift)/dnu_doppler;
-    double line_profile = pc::pi*voigt.getProfile(line_x,0.1)/dnu_doppler;
 
-    // get level densities
-    double n_dens  = zone->rho/pc::m_p;
-   
-    // calculate line cross-section
-    double line_cs = line_profile*pc::sigma_tot*f_osc;
-    double line_opac_cmf = n_dens*line_cs;
-    //std::cout << nu_0 << " " << pc::c/nu_0  << " " << f_osc << " " << v_thermal << "\n";
-    
+    // ------------------------------------------------
+    // get total line opacity
+    // ------------------------------------------------
+    double line_opac_cmf = 0; 
+    if (use_detailed_lines_)
+    {
+      // line width beta = v/c
+      double beta_line;
+      if (line_velocity_width_ != 0) 
+	beta_line = line_velocity_width_/pc::c;
+      else
+	beta_line = sqrt(2*pc::k*zone->T_gas/pc::m_p)/pc::c;
+      
+      // find the nearest line
+      int iLine =  upper_bound(line_nu_.begin(), line_nu_.end(), nu_cmf)
+	- line_nu_.begin();
+ 
+      // look for lines in front, add to opacity
+      for (int i = iLine;i < n_lines_;i++)
+      {
+	double dnu_t   = line_nu_[i]*beta_line;
+	if (!line_velocity_width_) dnu_t = dnu_t/line_sqrt_Mion_[i];
+	double line_x  = (line_nu_[i] - nu_cmf)/dnu_t;
+	if (line_x > 5) break;
+	double line_profile = voigt.getProfile(line_x,1e-4)/dnu_t;
+	line_opac_cmf += line_profile*line_opacity_[p.ind][i];
+      }
+      // look for lines behind, add to opacity
+      for (int i = iLine-1;i >=0; i--)
+      {
+	double dnu_t   = line_nu_[i]*beta_line;
+	if (!line_velocity_width_) dnu_t = dnu_t/line_sqrt_Mion_[i];
+	double line_x  = (nu_cmf - line_nu_[i])/dnu_t*line_sqrt_Mion_[i];
+	if (line_x > 5) break;
+	double line_profile = voigt.getProfile(line_x,1e-4)/dnu_t;
+	line_opac_cmf += line_profile*line_opacity_[p.ind][i];
+      }
+
+
+    }
+
     // convert opacity from comoving to lab frame for the purposes of 
     // determining the interaction distance in the lab frame
     // This corresponds to equation 90.8 in Mihalas&Mihalas. You multiply 
@@ -252,6 +283,8 @@ ParticleFate transport::propagate(particle &p, double dt)
       {event = boundary;   this_d = d_bn;}
     else 
       {event = tstep;      this_d = d_tm; }
+
+    //    std::cout << d_sc << " " << d_bn << " " << nu_cmf << " " << line_opac_cmf << "\n";
 
     // tally in contribution to zone's radiation energy (both *lab* frame)
     double this_E = p.e*this_d; 
@@ -285,8 +318,8 @@ ParticleFate transport::propagate(particle &p, double dt)
     // ---------------------------------
     if (fate == moving) 
     {
-      if (event == scatter) 
-	fate = do_scatter(&p,eps_absorb_cmf);
+      if (event == scatter)   
+	fate = do_scatter(&p,eps_absorb_cmf);  
       else if (event == tstep) 
 	fate = stopped;
     }

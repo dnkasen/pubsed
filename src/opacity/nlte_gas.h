@@ -137,6 +137,39 @@ class nlte_gas
   //-----------------------------------------------------------
   double get_ionization_state();
 
+  //-----------------------------------------------------------
+  // return the number of total global lines (from all ions)
+  //-----------------------------------------------------------
+  int get_number_of_lines()
+  {
+    return globalLineList_.size();
+  }
+
+  //-----------------------------------------------------------
+  // return a vector listing all of the ordered line nu's
+  //-----------------------------------------------------------
+  std::vector<double> get_line_frequency_list()
+  {
+    std::vector<double> nu;
+    for (int i=0;i<globalLineList_.size();i++)
+      nu.push_back(globalLineList_[i].nu);
+    return nu;
+  }
+
+
+  //-----------------------------------------------------------
+  // return a vector listing all of the line ion masses
+  //-----------------------------------------------------------
+  std::vector<double> get_line_ion_mass_list()
+  {
+    std::vector<double> m;
+    for (int i=0;i<globalLineList_.size();i++)
+      m.push_back(elem_A[globalLineList_[i].iAtom]);
+    return m;
+  }
+
+
+
   //***********************************************************
   // OPACITIES AND EMISSIVITIES
   //***********************************************************
@@ -145,6 +178,7 @@ class nlte_gas
   double electron_scattering_opacity();
   void line_expansion_opacity(std::vector<double>&);
   void fuzz_expansion_opacity(std::vector<double>&);
+  void get_line_opacities(std::vector<double>&);
 
   void print();
 };

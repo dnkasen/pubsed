@@ -168,3 +168,41 @@ void nlte_gas::fuzz_expansion_opacity(std::vector<double>& opac)
 }
 
 //---------------
+
+
+
+//----------------------------------------------------------------
+// Calculate a binned expansion opacity based on nlte line data
+// You must multiply this by the line profile phi (units Hz^-1)
+// in order to get the exctinction coefficient
+// Passed:
+//   opac -- double vector of the same size of the frequency
+//   grid, which will be filled up with the opacities
+// UNITS are cm^{-1} Hz 
+// So this is really an extinction coefficient
+//----------------------------------------------------------------
+void nlte_gas::get_line_opacities(std::vector<double>& opac)
+{
+  int i = 0;
+
+  std::vector<nlteGlobalLine>::iterator iLine = globalLineList_.begin();
+  while (iLine != globalLineList_.end())
+  {
+    int iAtom = iLine->iAtom;
+    int iLo   = iLine->iLowerLevel;
+    int iHi   = iLine->iUpperLevel;
+    double gr = iLine->g1_over_g2;
+    
+    double nd = atoms[iAtom].n_dens;
+    double n1 = nd*atoms[iAtom].levels[iLo].n;
+    double n2 = nd*atoms[iAtom].levels[iHi].n;
+  
+    double line_cs = pc::sigma_tot*iLine->f_osc;
+    opac[i] = line_cs*n1*(1 - gr*n2/n1);
+    if (n1 == 0) opac[i] = 0.0;
+
+    i++;
+    iLine++;
+  }
+
+}

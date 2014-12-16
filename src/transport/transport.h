@@ -16,7 +16,6 @@
 
 using std::vector;
 
-
 /* class RelativityData */
 /* { */
 /*   double gamma; */
@@ -52,6 +51,7 @@ class transport
   int    steady_state;
   int    radiative_eq;
   int    verbose;
+  int    use_detailed_lines_;
 
   // current time in simulation
   double t_now_;
@@ -86,19 +86,19 @@ class transport
 
   // the radiation quantities in the zone
   vector <real> e_rad;
-  
-  // line data, has dimensions n_lines
-  vector <real> line_nu_;
-  vector <int>  line_lowerLevel_;
-  vector <int>  line_upperLevel_;
-  vector <real> line_f_osc_;
-  vector <real> line_Jbar_;
 
+  // -----------------------------------------
+  // number of lines
+  int n_lines_;
+  // order list of the frequencies of each line
+  vector<real> line_nu_;
+  // the sqrt of ion mass for each line (needed for doppler width)
+  vector<real> line_sqrt_Mion_;
   // line mean intensity
-  //vector< vector<real> > J_line;
-  // level populations, has dimensions n_levels
-  //vector< vector<real> > level_population;
-
+  vector< vector<real> > line_J_;
+  // line extinction; multiply by 
+  vector< vector<real> > line_opacity_;
+  double line_velocity_width_;
 
   // opacity functions
   void   get_opacity(particle&, double, double&, double&);

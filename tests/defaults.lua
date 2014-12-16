@@ -42,6 +42,7 @@ opacity_line_expansion      = 0
 opacity_fuzz_expansion      = 0
 opacity_bound_free          = 0
 opacity_free_free           = 0
+opacity_lines               = 0
 
 -- output spectrum information
 spectrum_name      = "spectrum";

@@ -87,10 +87,10 @@ void nlte_gas::initialize
 
       int ll = atoms[i].lines[j].ll;
       int lu = atoms[i].lines[j].lu;
-      int global_ll = atoms[i].levels[ll].globalID;
-      int global_lu = atoms[i].levels[lu].globalID;
-      line.iLowerLevel = global_ll;
-      line.iUpperLevel = global_lu;
+      //int global_ll = atoms[i].levels[ll].globalID;
+      //int global_lu = atoms[i].levels[lu].globalID;
+      line.iLowerLevel = ll; //global_ll;
+      line.iUpperLevel = lu; //global_lu;
       
       // statstical weights
       int g1 = atoms[i].levels[ll].g;

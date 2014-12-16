@@ -12,6 +12,9 @@ void transport::set_opacity()
 {
   // tmp vector to hold emissivity
   vector<double> emis(nu_grid.size());
+  
+  // tmp vector to hold line stuff
+  vector<double> lopac(n_lines_);
 
   // loop over all zones
   for (int i=0;i<grid->n_zones;i++)
@@ -34,12 +37,15 @@ void transport::set_opacity()
     
     // calculate the opacities/emissivities
     gas.computeOpacity(abs_opacity_[i],scat_opacity_[i],emis);
-  
+    
     // save and normalize emissivity cdf
     for (int j=0;j<nu_grid.size();j++) emissivity_[i].set_value(j,emis[j]);
     emissivity_[i].normalize();
   
-
+    // set line opacities
+    if (use_detailed_lines_)
+      gas.get_line_opacities(line_opacity_[i]);
+    
     //------------------------------------------------------
     // gamma-ray opacity (compton + photo-electric)
     //------------------------------------------------------
