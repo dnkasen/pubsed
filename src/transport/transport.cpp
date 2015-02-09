@@ -85,9 +85,9 @@ void transport::init(ParameterReader* par, grid_general *g)
     = params_->getScalar<int>("opacity_free_free");
 
   // parameters for treatment of detailed lines
-  line_velocity_width_ = params_->getScalar<double>("opacity_line_velocity_width");
   use_detailed_lines_  = params_->getScalar<double>("opacity_lines");
-
+  line_velocity_width_ = params_->getScalar<double>("line_velocity_width");
+  
   // get line frequencies and ion masses
   line_nu_ = gas.get_line_frequency_list();
   line_sqrt_Mion_ = gas.get_line_ion_mass_list();
