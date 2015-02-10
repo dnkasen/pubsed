@@ -1,3 +1,4 @@
+#include <limits>
 #include "nlte_atom.h"
 #include "physical_constants.h"
 #include <stdlib.h>

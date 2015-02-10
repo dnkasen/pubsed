@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include "physical_constants.h"
 #include "nlte_gas.h"
 #include <iostream>
