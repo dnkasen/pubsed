@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import os
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib.backends.backend_pdf import PdfPages
 import importlib
 import time
