@@ -1,6 +1,7 @@
 #ifndef _NLTE_ATOM_H
 #define _NLTE_ATOM_H 1
 
+#include <string>
 #include <vector>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_permutation.h>
