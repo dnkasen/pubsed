@@ -14,11 +14,12 @@ import time
 ## executable directory and file
 exec_dir   = "../src/EXEC/"
 executable = "gomc"
+runcommand = "mpirun -np 2 ./gomc"
 
 outfile = 'test_results_' + time.strftime("%m-%d-%y") + '.pdf'
 pdf = PdfPages(outfile)
 print 'OUTPUT WRITTEN TO: ' + outfile
-
+print 'run command: ' + runcommand
 ## plot to screen
 plotup = False
 
@@ -42,7 +43,7 @@ def run_one(direc,efile):
     os.system("cp " + exec_dir + efile + " " + direc)
     os.chdir(direc)
     runtest = importlib.import_module(direc + ".run_test") 
-    runtest.run(pdf,plotup)
+    runtest.run(pdf,plotup,runcommand)
     os.chdir("../")
 #############################################
 

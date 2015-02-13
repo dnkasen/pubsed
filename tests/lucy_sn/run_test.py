@@ -1,12 +1,12 @@
 import os
 import pylab as py
 
-def run(pdf,plotup):
+def run(pdf,plotup,runcommand):
 
     ###########################################
     # run the code
     ###########################################
-    os.system("./gomc param_1D.lua")
+    os.system(runcommand)
        
     ###########################################
     # compare the output

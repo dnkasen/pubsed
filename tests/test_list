@@ -3,8 +3,8 @@
 
 ## sedona main codes tests 
 #core_emit_into_vacuum  
-#lucy_test         
-silicon_atmosphere
+lucy_sn         
+#silicon_atmosphere
 
 ## sedona modules tests 
 #test_opacity        

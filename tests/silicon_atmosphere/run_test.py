@@ -1,12 +1,12 @@
 import os
 import pylab as py
 
-def run(pdf,plotup):
+def run(pdf,plotup,runcommand):
 
     ###########################################
     # run the code
     ###########################################
-    os.system("./gomc")
+    os.system(runcommand)
      
     ###########################################
     # compare the output
@@ -18,7 +18,7 @@ def run(pdf,plotup):
     lam = 3e10/x*1e8
     ff = f/lam**2
     b = py.interp(8000.0,lam,ff)
-    ff = ff/b*1.2
+    ff = ff/b
     py.plot(lam,ff)
 
     ls,fs,es = py.loadtxt('fort.11',unpack=1)

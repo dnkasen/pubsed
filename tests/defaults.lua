@@ -44,6 +44,10 @@ opacity_bound_free          = 0
 opacity_free_free           = 0
 opacity_lines               = 0
 
+-- line treatment parameters
+line_velocity_width         = 0
+line_profile                = "voigt"
+
 -- output spectrum information
 spectrum_name      = "spectrum";
 spectrum_time_grid = {0,1,1}

@@ -118,9 +118,10 @@ void transport::initialize_particles(int init_particles)
 void transport::emit_radioactive(double dt)
 {
   // number of radioctive particles to emit
-  int n_emit = params_->getScalar<int>("particles_n_emit_radioactive");
-  if (n_emit == 0) return;
-
+  int total_n_emit = params_->getScalar<int>("particles_n_emit_radioactive");
+  if (total_n_emit == 0) return;
+  int n_emit = total_n_emit/(1.0*MPI_nprocs);
+  
   radioactive radio;
   double gfrac;
 
@@ -180,8 +181,9 @@ void transport::emit_inner_source(double dt)
 {
   // get the emisison propoerties from lua file
   // this could be set to be a function if we want
-  int n_emit    = params_->getScalar<int>("core_n_emit");
-  if (n_emit == 0) return;
+  int total_n_emit    = params_->getScalar<int>("core_n_emit");
+  if (total_n_emit == 0) return;
+  int n_emit = total_n_emit/(1.0*MPI_nprocs);
   double L_core = params_->getScalar<double>("core_luminosity");
   double T_core = params_->getScalar<double>("core_temperature");
   r_core_  = params_->getScalar<double>("core_radius");
@@ -258,7 +260,8 @@ void transport::emit_inner_source(double dt)
     particles.push_back(p);
   }
 
-  if (verbose) printf("# Core emitted %d particles\n",n_emit);
+  if (verbose) 
+    printf("# Core emitted %d particles (%d per proc)\n",total_n_emit,n_emit);
 }
 
 

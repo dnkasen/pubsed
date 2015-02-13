@@ -2,12 +2,12 @@ import os
 import pylab as py
 
 
-def run(pdf,plotup):
+def run(pdf,plotup,runcommand):
 
     ###########################################
     # run the code
     ###########################################
-    os.system("./gomc")
+    os.system(runcommand)
      
     ###########################################
     # compare the output
@@ -26,18 +26,19 @@ def run(pdf,plotup):
     r0 = 0.5e15
 
     data = py.loadtxt('ray_00001')
-    r = data[:,0]
+    r = data[:,0] 
     trad = data[:,4]
     tgas = data[:,3]
 
     
     # dillution factor W
-    w    = 0.5*(1 - (1 - r0**2/r**2)**0.5)
-    Trad = (L*w/(4.0*pi*r0**2)/sb)**0.25
+    rr = py.arange(r0,max(r),0.05*r0)
+    w    = 0.5*(1 - (1 - r0**2/rr**2)**0.5)
+    TW = (L*w/(4.0*pi*r0**2)/sb)**0.25
 
     py.plot(r,trad,'o',color='black')
     py.plot(r,tgas,'--',color='blue')
-    py.plot(r,Trad,color='red',linewidth=2)
+    py.plot(rr,TW,color='red',linewidth=2)
     py.legend(['sedona Trad','sedona Tgas','analytic solution'])
     py.title('core into vacuum test: radiation field')
     py.xlabel('radius (cm)')
