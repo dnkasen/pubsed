@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pylab as py
 
 
@@ -14,6 +15,7 @@ def run(pdf,plotup,runcommand):
     ###########################################
     py.clf()
 
+
     h   = 6.6260755e-27    # planck's constant (ergs-s)
     c   = 2.99792458e10    # speed of light (cm/s)
     k   = 1.380658e-16     # boltzmann constant (ergs/K)
@@ -25,8 +27,13 @@ def run(pdf,plotup,runcommand):
     L  = 1e43
     r0 = 0.5e15
 
+<<<<<<< HEAD
     data = py.loadtxt('ray_00001')
     r = data[:,0] 
+=======
+    data = np.loadtxt('ray_00001')
+    r = data[:,0]
+>>>>>>> df6cd1a761d915b8439d52bbb78250963be09d0e
     trad = data[:,4]
     tgas = data[:,3]
 
@@ -51,7 +58,7 @@ def run(pdf,plotup,runcommand):
 
     #------------------------------------------
 
-    py.clf()
+#    py.clf()
     data = py.loadtxt('spectrum_1.dat')
     nu = data[:,0]
     y  = data[:,1]

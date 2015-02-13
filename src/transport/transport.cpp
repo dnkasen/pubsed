@@ -2,10 +2,12 @@
 #include <math.h>
 #include <string.h>
 #include <iostream>
+#include <sstream>
 #include <limits>
 #include <vector>
 #include <cassert>
 #include <list>
+#include <algorithm>
 
 #include "transport.h"
 #include "ParameterReader.h"
@@ -344,11 +346,14 @@ ParticleFate transport::propagate(particle &p, double dt)
 //--------------------------------------------------------------
 void transport::output_spectrum(int it)
 {
-  string base = "";
-  if (it > 0) base = "_" + std::to_string(it);
+  std::stringstream ss;
+  if (it < 0)  ss << "_0" << it;
+  else ss << "_" << it;
+  string base = ss.str();
+
   string specname = params_->getScalar<string>("spectrum_name");
   if (specname != "") 
-  {
+    {
     optical_spectrum.set_name(specname + base + ".dat");
     optical_spectrum.MPI_average();
     if (verbose) optical_spectrum.print();
