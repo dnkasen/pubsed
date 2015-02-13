@@ -1,5 +1,4 @@
 import os
-import numpy as np
 import pylab as py
 
 
@@ -27,17 +26,11 @@ def run(pdf,plotup,runcommand):
     L  = 1e43
     r0 = 0.5e15
 
-<<<<<<< HEAD
     data = py.loadtxt('ray_00001')
     r = data[:,0] 
-=======
-    data = np.loadtxt('ray_00001')
-    r = data[:,0]
->>>>>>> df6cd1a761d915b8439d52bbb78250963be09d0e
     trad = data[:,4]
     tgas = data[:,3]
 
-    
     # dillution factor W
     rr = py.arange(r0,max(r),0.05*r0)
     w    = 0.5*(1 - (1 - r0**2/rr**2)**0.5)
