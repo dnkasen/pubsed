@@ -21,7 +21,7 @@ def run(pdf,plotup,runcommand):
     ff = ff/b
     py.plot(lam,ff)
 
-    ls,fs,es = py.loadtxt('fort.11',unpack=1)
+    ls,fs,es = py.loadtxt('synow_spectrum.dat',unpack=1)
     b = py.interp(8000,ls,fs)
     fs = fs/b
 
