@@ -1,6 +1,6 @@
-defaults_file = "/Users/kasen/codes/sedona6/tests/defaults.lua"
+defaults_file = "../defaults.lua"
 grid_type  = "grid_1D_sphere"    -- grid geometry; must match input model
-model_file = "/Users/kasen/codes/sedona6/tests/silicon_atmosphere/constant.mod"        -- input model fil
+model_file = "constant.mod"        -- input model file
 
 -- helper variables
 days = 3600.0*24
