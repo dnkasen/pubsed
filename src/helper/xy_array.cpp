@@ -51,7 +51,7 @@ int xy_array::locate(double z)
 
   // check if we are off the ends of the array
   if (z >= x[bu]) return (int)x.size();
-  if (z <= y[bl]) return 0;
+  if (z <= x[bl]) return 0;
     
   // search the array for this index
   while (bu-bl > 1)
