@@ -137,6 +137,7 @@ void transport::step(double dt)
   
   // calculate opacities
   set_opacity();
+  if (verbose) cout << "# Calculated opacities\n";
 
   // emit new particles
   emit_particles(dt);

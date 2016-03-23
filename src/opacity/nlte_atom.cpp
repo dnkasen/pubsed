@@ -86,8 +86,6 @@ void nlte_atom::solve_lte(double T, double ne, double time)
     levels[i].b = 1;
   }
 
-  // calulate line taus and betas
-  compute_sobolev_taus(time);
 }
 
 
