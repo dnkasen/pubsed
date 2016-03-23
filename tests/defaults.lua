@@ -1,6 +1,6 @@
 
 -- atomic data files
-data_atomic_file   = "/Users/kasen/codes/sedona6/data/cmfgen_atomdata.hdf5"
+data_atomic_file   = "../../data/cmfgen_atomdata.hdf5"
 data_fuzzline_file = ""
 
 -- grid
