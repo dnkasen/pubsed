@@ -350,7 +350,9 @@ void transport::output_spectrum(int it)
   if (it < 0)  ss << "_0" << it;
   else ss << "_" << it;
   string base = ss.str();
+  if (!this->steady_state) base = "";
 
+  
   string specname = params_->getScalar<string>("spectrum_name");
   if (specname != "") 
     {
