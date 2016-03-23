@@ -1,0 +1,3 @@
+import compare
+
+compare.compare('')
