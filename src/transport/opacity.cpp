@@ -45,7 +45,7 @@ void transport::set_opacity()
     // set line opacities
     if (use_detailed_lines_)
       gas.get_line_opacities(line_opacity_[i]);
-    
+
     //------------------------------------------------------
     // gamma-ray opacity (compton + photo-electric)
     //------------------------------------------------------

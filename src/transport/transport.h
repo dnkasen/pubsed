@@ -45,6 +45,7 @@ class transport
   int MPI_nprocs;
   int MPI_myID;
   MPI_Datatype MPI_real;
+  int my_zone_start_, my_zone_stop_;
   
   // simulation parameters
   double step_size_;
@@ -57,6 +58,9 @@ class transport
   double t_now_;
   // inner boundary
   double r_core_;
+
+  // minimum and maximum temperatures
+  double temp_max_value_, temp_min_value_;
 
   // class to hold output spectrum
   spectrum_array optical_spectrum;

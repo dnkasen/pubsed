@@ -34,6 +34,10 @@ tstep_max_dt     = 1000.0
 tstep_min_dt     = 0.0
 tstep_max_delta  = 0.1
 
+-- limiting values for calculation
+limits_temp_max = 1e8
+limits_temp_min = 100
+
 -- opacity calculation defaults
 opacity_grey_opacity        = 0
 opacity_epsilon             = 1.0

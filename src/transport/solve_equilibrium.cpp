@@ -71,8 +71,8 @@ double transport::rad_eq_function(int c,double T)
 double transport::temp_brent_method(int cell)
 {  
   double brent_solve_tolerance = 1.0e-2;
-  double temp_range_min = 1;
-  double temp_range_max = 1.0e12;
+  double temp_range_min = temp_min_value_;
+  double temp_range_max = temp_max_value_;
 
   int ITMAX = 100;
   double EPS = 3.0e-8;
