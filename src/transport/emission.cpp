@@ -48,6 +48,9 @@ void transport::create_isotropic_particle
   // particle index
   p.ind = i;
 
+  // particle type
+  p.type = type;
+
   // random sample position in zone
   std::vector<double> rand;
   rand.push_back(gsl_rng_uniform(rangen));
@@ -130,7 +133,8 @@ void transport::emit_radioactive(double dt)
   for (int i=0;i<grid->n_zones;i++)
   {
     double vol  = grid->zone_volume(i);
-    double L_decay = radio.decay(grid->elems_Z,grid->elems_A,grid->z[i].X_gas,t_now_,&gfrac);
+    double L_decay = 
+      radio.decay(grid->elems_Z,grid->elems_A,grid->z[i].X_gas,t_now_,&gfrac);
     L_decay = grid->z[i].rho*L_decay*vol;
     grid->z[i].L_radio_emit = L_decay;
     L_tot += L_decay;
@@ -167,7 +171,7 @@ void transport::emit_radioactive(double dt)
     n_add_tot += n_add;
   }
   
-  if (verbose) cout << "# added " << n_add_tot << " radiaoctive particles\n";
+  if (verbose) cout << "# added " << n_add_tot << " radiaoctive particles per proc\n";
 }
 
 
