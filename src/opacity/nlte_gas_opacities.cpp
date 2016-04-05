@@ -101,9 +101,10 @@ void nlte_gas::line_expansion_opacity(std::vector<double>& opac)
   // loop over atoms
   for (int i=0;i<atoms.size();i++)
   {
-    //compute sobolev taus
+    //compute line sobolev taus
     atoms[i].compute_sobolev_taus(time);
-    
+
+    // loop over all lines
     for (int j=0;j<atoms[i].n_lines;j++)
     {
       // add in this line to the sum

@@ -213,6 +213,8 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
 
   // fclose(in);
 
+  // debug
+  return 0;
 
   //----------------------------------------------
   // allocate memory for arrays
