@@ -11,7 +11,6 @@
 
 #include "transport.h"
 #include "ParameterReader.h"
-#include "VoigtProfile.h"
 #include "physical_constants.h"
 
 using std::cout;
@@ -67,8 +66,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   optical_spectrum.init(stg,sng,nmu,nphi);
   std::vector<double>gng = params_->getVector<double>("gamma_nu_grid");  
   gamma_spectrum.init(stg,sng,nmu,nphi);
-
-
+  
   // initialize nlte_gas class
   std::string atomdata = params_->getScalar<string>("data_atomic_file");  
   gas.initialize(atomdata,grid->elems_Z,grid->elems_A,nu_grid);
@@ -107,10 +105,11 @@ void transport::init(ParameterReader* par, grid_general *g)
   abs_opacity_.resize(grid->n_zones);
   scat_opacity_.resize(grid->n_zones);
   emissivity_.resize(grid->n_zones);
-
+  
   for (int i=0; i<grid->n_zones;  i++)
   {
-    line_opacity_[i].resize(n_lines_);
+    if (use_detailed_lines_)
+      line_opacity_[i].resize(n_lines_);
     abs_opacity_[i].resize(nu_grid.size());
     scat_opacity_[i].resize(nu_grid.size());
     emissivity_[i].resize(nu_grid.size());
@@ -128,7 +127,10 @@ void transport::init(ParameterReader* par, grid_general *g)
 
   // allocate memory for core emission
   this->core_emis.resize(nu_grid.size());
- 
+
+
+
+  
 }
 
 
@@ -189,11 +191,10 @@ ParticleFate transport::propagate(particle &p, double dt)
   enum ParticleEvent {scatter, boundary, tstep};
   ParticleEvent event;
   
-  VoigtProfile voigt;
-
   // To be sure, get initial position of the particle 
   ParticleFate  fate = moving;
   p.ind = grid->get_zone(p.x);
+  
   if (p.ind == -1) {return absorbed;}
   if (p.ind == -2) {return  escaped;}
   
@@ -203,9 +204,12 @@ ParticleFate transport::propagate(particle &p, double dt)
   // pointer to current zone
   zone *zone = &(grid->z[p.ind]);
 
+  
   // propagate until this flag is set
   while (fate == moving)
   {
+
+    
     // set pointer to current zone
     zone = &(grid->z[p.ind]);
     
@@ -225,7 +229,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     // get total line opacity
     // ------------------------------------------------
     double line_opac_cmf = 0; 
-    if (use_detailed_lines_)
+    if ((p.type == photon)&&(use_detailed_lines_))
     {
       // line width beta = v/c
       double beta_line;
@@ -245,7 +249,7 @@ ParticleFate transport::propagate(particle &p, double dt)
 	if (!line_velocity_width_) dnu_t = dnu_t/line_sqrt_Mion_[i];
 	double line_x  = (line_nu_[i] - nu_cmf)/dnu_t;
 	if (line_x > 5) break;
-	double line_profile = voigt.getProfile(line_x,1e-4)/dnu_t;
+	double line_profile = voigt_profile_.getProfile(line_x,1e-4)/dnu_t;
 	line_opac_cmf += line_profile*line_opacity_[p.ind][i];
       }
       // look for lines behind, add to opacity
@@ -255,10 +259,9 @@ ParticleFate transport::propagate(particle &p, double dt)
 	if (!line_velocity_width_) dnu_t = dnu_t/line_sqrt_Mion_[i];
 	double line_x  = (nu_cmf - line_nu_[i])/dnu_t*line_sqrt_Mion_[i];
 	if (line_x > 5) break;
-	double line_profile = voigt.getProfile(line_x,1e-4)/dnu_t;
+	double line_profile = voigt_profile_.getProfile(line_x,1e-4)/dnu_t;
 	line_opac_cmf += line_profile*line_opacity_[p.ind][i];
       }
-
 
     }
 
@@ -276,8 +279,10 @@ ParticleFate transport::propagate(particle &p, double dt)
     // step size to next interaction event
     double d_sc  = tau_r/tot_opac_labframe;
     if (tot_opac_labframe == 0) d_sc = std::numeric_limits<double>::infinity();
-    if (d_sc < 0) cout << "ERROR: negative interaction distance!\n";
-  
+    if (d_sc < 0) 
+      cout << "ERROR: negative interaction distance! " << p.nu << " " << dshift << " " <<
+	continuum_opac_cmf << " " << line_opac_cmf << "\n";
+
     // find distance to end of time step
     double d_tm = (tstop - p.t)*pc::c;
     // if iterative calculation, let all particles escape
@@ -291,8 +296,6 @@ ParticleFate transport::propagate(particle &p, double dt)
       {event = boundary;   this_d = d_bn;}
     else 
       {event = tstep;      this_d = d_tm; }
-
-    //    std::cout << d_sc << " " << d_bn << " " << nu_cmf << " " << line_opac_cmf << "\n";
 
     // tally in contribution to zone's radiation energy (both *lab* frame)
     double this_E = p.e*this_d; 
@@ -391,6 +394,8 @@ void transport::wipe_radiation()
   {
     grid->z[i].e_rad  = 0;
     grid->z[i].e_abs  = 0;
+    grid->z[i].L_radio_dep = 0;
+    //grid->z[i].L_radio_emit = 0;
     //grid->z[i].fx_rad = 0;
     //grid->z[i].fy_rad = 0;
     //grid->z[i].fz_rad = 0;
