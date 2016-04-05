@@ -68,12 +68,13 @@ int main(int argc, char **argv)
   // initialize the grid (including reading the model file)
   grid->init(&params);
 
+  
   //---------------------------------------------------------------------
   // SET UP the transport module
   //---------------------------------------------------------------------
   transport mcarlo;
   mcarlo.init(&params, grid);
-
+  
   //---------------------------------------------------------------------
   // SET UP the hydro module
   //---------------------------------------------------------------------
@@ -96,7 +97,8 @@ int main(int argc, char **argv)
   //---------------------------------------------------------------------
   // DO TIME/ITERATION LOOP
   //---------------------------------------------------------------------
-
+  
+  
   // read in time stepping parameters
   int steady_iterate  = params.getScalar<int>("transport_steady_iterate");
   if (steady_iterate) use_hydro = 0;
@@ -155,8 +157,10 @@ int main(int argc, char **argv)
     // writeout zone state when appropriate 
     if ((verbose)&&((t >= write_out*iw)||(steady_iterate)))
     {
-      printf("# writing zone file %d at time %e\n",iw, t);
-      grid->write_out(iw+1);
+      double t_write = t + dt;
+      if (steady_iterate) t_write = t;
+      printf("# writing zone file %d at time %e\n",iw+1, t_write);
+      grid->write_out(iw+1,t_write);
       iw++;
     }
 
