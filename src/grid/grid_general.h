@@ -78,7 +78,7 @@ class grid_general
   virtual void coordinates(int i,double r[3]) = 0;
   
   // write out the grid state
-  virtual void write_out(int) = 0;
+  virtual void write_out(int,double) = 0;
 
   // expand the grid by a factor of e
   virtual void expand(double) = 0;
