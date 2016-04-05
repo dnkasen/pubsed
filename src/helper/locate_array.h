@@ -50,6 +50,7 @@ public:
   double sample(const int, const double) const;
   void   print() const;
   double value_at(const double nu, const std::vector<double>& array) const;
+  double value_at_extrapolate(const double nu, const std::vector<double>& array) const;
 
   // operators for easy access
   double  operator[] (const int i) const {return x[i];};

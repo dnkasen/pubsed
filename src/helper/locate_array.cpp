@@ -162,11 +162,14 @@ void locate_array::print() const
   
 
  
+
 //---------------------------------------------------------
 // find the value of y at the locate_array's value of xval
 // assumes 1-1 correspondence between y and locate_array
+// will extrapolate to regions off either end of the
+// array grid
 //---------------------------------------------------------
-double locate_array::value_at(const double xval, const vector<double>& y) const{
+double locate_array::value_at_extrapolate(const double xval, const vector<double>& y) const{
   int ind = locate(xval);
   int i1, i2;
 
@@ -183,6 +186,34 @@ double locate_array::value_at(const double xval, const vector<double>& y) const{
   else{ //if(ind == x.size()) // If off the right side of the grid
     i1 = x.size() - 2;
     i2 = x.size() - 1;
+  }
+
+  if(do_log_interpolate) return log_interpolate_between(xval, i1, i2, y);
+  else                   return     interpolate_between(xval, i1, i2, y);
+}
+
+
+//---------------------------------------------------------
+// find the value of y at the locate_array's value of xval
+// assumes 1-1 correspondence between y and locate_array
+// will not extrapolate off of array -- if passed xval
+// is out of bounds, will just return the end values
+//---------------------------------------------------------
+double locate_array::value_at(const double xval, const vector<double>& y) const{
+  int ind = locate(xval);
+  int i1, i2;
+
+  if (x.size() == 1) return y[0];
+
+  if(ind == 0){                // If off left side of grid
+    return y[0];
+  }
+  else if(ind < x.size()){    // If within expected region of grid
+    i1 = ind - 1;
+    i2 = ind;
+  }
+  else{ //if(ind == x.size()) // If off the right side of the grid
+    return y[x.size()-1];
   }
 
   if(do_log_interpolate) return log_interpolate_between(xval, i1, i2, y);
