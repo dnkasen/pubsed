@@ -13,6 +13,8 @@
 #include "spectrum_array.h"
 #include "nlte_gas.h"
 #include "ParameterReader.h"
+#include "VoigtProfile.h"
+
 
 using std::vector;
 
@@ -72,6 +74,10 @@ class transport
    // random number generator
   gsl_rng *rangen;
 
+  // Voigt profile class
+  VoigtProfile voigt_profile_;
+
+  
   // pointer to grid
   grid_general *grid;
   

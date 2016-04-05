@@ -45,7 +45,7 @@ void transport::set_opacity()
     // set line opacities
     if (use_detailed_lines_)
       gas.get_line_opacities(line_opacity_[i]);
-
+    
     //------------------------------------------------------
     // gamma-ray opacity (compton + photo-electric)
     //------------------------------------------------------
@@ -126,3 +126,8 @@ double transport::blackbody_nu(double T, double nu)
   double zeta = pc::h*nu/pc::k/T;
   return 2.0*nu*nu*nu*pc::h/pc::c/pc::c/(exp(zeta)-1);
 }
+
+
+
+
+
