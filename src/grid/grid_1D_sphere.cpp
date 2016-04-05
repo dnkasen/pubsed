@@ -42,7 +42,9 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
     if (verbose) cout << "Err: grid_type param disagrees with the model file\n";
     exit(4);
   }
-  if (verbose) cout << "# Model is a 1D_sphere\n";
+  if (verbose) {
+    cout << "# model file = " << model_file << "\n";
+    cout << "# Model is a 1D_sphere\n"; }
   
   // type of system
   string system;
@@ -54,11 +56,13 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
   r_out.resize(n_zones);
   vol.resize(n_zones);
 
+  double t_start = params->getScalar<double>("tstep_time_start");
+  
   // read zone properties for a supernova remnant
   if (system == "SNR") 
-    read_SNR_file(infile,verbose,1);
+    read_SNR_file(infile,verbose,1,t_start);
   else if (system == "standard") 
-    read_SNR_file(infile,verbose,0);
+    read_SNR_file(infile,verbose,0,t_start);
   else {
     if (verbose) std::cout << " Don't recognize model type " << system << "; Exiting\n";
     exit(1); }
@@ -68,7 +72,7 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
     
 
 
-void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
+void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr, double t_start)
 {
   // read header, general properties
   double texp;
@@ -76,8 +80,7 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
   infile >> texp;
   this->t_now = texp;
 
-  // convert read in velocity to radius
-  if (snr) r_out.min = r_out.min*texp;
+  if (t_start > 0) this->t_now = t_start;
 
   // read element isotopes, format is Z.A
   infile >> this->n_elems;
@@ -102,7 +105,11 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
       infile >> z[i].rho;
       infile >> z[i].T_gas;
       // assume homology for radius
-      r_out[i] = z[i].v[0]*texp;
+      r_out[i] = z[i].v[0]*t_now;
+      // homologously expand
+      if (t_start > 0)
+	{z[i].rho  = z[i].rho*pow(texp/t_now,3);
+	z[i].T_gas = z[i].T_gas*(texp/t_now);	}
     }
     else
     {
@@ -130,6 +137,7 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
     vol[i] = 4.0*pc::pi/3.0*(r_out[i]*r_out[i]*r_out[i] - r0*r0*r0);
   }
   
+  
   // print out properties of the model
   if (verbose) 
   {
@@ -144,7 +152,7 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
     double tmass = 0;
     double ke    = 0;
     double re    = 0;
-    double *elem_mass = new double[n_elems];
+    std::vector<double>elem_mass(n_elems);
     for (int k=0;k<n_elems;k++) elem_mass[k] = 0;
 
     // calculate some useful summed properties
@@ -163,9 +171,7 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
     printf("# kinetic energy   = %.4e\n",ke);
     printf("# radiation energy = %.4e\n",re);
     cout << "##############################\n#\n";
-    
-    delete elem_mass;
-   
+       
   }
 }
 
@@ -176,18 +182,18 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
 //************************************************************
 void grid_1D_sphere::expand(double e) 
 {
-    for (int i=0;i<n_zones;i++) r_out[i] *= e; 
-    r_inner   *=e;
-    r_out.min *=e;
-
-    // recalculate shell volume
-    for (int i=0;i<n_zones;i++) 
-    {
-      double r0;
-      if(i==0) r0 = r_out.min;
-      else     r0 = r_out[i-1];
-      vol[i] = 4.0*pc::pi/3.0*(r_out[i]*r_out[i]*r_out[i] - r0*r0*r0);
-    }
+  for (int i=0;i<n_zones;i++) r_out[i] *= e; 
+  r_inner   *=e;
+  r_out.min *=e;
+  
+  // recalculate shell volume
+  for (int i=0;i<n_zones;i++) 
+  {
+    double r0;
+    if(i==0) r0 = r_out.min;
+    else     r0 = r_out[i-1];
+    vol[i] = 4.0*pc::pi/3.0*(r_out[i]*r_out[i]*r_out[i] - r0*r0*r0);
+  }
   
 }
 
@@ -197,7 +203,7 @@ void grid_1D_sphere::expand(double e)
 int grid_1D_sphere::get_zone(const double *x) const
 {
   double r = sqrt(x[0]*x[0] + x[1]*x[1] + x[2]*x[2]);
-
+  
   // check if off the boundaries
   if(r < r_out.min             ) return -1;
   if(r > r_out[r_out.size()-1] ) return -2;
@@ -212,7 +218,7 @@ int grid_1D_sphere::get_zone(const double *x) const
 //************************************************************
 // Write out the file
 //************************************************************
-void grid_1D_sphere::write_out(int iw)
+void grid_1D_sphere::write_out(int iw, double tt)
 {
   char zonefile[1000];
   char base[1000];
@@ -229,23 +235,27 @@ void grid_1D_sphere::write_out(int iw)
   outf << std::setprecision(4);
   outf << std::scientific;
 
+  outf << "# t = " << tt << "\n";
+  outf << "#   r              rho              v              T_gas          T_rad         L_dep_nuc       L_emit_nuc\n";
+
   for (int i=0;i<n_zones;i++)
   {
     double rin = r_inner;
     if (i > 0) rin = r_out[i-1];
     double T_rad = pow(z[i].e_rad/pc::a,0.25);
-    double rc = 0.5*(r_out[i] + rin);
 
-    outf << rc << "\t";
+    outf << r_out[i] << "\t";
     outf << z[i].rho << "\t";
     outf << z[i].v[0] << "\t";
     outf << z[i].T_gas << "\t";
     outf << T_rad << "\t";
+    outf << z[i].L_radio_dep/zone_volume(i) << "\t";
+    outf << z[i].L_radio_emit/zone_volume(i) << "\t";
     outf << endl;
   }
-
-
 }
+
+
 
 //************************************************************
 // return volume of zone (precomputed)

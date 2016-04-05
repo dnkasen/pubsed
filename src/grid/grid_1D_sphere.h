@@ -25,7 +25,7 @@ private:
   std::vector<double> vol;
   
   // functions for reading in files
-  void read_SNR_file(std::ifstream &, int, int);
+  void read_SNR_file(std::ifstream &, int, int, double);
 
 
 public:
@@ -41,7 +41,7 @@ public:
   double  zone_min_length(const int) const;
   void    sample_in_zone(int, std::vector<double>, double[3]);
   void    velocity_vector(int i, double[3], double[3]);
-  void    write_out(int);
+  void    write_out(int,double);
   void    expand(double);
 
   void    coordinates(int i,double r[3]) {
