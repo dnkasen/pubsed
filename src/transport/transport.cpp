@@ -146,12 +146,12 @@ void transport::step(double dt)
   set_opacity();
   if (verbose) cout << "# Calculated opacities\n";
 
-  // emit new particles
-  emit_particles(dt);
-
   // clear the tallies of the radiation quantities in each zone
   wipe_radiation();
 
+  // emit new particles
+  emit_particles(dt);
+  
   // Propagate the particles
   int n_active = particles.size();
   int n_escape = 0;
@@ -204,7 +204,7 @@ ParticleFate transport::propagate(particle &p, double dt)
   // pointer to current zone
   zone *zone = &(grid->z[p.ind]);
 
-  
+
   // propagate until this flag is set
   while (fate == moving)
   {

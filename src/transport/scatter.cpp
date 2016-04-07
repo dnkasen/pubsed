@@ -44,6 +44,7 @@ ParticleFate transport::do_scatter(particle *p, double eps)
     // or if absorbed, turn it into a photon
     else 
     {
+      grid->z[p->ind].L_radio_dep += p->e;
       p->type = photon;
       // isotropic emission in comoving frame
       double mu  = 1 - 2.0*gsl_rng_uniform(rangen);
@@ -105,11 +106,12 @@ void transport::compton_scatter(particle *p)
   p->nu = p->nu*E_ratio;
   
   // add in gamma-ray energy deposition
-  if (p->type == gammaray) grid->z[p->ind].L_radio_dep += p->e*(1 - E_ratio);
+  //if (p->type == gammaray) grid->z[p->ind].L_radio_dep += p->e*(1 - E_ratio);
 
   // sample whether we stay alive, if not become a photon
   if (gsl_rng_uniform(rangen) > E_ratio) 
   {
+    grid->z[p->ind].L_radio_dep += p->e;
     p->type = photon;
     // isotropic emission in comoving frame
     double mu  = 1 - 2.0*gsl_rng_uniform(rangen);

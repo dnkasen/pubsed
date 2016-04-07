@@ -31,6 +31,10 @@ void transport::sample_photon_frequency(particle *p)
   {
     p->nu = 1;
   }
+  else
+  {
+    p->nu = 1;
+  }
 
 }
 
@@ -50,7 +54,7 @@ void transport::create_isotropic_particle
 
   // particle type
   p.type = type;
-
+  
   // random sample position in zone
   std::vector<double> rand;
   rand.push_back(gsl_rng_uniform(rangen));
@@ -81,9 +85,6 @@ void transport::create_isotropic_particle
 
   // set time to current
   p.t  = t;
-  
-  // set type to photon
-  p.type = type;
 
   // add to particle vector
   particles.push_back(p);
@@ -130,6 +131,7 @@ void transport::emit_radioactive(double dt)
 
   // calculate the total decay energy on the grid
   double L_tot = 0;
+  double *gamma_frac = new double[grid->n_zones];
   for (int i=0;i<grid->n_zones;i++)
   {
     double vol  = grid->zone_volume(i);
@@ -137,6 +139,7 @@ void transport::emit_radioactive(double dt)
       radio.decay(grid->elems_Z,grid->elems_A,grid->z[i].X_gas,t_now_,&gfrac);
     L_decay = grid->z[i].rho*L_decay*vol;
     grid->z[i].L_radio_emit = L_decay;
+    gamma_frac[i] = gfrac;
     L_tot += L_decay;
   }
   
@@ -155,23 +158,32 @@ void transport::emit_radioactive(double dt)
     double extra = (E_emit - E_p*n_add)/E_p;
     if (gsl_rng_uniform(rangen) < extra) n_add++;
 
-
     // check that we have enough space to add these particles
     if (particles.size()+n_add > this->max_total_particles) {
       if (verbose) cout << "# Out of particle space; not adding in\n";
       return; }
-
+    
     // setup particles
     for (int q=0;q<n_add;q++) 
     {
       double t  = t_now_ + dt*gsl_rng_uniform(rangen);
-      create_isotropic_particle(i,gammaray,E_p,t);
+
+      // determine if make gamma-ray or positron
+      if (gsl_rng_uniform(rangen) < gamma_frac[i])
+	create_isotropic_particle(i,gammaray,E_p,t);
+      else
+      {
+	// positrons are just immediately made into photons
+	grid->z[i].L_radio_dep += E_p;
+	create_isotropic_particle(i,photon,E_p,t);
+      }
     }
 
     n_add_tot += n_add;
   }
   
   if (verbose) cout << "# added " << n_add_tot << " radiaoctive particles per proc\n";
+  delete gamma_frac;
 }
 
 

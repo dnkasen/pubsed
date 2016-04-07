@@ -48,9 +48,11 @@ double radioactive::decay
     gtotal += val*gf;
   }
   *gfrac = gtotal/total;
+  if (total == 0) *gfrac = 0;
+  
   return total;
        
-       // adjust the compositions here
+  // adjust the compositions here
 }
   
 //--------------------------------------------------------------
@@ -140,8 +142,8 @@ double radioactive::decay_energy_rate(int Z, int A, double t, double *gfrac)
   //     gtotal += 0.5*beta_E;
   //   }
       
-
   *gfrac = gtotal/total;
+  if (total == 0) *gfrac = 0;
   return total;
 }
 
