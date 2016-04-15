@@ -208,8 +208,6 @@ ParticleFate transport::propagate(particle &p, double dt)
   // propagate until this flag is set
   while (fate == moving)
   {
-
-    
     // set pointer to current zone
     zone = &(grid->z[p.ind]);
     
@@ -272,6 +270,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     // multiply by dshift instead of dividing by dshift here
     double tot_opac_cmf      = continuum_opac_cmf + line_opac_cmf;
     double tot_opac_labframe = tot_opac_cmf*dshift;
+
     
     // random optical depth to next interaction
     double tau_r = -1.0*log(1 - gsl_rng_uniform(rangen));

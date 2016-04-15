@@ -27,7 +27,7 @@ void transport::sample_photon_frequency(particle *p)
     p->nu = nu_grid.sample(ilam,gsl_rng_uniform(rangen));
     if (p->nu > 1e20) std::cout << "pnu " << p->nu << "\n";
   }
-  if (p->type == gammaray)
+  else if (p->type == gammaray)
   {
     p->nu = 1;
   }
@@ -35,6 +35,8 @@ void transport::sample_photon_frequency(particle *p)
   {
     p->nu = 1;
   }
+
+
 
 }
 
