@@ -149,6 +149,8 @@ class transport
 
 
 
+  
+
  public:
   
 
@@ -174,7 +176,9 @@ class transport
   // finalize and output spectra
   void output_spectrum();
   void output_spectrum(int);
-					
+
+  // print out functions
+  void write_opacities(int);
 
 };
 

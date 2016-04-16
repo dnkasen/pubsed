@@ -8,6 +8,8 @@
 #include <cassert>
 #include <list>
 #include <algorithm>
+#include "hdf5.h"
+#include "hdf5_hl.h"
 
 #include "transport.h"
 #include "ParameterReader.h"
@@ -303,7 +305,9 @@ ParticleFate transport::propagate(particle &p, double dt)
     // store absorbed energy in *comoving* frame 
     // (will turn into rate by dividing by dt later)
     // Extra dshift definitely needed here (two total)
-    zone->e_abs  += this_E*dshift*(continuum_opac_cmf)*eps_absorb_cmf*dshift; 
+    // don't add gamma-rays here (they would be separate
+    if (p.type == photon)
+      zone->e_abs  += this_E*dshift*(continuum_opac_cmf)*eps_absorb_cmf*dshift; 
 
     // put back in radiation force tally here
     // fx_rad =
@@ -401,3 +405,69 @@ void transport::wipe_radiation()
   }
 }
 
+
+//------------------------------------------------------------
+// Write detailed opacities and radiation field
+// vs wavelength to an hdf file
+//------------------------------------------------------------
+void transport::write_opacities(int iw)
+{
+
+  // get file name
+  char zonefile[1000];
+  char base[1000];
+  if (iw < 10) sprintf(base,"_0000%d",iw);
+  else if (iw < 100) sprintf(base,"_000%d",iw);
+  else if (iw < 1000) sprintf(base,"_00%d",iw);
+  else if (iw < 10000) sprintf(base,"_0%d",iw);
+  else sprintf(base,"_%d",iw);
+  sprintf(zonefile,"grid%s.h5",base);
+
+  // open hdf5 file
+  hid_t file_id = H5Fcreate( zonefile, H5F_ACC_TRUNC, H5P_DEFAULT,  H5P_DEFAULT);
+  
+  const int RANK = 1;
+  hsize_t  dims_z[RANK]={grid->n_zones};
+  float* zone_arr = new float[grid->n_zones];
+
+  // print out zone scalars
+  for (int i=0;i<grid->n_zones;i++)  zone_arr[i] = grid->z[i].rho;
+  H5LTmake_dataset(file_id,"rho",RANK,dims_z,H5T_NATIVE_FLOAT,zone_arr);
+  for (int i=0;i<grid->n_zones;i++)  zone_arr[i] = grid->z[i].T_gas;
+  H5LTmake_dataset(file_id,"T_gas",RANK,dims_z,H5T_NATIVE_FLOAT,zone_arr);
+
+
+  int n_nu = nu_grid.size();
+  float* tmp_array = new float[n_nu];
+  hsize_t  dims[RANK]={n_nu};
+
+  for (int j=0;j<n_nu;j++) tmp_array[j] = nu_grid.center(j);
+  H5LTmake_dataset(file_id,"nu",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
+
+  // loop over zones for wavelength dependence opacities
+  for (int i = 0; i < grid->n_zones; i++)
+  {
+    char zfile[100];
+    sprintf(zfile,"%d",i);
+    hid_t zone_id =  H5Gcreate1( file_id, zfile, 0 );
+
+    // write total opacity
+    for (int j=0;j<n_nu;j++)
+      tmp_array[j] = (scat_opacity_[i][j] + abs_opacity_[i][j])/grid->z[i].rho;
+    H5LTmake_dataset(zone_id,"opacity",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
+
+    // write absorption fraction
+    for (int j=0;j<n_nu;j++) {
+      tmp_array[j] = abs_opacity_[i][j]/(scat_opacity_[i][j] + abs_opacity_[i][j]);
+      if (scat_opacity_[i][j] + abs_opacity_[i][j] == 0) tmp_array[j] = 0; }
+    H5LTmake_dataset(zone_id,"epsilon",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
+
+    // write emissivity fraction
+    for (int j=0;j<n_nu;j++)  tmp_array[j] = emissivity_[i].get_value(j);
+    H5LTmake_dataset(zone_id,"emissivity",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
+  }
+  
+  H5Fclose (file_id);
+  delete tmp_array;
+  
+}

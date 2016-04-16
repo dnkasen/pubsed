@@ -31,7 +31,7 @@ void transport::set_opacity()
     gas.temp = z->T_gas;
     gas.time = t_now_;
     gas.set_mass_fractions(z->X_gas);
-
+    
     // solve for the state (assume LTE now)
     if (!gas.grey_opacity_) gas.solve_state(1);
     
@@ -39,7 +39,8 @@ void transport::set_opacity()
     gas.computeOpacity(abs_opacity_[i],scat_opacity_[i],emis);
     
     // save and normalize emissivity cdf
-    for (int j=0;j<nu_grid.size();j++) emissivity_[i].set_value(j,emis[j]);
+    for (int j=0;j<nu_grid.size();j++)
+      emissivity_[i].set_value(j,emis[j]*nu_grid.delta(j));
     emissivity_[i].normalize();
   
     // set line opacities
