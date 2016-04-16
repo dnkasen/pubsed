@@ -49,7 +49,9 @@ public:
   double log_interpolate_between(const double,const int,const int,const std::vector<double>&) const;
   double sample(const int, const double) const;
   void   print() const;
+  double value_at(const double nu, const std::vector<double>& array,int) const;
   double value_at(const double nu, const std::vector<double>& array) const;
+  
   double value_at_extrapolate(const double nu, const std::vector<double>& array) const;
 
   // operators for easy access

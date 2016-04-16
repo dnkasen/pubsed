@@ -70,21 +70,26 @@ void transport::set_opacity()
 
 
 //-----------------------------------------------------------------
-// get opacity at the frequency
+// get comoving opacity at the frequency
+// returns the frequency index of the photon in the
+// comoving frame
 //-----------------------------------------------------------------
-void transport::get_opacity(particle &p, double dshift, double &opac, double &eps)
+int transport::get_opacity(particle &p, double dshift, double &opac, double &eps)
 {
   assert(p.ind >= 0);
 
+
   // comoving frame frequency
   double nu = p.nu*dshift;
-
+  int i_nu = 0;
+  
   // get opacity if it is an optical photon. 
   if (p.type == photon)
   {
     // interpolate opacity at the local comving frame frequency
-    double a_opac = nu_grid.value_at(nu,abs_opacity_[p.ind]);
-    double s_opac = nu_grid.value_at(nu,scat_opacity_[p.ind]);
+    i_nu = nu_grid.locate(nu);
+    double a_opac = nu_grid.value_at(nu,abs_opacity_[p.ind],i_nu);
+    double s_opac = nu_grid.value_at(nu,scat_opacity_[p.ind],i_nu);
     opac = a_opac + s_opac;
     eps  = a_opac/opac;
   }
@@ -98,7 +103,7 @@ void transport::get_opacity(particle &p, double dshift, double &opac, double &ep
     eps  = p_opac/(c_opac + p_opac);
   }
 
-
+  return i_nu;
 }
 
 

@@ -170,6 +170,7 @@ void locate_array::print() const
 // array grid
 //---------------------------------------------------------
 double locate_array::value_at_extrapolate(const double xval, const vector<double>& y) const{
+
   int ind = locate(xval);
   int i1, i2;
 
@@ -193,14 +194,27 @@ double locate_array::value_at_extrapolate(const double xval, const vector<double
 }
 
 
+
+
 //---------------------------------------------------------
 // find the value of y at the locate_array's value of xval
 // assumes 1-1 correspondence between y and locate_array
 // will not extrapolate off of array -- if passed xval
 // is out of bounds, will just return the end values
+//
+// overloaded so that doesn't need to do the locate if
+// already known and passed.
 //---------------------------------------------------------
-double locate_array::value_at(const double xval, const vector<double>& y) const{
+double locate_array::value_at(const double xval, const vector<double>& y) const
+{
   int ind = locate(xval);
+  return value_at(xval,y,ind);
+}
+
+
+double locate_array::value_at(const double xval, const vector<double>& y,int ind) const
+{
+
   int i1, i2;
 
   if (x.size() == 1) return y[0];
