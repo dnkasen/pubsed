@@ -107,7 +107,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   abs_opacity_.resize(grid->n_zones);
   scat_opacity_.resize(grid->n_zones);
   emissivity_.resize(grid->n_zones);
-  
+  J_nu_.resize(grid->n_zones);
   for (int i=0; i<grid->n_zones;  i++)
   {
     if (use_detailed_lines_)
@@ -115,6 +115,7 @@ void transport::init(ParameterReader* par, grid_general *g)
     abs_opacity_[i].resize(nu_grid.size());
     scat_opacity_[i].resize(nu_grid.size());
     emissivity_[i].resize(nu_grid.size());
+    J_nu_[i].resize(nu_grid.size());
   }
   compton_opac.resize(grid->n_zones);
   photoion_opac.resize(grid->n_zones);
@@ -129,9 +130,6 @@ void transport::init(ParameterReader* par, grid_general *g)
 
   // allocate memory for core emission
   this->core_emis.resize(nu_grid.size());
-
-
-
   
 }
 
@@ -223,7 +221,7 @@ ParticleFate transport::propagate(particle &p, double dt)
 
     // get continuum opacity and absorption fraction (epsilon)
     double continuum_opac_cmf, eps_absorb_cmf;
-    get_opacity(p,dshift,continuum_opac_cmf,eps_absorb_cmf);
+    int i_nu = get_opacity(p,dshift,continuum_opac_cmf,eps_absorb_cmf);
 
     // ------------------------------------------------
     // get total line opacity
@@ -272,7 +270,6 @@ ParticleFate transport::propagate(particle &p, double dt)
     // multiply by dshift instead of dividing by dshift here
     double tot_opac_cmf      = continuum_opac_cmf + line_opac_cmf;
     double tot_opac_labframe = tot_opac_cmf*dshift;
-
     
     // random optical depth to next interaction
     double tau_r = -1.0*log(1 - gsl_rng_uniform(rangen));
@@ -305,10 +302,13 @@ ParticleFate transport::propagate(particle &p, double dt)
     // store absorbed energy in *comoving* frame 
     // (will turn into rate by dividing by dt later)
     // Extra dshift definitely needed here (two total)
-    // don't add gamma-rays here (they would be separate
+    // don't add gamma-rays here (they would be separate)
     if (p.type == photon)
-      zone->e_abs  += this_E*dshift*(continuum_opac_cmf)*eps_absorb_cmf*dshift; 
-
+    {
+      zone->e_abs  += this_E*dshift*(continuum_opac_cmf)*eps_absorb_cmf*dshift;
+      J_nu_[p.ind][i_nu] += this_E;
+    }
+      
     // put back in radiation force tally here
     // fx_rad =
 
@@ -385,24 +385,10 @@ void transport::output_spectrum(int it)
 
 }
 
+
 void transport::output_spectrum()
 {
   output_spectrum(0);
-}
-
-
-void transport::wipe_radiation()
-{
-  for (int i=0;i<grid->n_zones;i++) 
-  {
-    grid->z[i].e_rad  = 0;
-    grid->z[i].e_abs  = 0;
-    grid->z[i].L_radio_dep = 0;
-    //grid->z[i].L_radio_emit = 0;
-    //grid->z[i].fx_rad = 0;
-    //grid->z[i].fy_rad = 0;
-    //grid->z[i].fz_rad = 0;
-  }
 }
 
 
@@ -462,12 +448,17 @@ void transport::write_opacities(int iw)
       if (scat_opacity_[i][j] + abs_opacity_[i][j] == 0) tmp_array[j] = 0; }
     H5LTmake_dataset(zone_id,"epsilon",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
-    // write emissivity fraction
+    // write emissivity 
     for (int j=0;j<n_nu;j++)  tmp_array[j] = emissivity_[i].get_value(j);
     H5LTmake_dataset(zone_id,"emissivity",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
+
+    // write radiation field J
+    for (int j=0;j<n_nu;j++)  tmp_array[j] = J_nu_[i][j];
+    H5LTmake_dataset(zone_id,"Jnu",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
   }
   
   H5Fclose (file_id);
   delete tmp_array;
+  delete zone_arr;
   
 }

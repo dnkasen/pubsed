@@ -161,6 +161,7 @@ int main(int argc, char **argv)
       if (steady_iterate) t_write = t;
       printf("# writing zone file %d at time %e\n",iw+1, t_write);
       grid->write_out(iw+1,t_write);
+      mcarlo.write_opacities(iw+1);
       iw++;
     }
 

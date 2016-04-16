@@ -5,6 +5,28 @@
 
 namespace pc = physical_constants;
 
+
+//------------------------------------------------------------
+// Clear radiation quantities
+//------------------------------------------------------------
+void transport::wipe_radiation()
+{
+  for (int i=0;i<grid->n_zones;i++) 
+  {
+    grid->z[i].e_rad  = 0;
+    grid->z[i].e_abs  = 0;
+    grid->z[i].L_radio_dep = 0;
+    for (int j=0;j<nu_grid.size();j++)
+      J_nu_[i][j] = 0;
+    //grid->z[i].L_radio_emit = 0;
+    //grid->z[i].fx_rad = 0;
+    //grid->z[i].fy_rad = 0;
+    //grid->z[i].fz_rad = 0;
+  }
+}
+
+
+
 //------------------------------------------------------------
 // Combine the radiation tallies in all zones
 // from all processors using MPI 
@@ -21,6 +43,8 @@ namespace pc = physical_constants;
     //grid->z[i].fx_rad  /= vol*pc::c*dt; 
     //grid->z[i].fy_rad  /= vol*pc::c*dt;
     //grid->z[i].fz_rad  /= vol*pc::c*dt;
+    for (int j=0;j<nu_grid.size();j++)
+      J_nu_[i][j] /= vol*dt*4*pc::pi*nu_grid.delta(j);
   }
 
 

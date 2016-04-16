@@ -91,6 +91,7 @@ class transport
   vector< cdf_array >    emissivity_;
   vector< vector<real> > abs_opacity_;
   vector< vector<real> > scat_opacity_;
+  vector< vector<real> > J_nu_;
   vector<real> compton_opac;
   vector<real> photoion_opac;
 
@@ -111,7 +112,7 @@ class transport
   double line_velocity_width_;
 
   // opacity functions
-  void   get_opacity(particle&, double, double&, double&);
+  int   get_opacity(particle&, double, double&, double&);
   void   set_opacity();
   double klein_nishina(double);
   double blackbody_nu(double T, double nu);
@@ -147,9 +148,6 @@ class transport
   double rad_eq_function(int,double);
   double temp_brent_method(int);
 
-
-
-  
 
  public:
   
