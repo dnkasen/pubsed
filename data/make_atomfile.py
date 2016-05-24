@@ -2,25 +2,21 @@ import h5py
 import pylab as py
 
 
-chi    = [13.6]
-ground = [0]
-f = h5py.File('atomdata.hdf5','w')
-
-#f.create_attribute("/",
+f = h5py.File('2level_atomdata.hdf5','w')
 
 base = "1/"
 grp = f.create_group(base)
 
-g = [2,6,10]
-E = [0,10.2,12.0]
-i = [0,0,0]
+g = [2,   6, 1]
+E = [0,10.2, 0]
+i = [0,   0, 1]
 
-ll = [0,1,0]
-lu = [1,2,2]
-Aij = [1e9,1e9,1e9]
+ll = [0]
+lu = [1]
+Aij = [1e9] 
 
-chi = [13.6]
-gnd = [0]
+chi = [13.6,99999]
+gnd = [0,2]
 f[base].attrs["n_ions"]    = len(chi)
 f[base].attrs["n_levels" ] = int(len(g))
 f[base].attrs["n_lines" ]  = len(Aij)
