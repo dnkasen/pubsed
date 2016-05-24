@@ -138,6 +138,21 @@ class nlte_gas
   double get_ionization_state();
 
   //-----------------------------------------------------------
+  // return the fraction of atoms of index i that are in
+  // ionization state j.  
+  //-----------------------------------------------------------
+  double get_ionization_fraction(int i, int j);
+
+
+  //-----------------------------------------------------------
+  // return the fraction of atoms of index i that are in
+  // level state j.  
+  //-----------------------------------------------------------
+  double get_level_fraction(int i, int j);
+  double get_level_departure(int i, int j);
+
+
+  //-----------------------------------------------------------
   // return the number of total global lines (from all ions)
   //-----------------------------------------------------------
   int get_number_of_lines()

@@ -346,6 +346,44 @@ double nlte_gas::ne_brent_method(double x1,double x2,double tol,int lte)
 
 
 //-----------------------------------------------------------
+// return the fraction of atoms of index i that are in
+// ionization state j.  
+//-----------------------------------------------------------
+double nlte_gas::get_ionization_fraction(int i, int j)
+{
+  if ((i < 0)||(i >= atoms.size()))    return -1;
+  if ((j < 0)||(j >= atoms[i].n_ions)) return -1;
+  return atoms[i].ionization_fraction(j);
+}
+
+
+
+//-----------------------------------------------------------
+// return the fraction of atoms of index i that are in
+// ionization state j.  
+//-----------------------------------------------------------
+double nlte_gas::get_level_fraction(int i, int j)
+{
+  if ((i < 0)||(i >= atoms.size()))    return -1;
+  if ((j < 0)||(j >= atoms[i].n_levels)) return -1;
+  return atoms[i].level_fraction(j);
+}
+
+//-----------------------------------------------------------
+// return the fraction of atoms of index i that are in
+// ionization state j.  
+//-----------------------------------------------------------
+double nlte_gas::get_level_departure(int i, int j)
+{
+  if ((i < 0)||(i >= atoms.size()))    return -1;
+  if ((j < 0)||(j >= atoms[i].n_levels)) return -1;
+  return atoms[i].level_depature(j);
+}
+
+
+
+
+//-----------------------------------------------------------
 // print out of the gas class
 //-----------------------------------------------------------
 void nlte_gas::print()

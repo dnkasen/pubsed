@@ -21,7 +21,7 @@ void transport::set_opacity()
   {
     // pointer to current zone for easy access
     zone* z = &(grid->z[i]);
-    
+      
     //------------------------------------------------------
     // optical photon opacities
     //------------------------------------------------------
@@ -34,7 +34,7 @@ void transport::set_opacity()
     
     // solve for the state (assume LTE now)
     if (!gas.grey_opacity_) gas.solve_state(1);
-    
+
     // calculate the opacities/emissivities
     gas.computeOpacity(abs_opacity_[i],scat_opacity_[i],emis);
     

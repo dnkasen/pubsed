@@ -137,13 +137,24 @@ public:
     return -1;
   }
   
-  double ion_frac(int ion) 
+  double ionization_fraction(int ion) 
   {
     for (int i=0;i<n_ions; i++)
       if (ion == ions[i].stage) return ions[i].frac; 
     return 0;
  }
-  
+
+  double level_fraction(int lev) 
+  {
+    if (lev >= n_levels) return 0;
+    return levels[lev].n;
+  }
+  double level_depature(int lev) 
+  {
+    if (lev >= n_levels) return 0;
+    return levels[lev].b;
+  }
+
 
  };
 

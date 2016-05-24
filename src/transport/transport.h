@@ -176,7 +176,9 @@ class transport
   void output_spectrum(int);
 
   // print out functions
-  void write_opacities(int);
+  void write_opacities(int);  
+  void write_levels(int);
+
 
 };
 

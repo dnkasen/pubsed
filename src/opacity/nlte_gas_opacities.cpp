@@ -150,7 +150,7 @@ void nlte_gas::fuzz_expansion_opacity(std::vector<double>& opac)
 
       // get sobolev tau
       double n_dens = mass_frac[i]*dens/(elem_A[i]*pc::m_p);
-      double nion   = n_dens*atoms[i].ion_frac(ion);
+      double nion   = n_dens*atoms[i].ionization_fraction(ion);
 
       double nl = nion*exp(-1.0*El/pc::k_ev/temp)/atoms[i].partition(ion);
       double lam = pc::c/nu;
