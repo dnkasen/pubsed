@@ -1,0 +1,79 @@
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage{color}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{seqsplit}
+\usepackage{fullpage}
+\usepackage{dirtree}
+\usepackage[normalem]{ulem}
+
+
+\newcommand{\bhead}[1]{\medskip \noindent {\bf #1}}
+\newcommand{\test}[2]{\medskip \noindent   {\bf Test  \#\textsf{\arabic{#1}}} \addtocounter{#1}{1}- {\it {#2}}:}
+
+ 
+% make the MarginPars look pretty
+\setlength{\marginparwidth}{0.75in}
+\newcommand{\MarginPar}[1]{\marginpar{\vskip-\baselineskip\raggedright\tiny\sffamily
+\hrule\smallskip{\color{red}#1}\par\smallskip\hrule}}
+
+\begin{document}
+
+\title{SedonaBox User's Guide}
+\maketitle
+
+\section{Introduction}
+
+\section{Getting Started}
+
+\subsection{Getting the Code}
+
+\subsection{Building the Code}
+
+
+\subsection{Running the Code}
+
+%To run the executable you just built, you will need the data for
+%computing opacities ({\tt atoms/} and {\tt fuzz/}), an {\tt inputs}
+%gile that provides runtime parameters, a {\tt probin} file specifying
+%the initial model, and a model file ({\tt w7.boxmod} in this case).
+
+%To run with 2 MPI processors and 2 threads, you do something like
+
+%\noindent {\tt OMP\_NUM\_THREADS=2 mpiexec -n 2
+ % ./Sedona1d.Linux.g++.gfortran.MPI.OMP.ex inputs.1d-regt}
+
+
+\section{Input Data}
+
+Atomic data format
+
+\section{Output}
+
+\section{Runtime Parameters}
+
+\section{Test Problems}
+
+\subsection{Core Into Vacuum}
+
+\bhead{Setup:} A spherical inner boundary emits blackbody radiation into an extremely low density
+medium, with optical depth so low it is essentially vacuum.
+
+\newcounter{tc}
+\setcounter{tc}{1}
+\test{tc}{Emergent Spectrum} This should be a blackbody at the input inner core temperature. Tests general sampling of 
+
+\test{tc}{Radiation Temperature Structure}. The radiation field outside a spherical emitter should be given by the dilution factor
+\begin{equation}
+J = \frac{1}{2} \left[ 1 - \sqrt{ 1 - R_0^2/r^2} \right]
+\end{equation}
+
+\test{tc}{Non-LTE level populations}
+
+
+
+
+
+\end{document}
