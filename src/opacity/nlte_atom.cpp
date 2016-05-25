@@ -88,10 +88,6 @@ void nlte_atom::solve_lte(double T, double ne, double time)
 
 }
 
-
-
-
-
 //-------------------------------------------------------
 //
 //------------------------------------------------------
@@ -212,7 +208,7 @@ void nlte_atom::set_rates(double T, double ne)
     rates[ic][i] += C_rec;
 
     // radiative recombination rate (debug)
-    double R_rec = ne*levels[i].a_rec.value_at(T);
+   /* double R_rec = ne*levels[i].a_rec.value_at(T);
     // suppress recombinations to ground  
     if (no_ground_recomb) if (levels[i].E == 0) R_rec = 0;
     rates[ic][i] += R_rec;
@@ -236,12 +232,14 @@ void nlte_atom::set_rates(double T, double ne)
 
     // suppress ionization froms ground  NOT
     //if (levels[i].E == 0) {R_ion = 0; }
-    rates[i][ic] += R_ion;
-    
+    rates[i][ic] += R_ion;*/
+
     //printf("pc::pi: %d %d %e %e\n",i,ic,R_rec,R_ion);
     //printf("CI: %d %d %e %e\n",i,ic,C_rec,C_ion);
     
   }
+
+
 
   // multiply by rates by lte pop in level coming from
   // (becuase we will solve for depature coeffs)
@@ -258,7 +256,7 @@ void nlte_atom::set_rates(double T, double ne)
 
 }
 
-int nlte_atom::solve_nlte(double T,double ne,double time)
+int nlte_atom::solve_nlte(double T,double ne,double time, std::vector<real> J_nu)
 {
   // initialize with LTE populations
   // this will also calculate line taus and betas
@@ -299,7 +297,7 @@ int nlte_atom::solve_nlte(double T,double ne,double time)
     // set off diagonal elements of rate matrix
     for (int i=0;i<n_levels;i++) 
       for (int j=0;j<n_levels;j++)
-	if (i != j) gsl_matrix_set(M_nlte,i,j,rates[j][i]);
+	       if (i != j) gsl_matrix_set(M_nlte,i,j,rates[j][i]);
     
     // last row expresses number conservation
     for (int i=0;i<n_levels;i++) 

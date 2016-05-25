@@ -24,8 +24,8 @@ class nlte_gas
  
  private:
 
-  double ne_brent_method(double,double,double);
-  double charge_conservation(double);
+  double ne_brent_method(double,double,double,std::vector<real>);
+  double charge_conservation(double,std::vector<real>);
 
   locate_array nu_grid;
   int verbose;

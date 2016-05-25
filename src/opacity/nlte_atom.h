@@ -9,6 +9,7 @@
 #include <gsl/gsl_multiroots.h>
 #include "xy_array.h"
 #include "locate_array.h"
+#include "sedona.h"
 
 struct fuzz_line_structure
 {
@@ -121,7 +122,7 @@ public:
 
   // solve state
   void solve_lte (double T, double ne, double time);
-  int  solve_nlte(double T, double ne, double time);
+  int  solve_nlte(double T, double ne, double time, std::vector<real> J_nu);
   void print();
 
   // sobolev

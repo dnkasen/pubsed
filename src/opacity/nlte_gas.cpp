@@ -225,8 +225,6 @@ double nlte_gas::get_ionization_state()
 //-----------------------------------------------------------
 void nlte_gas::solve_state(std::vector<real> J_nu)
 {
-
-  int lte = 1;
   for (int i=0;i<atoms.size();i++)
   {
     atoms[i].n_dens  = dens*mass_frac[i]/(elem_A[i]*pc::m_p);
@@ -237,10 +235,8 @@ void nlte_gas::solve_state(std::vector<real> J_nu)
   double max_ne = 10*dens/(A_mu*pc::m_p);
   double min_ne = 1e-20*dens/(A_mu*pc::m_p);;
   double tol    = 1e-3;
-  ne = ne_brent_method(min_ne,max_ne,tol);
+  ne = ne_brent_method(min_ne,max_ne,tol,J_nu);
 }
-
- 
 
 
 //-----------------------------------------------------------
@@ -249,7 +245,7 @@ void nlte_gas::solve_state(std::vector<real> J_nu)
 // for the root, thus determining N_e.  This equation is
 // basically just the one for charge conservation.
 //-----------------------------------------------------------
-double nlte_gas::charge_conservation(double ne)
+double nlte_gas::charge_conservation(double ne,std::vector<real> J_nu)
 {
   // start with charge conservation function f set to zero
   double f  = 0;
@@ -257,7 +253,7 @@ double nlte_gas::charge_conservation(double ne)
   for (int i=0;i<atoms.size();i++) 
   {
     // Solve the LTE or NLTE with this value of Ne
-    if (use_nlte_) atoms[i].solve_nlte(temp,ne,time);
+    if (use_nlte_) atoms[i].solve_nlte(temp,ne,time,J_nu);
     else atoms[i].solve_lte (temp,ne,time);   
 
     // total electron donation from this atomic species
@@ -276,14 +272,14 @@ double nlte_gas::charge_conservation(double ne)
 // equation for electron density ne
 //-----------------------------------------------------------
 #define SIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
-double nlte_gas::ne_brent_method(double x1,double x2,double tol)
+double nlte_gas::ne_brent_method(double x1,double x2,double tol,std::vector<real> J_nu)
 {  
   int ITMAX = 100;
   double EPS = 3.0e-8;
   int iter;
   double a=x1,b=x2,c=x2,d,e,min1,min2;
-  double fa=charge_conservation(a);
-  double fb=charge_conservation(b);
+  double fa=charge_conservation(a,J_nu);
+  double fb=charge_conservation(b,J_nu);
   double fc,p,q,r,s,tol1,xm;
   
   if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0))
@@ -338,7 +334,7 @@ double nlte_gas::ne_brent_method(double x1,double x2,double tol)
       b += d;
     else
       b += SIGN(tol1,xm);
-    fb=charge_conservation(b);
+    fb=charge_conservation(b,J_nu);
   }
   if (verbose) printf("Maximum number of iterations exceeded in zbrent");
   return 0.0;
