@@ -1,11 +1,7 @@
 #ifndef _ZONE_H
 #define _ZONE_H
 #include <vector>
-
-// define real to choose either double or float precision
-//typedef float real;
-typedef double real;
-
+#include "sedona.h"
 
 //-------------------------------------------------
 // Class to store properties of one zone

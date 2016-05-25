@@ -17,8 +17,7 @@ OBJECTS=$(SOURCES:.cpp=.o)
 
 all: $(OBJECTS)
 	make gomc
-	make test_opacity
-
+	
 gomc: $(OBJECTS) main.cpp
 	$(CXX) -o gomc $(OBJECTS) main.cpp $(CLOPT)
 

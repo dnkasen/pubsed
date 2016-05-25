@@ -1,10 +1,10 @@
 #ifndef NLTE_GAS_H
 #define NLTE_GAS_H
+#include <string>
 
 #include "nlte_atom.h"
 #include "locate_array.h"
-#include <string>
-
+#include "sedona.h"
 
 // structure to hold a list of line data
 struct nlteGlobalLine 
@@ -24,8 +24,8 @@ class nlte_gas
  
  private:
 
-  double ne_brent_method(double,double,double,int);
-  double charge_conservation(double,int);
+  double ne_brent_method(double,double,double);
+  double charge_conservation(double);
 
   locate_array nu_grid;
   int verbose;
@@ -60,6 +60,9 @@ class nlte_gas
   int use_free_free_opacity;
   int use_bound_free_opacity;
   
+  // flags for nlte
+  int use_nlte_;
+
   double grey_opacity_;
   double epsilon_;
   
@@ -129,7 +132,7 @@ class nlte_gas
   // input:
   // int lte: 1 = do it in LTE, 0 = do it in NLTE
   //-----------------------------------------------------------  
-  void solve_state(int lte);
+  void solve_state(std::vector<real>);
 
   //-----------------------------------------------------------
   // return the ionization state, i.e., electron density

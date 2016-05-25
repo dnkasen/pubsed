@@ -33,7 +33,7 @@ void transport::set_opacity()
     gas.set_mass_fractions(z->X_gas);
     
     // solve for the state (assume LTE now)
-    if (!gas.grey_opacity_) gas.solve_state(1);
+    if (!gas.grey_opacity_) gas.solve_state(J_nu_[i]);
 
     // calculate the opacities/emissivities
     gas.computeOpacity(abs_opacity_[i],scat_opacity_[i],emis);

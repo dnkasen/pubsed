@@ -89,6 +89,9 @@ void transport::init(ParameterReader* par, grid_general *g)
     = params_->getScalar<int>("opacity_bound_free");
   gas.use_free_free_opacity  
     = params_->getScalar<int>("opacity_free_free");
+  gas.use_nlte_ 
+    = params_->getScalar<int>("opacity_use_nlte");
+
 
   // parameters for treatment of detailed lines
   use_detailed_lines_  = params_->getScalar<double>("opacity_lines");
