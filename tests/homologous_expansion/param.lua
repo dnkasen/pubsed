@@ -1,44 +1,41 @@
+defaults_file = "../defaults.lua"
 grid_type  = "grid_1D_sphere"    -- grid geometry; must match input model
 model_file   = "constant.mod"        -- input model file
 hydro_module = "homologous"
 
 
---
-max_total_particles = 1e6
-step_size = 0.3
 
 -- time stepping
 days = 3600.0*24
-max_tsteps = 100
-t_stop     = 80.0*days
-dt_max     = 0.5*days
-dt_min     = 0.0
-dt_del     = 1.0
+tstep_max_steps    = 100
+tstep_time_stop    = 80.0*days
+tstep_max_dt       = 1*days
+tstep_min_dt       = 1*days
+tstel_max_delta    = 1.0
 
 
-nu_grid  = {0.2e14,5.0e15,0.2e14}
+transport_nu_grid  = {0.2e14,5.0e15,0.2e14}
 
 -- inner source
-init_particles = 10
-n_emit_radioactive = 0;
-n_emit_core    =  0
-r_core         = 0
+particles_n_initialize  = 10
+core_n_emit        =   0
+core_radius        =   0
+core_luminosity    = 1e43
 
 -- output spectrum
 spectrum_name  = "out";
-spec_time_grid = {-10*days,10*days,100*days}
-spec_nu_grid   = nu_grid
-gamma_nu_grid  = {1,1,1}
-spec_n_mu      = 1
-spec_n_phi     = 1
+spectrum_time_grid = {-10*days,10*days,100*days}
+spectrum_nu_grid   = nu_grid
+spectrum_n_mu      = 1
+spectrum_n_phi     = 1
+
 
 
 -- opacity infor
-grey_opacity = 5
-
-steady_iterate = 0
-radiative_eq   = 1
-write_out      = 1
+opacity_grey_opacity             = 5
+transport_steady_iterate         = 0
+transport_radiative_equilibrium  = 1
+transport_write_out              = 1*days
 
 
 
