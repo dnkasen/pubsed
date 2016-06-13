@@ -89,9 +89,45 @@ void nlte_atom::solve_lte(double T, double ne, double time)
 }
 
 //-------------------------------------------------------
-//
+// integrate up the radiation field over the line
+// to get the line J
+//-------------------------------------------------------
+void nlte_atom::calculate_line_J(std::vector<real> J_nu)
+{
+  //debug -- hard code line width
+  double line_beta = 0.01; //v/c
+  double x_max = 5;
+  double dx    = 0.05;
+
+  // debug fill out a blackbody
+//  for (int i=0;i<J_nu.size();i++)
+ //   std::cout << nu_grid[i] << " " << J_nu[i] << " " << blackbody_nu(1.0e4,nu_grid[i]) << "\n";
+  //    J_nu[i] = blackbody_nu(1.0e4,nu_grid[i]);
+
+  for (int i=0;i<n_lines;i++)
+  {
+    double nu0 = lines[i].nu;
+    double dnu = nu0*line_beta;
+    double sum  = 0;
+    double J0   = 0;
+    for (double x=-1*x_max;x<=x_max;x+=dx)
+    {
+      double phi = voigt_profile_.getProfile(x,1e-4);
+      double n = nu0 + x*dnu;
+      double J1 = nu_grid.value_at(n,J_nu)*phi;
+      sum += 0.5*(J1 + J0)*dx;
+      J0 = J1;
+    }
+    lines[i].J = sum;
+  }
+}
+
+
+
+//-------------------------------------------------------
+// Set the rates for all possible transitions
 //------------------------------------------------------
-void nlte_atom::set_rates(double T, double ne)
+void nlte_atom::set_rates(double T, double ne, std::vector<real> J_nu)
 {
   // zero out rate matrix
   for (int i=0;i<n_levels;i++)
@@ -101,6 +137,10 @@ void nlte_atom::set_rates(double T, double ne)
   // ------------------------------------------------
   // radiative bound-bound transitions
   // ------------------------------------------------
+
+  // integrate radiation field in every line
+  calculate_line_J(J_nu);        
+
   for (int l=0;l<n_lines;l++)
   {
     int lu     = lines[l].lu;
@@ -113,6 +153,7 @@ void nlte_atom::set_rates(double T, double ne)
     // add in escape probability suppresion
     if (this->use_betas) 
     {
+      std::cout << "HI\n";
       R_ul *= lines[l].beta;
       R_lu *= lines[l].beta; 
     }
@@ -125,7 +166,7 @@ void nlte_atom::set_rates(double T, double ne)
     //printf("RR %d %d %e\n",lu,ll,R_ul);
   }
 
- // ------------------------------------------------
+  // ------------------------------------------------
   // non-thermal (radioactive) bound-bound transitions
   // ------------------------------------------------
   double norm = 0;
@@ -171,10 +212,10 @@ void nlte_atom::set_rates(double T, double ne)
       // rate if it is a upward transition: l --> u
       if (dE < 0)
       {
-	// use condition that collision rates give LTE
-	double gl = levels[i].g;
-	double gu = levels[j].g;
-	C = C*gu/gl*exp(-zeta);      
+      	 // use condition that collision rates give LTE
+	       double gl = levels[i].g;
+	       double gu = levels[j].g;
+	       C = C*gu/gl*exp(-zeta);      
       }
 
       // add into rates
@@ -262,21 +303,13 @@ int nlte_atom::solve_nlte(double T,double ne,double time, std::vector<real> J_nu
   // this will also calculate line taus and betas
   solve_lte(T,ne,time);
 
-  // debug; I'm going to set line J's as BB
-  for (int i=0;i<n_lines;i++)
-  {
-    double nu  = lines[i].nu;
-    double W  = 1.0;
-    lines[i].J = W*blackbody_nu(T,nu);
-  }
-
   int max_iter = 100;
 
   // iterate betas
   for (int iter = 0; iter < max_iter; iter++)
   {
     // Set rates
-    set_rates(T,ne);
+    set_rates(T,ne,J_nu);
 
     // zero out matrix and vectors
     gsl_matrix_set_zero(M_nlte);

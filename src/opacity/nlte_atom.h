@@ -10,7 +10,7 @@
 #include "xy_array.h"
 #include "locate_array.h"
 #include "sedona.h"
-
+#include "VoigtProfile.h"
 struct fuzz_line_structure
 {
   int n_lines;
@@ -90,9 +90,13 @@ private:
   //  int Rate_Equations();
   //void Set_Rates(double N_e, double T, double *J, double egam, double efrac);
 
+  // Voigt profile class
+  VoigtProfile voigt_profile_;
+
   double blackbody_nu(double T, double nu);
   double Calculate_Milne(int lev, double temp);
-  void   set_rates(double T, double ne);
+  void   set_rates(double T, double ne, std::vector<real> J_nu);
+  void   calculate_line_J(std::vector<real> J_nu);
 
 public:
 
