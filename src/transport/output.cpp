@@ -154,8 +154,6 @@ void transport::write_levels(int iw)
   for (int j=0;j<n_nu;j++) tmp_array[j] = nu_grid.center(j);
   H5LTmake_dataset(file_id,"nu",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 	
-  gas.print();	
-
   // loop over zones for wavelength dependence opacities
   for (int i = 0; i < grid->n_zones; i++)
   {
