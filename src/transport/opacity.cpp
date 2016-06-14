@@ -32,7 +32,7 @@ void transport::set_opacity()
     gas.time = t_now_;
     gas.set_mass_fractions(z->X_gas);
     
-    // solve for the state (assume LTE now)
+    // solve for the state 
     if (!gas.grey_opacity_) gas.solve_state(J_nu_[i]);
 
     // calculate the opacities/emissivities

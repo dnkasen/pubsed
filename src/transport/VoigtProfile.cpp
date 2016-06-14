@@ -25,6 +25,12 @@ void VoigtProfile::setU0(double upass)
 }
 
 
+//---------------------------------------------------
+// Return the value of the voigt profile at value 
+// x = (nu - nu_0)/dnu
+// This is normalized by 1/sqrt{pi} so that the
+// integrated voigt is unity
+//---------------------------------------------------
 double VoigtProfile::getProfile(double x, double a)
 {
   double sqrt_pi = 1.77245385091;
@@ -42,7 +48,7 @@ double VoigtProfile::getProfile(double x, double a)
   }
  
   double H = q*sqrt_pi + exp(-xsq);
-  return H;
+  return H/sqrt_pi;
 }
 
 
