@@ -221,14 +221,8 @@ int grid_1D_sphere::get_zone(const double *x) const
 void grid_1D_sphere::write_out(int iw, double tt)
 {
   char zonefile[1000];
-  char base[1000];
+  sprintf(zonefile,"ray_%05d.dat",iw);
 
-  if (iw < 10) sprintf(base,"_0000%d",iw);
-  else if (iw < 100) sprintf(base,"_000%d",iw);
-  else if (iw < 1000) sprintf(base,"_00%d",iw);
-  else if (iw < 10000) sprintf(base,"_0%d",iw);
-  else sprintf(base,"_%d",iw);
-  sprintf(zonefile,"ray%s",base);
 
   std::ofstream outf;
   outf.open(zonefile);

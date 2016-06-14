@@ -52,16 +52,9 @@ void transport::output_spectrum()
 //------------------------------------------------------------
 void transport::write_opacities(int iw)
 {
-
   // get file name
   char zonefile[1000];
-  char base[1000];
-  if (iw < 10) sprintf(base,"_0000%d",iw);
-  else if (iw < 100) sprintf(base,"_000%d",iw);
-  else if (iw < 1000) sprintf(base,"_00%d",iw);
-  else if (iw < 10000) sprintf(base,"_0%d",iw);
-  else sprintf(base,"_%d",iw);
-  sprintf(zonefile,"grid%s.h5",base);
+  sprintf(zonefile,"grid_%05d.h5",iw);
 
   // open hdf5 file
   hid_t file_id = H5Fcreate( zonefile, H5F_ACC_TRUNC, H5P_DEFAULT,  H5P_DEFAULT);
@@ -123,16 +116,9 @@ void transport::write_opacities(int iw)
 //------------------------------------------------------------
 void transport::write_levels(int iw)
 {
-  
   // get file name
   char zonefile[1000];
-  char base[1000];
-  if (iw < 10) sprintf(base,"_0000%d",iw);
-  else if (iw < 100) sprintf(base,"_000%d",iw);
-  else if (iw < 1000) sprintf(base,"_00%d",iw);
-  else if (iw < 10000) sprintf(base,"_0%d",iw);
-  else sprintf(base,"_%d",iw);
-  sprintf(zonefile,"levels%s.h5",base);
+  sprintf(zonefile,"levels_%05d.h5",iw);
 
   // open hdf5 file
   hid_t file_id = H5Fcreate( zonefile, H5F_ACC_TRUNC, H5P_DEFAULT,  H5P_DEFAULT);

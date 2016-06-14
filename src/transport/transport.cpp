@@ -214,7 +214,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     zone = &(grid->z[p.ind]);
     
     // maximum step size inside zone
-    double d_bn = step_size_*grid->zone_min_length(p.ind);
+    double d_bn = step_size_*grid->zone_min_length(p.ind); //*gsl_rng_uniform(rangen);
 
     // determine the doppler shift from comoving to lab
     //double dshift = dshift_comoving_to_lab(&p);
@@ -320,6 +320,18 @@ ParticleFate transport::propagate(particle &p, double dt)
     p.x[2] += this_d*p.D[2]; 
     // advance the time
     p.t = p.t + this_d/pc::c;
+
+    // reflection
+   /* if (p.r() > 1.099e14)
+    {
+       p.D[0] *= -1;
+       p.D[1] *= -1;
+       p.D[2] *= -1;
+       // step back
+	   p.x[0] += this_d*p.D[0];
+       p.x[1] += this_d*p.D[1];
+   	   p.x[2] += this_d*p.D[2]; 
+    } */
 
     // Find position of the particle now
     p.ind = grid->get_zone(p.x);
