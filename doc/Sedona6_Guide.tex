@@ -8,6 +8,7 @@
 \usepackage{fullpage}
 \usepackage{dirtree}
 \usepackage[normalem]{ulem}
+\usepackage{array}
 
 
 \newcommand{\bhead}[1]{\medskip \noindent {\bf #1}}
@@ -21,7 +22,7 @@
 
 \begin{document}
 
-\title{SedonaBox User's Guide}
+\title{Sedona6 User's Guide}
 \maketitle
 
 \section{Introduction}
@@ -35,24 +36,69 @@
 
 \subsection{Running the Code}
 
-%To run the executable you just built, you will need the data for
-%computing opacities ({\tt atoms/} and {\tt fuzz/}), an {\tt inputs}
-%gile that provides runtime parameters, a {\tt probin} file specifying
-%the initial model, and a model file ({\tt w7.boxmod} in this case).
 
-%To run with 2 MPI processors and 2 threads, you do something like
-
-%\noindent {\tt OMP\_NUM\_THREADS=2 mpiexec -n 2
- % ./Sedona1d.Linux.g++.gfortran.MPI.OMP.ex inputs.1d-regt}
 
 
 \section{Input Data}
 
 Atomic data format
 
+\section{Model Parameters}
+
+Parameters are in the param.lua file. This is lua script, where you can specify variables and even functions inside the param file.
+
+Defaults for all parameters are given in a defaults.lua file. 
+
+\begin {table}
+\begin{center}
+{\bf \large Time stepping parameters}
+\end{center}
+\begin{tabular}{| >{\bf}l | p{12cm} |  }
+\hline
+\hline
+  tstep\_max\_steps    &  integer number of time steps to take before exiting before stopping \\ \hline
+   tstep\_time\_stop    & stop time (in seconds) \\ \hline
+  tstep\_max\_dt        & maximum size of a timestep (in seconds)  \\ \hline
+ tstep\_min\_dt          & minimum size of a timestep (in seconds)\\ \hline
+ tstep\_max\_delta   &  maximum fractional size of a timestep (multiply this by 
+ the current time to get the maximum timestep). \\ \hline
+\hline
+\end{tabular}
+\end{table}
+
+
+\begin {table}
+\begin{center}
+{\bf \large Transport parameters}
+\end{center}
+\begin{tabular}{| >{\bf}l | p{10cm} |  }
+\hline
+\hline
+transport\_nu\_grid  & frequency grid to calculate opacities/emissivites. In the format of {nu\_start, nu\_stop, nu\_delta} \\ \hline
+transport\_radiative\_equilibrium  & = 0 or 1. If 1, determine gas temperature after each time step from radiative equilibrium, i.e., heating equals radiative cooling \\ \hline
+transport\_steady\_iterate    & = integer. Do not step in time, rather iterate the radiation transport (in steady state) the number of times given. \\ \hline
+\hline
+\end{tabular}
+\end{table}
+
+
+\newpage
+
+
 \section{Output}
 
-\section{Runtime Parameters}
+\bhead{Spectrum files:}
+
+\bhead{Ray files:}
+
+\bhead{Grid files:} 
+
+
+\bhead{Level.hdf5 Files:}
+These files continue detailed information about the ionization and excitation state for all species.
+
+
+
 
 \section{Test Problems}
 
