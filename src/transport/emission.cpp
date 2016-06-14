@@ -185,7 +185,7 @@ void transport::emit_radioactive(double dt)
   }
   
   if (verbose) cout << "# added " << n_add_tot << " radiaoctive particles per proc\n";
-  delete gamma_frac;
+  delete[] gamma_frac;
 }
 
 

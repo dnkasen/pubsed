@@ -112,8 +112,8 @@ void transport::write_opacities(int iw)
   }
   
   H5Fclose (file_id);
-  delete tmp_array;
-  delete zone_arr;
+  delete[] tmp_array;
+  delete[] zone_arr;
  
 }
 
@@ -170,15 +170,15 @@ void transport::write_levels(int iw)
 
 	    // write out ionization fractions for this atom
 	   	float tmp_ion[100];
-		hsize_t  dims_ion[RANK]={this_Z+1};
+		  hsize_t  dims_ion[RANK]={this_Z+1};
 	   	for (int k=0;k<gas.elem_Z[j]+1;k++)
 	   		tmp_ion[k] = gas.get_ionization_fraction(j,k);
 	   	H5LTmake_dataset(atom_id,"ion_fraction",RANK,dims_ion,H5T_NATIVE_FLOAT,tmp_ion);
 
 	   	// write out level populations for this atom
 	   	int this_nl = gas.atoms[j].n_levels;
-	   	float* tmp_level = new float[this_nl];
-		hsize_t  dims_level[RANK]={this_nl};
+	  	float* tmp_level = new float[this_nl];
+		  hsize_t  dims_level[RANK]={this_nl};
 	   	for (int k=0;k<this_nl;k++)
 	   		tmp_level[k] = gas.get_level_fraction(j,k);
 	   	H5LTmake_dataset(atom_id,"level_fraction",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
@@ -188,13 +188,13 @@ void transport::write_levels(int iw)
 	   		tmp_level[k] = gas.get_level_departure(j,k);
 	   	H5LTmake_dataset(atom_id,"level_departure",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
 
-		delete tmp_level;
+		delete[] tmp_level;
     }
 
   }
   
   H5Fclose (file_id);
-  delete tmp_array;
-  delete zone_arr;
+  delete[] tmp_array;
+  delete[] zone_arr;
   
 }

@@ -78,8 +78,8 @@ void grid_general::reduce_radiation_block(int bsize, int start)
     
   // need to put in other quantities...
 
-  delete src;
-  delete dst;
+  delete[] src;
+  delete[] dst;
 
 }
 
@@ -94,7 +94,7 @@ void grid_general::reduce_T_gas()
   MPI_Allreduce(src_ptr,dst_ptr,n_zones,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
   for (int i=0;i<n_zones;i++) z[i].T_gas = dst_ptr[i];
 
-  delete src_ptr;
-  delete dst_ptr;
+  delete[] src_ptr;
+  delete[] dst_ptr;
 
 }

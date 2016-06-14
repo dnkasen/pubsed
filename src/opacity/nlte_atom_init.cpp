@@ -63,8 +63,8 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
   }
 
   // clean up
-  delete ion_darr;
-  delete ion_iarr;
+  delete[] ion_darr;
+  delete[] ion_iarr;
    
   // ----------------------------------------    
   // read levels
@@ -115,8 +115,8 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
   } 
     
   // clean up
-  delete lev_iarr;
-  delete lev_darr;
+  delete[] lev_iarr;
+  delete[] lev_darr;
 
   // ----------------------------------------
   // read lines
@@ -147,8 +147,8 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
     status = H5LTread_dataset_double(file_id,dset,lin_darr);
     for (int i=0;i<n_lines;i++) lines[i].A_ul = lin_darr[i];  
 
-    delete lin_darr;
-    delete lin_iarr;
+    delete[] lin_darr;
+    delete[] lin_iarr;
   }
 
   // set additional line properties
@@ -293,8 +293,8 @@ int nlte_atom::read_fuzzfile(std::string fname)
   for (int i=0;i<nl;i++) 
     fuzz_lines.bin[i] = nu_grid.locate(fuzz_lines.nu[i]);
 
-  delete darr;
-  delete iarr;
+  delete[] darr;
+  delete[] iarr;
   H5Fclose(file_id);
 
   return nl;
