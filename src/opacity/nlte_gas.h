@@ -194,6 +194,7 @@ class nlte_gas
   void computeOpacity(std::vector<double>&, std::vector<double>&, 
 		      std::vector<double>&);
   double electron_scattering_opacity();
+  void free_free_opacity(std::vector<double>&);
   void line_expansion_opacity(std::vector<double>&);
   void fuzz_expansion_opacity(std::vector<double>&);
   void get_line_opacities(std::vector<double>&);

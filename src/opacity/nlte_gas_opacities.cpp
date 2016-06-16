@@ -41,19 +41,28 @@ void nlte_gas::computeOpacity(std::vector<double>& abs,
     {
       double es_opac = electron_scattering_opacity();
       for (int i=0;i<ns;i++) {
-	scat[i] += es_opac;
-	// debug -- a bit of small thermalization
-	abs[i] += es_opac*1e-4; }
+        scat[i] += es_opac;
+	       // debug -- a bit of small thermalization
+	       abs[i] += es_opac*1e-4; }
     }
+
+     //---
+    if (use_free_free_opacity) 
+    {
+      free_free_opacity(opac);
+      for (int i=0;i<ns;i++) {
+         abs[i] += opac[i]; }
+    }
+
 
     //---
     if (use_line_expansion_opacity) 
     {
       line_expansion_opacity(opac);
       for (int i=0;i<ns;i++) {
-	abs[i]  += epsilon_*opac[i];
-	scat[i] += (1-epsilon_)*opac[i];
-      }
+    	 abs[i]  += epsilon_*opac[i];
+    	 scat[i] += (1-epsilon_)*opac[i];
+        }
     }
   
     //---
@@ -61,8 +70,8 @@ void nlte_gas::computeOpacity(std::vector<double>& abs,
     {
       fuzz_expansion_opacity(opac);
       for (int i=0;i<ns;i++) {
-	abs[i]  += epsilon_*opac[i];
-	scat[i] += (1-epsilon_)*opac[i];
+	     abs[i]  += epsilon_*opac[i];
+	     scat[i] += (1-epsilon_)*opac[i];
       }
     }
   }
@@ -86,6 +95,41 @@ double nlte_gas::electron_scattering_opacity()
 {
   return pc::thomson_cs*ne;
 }
+
+
+//----------------------------------------------------------------
+// free-free opacity (brehmstrahlung)
+// note the gaunt factor is being set to 1 here
+//----------------------------------------------------------------
+void nlte_gas::free_free_opacity(std::vector<double>& opac)
+{
+  int npts   = nu_grid.size();
+  int natoms = atoms.size();
+
+  // calculate sum of n_ion*Z**2
+  double fac = 0;
+  for (int i=0;i<natoms;i++)
+  {
+    double Z_eff_sq = 0;
+    for (int j=0;j<atoms[i].n_ions;j++) 
+      Z_eff_sq += atoms[i].ionization_fraction(j)*j*j;
+
+    double n_ion = mass_frac[i]*dens/(elem_A[i]*pc::m_p);
+    fac += n_ion*Z_eff_sq;
+  }
+  // multiply by overall constants
+  fac *= 3.7e8*pow(temp,-0.5)*ne;
+  
+  // multiply by frequency dependence
+  for (int i=0;i<npts;i++)
+  {
+    double nu = nu_grid[i];
+    opac[i] = fac/nu/nu/nu*(1 - exp(-pc::h*nu/pc::k/temp));
+  }      
+  
+}
+
+
 
 
 //----------------------------------------------------------------
