@@ -64,6 +64,21 @@ void transport::write_opacities(int iw)
   hsize_t  dims_z[RANK]={grid->n_zones};
   float* zone_arr = new float[grid->n_zones];
 
+  // print out zone coordinates
+  double r[3];
+  for (int i=0;i<grid->n_zones;i++) {
+    grid->coordinates(i,r);  
+    zone_arr[i] = r[0];  }
+  H5LTmake_dataset(file_id,"x",RANK,dims_z,H5T_NATIVE_FLOAT,zone_arr);
+  for (int i=0;i<grid->n_zones;i++) {
+    grid->coordinates(i,r);  
+    zone_arr[i] = r[1];  }
+  H5LTmake_dataset(file_id,"y",RANK,dims_z,H5T_NATIVE_FLOAT,zone_arr);
+  for (int i=0;i<grid->n_zones;i++) {
+    grid->coordinates(i,r);  
+    zone_arr[i] = r[2];  }
+  H5LTmake_dataset(file_id,"z",RANK,dims_z,H5T_NATIVE_FLOAT,zone_arr);
+
   // print out zone scalars
   for (int i=0;i<grid->n_zones;i++)  zone_arr[i] = grid->z[i].rho;
   H5LTmake_dataset(file_id,"rho",RANK,dims_z,H5T_NATIVE_FLOAT,zone_arr);
@@ -128,6 +143,21 @@ void transport::write_levels(int iw)
   const int RANK = 1;
   hsize_t  dims_z[RANK]={grid->n_zones};
   float* zone_arr = new float[grid->n_zones];
+
+  // print out zone coordinates
+  double r[3];
+  for (int i=0;i<grid->n_zones;i++) {
+    grid->coordinates(i,r);  
+    zone_arr[i] = r[0];  }
+  H5LTmake_dataset(file_id,"x",RANK,dims_z,H5T_NATIVE_FLOAT,zone_arr);
+  for (int i=0;i<grid->n_zones;i++) {
+    grid->coordinates(i,r);  
+    zone_arr[i] = r[1];  }
+  H5LTmake_dataset(file_id,"y",RANK,dims_z,H5T_NATIVE_FLOAT,zone_arr);
+  for (int i=0;i<grid->n_zones;i++) {
+    grid->coordinates(i,r);  
+    zone_arr[i] = r[2];  }
+  H5LTmake_dataset(file_id,"z",RANK,dims_z,H5T_NATIVE_FLOAT,zone_arr);
 
   // print out zone scalars
   for (int i=0;i<grid->n_zones;i++)  zone_arr[i] = grid->z[i].rho;
