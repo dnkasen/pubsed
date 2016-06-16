@@ -175,6 +175,15 @@ void transport::write_levels(int iw)
   // loop over zones for wavelength dependence opacities
   for (int i = 0; i < grid->n_zones; i++)
   {
+    // just recalculate state for now... I know...
+    // set up the state of the gas in this zone
+    gas.dens = grid->z[i].rho;
+    gas.temp = grid->z[i].T_gas;
+    gas.time = grid->t_now;
+    gas.set_mass_fractions(grid->z[i].X_gas);
+    // solve for the state 
+    if (!gas.grey_opacity_) gas.solve_state(J_nu_[i]);
+
     char zfile[100];
     sprintf(zfile,"zone_%d",i);
     hid_t zone_id =  H5Gcreate1( file_id, zfile, 0 );

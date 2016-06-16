@@ -285,8 +285,8 @@ void nlte_atom::set_rates(double T, double ne, std::vector<real> J_nu)
     // suppress ionization froms ground  NOT
     rates[i][ic] += levels[i].P_ic;
 
-    printf("pc::pi: %d %d %e %e\n",i,ic,R_rec,levels[i].P_ic);
-    printf("CI: %d %d %e %e\n",i,ic,C_rec,C_ion);
+    //printf("pc::pi: %d %d %e %e\n",i,ic,R_rec,levels[i].P_ic);
+    //printf("CI: %d %d %e %e\n",i,ic,C_rec,C_ion);
     
   }
 
