@@ -16,10 +16,11 @@ transport_radiative_equilibrium  = 1
 transport_steady_iterate         = 1
 
 -- inner source emission = none
-core_n_emit      = 0
-core_radius      = 0
-core_luminosity  = 0
-core_temperature = 0
+core_n_emit           = 0
+core_radius           = 0
+core_luminosity       = 0
+core_temperature      = 0
+core_photon_frequency = 0
 
 -- default particle params
 particles_max_total = 1e6

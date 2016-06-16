@@ -205,7 +205,8 @@ void transport::emit_inner_source(double dt)
   double L_core = params_->getScalar<double>("core_luminosity");
   double T_core = params_->getScalar<double>("core_temperature");
   r_core_  = params_->getScalar<double>("core_radius");
-  
+  double core_frequency = params_->getScalar<double>("core_photon_frequency");
+
   double Ep  = L_core*dt/n_emit;
   
   if (particles.size() + n_emit > this->max_total_particles)
@@ -227,40 +228,65 @@ void transport::emit_inner_source(double dt)
   for (int i=0;i<n_emit;i++)
   {
     particle p;
-    
-    // pick initial position on photosphere
-    double phi_core   = 2*pc::pi*gsl_rng_uniform(rangen);
-    double cosp_core  = cos(phi_core);
-    double sinp_core  = sin(phi_core);
-    double cost_core  = 1 - 2.0*gsl_rng_uniform(rangen);
-    double sint_core  = sqrt(1-cost_core*cost_core);
-    // real spatial coordinates    
-    double a_phot = r_core_ + r_core_*1e-10;
-    p.x[0] = a_phot*sint_core*cosp_core;
-    p.x[1] = a_phot*sint_core*sinp_core;
-    p.x[2] = a_phot*cost_core;
+   
+    if (r_core_ == 0)
+    {
+      // central emission
+      p.x[0] = 0;
+      p.x[1] = 0;
+      p.x[2] = 0;
+      // emit isotropically in comoving frame
+      double mu  = 1 - 2.0*gsl_rng_uniform(rangen);
+      double phi = 2.0*pc::pi*gsl_rng_uniform(rangen);
+      double smu = sqrt(1 - mu*mu);
+      p.D[0] = smu*cos(phi);
+      p.D[1] = smu*sin(phi);
+      p.D[2] = mu;
+    } 
+    else 
+    {
+      // pick initial position on photosphere
+      double phi_core   = 2*pc::pi*gsl_rng_uniform(rangen);
+      double cosp_core  = cos(phi_core);
+      double sinp_core  = sin(phi_core);
+      double cost_core  = 1 - 2.0*gsl_rng_uniform(rangen);
+      double sint_core  = sqrt(1-cost_core*cost_core);
+      // real spatial coordinates    
+      double a_phot = r_core_ + r_core_*1e-10;
+      p.x[0] = a_phot*sint_core*cosp_core;
+      p.x[1] = a_phot*sint_core*sinp_core;
+      p.x[2] = a_phot*cost_core;
 
-    // pick photon propagation direction wtr to local normal                   
-    double phi_loc = 2*pc::pi*gsl_rng_uniform(rangen);
-    // choose sqrt(R) to get outward, cos(theta) emission         
-    double cost_loc  = sqrt(gsl_rng_uniform(rangen));
-    double sint_loc  = sqrt(1 - cost_loc*cost_loc);
-    // local direction vector                     
-    double D_xl = sint_loc*cos(phi_loc);
-    double D_yl = sint_loc*sin(phi_loc);
-    double D_zl = cost_loc;
-    // apply rotation matrix to convert D vector into overall frame        
-    p.D[0] = cost_core*cosp_core*D_xl-sinp_core*D_yl+sint_core*cosp_core*D_zl;
-    p.D[1] = cost_core*sinp_core*D_xl+cosp_core*D_yl+sint_core*sinp_core*D_zl;
-    p.D[2] = -sint_core*D_xl+cost_core*D_zl;
+      // pick photon propagation direction wtr to local normal                   
+      double phi_loc = 2*pc::pi*gsl_rng_uniform(rangen);
+      // choose sqrt(R) to get outward, cos(theta) emission         
+      double cost_loc  = sqrt(gsl_rng_uniform(rangen));
+      double sint_loc  = sqrt(1 - cost_loc*cost_loc);
+      // local direction vector                     
+      double D_xl = sint_loc*cos(phi_loc);
+      double D_yl = sint_loc*sin(phi_loc);
+      double D_zl = cost_loc;
+      // apply rotation matrix to convert D vector into overall frame        
+      p.D[0] = cost_core*cosp_core*D_xl-sinp_core*D_yl+sint_core*cosp_core*D_zl;
+      p.D[1] = cost_core*sinp_core*D_xl+cosp_core*D_yl+sint_core*sinp_core*D_zl;
+      p.D[2] = -sint_core*D_xl+cost_core*D_zl;
+    }
 
     // set energy of packet
     p.e = Ep;
 
-    // sample frequency from blackbody 
-    int ilam = core_emis.sample(gsl_rng_uniform(rangen));
-    p.nu = nu_grid.sample(ilam,gsl_rng_uniform(rangen));
-    if (p.nu > 1e20) std::cout << "pnu " << p.nu << "\n";
+    // get emission frequency
+    if (core_frequency > 0)
+    {
+      // constant single frequency emission
+      p.nu = core_frequency;
+    }
+    else
+    {
+      // sample frequency from blackbody 
+      int ilam = core_emis.sample(gsl_rng_uniform(rangen));
+      p.nu = nu_grid.sample(ilam,gsl_rng_uniform(rangen));
+    } 
 
     // get index of current zone
     p.ind = grid->get_zone(p.x);
