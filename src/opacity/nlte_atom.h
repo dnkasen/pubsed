@@ -96,7 +96,7 @@ private:
   double blackbody_nu(double T, double nu);
   double Calculate_Milne(int lev, double temp);
   void   set_rates(double T, double ne, std::vector<real> J_nu);
-  void   calculate_line_J(std::vector<real> J_nu);
+  void   calculate_radiative_rates(std::vector<real> J_nu);
 
 public:
 

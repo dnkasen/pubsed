@@ -89,11 +89,37 @@ void nlte_atom::solve_lte(double T, double ne, double time)
 }
 
 //-------------------------------------------------------
-// integrate up the radiation field over the line
-// to get the line J
+// integrate up the radiation field over  lines
+// to get the line J and over bound-free to get the 
+// photoionization rates
 //-------------------------------------------------------
-void nlte_atom::calculate_line_J(std::vector<real> J_nu)
+void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu)
 {
+
+  // calculate photoionization rates
+  for (int i=0;i<n_levels;i++)
+  {
+    double R_ion = 0;
+    for (int j=1;j<levels[i].s_photo.size();j++)
+    {
+      double  E    = levels[i].s_photo.x[j];
+      double nu    = E*pc::ev_to_ergs/pc::h;
+      double  E_0  = levels[i].s_photo.x[j-1];
+      double nu_0  = E_0*pc::ev_to_ergs/pc::h;
+      double dnu   = (nu - nu_0);
+      double nu_m  = 0.5*(nu + nu_0);
+      double J     = nu_grid.value_at(nu_m,J_nu);
+      double sigma = levels[i].s_photo.y[j];
+      // correction for stimulated recombination // debug
+     // sigma = sigma*(1 - exp(-pc::h*nu/pc::k/T));
+      R_ion += 4*pc::pi*sigma*J/(pc::h*nu)*dnu; 
+      //std::cout << i << " " << nu_m << " " << sigma << " " << J << "\n";
+    }
+    levels[i].P_ic = R_ion;
+  }
+
+  // calculate line J's
+
   //debug -- hard code line width
   double line_beta = 0.01; //v/c
   double x_max = 5;
@@ -139,7 +165,7 @@ void nlte_atom::set_rates(double T, double ne, std::vector<real> J_nu)
   // ------------------------------------------------
 
   // integrate radiation field in every line
-  calculate_line_J(J_nu);        
+  calculate_radiative_rates(J_nu);        
 
   for (int l=0;l<n_lines;l++)
   {
@@ -224,7 +250,6 @@ void nlte_atom::set_rates(double T, double ne, std::vector<real> J_nu)
       //printf("CR: %d %d %e\n",i,j,C);
     }
 
-
   // ------------------------------------------------
   // bound-free transitions
   // ------------------------------------------------
@@ -249,34 +274,19 @@ void nlte_atom::set_rates(double T, double ne, std::vector<real> J_nu)
     rates[ic][i] += C_rec;
 
     // radiative recombination rate (debug)
-   /* double R_rec = ne*levels[i].a_rec.value_at(T);
-    // suppress recombinations to ground  
-    if (no_ground_recomb) if (levels[i].E == 0) R_rec = 0;
+    //double R_rec = ne*levels[i].a_rec.value_at(T);
+    //// suppress recombinations to ground  
+    //if (no_ground_recomb) if (levels[i].E == 0) R_rec = 0;
+    
+    // DEBUG, fake rate
+    double R_rec = ne*2e-13;
     rates[ic][i] += R_rec;
 
-    // photoionizaiton rate (debug used fixed J here)
-    double W = 1.0;
-    double R_ion = 0;
-    for (int j=1;j<levels[i].s_photo.size();j++)
-    {
-      double  E    = levels[i].s_photo.x[j];
-      double nu    = E*pc::ev_to_ergs/pc::h;
-      double  E_0  = levels[i].s_photo.x[j-1];
-      double nu_0  = E_0*pc::ev_to_ergs/pc::h;
-      double dnu   = (nu - nu_0);
-      double J     = W*blackbody_nu(T,nu);
-      double sigma = levels[i].s_photo.y[j];
-      // correction for stimulated recombination
-      sigma = sigma*(1 - exp(-pc::h*nu/pc::k/T));
-      R_ion += 4*pc::pi*sigma*J/(pc::h*nu)*dnu; 
-    }
-
     // suppress ionization froms ground  NOT
-    //if (levels[i].E == 0) {R_ion = 0; }
-    rates[i][ic] += R_ion;*/
+    rates[i][ic] += levels[i].P_ic;
 
-    //printf("pc::pi: %d %d %e %e\n",i,ic,R_rec,R_ion);
-    //printf("CI: %d %d %e %e\n",i,ic,C_rec,C_ion);
+    printf("pc::pi: %d %d %e %e\n",i,ic,R_rec,levels[i].P_ic);
+    printf("CI: %d %d %e %e\n",i,ic,C_rec,C_ion);
     
   }
 

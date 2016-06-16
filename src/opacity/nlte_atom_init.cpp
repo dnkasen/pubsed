@@ -111,7 +111,7 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
     levels[i].ic = -1;
     for (int j=0;j<n_ions;j++)
       if (ions[j].stage == levels[i].ion + 1)
-	levels[i].ic  = ions[j].ground;
+      	levels[i].ic  = ions[j].ground;
   } 
     
   // clean up
@@ -182,36 +182,35 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
     lines[i].beta = 1;
   }
   
-  // // ----------------------------------------
-  // // read photoionization cross-sections
-  // // if not available, just use hydrogenic approx
-  // // ----------------------------------------
-  // int npts     = 1000;
-  // double E_max = 300;
-  // for (int i=0;i<n_levels;i++) 
-  // {
-  //   // set photoionization cross-section
-  //   double E_ion = levels[i].E_ion;
-  //   double dE = (E_max - E_ion)/npts;
-  //   levels[i].s_photo.init(E_ion,E_max, dE);
-  //   for (int j=0;j<npts;j++) 
-  //   {
-  //     double E = levels[i].s_photo.x[j];
-  //     double sigma = 6e-18*pow(E/E_ion,-2);
-  //     levels[i].s_photo.y[j] = sigma;
-  //   }
+  // ----------------------------------------
+  // read photoionization cross-sections
+  // if not available, just use hydrogenic approx
+  // ----------------------------------------
+  int npts     = 1000;
+  double fmax  = 10;
+  for (int i=0;i<n_levels;i++) 
+  {
+     // set photoionization cross-section
+     double E_ion = levels[i].E_ion;
+     double E_max = E_ion*fmax;
+     double dE = (E_max - E_ion)/npts;
+     levels[i].s_photo.init(E_ion,E_max, dE);
+     for (int j=0;j<npts;j++) 
+     {
+        double E = levels[i].s_photo.x[j];
+        double sigma = 6e-18*pow(E/E_ion,-3);
+        levels[i].s_photo.y[j] = sigma;
+     }
 
-  //   // set recombination rates
-  //   levels[i].a_rec.init(1e3,1e5,5e3);
-  //   for (int j=0;j<levels[i].a_rec.size();j++)
-  //   {
-  //     double temp = levels[i].a_rec.x[j];
-  //     //debug cut this out for now
+    // set recombination rates
+    levels[i].a_rec.init(1e3,1e5,5e3);
+    for (int j=0;j<levels[i].a_rec.size();j++)
+    {
+       double temp = levels[i].a_rec.x[j];
+       levels[i].a_rec.y[j] = 2e-13*pow(temp/1e4,-0.5);
   //     // levels[i].a_rec.y[j] = Calculate_Milne(i,temp);
-  //   }
-  // }
-
-  // fclose(in);
+     }
+  }
 
   //----------------------------------------------
   // allocate memory for arrays
