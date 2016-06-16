@@ -55,6 +55,7 @@ void transport::write_opacities(int iw)
   // get file name
   char zonefile[1000];
   sprintf(zonefile,"grid_%05d.h5",iw);
+  sprintf(zonefile,"grid.h5");  
 
   // open hdf5 file
   hid_t file_id = H5Fcreate( zonefile, H5F_ACC_TRUNC, H5P_DEFAULT,  H5P_DEFAULT);
@@ -69,7 +70,6 @@ void transport::write_opacities(int iw)
   for (int i=0;i<grid->n_zones;i++)  zone_arr[i] = grid->z[i].T_gas;
   H5LTmake_dataset(file_id,"T_gas",RANK,dims_z,H5T_NATIVE_FLOAT,zone_arr);
 
-
   int n_nu = nu_grid.size();
   float* tmp_array = new float[n_nu];
   hsize_t  dims[RANK]={n_nu};
@@ -81,7 +81,7 @@ void transport::write_opacities(int iw)
   for (int i = 0; i < grid->n_zones; i++)
   {
     char zfile[100];
-    sprintf(zfile,"%d",i);
+    sprintf(zfile,"zone_%d",i);
     hid_t zone_id =  H5Gcreate1( file_id, zfile, 0 );
 
     // write total opacity
@@ -101,7 +101,9 @@ void transport::write_opacities(int iw)
 
     // write radiation field J
     for (int j=0;j<n_nu;j++)  tmp_array[j] = J_nu_[i][j];
-    H5LTmake_dataset(zone_id,"Jnu",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
+    H5LTmake_dataset(zone_id,"Jnu",RANK,dims,H5T_NATIVE_FLOAT,tmp_array); 
+
+    H5Gclose(zone_id);
   }
   
   H5Fclose (file_id);
@@ -156,7 +158,7 @@ void transport::write_levels(int iw)
 
 	    // write out ionization fractions for this atom
 	   	float tmp_ion[100];
-		  hsize_t  dims_ion[RANK]={this_Z+1};
+	   	hsize_t  dims_ion[RANK]={this_Z+1};
 	   	for (int k=0;k<gas.elem_Z[j]+1;k++)
 	   		tmp_ion[k] = gas.get_ionization_fraction(j,k);
 	   	H5LTmake_dataset(atom_id,"ion_fraction",RANK,dims_ion,H5T_NATIVE_FLOAT,tmp_ion);
@@ -164,7 +166,7 @@ void transport::write_levels(int iw)
 	   	// write out level populations for this atom
 	   	int this_nl = gas.atoms[j].n_levels;
 	  	float* tmp_level = new float[this_nl];
-		  hsize_t  dims_level[RANK]={this_nl};
+	   	hsize_t  dims_level[RANK]={this_nl};
 	   	for (int k=0;k<this_nl;k++)
 	   		tmp_level[k] = gas.get_level_fraction(j,k);
 	   	H5LTmake_dataset(atom_id,"level_fraction",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
@@ -174,7 +176,8 @@ void transport::write_levels(int iw)
 	   		tmp_level[k] = gas.get_level_departure(j,k);
 	   	H5LTmake_dataset(atom_id,"level_departure",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
 
-		delete[] tmp_level;
+      H5Gclose(atom_id);
+  		delete[] tmp_level;
     }
 
   }
