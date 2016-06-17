@@ -448,7 +448,27 @@ double nlte_atom::compute_sobolev_tau(int i, double time)
   return lines[i].tau;
 }
 
+//---------------------------------------------------------
+// calculate the bound-free extinction coefficient
+// (units cm^{-1}) for all levels
+//---------------------------------------------------------
+void nlte_atom::bound_free_opacity(std::vector<double>& opac)
+{
+  int ng = nu_grid.size();
 
+  for (int i=0;i<ng;i++)
+  {
+    opac[i] = 0;
+    double E     = pc::h*nu_grid[i]*pc::ergs_to_ev;
+    for (int j=0;j<n_levels;j++)
+    {
+      // get cross-section (zero if outside threshold)
+      double sigma = levels[j].s_photo.value_at_with_zero_edges(E);
+      opac[i] += n_dens*sigma*levels[j].n;
+    }
+  }
+    
+}
 
 double nlte_atom::Calculate_Milne(int lev, double temp)
 {

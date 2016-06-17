@@ -198,7 +198,8 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
      for (int j=0;j<npts;j++) 
      {
         double E = levels[i].s_photo.x[j];
-        double sigma = 6e-18*pow(E/E_ion,-3);
+        double neff = sqrt(levels[i].g/2.0);
+        double sigma = 6e-18*neff*pow(E/E_ion,-3);
         levels[i].s_photo.y[j] = sigma;
      }
 
@@ -208,6 +209,11 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
     {
        double temp = levels[i].a_rec.x[j];
        levels[i].a_rec.y[j] = 2e-13*pow(temp/1e4,-0.5);
+       // debug
+       // if (i == 0) levels[i].a_rec.y[j] = 5.83e-14;
+       // if (i == 1) levels[i].a_rec.y[j] = 2.02e-14;
+       // if (i == 2) levels[i].a_rec.y[j] = 9.67e-15;
+
   //     // levels[i].a_rec.y[j] = Calculate_Milne(i,temp);
      }
   }

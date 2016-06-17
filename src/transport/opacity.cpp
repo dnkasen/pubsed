@@ -10,6 +10,7 @@ namespace pc = physical_constants;
 //-----------------------------------------------------------------
 void transport::set_opacity()
 {
+
   // tmp vector to hold emissivity
   vector<double> emis(nu_grid.size());
   
@@ -17,6 +18,7 @@ void transport::set_opacity()
   vector<double> lopac(n_lines_);
 
   // loop over all zones
+  int solve_error = 0;
   for (int i=0;i<grid->n_zones;i++)
   {
     // pointer to current zone for easy access
@@ -33,7 +35,7 @@ void transport::set_opacity()
     gas.set_mass_fractions(z->X_gas);
     
     // solve for the state 
-    if (!gas.grey_opacity_) gas.solve_state(J_nu_[i]);
+    if (!gas.grey_opacity_) solve_error = gas.solve_state(J_nu_[i]);
 
     // calculate the opacities/emissivities
     gas.computeOpacity(abs_opacity_[i],scat_opacity_[i],emis);
@@ -65,6 +67,13 @@ void transport::set_opacity()
       photoion_opac[i] += ndens*2.0*pc::thomson_cs*photo;
     }
 
+  }
+
+  // flag any error
+  if (verbose)
+  {
+    if (solve_error == 1) std::cout << "# Warning: root not bracketed in n_e solve\n";
+    if (solve_error == 2) std::cout << "# Warning: max iterations hit in n_e solve\n";
   }
 }
 

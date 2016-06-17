@@ -223,7 +223,7 @@ double nlte_gas::get_ionization_state()
 // input:
 // int lte: 1 = do it in LTE, 0 = do it in NLTE
 //-----------------------------------------------------------
-void nlte_gas::solve_state(std::vector<real> J_nu)
+int nlte_gas::solve_state(std::vector<real> J_nu)
 {
   for (int i=0;i<atoms.size();i++)
   {
@@ -235,7 +235,11 @@ void nlte_gas::solve_state(std::vector<real> J_nu)
   double max_ne = 10*dens/(A_mu*pc::m_p);
   double min_ne = 1e-20*dens/(A_mu*pc::m_p);;
   double tol    = 1e-3;
+  solve_error_  = 0;
   ne = ne_brent_method(min_ne,max_ne,tol,J_nu);
+
+  return solve_error_;
+
 }
 
 
@@ -283,7 +287,7 @@ double nlte_gas::ne_brent_method(double x1,double x2,double tol,std::vector<real
   double fc,p,q,r,s,tol1,xm;
   
   if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0))
-    if (verbose) printf("# Warning: Root not bracketed in brent charge conservation\n");
+    solve_error_ = 1;
   fc=fb;
   for (iter=1;iter<=ITMAX;iter++) {
     if ((fb > 0.0 && fc > 0.0) || (fb < 0.0 && fc < 0.0)) {
@@ -336,7 +340,7 @@ double nlte_gas::ne_brent_method(double x1,double x2,double tol,std::vector<real
       b += SIGN(tol1,xm);
     fb=charge_conservation(b,J_nu);
   }
-  if (verbose) printf("Maximum number of iterations exceeded in zbrent");
+  solve_error_ = 2;
   return 0.0;
 }
 

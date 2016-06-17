@@ -29,6 +29,7 @@ class nlte_gas
 
   locate_array nu_grid;
   int verbose;
+  int solve_error_;
 
   // global list of all levels of all atoms
   std::vector <int> globalLevelList_atom_;
@@ -129,10 +130,13 @@ class nlte_gas
   // Solve for the gas state (excitation/ionization)
   // the level populations will be stored internally for
   // further calculations
-  // input:
-  // int lte: 1 = do it in LTE, 0 = do it in NLTE
+  // input: a vector of the radiation field J_nu
+  // output: a flag for status
+  //    == 0 for no error
+  //    == 1 root not bracketed in electron density solve
+  //    == 2 maximum iterations reached in n_e solve
   //-----------------------------------------------------------  
-  void solve_state(std::vector<real>);
+  int solve_state(std::vector<real>);
 
   //-----------------------------------------------------------
   // return the ionization state, i.e., electron density
@@ -195,6 +199,7 @@ class nlte_gas
 		      std::vector<double>&);
   double electron_scattering_opacity();
   void free_free_opacity(std::vector<double>&);
+  void bound_free_opacity(std::vector<double>&);
   void line_expansion_opacity(std::vector<double>&);
   void fuzz_expansion_opacity(std::vector<double>&);
   void get_line_opacities(std::vector<double>&);
