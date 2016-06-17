@@ -92,6 +92,18 @@ double xy_array::value_at(double z)
 
 
 
+//---------------------------------------------------------
+// Linear Interpolation of a passed array
+// return zero if off array
+//---------------------------------------------------------
+double xy_array::value_at_with_zero_edges(double z)
+{
+  if (z < x[0]) return 0;
+  if (z > x[x.size()-1]) return 0;
+  else return value_at(z);
+}
+
+
 void xy_array::print()
 {
   printf("# Print Locate Array; n_elements = %lu\n",x.size());

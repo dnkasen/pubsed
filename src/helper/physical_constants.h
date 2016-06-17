@@ -21,7 +21,8 @@ namespace physical_constants
   const double alpha_fs  = 0.007;              // fine structure constant
 
   // conversion factors
-  const double ev_to_ergs   =  1.60217646e-12;  
+  const double ev_to_ergs   =  1.60217646e-12; 
+  const double ergs_to_ev   =  624150975230.2815;
   const double Mev_to_ergs  =  1.60217646e-6;  
   const double cm_to_angs   =  1.0e8;
   const double angs_to_cm   =  1.0e-8;

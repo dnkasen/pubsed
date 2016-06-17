@@ -25,6 +25,8 @@ public:
 
   int    locate(double);
   double value_at(double);
+  double value_at_with_zero_edges(double);
+
   void   print();
   
 };
