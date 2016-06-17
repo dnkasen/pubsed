@@ -1,6 +1,6 @@
 import os
 import pylab as py
-
+import compare
 
 def run(pdf,plotup,runcommand):
 
@@ -17,5 +17,5 @@ def run(pdf,plotup,runcommand):
     ###########################################
     # clean results
     ###########################################
-    os.system("rm spectrum_1.dat ray_* gomc")
+#    os.system("rm spectrum_1.dat ray_* gomc")
        

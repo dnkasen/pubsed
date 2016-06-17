@@ -22,7 +22,7 @@ def compare(pdf):
     L  = 1e43
     r0 = 0.5e15
 
-    data = py.loadtxt('ray_00001')
+    data = py.loadtxt('ray_00001.dat')
     r = data[:,0] 
     trad = data[:,4]
     tgas = data[:,3]
@@ -73,19 +73,23 @@ def compare(pdf):
         py.show()
         j = raw_input()
 
-
-    # compare spectrum at 50
+    #------------------------------------------
+    # compare spectrum at zone 50
     py.clf()
     fin = h5py.File('grid_00001.h5','r')
     nu = py.array(fin['nu'])
-    Jnu = py.array(fin['50/Jnu'])
+    Jnu = py.array(fin['zone_50/Jnu'])
+    rz = py.array(fin['x'])
     fin.close()
     py.plot(nu,Jnu,'o')
 
     # blackbody spectrum
     T = 1e4
+    L  = 1e43
     f = 2.0*h*nu**2.0/c**2/(py.exp(h*nu/k/T) - 1)*nu
-    py.plot(nu,0.5*f,color='red',linewidth=2)
+    f = L*f/(sb*T**4*4.0*pi*r0**2)
+    W = 0.5*(1 - (1 - (r0/rz[50])**2)**0.5)
+    py.plot(nu,W*f,color='red',linewidth=2)
     
     py.legend(['sedona','analytic blackbody'])
     py.title('core into vacuum test: Jnu at zone=50')
@@ -101,4 +105,4 @@ def compare(pdf):
         py.show()
         j = raw_input()
         
-compare('')
+if __name__=='__main__': compare('')
