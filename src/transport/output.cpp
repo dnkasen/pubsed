@@ -55,7 +55,6 @@ void transport::write_opacities(int iw)
   // get file name
   char zonefile[1000];
   sprintf(zonefile,"grid_%05d.h5",iw);
-  sprintf(zonefile,"grid.h5");  
 
   // open hdf5 file
   hid_t file_id = H5Fcreate( zonefile, H5F_ACC_TRUNC, H5P_DEFAULT,  H5P_DEFAULT);
