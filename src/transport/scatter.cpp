@@ -18,7 +18,8 @@ ParticleFate transport::do_scatter(particle *p, double eps)
   if (p->type == photon)
   {
     // debug
-    isotropic_scatter(p,0);
+    if (gsl_rng_uniform(rangen) > eps) isotropic_scatter(p,0);
+    else isotropic_scatter(p,1);
     return moving;
 
     // see if scattered 
@@ -207,6 +208,10 @@ void transport::isotropic_scatter(particle *p, int redist)
   D_new[1] = smu*sin(phi);
   D_new[2] = mu;
   
+  // choose new wavelength if redistributed
+  if (redist) sample_photon_frequency(p);
+
+
   // outgoing velocity vector
   for (int i=0;i<3;i++) V[i] = -1*V[i];
   
