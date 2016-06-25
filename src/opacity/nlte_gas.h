@@ -60,6 +60,7 @@ class nlte_gas
   int use_fuzz_expansion_opacity;
   int use_free_free_opacity;
   int use_bound_free_opacity;
+  int use_bound_bound_opacity;   
   double line_velocity_width_;
 
   

@@ -62,6 +62,15 @@ void nlte_gas::computeOpacity(std::vector<double>& abs,
          abs[i] += opac[i]; }
     }
 
+    //---
+    if (use_bound_bound_opacity) 
+    {
+      bound_bound_opacity(opac);
+      for (int i=0;i<ns;i++) {
+         abs[i] += opac[i]; }
+    }
+
+
 
     //---
     if (use_line_expansion_opacity) 
