@@ -133,7 +133,10 @@ public:
   double get_ion_frac();
   double compute_sobolev_tau(int i, double time);
   void   compute_sobolev_taus(double time);
+  // opacities
   void   bound_free_opacity(std::vector<double>&);
+  void  bound_bound_opacity(double, std::vector<double>&);
+
 
   // returns
   double partition(int ion) 

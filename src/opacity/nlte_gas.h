@@ -60,6 +60,8 @@ class nlte_gas
   int use_fuzz_expansion_opacity;
   int use_free_free_opacity;
   int use_bound_free_opacity;
+  double line_velocity_width_;
+
   
   // flags for nlte
   int use_nlte_;
@@ -200,6 +202,8 @@ class nlte_gas
   double electron_scattering_opacity();
   void free_free_opacity(std::vector<double>&);
   void bound_free_opacity(std::vector<double>&);
+  void bound_bound_opacity(std::vector<double>&);
+  void bound_bound_opacity(int, std::vector<double>&);
   void line_expansion_opacity(std::vector<double>&);
   void fuzz_expansion_opacity(std::vector<double>&);
   void get_line_opacities(std::vector<double>&);

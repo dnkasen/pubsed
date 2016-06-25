@@ -470,6 +470,59 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac)
     
 }
 
+//---------------------------------------------------------
+// calculate the bound-free extinction coefficient
+// (units cm^{-1}) for all levels
+//---------------------------------------------------------
+void nlte_atom::bound_bound_opacity(double beta_dop, std::vector<double>& opac)
+{
+  // zero out array
+  for (int i=0;i<opac.size();i++) opac[i] = 0;
+
+  // loop over all lines
+  for (int i=0;i<n_lines;i++)
+  {
+    int ll = lines[i].ll;
+    int lu = lines[i].lu;
+
+    double nl = levels[ll].n;
+    double nu = levels[lu].n;
+    double gl = levels[ll].g;
+    double gu = levels[lu].g;
+    double nu_0 = lines[i].nu;
+
+    double dnu = beta_dop*nu_0;
+
+    lines[i].tau = pc::sigma_tot;
+    double alpha_0 = nl*n_dens*pc::sigma_tot*lines[i].f_lu;
+    // correction for stimulated emission
+    alpha_0 = alpha_0*(1 - nu*gl/(nl*gu));
+    if (alpha_0 < 0) continue;
+    if (nl == 0) continue;
+
+    if (alpha_0 < 0) printf("%e %e %e %d %d\n",alpha_0,nl*gu,nu*gl,levels[ll].ion,levels[lu].ion);
+    
+    // region to add to -- hard code to 5 doppler widths
+    double nu_1 = nu_0 - dnu*5;
+    double nu_2 = nu_0 + dnu*5;
+    int inu1 = nu_grid.locate(nu_1);
+    int inu2 = nu_grid.locate(nu_2);
+
+    for (int j = inu1;j<inu2;j++)
+    {
+      double nu = nu_grid[j];
+      double x  = (nu_0 - nu)/dnu;
+      double phi = voigt_profile_.getProfile(x,1e-4)/dnu;
+      opac[j] += alpha_0*phi;
+    }
+    
+    //printf("%e %e %e %d %d\n",lines[i].nu,nl,alpha_0,inu1,inu2,nu_grid[inu2]);
+    
+  } 
+}
+
+
+
 double nlte_atom::Calculate_Milne(int lev, double temp)
 {
   // Maxwell-Bolztmann constants

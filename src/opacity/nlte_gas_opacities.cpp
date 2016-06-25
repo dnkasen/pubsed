@@ -161,6 +161,43 @@ void nlte_gas::bound_free_opacity(std::vector<double>& opac)
 
 
 //----------------------------------------------------------------
+// bound-bound opacity (lines)
+// uses Doppler broadening for now
+//----------------------------------------------------------------
+void nlte_gas::bound_bound_opacity(std::vector<double>& opac)
+{
+  // zero out opacity vector
+  int ng = nu_grid.size();
+  for (int j=0;j<ng;j++) opac[j] = 0;
+  
+  std::vector<double> atom_opac(ng);
+  int na = atoms.size();
+  
+  // sum up the bound-bound opacity from every atom
+  for (int i=0;i<na;i++)
+  {
+    bound_bound_opacity(i,atom_opac);
+    for (int j=0;j<ng;j++) opac[j] += atom_opac[j];
+  }
+}
+
+
+//----------------------------------------------------------------
+// bound-bound opacity (line) from single element iatom
+//----------------------------------------------------------------
+void nlte_gas::bound_bound_opacity(int iatom, std::vector<double>& opac)
+{
+  double vd;
+  vd = sqrt(2*pc::k*temp/pc::m_p/elem_A[iatom]);
+  if (line_velocity_width_ > 0) vd += line_velocity_width_;
+  atoms[iatom].bound_bound_opacity(vd/pc::c,opac);
+}
+
+
+
+
+
+//----------------------------------------------------------------
 // Calculate a binned expansion opacity based on nlte line data
 // Passed:
 //   opac -- double vector of the same size of the frequency
