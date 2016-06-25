@@ -136,9 +136,14 @@ void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu)
     double dnu = nu0*line_beta;
     double sum  = 0;
     double J0   = 0;
+
+    double nu_d = line_beta*nu0;
+    double gamma = lines[i].A_ul;
+    double a_voigt = gamma/4/pc::pi/nu_d;
+
     for (double x=-1*x_max;x<=x_max;x+=dx)
     {
-      double phi = voigt_profile_.getProfile(x,1e-4);
+      double phi = voigt_profile_.getProfile(x,a_voigt);
       double n = nu0 + x*dnu;
       double J1 = nu_grid.value_at(n,J_nu)*phi;
       sum += 0.5*(J1 + J0)*dx;
@@ -491,7 +496,10 @@ void nlte_atom::bound_bound_opacity(double beta_dop, std::vector<double>& opac)
     double gu = levels[lu].g;
     double nu_0 = lines[i].nu;
 
+
     double dnu = beta_dop*nu_0;
+    double gamma = lines[i].A_ul;
+    double a_voigt = gamma/4/pc::pi/dnu;
 
     lines[i].tau = pc::sigma_tot;
     double alpha_0 = nl*n_dens*pc::sigma_tot*lines[i].f_lu;
@@ -502,9 +510,9 @@ void nlte_atom::bound_bound_opacity(double beta_dop, std::vector<double>& opac)
 
     if (alpha_0 < 0) printf("%e %e %e %d %d\n",alpha_0,nl*gu,nu*gl,levels[ll].ion,levels[lu].ion);
     
-    // region to add to -- hard code to 5 doppler widths
-    double nu_1 = nu_0 - dnu*5;
-    double nu_2 = nu_0 + dnu*5;
+    // region to add to -- hard code to 10 doppler widths
+    double nu_1 = nu_0 - dnu*10;
+    double nu_2 = nu_0 + dnu*10;
     int inu1 = nu_grid.locate(nu_1);
     int inu2 = nu_grid.locate(nu_2);
 
@@ -512,7 +520,7 @@ void nlte_atom::bound_bound_opacity(double beta_dop, std::vector<double>& opac)
     {
       double nu = nu_grid[j];
       double x  = (nu_0 - nu)/dnu;
-      double phi = voigt_profile_.getProfile(x,1e-4)/dnu;
+      double phi = voigt_profile_.getProfile(x,a_voigt)/dnu;
       opac[j] += alpha_0*phi;
     }
     
