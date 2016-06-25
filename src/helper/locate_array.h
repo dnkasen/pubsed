@@ -23,6 +23,7 @@ public:
 
   void init(const int);
   void init(const double,const double,const double);
+  void log_init(const double,const double,const double);
   void init(const double,const double,const int);
   void init(const std::vector<double>, const double minval);
   void copy(locate_array l);

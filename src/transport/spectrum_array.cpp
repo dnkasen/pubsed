@@ -36,11 +36,23 @@ void spectrum_array::init(std::vector<double> t, std::vector<double> w,
   this->time_grid.init(t_start,t_stop,t_del);
   int n_times  = this->time_grid.size();
 
-  // assign wave grid
+  // assign frequency grid
+  if ((w.size() != 4)&&(w.size() != 3)) {
+    std::cout << "# improperly defined spectrum_nu_grid; need {nu_1, nu_2, dnu, (log?)}; exiting\n";
+    exit(1); }
+
   double w_start = w[0];
   double w_stop  = w[1];
   double w_del   = w[2];
-  this->wave_grid.init(w_start,w_stop,w_del);
+
+  // initialize the frequency grid  
+  if (w.size() == 3)
+   this->wave_grid.init(w_start,w_stop,w_del);
+  if (w.size() == 4)
+  {
+    if (w[3] == 1) wave_grid.log_init(w_start,w_stop,w_del);
+    else wave_grid.init(w_start,w_stop,w_del);
+  }
   int n_wave   = this->wave_grid.size();
 
   // asign mu grid

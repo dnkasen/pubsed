@@ -54,11 +54,21 @@ void transport::init(ParameterReader* par, grid_general *g)
 
   // initialize the frequency grid  
   std::vector<double> nu_dims = params_->getVector<double>("transport_nu_grid");
-  if (nu_dims.size() != 3) {
-    cout << "# improperly defined nu_grid; need {nu_1, nu_2, dnu}; exiting\n";
+  if ((nu_dims.size() != 4)&&(nu_dims.size() != 3)) {
+    cout << "# improperly defined nu_grid; need {nu_1, nu_2, dnu, (log?)}; exiting\n";
     exit(1); }
-  nu_grid.init(nu_dims[0],nu_dims[1],nu_dims[2]);
-    
+  if (nu_dims.size() == 3)
+    nu_grid.init(nu_dims[0],nu_dims[1],nu_dims[2]);
+  if (nu_dims.size() == 4)
+  {
+    if (nu_dims[3] == 1) nu_grid.log_init(nu_dims[0],nu_dims[1],nu_dims[2]);
+    else nu_grid.init(nu_dims[0],nu_dims[1],nu_dims[2]);
+  }
+  if (verbose)
+  {
+     std::cout << "# frequency grid: n = " << nu_grid.size() << "\n";
+  }
+
   // intialize output spectrum
   std::vector<double>stg = params_->getVector<double>("spectrum_time_grid");
   std::vector<double>sng = params_->getVector<double>("spectrum_nu_grid");
@@ -87,6 +97,8 @@ void transport::init(ParameterReader* par, grid_general *g)
     = params_->getScalar<int>("opacity_fuzz_expansion");
   gas.use_bound_free_opacity  
     = params_->getScalar<int>("opacity_bound_free");
+  gas.use_bound_bound_opacity  
+    = params_->getScalar<int>("opacity_bound_bound");
   gas.use_free_free_opacity  
     = params_->getScalar<int>("opacity_free_free");
   gas.use_nlte_ 
@@ -96,7 +108,8 @@ void transport::init(ParameterReader* par, grid_general *g)
   // parameters for treatment of detailed lines
   use_detailed_lines_  = params_->getScalar<double>("opacity_lines");
   line_velocity_width_ = params_->getScalar<double>("line_velocity_width");
-  
+  gas.line_velocity_width_ = line_velocity_width_;
+
   // get line frequencies and ion masses
   line_nu_ = gas.get_line_frequency_list();
   line_sqrt_Mion_ = gas.get_line_ion_mass_list();
@@ -219,58 +232,17 @@ ParticleFate transport::propagate(particle &p, double dt)
     // determine the doppler shift from comoving to lab
     //double dshift = dshift_comoving_to_lab(&p);
     double dshift = dshift_lab_to_comoving(&p);
-    double nu_cmf = p.nu*dshift;
 
     // get continuum opacity and absorption fraction (epsilon)
     double continuum_opac_cmf, eps_absorb_cmf;
     int i_nu = get_opacity(p,dshift,continuum_opac_cmf,eps_absorb_cmf);
-
-    // ------------------------------------------------
-    // get total line opacity
-    // ------------------------------------------------
-    double line_opac_cmf = 0; 
-    if ((p.type == photon)&&(use_detailed_lines_))
-    {
-      // line width beta = v/c
-      double beta_line;
-      if (line_velocity_width_ != 0) 
-	beta_line = line_velocity_width_/pc::c;
-      else
-	beta_line = sqrt(2*pc::k*zone->T_gas/pc::m_p)/pc::c;
-      
-      // find the nearest line
-      int iLine =  upper_bound(line_nu_.begin(), line_nu_.end(), nu_cmf)
-	- line_nu_.begin();
- 
-      // look for lines in front, add to opacity
-      for (int i = iLine;i < n_lines_;i++)
-      {
-	double dnu_t   = line_nu_[i]*beta_line;
-	if (!line_velocity_width_) dnu_t = dnu_t/line_sqrt_Mion_[i];
-	double line_x  = (line_nu_[i] - nu_cmf)/dnu_t;
-	if (line_x > 5) break;
-	double line_profile = voigt_profile_.getProfile(line_x,1e-4)/dnu_t;
-	line_opac_cmf += line_profile*line_opacity_[p.ind][i];
-      }
-      // look for lines behind, add to opacity
-      for (int i = iLine-1;i >=0; i--)
-      {
-	double dnu_t   = line_nu_[i]*beta_line;
-	if (!line_velocity_width_) dnu_t = dnu_t/line_sqrt_Mion_[i];
-	double line_x  = (nu_cmf - line_nu_[i])/dnu_t*line_sqrt_Mion_[i];
-	if (line_x > 5) break;
-	double line_profile = voigt_profile_.getProfile(line_x,1e-4)/dnu_t;
-	line_opac_cmf += line_profile*line_opacity_[p.ind][i];
-      }
-
-    }
 
     // convert opacity from comoving to lab frame for the purposes of 
     // determining the interaction distance in the lab frame
     // This corresponds to equation 90.8 in Mihalas&Mihalas. You multiply 
     // the comoving opacity by nu_0 over nu, which is why you
     // multiply by dshift instead of dividing by dshift here
-    double tot_opac_cmf      = continuum_opac_cmf + line_opac_cmf;
+    double tot_opac_cmf      = continuum_opac_cmf;
     double tot_opac_labframe = tot_opac_cmf*dshift;
     
     // random optical depth to next interaction
@@ -281,7 +253,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     if (tot_opac_labframe == 0) d_sc = std::numeric_limits<double>::infinity();
     if (d_sc < 0) 
       cout << "ERROR: negative interaction distance! " << p.nu << " " << dshift << " " <<
-	continuum_opac_cmf << " " << line_opac_cmf << "\n";
+        continuum_opac_cmf  << "\n";
 
     // find distance to end of time step
     double d_tm = (tstop - p.t)*pc::c;
@@ -321,35 +293,41 @@ ParticleFate transport::propagate(particle &p, double dt)
     // advance the time
     p.t = p.t + this_d/pc::c;
 
-    // reflection
-   /* if (p.r() > 1.099e14)
+    // get photon radius
+    double r_p = p.r();
+
+    // check for reflection back
+    /*double r_out = 1.01e14;
+    if (r_p > r_out)
     {
+      // flip direction
        p.D[0] *= -1;
        p.D[1] *= -1;
        p.D[2] *= -1;
-       // step back
-	   p.x[0] += this_d*p.D[0];
-       p.x[1] += this_d*p.D[1];
-   	   p.x[2] += this_d*p.D[2]; 
+       // put on edge, slightly in
+       p.x[0] *= (1. - 1.e-16) * r_out/r_p;
+       p.x[1] *= (1. - 1.e-16) * r_out/r_p;
+       p.x[2] *= (1. - 1.e-16) * r_out/r_p;
     } */
+
+    // check for inner boundary absorption
+    if (r_p < r_core_)  {fate = absorbed;}
 
     // Find position of the particle now
     p.ind = grid->get_zone(p.x);
     if (p.ind == -1) fate = absorbed;
     if (p.ind == -2) fate = escaped;
 
-    // check for inner boundary absorption
-    if (p.r() < r_core_)  {fate = absorbed;}
-
+ 
     // ---------------------------------
     // do an interaction event
     // ---------------------------------
     if (fate == moving) 
     {
       if (event == scatter)   
-	fate = do_scatter(&p,eps_absorb_cmf);  
+        fate = do_scatter(&p,eps_absorb_cmf);  
       else if (event == tstep) 
-	fate = stopped;
+        fate = stopped;
     }
   }
 

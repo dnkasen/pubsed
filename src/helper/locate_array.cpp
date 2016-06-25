@@ -1,4 +1,3 @@
-#pragma warning disable 161
 #include <limits>
 #include <vector>
 #include <algorithm>
@@ -27,7 +26,7 @@ void locate_array::init(const int n)
 //---------------------------------------------------------
 void locate_array::init(const double start, const double stop, const double del)
 {
-  if(start==stop){
+  if(start>=stop){
     x.resize(1);
     min = -numeric_limits<double>::infinity();
     x[0] = numeric_limits<double>::infinity();
@@ -40,9 +39,41 @@ void locate_array::init(const double start, const double stop, const double del)
     do_log_interpolate = 0;
 
     min = start;
-    #pragma omp parallel for
     for (int i=0; i<n-1; i++) x[i] = start + (i+1)*del;
     x[n-1] = stop;
+  }
+}
+
+
+//---------------------------------------------------------
+// Initialize with start, stop and delta
+// logarithmic spacing
+// if start==stop make it a catch-all
+//---------------------------------------------------------
+void locate_array::log_init(const double start, const double stop, const double del)
+{
+  if(start>=stop){
+    x.resize(1);
+    min = -numeric_limits<double>::infinity();
+    x[0] = numeric_limits<double>::infinity();
+  }
+
+  else{
+
+    do_log_interpolate = 0;
+
+    std::vector<double> arr;
+    min =start;
+    double v = start + start*del;
+    while (v  < stop)
+    {
+      arr.push_back(v);
+      v = v + v*del;
+    }
+    arr.push_back(stop);
+    int n = arr.size();
+    x.resize(n);
+    for (int i=0;i<n;i++) x[i] = arr[i];
   }
 }
 
