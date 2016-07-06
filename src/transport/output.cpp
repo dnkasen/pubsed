@@ -58,11 +58,16 @@ void transport::write_opacities(int iw)
 
   // open hdf5 file
   hid_t file_id = H5Fcreate( zonefile, H5F_ACC_TRUNC, H5P_DEFAULT,  H5P_DEFAULT);
-  
   const int RANK = 1;
+
+  // print out time
+  hsize_t  dims_t[RANK]={1};
+  float time_a[1];
+  time_a[0] = t_now_;
+  H5LTmake_dataset(file_id,"time",RANK,dims_t,H5T_NATIVE_FLOAT,time_a);
+
   hsize_t  dims_z[RANK]={grid->n_zones};
   float* zone_arr = new float[grid->n_zones];
-
   // print out zone coordinates
   double r[3];
   for (int i=0;i<grid->n_zones;i++) {
@@ -138,8 +143,14 @@ void transport::write_levels(int iw)
 
   // open hdf5 file
   hid_t file_id = H5Fcreate( zonefile, H5F_ACC_TRUNC, H5P_DEFAULT,  H5P_DEFAULT);
-  
   const int RANK = 1;
+
+  // print out time
+  hsize_t  dims_t[RANK]={1};
+  float time_a[1];
+  time_a[0] = t_now_;
+  H5LTmake_dataset(file_id,"time",RANK,dims_t,H5T_NATIVE_FLOAT,time_a);
+
   hsize_t  dims_z[RANK]={grid->n_zones};
   float* zone_arr = new float[grid->n_zones];
 
