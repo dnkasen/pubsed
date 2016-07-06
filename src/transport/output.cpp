@@ -217,9 +217,8 @@ void transport::write_levels(int iw)
       H5Gclose(atom_id);
   		delete[] tmp_level;
     }
-
+    H5Gclose(zone_id);
   }
-  
   H5Fclose (file_id);
   delete[] tmp_array;
   delete[] zone_arr;
