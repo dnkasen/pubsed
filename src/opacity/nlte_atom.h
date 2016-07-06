@@ -50,7 +50,7 @@ struct nlte_level
 {
   int   globalID;       // global id 
   int  ion;             // ionization state (0 = neutral)
-  int   ic;             // index of level we ionize to
+  int   ic;             // index of level we ionize to (-1 if none)
   int    g;             // statistical weight
   double E;             // excitation energy above ground (in eV)
   double E_ion;         // energy to ionize (in eV)
@@ -60,7 +60,8 @@ struct nlte_level
 
 
   //  ivector photo         // photoionization cross-section vector
-  double  P_ic;           // rate of photoionization;
+  double  P_ic;            // rate of photoionization from this level
+  double  R_ci;            // radiative recombination rate to this level
 
   // photoionization cross-section as a function of wavelength
   xy_array s_photo;
@@ -96,7 +97,7 @@ private:
   double blackbody_nu(double T, double nu);
   double Calculate_Milne(int lev, double temp);
   void   set_rates(double T, double ne, std::vector<real> J_nu);
-  void   calculate_radiative_rates(std::vector<real> J_nu);
+  void   calculate_radiative_rates(std::vector<real> J_nu, double);
 
 public:
 

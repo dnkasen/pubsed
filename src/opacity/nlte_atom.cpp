@@ -93,42 +93,68 @@ void nlte_atom::solve_lte(double T, double ne, double time)
 // to get the line J and over bound-free to get the 
 // photoionization rates
 //-------------------------------------------------------
-void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu)
+void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu, double temp)
 {
 
-  // calculate photoionization rates
+  // calculate photoionization/recombination rates
+  // photoionization is Eq. 3.7 in Rutten, Stellar Atmopsheres
+  // recombination is from EQ 3.16 of Rutten, stellar atmospheres
+  // recombination rate includes stimulated recombination
+
   for (int i=0;i<n_levels;i++)
   {
     double R_ion = 0;
-    for (int j=1;j<levels[i].s_photo.size();j++)
+    double R_rec = 0;
+
+    double chi = levels[i].E_ion;
+    double fac1 = 2/pc::c/pc::c;
+
+    int ic = levels[i].ic;
+    if (ic != -1)
     {
-      double  E    = levels[i].s_photo.x[j];
-      double nu    = E*pc::ev_to_ergs/pc::h;
-      double  E_0  = levels[i].s_photo.x[j-1];
-      double nu_0  = E_0*pc::ev_to_ergs/pc::h;
-      double dnu   = (nu - nu_0);
-      double nu_m  = 0.5*(nu + nu_0);
-      double J     = nu_grid.value_at(nu_m,J_nu);
-      double sigma = levels[i].s_photo.y[j];
-      // correction for stimulated recombination // debug
-     // sigma = sigma*(1 - exp(-pc::h*nu/pc::k/T));
-      R_ion += 4*pc::pi*sigma*J/(pc::h*nu)*dnu; 
-      //std::cout << i << " " << nu_m << " " << sigma << " " << J << "\n";
+      for (int j=1;j<levels[i].s_photo.size();j++)
+      {
+        double  E    = levels[i].s_photo.x[j];
+        double nu    = E*pc::ev_to_ergs/pc::h;
+        double  E_0  = levels[i].s_photo.x[j-1];
+        double nu_0  = E_0*pc::ev_to_ergs/pc::h;
+        double dnu   = (nu - nu_0);
+        double nu_m  = 0.5*(nu + nu_0);
+        double J     = nu_grid.value_at(nu_m,J_nu);
+        double sigma = levels[i].s_photo.y[j];
+
+        double Jterm = sigma*J/(pc::h*nu);
+        R_ion += Jterm*dnu;
+        R_rec += (sigma*fac1*nu_m*nu_m + Jterm)*exp(-1.0*(E - chi)/pc::k_ev/temp)*dnu;  
+//        std::cout << i << " " << nu << " " << sigma << " " << R_rec << "\n";
+   
+      }
+      R_ion = 4*pc::pi*R_ion;
+      double lam_t = sqrt(pc::h*pc::h/(2*pc::pi*pc::m_e*pc::k*temp));
+      double gl_o_gc = (1.0*levels[i].g)/(1.0*levels[ic].g);
+      double saha_fac = lam_t*lam_t*lam_t*gl_o_gc/2.0;
+      R_rec = 4*pc::pi*R_rec*saha_fac; 
     }
-    levels[i].P_ic = R_ion;
+
+     // recombination coefficient from Hui and Gnedin 1997
+    //  http://adsabs.harvard.edu/abs/1997MNRAS.292...27H
+    // are fits to Ferland 1992 for alpha_B
+    // debug
+    double lam_H  = 2*157807./temp;
+    double fact   = pow(1 + pow(lam_H/2.740,0.407),2.242);
+    double alpha  = 2.753e-14*pow(lam_H,1.5)/fact;
+    R_rec = alpha;
+
+
+    levels[i].P_ic = R_ion; 
+    levels[i].R_ci = R_rec;
   }
 
   // calculate line J's
-
   //debug -- hard code line width
   double line_beta = 0.01; //v/c
   double x_max = 5;
   double dx    = 0.05;
-
-  // debug fill out a blackbody
-//  for (int i=0;i<J_nu.size();i++)
- //   std::cout << nu_grid[i] << " " << J_nu[i] << " " << blackbody_nu(1.0e4,nu_grid[i]) << "\n";
-  //    J_nu[i] = blackbody_nu(1.0e4,nu_grid[i]);
 
   for (int i=0;i<n_lines;i++)
   {
@@ -149,7 +175,7 @@ void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu)
       sum += 0.5*(J1 + J0)*dx;
       J0 = J1;
     }
-    lines[i].J = sum;
+    lines[i].J = sum; 
   }
 }
 
@@ -170,7 +196,7 @@ void nlte_atom::set_rates(double T, double ne, std::vector<real> J_nu)
   // ------------------------------------------------
 
   // integrate radiation field in every line
-  calculate_radiative_rates(J_nu);        
+  calculate_radiative_rates(J_nu,T);        
 
   for (int l=0;l<n_lines;l++)
   {
@@ -239,6 +265,7 @@ void nlte_atom::set_rates(double T, double ne, std::vector<real> J_nu)
 
       // rate for downward transition: u --> l
       double C = 2.16*pow(zeta,-1.68)*pow(T,-1.5); // f_ul 
+      if (zeta == 0) C = 0;
 
       // rate if it is a upward transition: l --> u
       if (dE < 0)
@@ -283,11 +310,8 @@ void nlte_atom::set_rates(double T, double ne, std::vector<real> J_nu)
     //// suppress recombinations to ground  
     //if (no_ground_recomb) if (levels[i].E == 0) R_rec = 0;
     
-    // DEBUG, fake rate
-    double R_rec = ne*2e-13;
-    rates[ic][i] += R_rec;
-
-    // suppress ionization froms ground  NOT
+    // photoionization and radiative recombination
+    rates[ic][i] += levels[i].R_ci*ne;
     rates[i][ic] += levels[i].P_ic;
 
     //printf("pc::pi: %d %d %e %e\n",i,ic,R_rec,levels[i].P_ic);
@@ -307,9 +331,12 @@ void nlte_atom::set_rates(double T, double ne, std::vector<real> J_nu)
   //printf("------- rates ----------\n");
   //for (int i=0;i<n_levels;i++)
   //  for (int j=0;j<n_levels;j++)
-  //    printf("%5d %5d %14.5e\n",i,j,rates[i][j]);
-  // printf("\n");
-
+   //   printf("%5d %5d %14.5e\n",i,j,rates[i][j]);
+   //printf("\n");
+   for (int i=0;i<n_levels;i++)
+    for (int j=0;j<n_levels;j++)   {
+        if (isnan(rates[i][j])) std::cout << "NAN RATE\n";
+        if (isinf(rates[i][j])) std::cout << "INF RATE: " << i << " - " << j << "\n"; }
 }
 
 int nlte_atom::solve_nlte(double T,double ne,double time, std::vector<real> J_nu)
@@ -371,7 +398,7 @@ int nlte_atom::solve_nlte(double T,double ne,double time, std::vector<real> J_nu
       double n_nlte = b*levels[i].n_lte;
       levels[i].n = n_nlte;
       levels[i].b = b;
-      //      printf("%d %e %e\n",i,levels[i].b,levels[i].n/levels[i].n_lte);
+      //printf("%d %e %e\n",i,levels[i].b,levels[i].n/levels[i].n_lte);
     }
 
     // set the ionization fraction
@@ -495,7 +522,6 @@ void nlte_atom::bound_bound_opacity(double beta_dop, std::vector<double>& opac)
     double gl = levels[ll].g;
     double gu = levels[lu].g;
     double nu_0 = lines[i].nu;
-
 
     double dnu = beta_dop*nu_0;
     double gamma = lines[i].A_ul;
