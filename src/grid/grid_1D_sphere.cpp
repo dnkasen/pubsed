@@ -206,12 +206,71 @@ int grid_1D_sphere::get_zone(const double *x) const
   
   // check if off the boundaries
   if(r < r_out.min             ) return -1;
-  if(r > r_out[r_out.size()-1] ) return -2;
+  if(r >= r_out[r_out.size()-1] ) return -2;
 
   // find in zone array using stl algorithm up_bound and subtracting iterators
-  return r_out.locate(r);
+  int ind = r_out.locate(r);
+  return ind;
 }
 
+
+//************************************************************
+// Overly simple search to find zone
+//************************************************************
+int grid_1D_sphere::get_next_zone(const double *x, const double *D, int i, double r_core, double *l) const
+{
+  double rsq   = (x[0]*x[0] + x[1]*x[1] + x[2]*x[2]);
+  double xdotD = (D[0]*x[0] + D[1]*x[1] + D[2]*x[2]);
+
+  // distance to outer shell edge
+  double r_o = r_out[i];
+  double l_out = -1*xdotD + sqrt(xdotD*xdotD + r_o*r_o - rsq);
+
+  // distance to inner shell edge
+  double l_in, r_i = 0, rad = 0;
+  int ind_in;
+  // inner zone, no core, nothing to go to
+  if ((i == 0)&&(r_core == 0))
+    l_in = -1;
+  else
+  {
+    if (i==0) r_i = r_core;
+    else r_i = r_out[i-1];
+    if (r_core >= r_i) 
+    {
+      r_i = r_core;
+      ind_in = -1;
+    }
+    else ind_in = i-1;
+    rad = xdotD*xdotD + r_i*r_i - rsq;
+    if   (rad < 0)  l_in = -1;
+    else if (r_i == 0) l_in = -1;
+    else l_in = -1*xdotD - sqrt(rad);
+ }
+
+
+  // find shortest positive distance
+  int ind;
+  if ((l_out < l_in)||(l_in < 0))
+  {
+    ind = i + 1;
+    if (ind == n_zones) ind = -2;
+    *l = l_out;
+  }
+  else
+  {
+    ind = ind_in;
+    *l = l_in;
+  }
+
+  // add a little extra distance so we don't land
+  // exactly on boundary
+  *l = *l*(1.0 + 1e-10);
+
+  //std::cout << sqrt(rsq) << "\t" << r_i << "\t" << r_out[i] << "\t" << rad << "\t";
+  //std::cout << l_in << "\t" << l_out << "\t" << *l << "\t" << i << "\t" << ind << "\n";
+  return ind;
+}
 
 
 

@@ -226,8 +226,11 @@ ParticleFate transport::propagate(particle &p, double dt)
     // set pointer to current zone
     zone = &(grid->z[p.ind]);
     
+    double d_bn; 
+    int new_ind = grid->get_next_zone(p.x,p.D,p.ind,r_core_,&d_bn);
+
     // maximum step size inside zone
-    double d_bn = step_size_*grid->zone_min_length(p.ind); //*gsl_rng_uniform(rangen);
+    //double d_bn = step_size_*grid->zone_min_length(p.ind); //*gsl_rng_uniform(rangen);
 
     // determine the doppler shift from comoving to lab
     //double dshift = dshift_comoving_to_lab(&p);
@@ -251,14 +254,18 @@ ParticleFate transport::propagate(particle &p, double dt)
     // step size to next interaction event
     double d_sc  = tau_r/tot_opac_labframe;
     if (tot_opac_labframe == 0) d_sc = std::numeric_limits<double>::infinity();
-    if (d_sc < 0) 
-      cout << "ERROR: negative interaction distance! " << p.nu << " " << dshift << " " <<
-        continuum_opac_cmf  << "\n";
+    if (d_sc <= 0) 
+      cout << "ERROR: non-positive interaction distance! " << p.nu << " " << dshift << " " <<
+        tot_opac_labframe  << "\n";
+    //std::cout << d_sc << "\t" << d_bn << "\t" << tot_opac_labframe << "\n";
+
 
     // find distance to end of time step
     double d_tm = (tstop - p.t)*pc::c;
-    // if iterative calculation, let all particles escape
+    // if iterative calculation, give infinite time for particle escape
     if (this->steady_state) d_tm = std::numeric_limits<double>::infinity();
+
+    //std::cout << d_bn << "\t" << d_sc << "\n";
 
     // find out what event happens (shortest distance)
     double this_d;
@@ -294,10 +301,10 @@ ParticleFate transport::propagate(particle &p, double dt)
     p.t = p.t + this_d/pc::c;
 
     // get photon radius
-    double r_p = p.r();
+    //double r_p = p.r();
 
     // check for reflection back
-    /*double r_out = 1.01e14;
+    /*double r_out = 1.0098e14;
     if (r_p > r_out)
     {
       // flip direction
@@ -311,24 +318,45 @@ ParticleFate transport::propagate(particle &p, double dt)
     } */
 
     // check for inner boundary absorption
-    if (r_p < r_core_)  {fate = absorbed;}
+    //if (r_p < r_core_)  {fate = absorbed;}
 
     // Find position of the particle now
-    p.ind = grid->get_zone(p.x);
-    if (p.ind == -1) fate = absorbed;
-    if (p.ind == -2) fate = escaped;
+    //p.ind = grid->get_zone(p.x);
+    //i
+    //if (p.ind == -2) fate = escaped;
 
- 
+    // ---------------------------------
+    // do a boundary event
+    // ---------------------------------
+    if (event == boundary)
+    {
+      p.ind = new_ind;
+      if (p.ind == -1) fate = absorbed;
+      if (p.ind == -2) fate = escaped;
+    }
+
     // ---------------------------------
     // do an interaction event
     // ---------------------------------
-    if (fate == moving) 
-    {
-      if (event == scatter)   
-        fate = do_scatter(&p,eps_absorb_cmf);  
-      else if (event == tstep) 
-        fate = stopped;
-    }
+    else if (event == scatter)  
+    {   
+       if (gsl_rng_uniform(rangen) > eps_absorb_cmf) 
+        fate = do_scatter(&p,eps_absorb_cmf);
+        else
+        fate = absorbed;
+        //if (gsl_rng_uniform(rangen) > 0.38)
+       // fate = absorbed; 
+       //else fate = do_scatter(&p,0); 
+         // debug
+//        fate = do_scatter(&p,eps_absorb_cmf);  
+
+     }
+
+    // ---------------------------------
+    // do an end of timestep event
+    // ---------------------------------
+    else if (event == tstep) 
+       fate = stopped;
   }
 
   // Add escaped photons to output spectrum

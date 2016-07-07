@@ -44,6 +44,8 @@ public:
   void    write_out(int,double);
   void    expand(double);
 
+  int get_next_zone(const double *x, const double *D, int, double, double *dist) const;
+
   void    coordinates(int i,double r[3]) {
     r[0] = r_out[i]; r[1] = 0; r[2] = 0;}
 
