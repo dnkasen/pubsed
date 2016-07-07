@@ -43,7 +43,7 @@ void nlte_gas::computeOpacity(std::vector<double>& abs,
       for (int i=0;i<ns;i++) {
         scat[i] += es_opac;
 	       // debug -- a bit of small thermalization
-	       abs[i] += es_opac*1e-4; }
+	       abs[i] += es_opac*1e-10; }
     }
 
      //---
