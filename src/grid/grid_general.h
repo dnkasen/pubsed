@@ -68,9 +68,6 @@ class grid_general
   // return volume of zone i
   virtual double zone_volume(const int i) const         = 0;
 
-  // return the smallest length dimension of zone  i
-  virtual double zone_min_length(const int i) const     = 0;
-  
   // randomly sample a position within the zone i
   virtual void sample_in_zone(int,std::vector<double>,double[3]) = 0;
   

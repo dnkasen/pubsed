@@ -38,7 +38,6 @@ public:
   // required functions
   int     get_zone(const double *) const;
   double  zone_volume(const int) const;
-  double  zone_min_length(const int) const;
   void    sample_in_zone(int, std::vector<double>, double[3]);
   void    velocity_vector(int i, double[3], double[3]);
   void    write_out(int,double);

@@ -321,20 +321,6 @@ double  grid_1D_sphere::zone_volume(const int i) const
 
 
 //************************************************************
-// return length of zone
-//************************************************************
-double  grid_1D_sphere::zone_min_length(const int i) const
-{
-  assert(i >= 0);
-  if (i == 0) return (r_out[i] - r_out.min);
-  else return (r_out[i] - r_out[i-1]);
-}
-
-
-
-
-
-//************************************************************
 // sample a random position within the spherical shell
 //************************************************************
 void grid_1D_sphere::sample_in_zone
