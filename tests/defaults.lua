@@ -21,6 +21,7 @@ core_radius           = 0
 core_luminosity       = 0
 core_temperature      = 0
 core_photon_frequency = 0
+core_spectrum_file    = ""
 
 -- default particle params
 particles_max_total = 1e6
@@ -47,6 +48,7 @@ opacity_electron_scattering = 0
 opacity_line_expansion      = 0
 opacity_fuzz_expansion      = 0
 opacity_bound_free          = 0
+opacity_bound_bound         = 0
 opacity_free_free           = 0
 opacity_lines               = 0
 opacity_use_nlte            = 0
