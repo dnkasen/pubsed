@@ -192,8 +192,6 @@ void transport::emit_radioactive(double dt)
 
 //------------------------------------------------------------
 // inject particles from a central luminous source
-// Currently written to emit photons with 
-// blackblody spectrum based on T_core and L_core
 //------------------------------------------------------------
 void transport::emit_inner_source(double dt)
 {
@@ -202,27 +200,10 @@ void transport::emit_inner_source(double dt)
   int total_n_emit    = params_->getScalar<int>("core_n_emit");
   if (total_n_emit == 0) return;
   int n_emit = total_n_emit/(1.0*MPI_nprocs);
-  double L_core = params_->getScalar<double>("core_luminosity");
-  double T_core = params_->getScalar<double>("core_temperature");
-  r_core_  = params_->getScalar<double>("core_radius");
-  double core_frequency = params_->getScalar<double>("core_photon_frequency");
-
-  double Ep  = L_core*dt/n_emit;
+  double Ep  = L_core_*dt/n_emit;
   
   if (particles.size() + n_emit > this->max_total_particles)
     {cout << "# Not enough particle space\n"; return; }
-
-  // set up emission spectrum function (now a blackbody)
-  for (int j=0;j<nu_grid.size();j++)
-  { 
-    double nu  = nu_grid.center(j);
-    double dnu = nu_grid.delta(j);
-    double bb;
-    if (T_core == 0) bb = 1;
-    else bb = blackbody_nu(T_core,nu)*dnu;
-    core_emis.set_value(j,bb); 
-  }
-  core_emis.normalize();
 
   // inject particles from the source
   for (int i=0;i<n_emit;i++)
@@ -276,16 +257,21 @@ void transport::emit_inner_source(double dt)
     p.e = Ep;
 
     // get emission frequency
-    if (core_frequency > 0)
+    if (core_frequency_ > 0)
     {
       // constant single frequency emission
-      p.nu = core_frequency;
+      p.nu = core_frequency_;
     }
     else
     {
       // sample frequency from blackbody 
-      int ilam = core_emis.sample(gsl_rng_uniform(rangen));
+      int ilam = core_emission_spectrum_.sample(gsl_rng_uniform(rangen));
       p.nu = nu_grid.sample(ilam,gsl_rng_uniform(rangen));
+
+      // straight bin emission
+      //int ilam = gsl_rng_uniform(rangen)*nu_grid.size(); 
+      //p.e *= core_emis.get_value(ilam)*nu_grid.size(); 
+
     } 
 
     // get index of current zone

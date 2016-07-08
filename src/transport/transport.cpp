@@ -2,6 +2,7 @@
 #include <math.h>
 #include <string.h>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <limits>
 #include <vector>
@@ -9,145 +10,12 @@
 #include <list>
 #include <algorithm>
 
-
 #include "transport.h"
 #include "ParameterReader.h"
 #include "physical_constants.h"
 
 using std::cout;
 namespace pc = physical_constants;
-
-
-//----------------------------------------------------------------------------
-// Initialize the transport module
-// Includes setting up the grid, particles,
-// and MPI work distribution
-//----------------------------------------------------------------------------
-void transport::init(ParameterReader* par, grid_general *g)
-{ 
-  params_  = par;
-  grid = g;
-
-  // get mpi rank
-  MPI_Comm_size( MPI_COMM_WORLD, &MPI_nprocs );
-  MPI_Comm_rank( MPI_COMM_WORLD, &MPI_myID  );
-  MPI_real = ( sizeof(real)==4 ? MPI_FLOAT : MPI_DOUBLE );
-  verbose = (MPI_myID==0);
-
-  // determine my zones to work on
-  
-  
-  // setup and seed random number generator
-  const gsl_rng_type * TypeR;
-  gsl_rng_env_setup();
-  gsl_rng_default_seed = (unsigned int)time(NULL) + MPI_myID;
-  TypeR = gsl_rng_default;
-  rangen = gsl_rng_alloc (TypeR);
-  
-  // read relevant parameters
-  step_size_          = params_->getScalar<double>("particles_step_size");
-  max_total_particles = params_->getScalar<int>("particles_max_total");
-  radiative_eq    = params_->getScalar<int>("transport_radiative_equilibrium");
-  steady_state    = (params_->getScalar<int>("transport_steady_iterate") > 0);
-  temp_max_value_ = params_->getScalar<double>("limits_temp_max");
-  temp_min_value_ = params_->getScalar<double>("limits_temp_min");
-
-  // initialize the frequency grid  
-  std::vector<double> nu_dims = params_->getVector<double>("transport_nu_grid");
-  if ((nu_dims.size() != 4)&&(nu_dims.size() != 3)) {
-    cout << "# improperly defined nu_grid; need {nu_1, nu_2, dnu, (log?)}; exiting\n";
-    exit(1); }
-  if (nu_dims.size() == 3)
-    nu_grid.init(nu_dims[0],nu_dims[1],nu_dims[2]);
-  if (nu_dims.size() == 4)
-  {
-    if (nu_dims[3] == 1) nu_grid.log_init(nu_dims[0],nu_dims[1],nu_dims[2]);
-    else nu_grid.init(nu_dims[0],nu_dims[1],nu_dims[2]);
-  }
-  if (verbose)
-  {
-     std::cout << "# frequency grid: n = " << nu_grid.size() << "\n";
-  }
-
-  // intialize output spectrum
-  std::vector<double>stg = params_->getVector<double>("spectrum_time_grid");
-  std::vector<double>sng = params_->getVector<double>("spectrum_nu_grid");
-  int nmu  = params_->getScalar<int>("spectrum_n_mu");
-  int nphi = params_->getScalar<int>("spectrum_n_phi");
-  optical_spectrum.init(stg,sng,nmu,nphi);
-  std::vector<double>gng = params_->getVector<double>("gamma_nu_grid");  
-  gamma_spectrum.init(stg,sng,nmu,nphi);
-  
-  // initialize nlte_gas class
-  std::string atomdata = params_->getScalar<string>("data_atomic_file");  
-  gas.initialize(atomdata,grid->elems_Z,grid->elems_A,nu_grid);
-  std::string fuzzfile = params_->getScalar<string>("data_fuzzline_file");  
-  int nl = gas.read_fuzzfile(fuzzfile);
-  if (verbose) std::cout << "# From fuzzfile \"" << fuzzfile << "\" " << 
-		 nl << " lines used\n";
-  
-  // set gas opacity flags and parameters
-  gas.epsilon_      = params_->getScalar<double>("opacity_epsilon");
-  gas.grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
-  gas.use_electron_scattering_opacity 
-    = params_->getScalar<int>("opacity_electron_scattering");
-  gas.use_line_expansion_opacity  
-    = params_->getScalar<int>("opacity_line_expansion");
-  gas.use_fuzz_expansion_opacity  
-    = params_->getScalar<int>("opacity_fuzz_expansion");
-  gas.use_bound_free_opacity  
-    = params_->getScalar<int>("opacity_bound_free");
-  gas.use_bound_bound_opacity  
-    = params_->getScalar<int>("opacity_bound_bound");
-  gas.use_free_free_opacity  
-    = params_->getScalar<int>("opacity_free_free");
-  gas.use_nlte_ 
-    = params_->getScalar<int>("opacity_use_nlte");
-
-
-  // parameters for treatment of detailed lines
-  use_detailed_lines_  = params_->getScalar<double>("opacity_lines");
-  line_velocity_width_ = params_->getScalar<double>("line_velocity_width");
-  gas.line_velocity_width_ = line_velocity_width_;
-
-  // get line frequencies and ion masses
-  line_nu_ = gas.get_line_frequency_list();
-  line_sqrt_Mion_ = gas.get_line_ion_mass_list();
-  for (int i=0;i<line_sqrt_Mion_.size();i++)
-    line_sqrt_Mion_[i] = sqrt(line_sqrt_Mion_[i]);
-
-  // allocate and initalize space for opacities
-  n_lines_ = gas.get_number_of_lines();
-  line_opacity_.resize(grid->n_zones);
-  abs_opacity_.resize(grid->n_zones);
-  scat_opacity_.resize(grid->n_zones);
-  emissivity_.resize(grid->n_zones);
-  J_nu_.resize(grid->n_zones);
-  for (int i=0; i<grid->n_zones;  i++)
-  {
-    if (use_detailed_lines_)
-      line_opacity_[i].resize(n_lines_);
-    abs_opacity_[i].resize(nu_grid.size());
-    scat_opacity_[i].resize(nu_grid.size());
-    emissivity_[i].resize(nu_grid.size());
-    J_nu_[i].resize(nu_grid.size());
-  }
-  compton_opac.resize(grid->n_zones);
-  photoion_opac.resize(grid->n_zones);
-  
-
-  // initialize time
-  t_now_ = g->t_now;
-
-  // initialize particles
-  int n_parts = params_->getScalar<int>("particles_n_initialize");
-  initialize_particles(n_parts);
-
-  // allocate memory for core emission
-  this->core_emis.resize(nu_grid.size());
-  
-}
-
 
 //------------------------------------------------------------
 // take a transport time step 

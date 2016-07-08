@@ -53,13 +53,17 @@ class transport
   double step_size_;
   int    steady_state;
   int    radiative_eq;
+  int    first_step_;
   int    verbose;
   int    use_detailed_lines_;
 
   // current time in simulation
   double t_now_;
+
   // inner boundary
-  double r_core_;
+  double L_core_, r_core_, T_core_, core_frequency_;
+  // emission spectrum from inner boundary
+  cdf_array core_emission_spectrum_;
 
   // minimum and maximum temperatures
   double temp_max_value_, temp_min_value_;
@@ -77,15 +81,11 @@ class transport
   // Voigt profile class
   VoigtProfile voigt_profile_;
 
-  
   // pointer to grid
   grid_general *grid;
   
   // the frequency grid for emissivity/opacity (Hz)
   locate_array nu_grid;
-
-  // the core emissivity (erg/s - units of N)
-  cdf_array core_emis;
 
   // the zone opacity/emissivity variables
   vector< cdf_array >    emissivity_;
