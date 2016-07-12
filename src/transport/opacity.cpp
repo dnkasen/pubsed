@@ -17,6 +17,10 @@ void transport::set_opacity()
   // tmp vector to hold line stuff
   vector<double> lopac(n_lines_);
 
+  // turn off bound-free for first step
+  int bf = gas.use_bound_free_opacity;
+  if (first_step_) gas.use_bound_free_opacity = 0;
+
   // loop over all zones
   int solve_error = 0;
   for (int i=0;i<grid->n_zones;i++)
@@ -39,7 +43,7 @@ void transport::set_opacity()
 
     // calculate the opacities/emissivities
     gas.computeOpacity(abs_opacity_[i],scat_opacity_[i],emis);
-    
+  
     // save and normalize emissivity cdf
     for (int j=0;j<nu_grid.size();j++)
       emissivity_[i].set_value(j,emis[j]*nu_grid.delta(j));
@@ -68,6 +72,11 @@ void transport::set_opacity()
     }
 
   }
+
+  // turn bound-free back on if wanted
+  if (first_step_) {
+     gas.use_bound_free_opacity = bf;
+     first_step_ = 0;    }
 
   // flag any error
   if (verbose)
@@ -100,7 +109,8 @@ int transport::get_opacity(particle &p, double dshift, double &opac, double &eps
     double a_opac = nu_grid.value_at(nu,abs_opacity_[p.ind],i_nu);
     double s_opac = nu_grid.value_at(nu,scat_opacity_[p.ind],i_nu);
     opac = a_opac + s_opac;
-    eps  = a_opac/opac;
+    if (opac == 0) eps = 0;
+    else eps  = a_opac/opac;
   }
 
   // get opacity if it is a gamma-ray
