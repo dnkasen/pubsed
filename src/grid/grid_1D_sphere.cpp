@@ -352,7 +352,7 @@ void grid_1D_sphere::sample_in_zone
 //************************************************************
 // get the velocity vector 
 //************************************************************
-void grid_1D_sphere::velocity_vector(int i, double x[3], double v[3])
+void grid_1D_sphere::get_velocity(int i, double x[3], double D[3], double v[3], double *dvds)
 {
   // radius in zone
   double rr = sqrt(x[0]*x[0] + x[1]*x[1] + x[2]*x[2]);
@@ -366,7 +366,7 @@ void grid_1D_sphere::velocity_vector(int i, double x[3], double v[3])
 
   double vv = v_0 + dv_dr*dr;
 
-  // assuming radial velocity (may want to interpolate here)
+  // assuming radial velocity 
   v[0] = x[0]/rr*vv;
   v[1] = x[1]/rr*vv;
   v[2] = x[2]/rr*vv;
@@ -378,6 +378,8 @@ void grid_1D_sphere::velocity_vector(int i, double x[3], double v[3])
     v[1] = 0;
     v[2] = 0;
   }
+
+  *dvds = dv_dr;  // not quite right, but upper limit
 
 }
 

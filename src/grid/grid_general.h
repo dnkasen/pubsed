@@ -72,7 +72,7 @@ class grid_general
   virtual void sample_in_zone(int,std::vector<double>,double[3]) = 0;
   
   // give the velocity vector at this point in zone i
-  virtual void velocity_vector(int i, double[3], double[3]) = 0;
+  virtual void get_velocity(int i, double[3], double[3], double[3], double*) = 0;
   
   // get the coordinates at the center of the zone i
   virtual void coordinates(int i,double r[3]) = 0;

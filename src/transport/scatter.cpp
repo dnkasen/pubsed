@@ -177,8 +177,8 @@ void transport::compton_scatter(particle *p)
 //------------------------------------------------------------
 void transport::isotropic_scatter(particle *p, int redist)
 {
-  double V[3];
-  grid->velocity_vector(p->ind,p->x,V);
+  double V[3], dvds;
+  grid->get_velocity(p->ind,p->x,p->D,V,&dvds);
 
   // debug
   //double t_secs = t_now_;

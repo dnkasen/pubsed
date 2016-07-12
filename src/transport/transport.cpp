@@ -86,7 +86,13 @@ ParticleFate transport::propagate(particle &p, double dt)
 
   // pointer to current zone
   zone *zone = &(grid->z[p.ind]);
-
+  
+  double continuum_opac_cmf, eps_absorb_cmf;
+  double dshift = dshift_lab_to_comoving(&p);
+  int i_nu = get_opacity(p,dshift,continuum_opac_cmf,eps_absorb_cmf);
+  double tot_opac_cmf      = continuum_opac_cmf;
+  double tot_opac_labframe = tot_opac_cmf*dshift;
+  double old_opac_labframe = tot_opac_labframe;
 
   // propagate until this flag is set
   while (fate == moving)
@@ -96,17 +102,27 @@ ParticleFate transport::propagate(particle &p, double dt)
     
     double d_bn; 
     int new_ind = grid->get_next_zone(p.x,p.D,p.ind,r_core_,&d_bn);
-
-    // maximum step size inside zone
-    //double d_bn = step_size_*grid->zone_min_length(p.ind); //*gsl_rng_uniform(rangen);
-
+  
     // determine the doppler shift from comoving to lab
     //double dshift = dshift_comoving_to_lab(&p);
     double dshift = dshift_lab_to_comoving(&p);
 
     // get continuum opacity and absorption fraction (epsilon)
-    double continuum_opac_cmf, eps_absorb_cmf;
     int i_nu = get_opacity(p,dshift,continuum_opac_cmf,eps_absorb_cmf);
+
+    // check for distance to next frequency bin
+    // nushift = nu*(dvds*l)/c --> l = nushift/nu*c/dvds
+    double d_nu = nu_grid.delta(i_nu)/p.nu*pc::c/p.dvds;
+    if (d_nu < d_bn)
+    {
+      d_bn = d_nu;
+      new_ind = p.ind;
+    }
+
+    // move particle the boundary distance
+    p.x[0] += d_bn*p.D[0];
+    p.x[1] += d_bn*p.D[1];
+    p.x[2] += d_bn*p.D[2]; 
 
     // convert opacity from comoving to lab frame for the purposes of 
     // determining the interaction distance in the lab frame
@@ -116,17 +132,19 @@ ParticleFate transport::propagate(particle &p, double dt)
     double tot_opac_cmf      = continuum_opac_cmf;
     double tot_opac_labframe = tot_opac_cmf*dshift;
     
+    double this_opac = 0.5*(tot_opac_labframe + old_opac_labframe);
+    old_opac_labframe = tot_opac_labframe;
+
     // random optical depth to next interaction
     double tau_r = -1.0*log(1 - gsl_rng_uniform(rangen));
     
     // step size to next interaction event
-    double d_sc  = tau_r/tot_opac_labframe;
-    if (tot_opac_labframe == 0) d_sc = std::numeric_limits<double>::infinity();
+    double d_sc  = tau_r/this_opac; //tot_opac_labframe;
+    if (this_opac == 0) d_sc = std::numeric_limits<double>::infinity();
     if (d_sc <= 0) 
-      cout << "ERROR: non-positive interaction distance! " << p.nu << " " << dshift << " " <<
+      cout << "ERROR: non-positive interaction distance! " << d_sc << " " << p.nu << " " << dshift << " " <<
         tot_opac_labframe  << "\n";
     //std::cout << d_sc << "\t" << d_bn << "\t" << tot_opac_labframe << "\n";
-
 
     // find distance to end of time step
     double d_tm = (tstop - p.t)*pc::c;
@@ -162,9 +180,9 @@ ParticleFate transport::propagate(particle &p, double dt)
     // fx_rad =
 
     // move particle the distance
-    p.x[0] += this_d*p.D[0];
-    p.x[1] += this_d*p.D[1];
-    p.x[2] += this_d*p.D[2]; 
+    ///p.x[0] += this_d*p.D[0];
+    //p.x[1] += this_d*p.D[1];
+    //p.x[2] += this_d*p.D[2]; 
     // advance the time
     p.t = p.t + this_d/pc::c;
 
@@ -190,7 +208,7 @@ ParticleFate transport::propagate(particle &p, double dt)
 
     // Find position of the particle now
     //p.ind = grid->get_zone(p.x);
-    //i
+    //if (p.ind == -1) fate = absorbed;
     //if (p.ind == -2) fate = escaped;
 
     // ---------------------------------
@@ -208,10 +226,19 @@ ParticleFate transport::propagate(particle &p, double dt)
     // ---------------------------------
     else if (event == scatter)  
     {   
-       if (gsl_rng_uniform(rangen) > eps_absorb_cmf) 
+      // move particle the distance
+      p.x[0] += (this_d - d_bn)*p.D[0];
+      p.x[1] += (this_d - d_bn)*p.D[1];
+      p.x[2] += (this_d - d_bn)*p.D[2]; 
+      
+      //eps_absorb_cmf = 0;
+
+      if (fate == moving)
+          //debug
+       //if (gsl_rng_uniform(rangen) > eps_absorb_cmf) 
         fate = do_scatter(&p,eps_absorb_cmf);
-        else
-        fate = absorbed;
+        //else
+        //fate = absorbed;
         //if (gsl_rng_uniform(rangen) > 0.38)
        // fate = absorbed; 
        //else fate = do_scatter(&p,0); 

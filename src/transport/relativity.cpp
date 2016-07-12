@@ -5,46 +5,109 @@
 
 namespace pc = physical_constants;
 
-//---------------------------------------------------------
-// lorentz factor ("gamma")
-// v_rel = v_newframe - v_oldframe
-//---------------------------------------------------------
-double lorentz_factor(const double (&v_rel)[3])
+//------------------------------------------------------------
+// get the doppler shift when moving from frame_to_frame
+// values saved inside particle class
+// tolab = 0 for lab_to_comoving
+// tolab = 1 for comoving_to_lab (flips sign)
+//------------------------------------------------------------
+ double transport::do_dshift(particle* p, int tolab) 
+ {
+  assert(p->ind >= 0);
+
+  // get velocity information here
+  double v_rel[3], dvds;
+  grid->get_velocity(p->ind,p->x,p->D,v_rel,&dvds); 
+
+  // if new frame is lab frame. old frame is comoving frame.
+  // v_rel = v_lab - v_comoving  --> v must flip sign.
+  if (tolab)
+  {
+    v_rel[0] *= -1;
+    v_rel[1] *= -1;
+    v_rel[2] *= -1;
+  }
+
+  // get relativistic quantities
+  double beta2 = (v_rel[0]*v_rel[0] + v_rel[1]*v_rel[1] + v_rel[2]*v_rel[2])/pc::c/pc::c;
+  double vdd   = v_rel[0]*p->D[0] + v_rel[1]*p->D[1] + v_rel[2]*p->D[2];
+  double gamma = 1.0/sqrt(1 - beta2);
+  double dshift = gamma*(1 - vdd/pc::c);
+
+  // store quantities
+  p->gamma  = gamma;
+  p->dshift = dshift;
+  p->dvds   = dvds;
+
+  return dshift;
+ }
+
+//------------------------------------------------------------
+// doppler shift calls
+//------------------------------------------------------------
+double transport::dshift_lab_to_comoving(particle* p) 
 {
-  double beta2 = (v_rel[0]*v_rel[0] + v_rel[1]*v_rel[1] + v_rel[2]*v_rel[2]) / (pc::c*pc::c);
-  return 1.0 / sqrt(1.0 - beta2);
+  return do_dshift(p,0);
+}
+
+double transport::dshift_comoving_to_lab(particle* p) 
+{
+  return do_dshift(p,1);
+}
+
+
+
+//------------------------------------------------------------
+// do a lorentz transformation; modifies the energy, frequency
+// and direction vector of the particle
+//------------------------------------------------------------
+void transport::transform_lab_to_comoving(particle* p)
+{
+  assert(p->ind >= 0);
+  lorentz_transform(p,0);
 }
 
 //------------------------------------------------------------
-// dot product of v_rel and relativistic particle direction
-// v_rel = v_newframe - v_oldframe
-// D = direction vector of relativistic particle in old frame
+// do a lorentz transformation; modifies the energy, frequency
+// and direction vector of the particle
 //------------------------------------------------------------
-double v_dot_d(const double (&v_rel)[3], const double (&D)[3])
+void transport::transform_comoving_to_lab(particle* p)
 {
-  return v_rel[0]*D[0] + v_rel[1]*D[1] + v_rel[2]*D[2];
+  lorentz_transform(p,1);
 }
 
-//------------------------------------------------------------
-// v_rel = v_newframe - v_oldframe
-// v_dot_v is the dot product of the relative velocity 
-// and the relativistic particle's direction
-//------------------------------------------------------------
-double doppler_shift(const double gamma, const double vdd)
-{
-  return gamma * (1.0 - vdd/pc::c);
-}
 
 //------------------------------------------------------------
 // apply a lorentz transform to the particle
 // v_rel = v_newframe - v_oldframe
 //------------------------------------------------------------
-void lorentz_transform(particle* p, const double (&v_rel)[3])
+void transport::lorentz_transform(particle* p, int tolab)
 {
-  // calculate the doppler shift, v dot D, and lorentz factors
-  double gamma  = lorentz_factor(v_rel);
-  double vdd    = v_dot_d(v_rel, p->D);
-  double dshift = doppler_shift(gamma, vdd);
+  assert(p->ind >= 0);
+
+  // get velocity information here
+  double v_rel[3],dvds;
+  grid->get_velocity(p->ind,p->x,p->D,v_rel,&dvds); 
+
+  // new frame is lab frame. old frame is comoving frame.
+  // v_rel = v_lab - v_comoving  --> v must flip sign.
+  if (tolab)
+  {
+    v_rel[0] *= -1;
+    v_rel[1] *= -1;
+    v_rel[2] *= -1;
+  }
+
+  // get relativistic quantities
+  double beta2 = (v_rel[0]*v_rel[0] + v_rel[1]*v_rel[1] + v_rel[2]*v_rel[2])/pc::c/pc::c;
+  double vdd   = v_rel[0]*p->D[0] + v_rel[1]*p->D[1] + v_rel[2]*p->D[2];
+  double gamma = 1.0/sqrt(1 - beta2);
+  double dshift = gamma*(1 - vdd/pc::c);
+
+  // store quantities
+  p->gamma  = gamma;
+  p->dshift = dshift;
+  p->dvds   = dvds;
 
   // transform the 0th component (energy and frequency)
   p->e  *= dshift; 
@@ -64,70 +127,6 @@ void lorentz_transform(particle* p, const double (&v_rel)[3])
 }
 
 
-//------------------------------------------------------------
-// get the doppler shift when moving from frame_to_frame
-// does not change any particle properties
-//------------------------------------------------------------
-double transport::dshift_comoving_to_lab(particle* p) const
-{
-  if(p->ind < 0){
-    std::cout << p->r()-1e7<< std::endl;
-    std::cout << p->ind<< std::endl;
-  }
-  assert(p->ind >= 0);
-  double v[3];
-  grid->velocity_vector(p->ind,p->x,v); // v_comoving - v_lab
-
-  // new frame is lab frame. old frame is comoving frame.
-  // v_rel = v_lab - v_comoving  --> v must flip sign.
-  v[0] *= -1;
-  v[1] *= -1;
-  v[2] *= -1;
-
-  double gamma = lorentz_factor(v);
-  double vdd = v_dot_d(v, p->D);
-  return doppler_shift(gamma, vdd);
-}
-
-double transport::dshift_lab_to_comoving(particle* p) const
-{
-  double v[3];
-  grid->velocity_vector(p->ind,p->x,v); // v_comoving - v_lab
-
-  // new frame is comoving frame. old frame is lab frame.
-  // v_rel = v_comoving - v_lab  -->  v keeps its sign
-
-  double gamma = lorentz_factor(v);
-  double vdd = v_dot_d(v, p->D);
-  return doppler_shift(gamma, vdd);
-}
 
 
-//------------------------------------------------------------
-// do a lorentz transformation; modifies the energy, frequency
-// and direction vector of the particle
-//------------------------------------------------------------
-void transport::transform_comoving_to_lab(particle* p) const
-{
-  double v[3];
-  grid->velocity_vector(p->ind,p->x,v); // v_comoving - v_lab
 
-  // new frame is lab frame. old frame is comoving frame.
-  // v_rel = v_lab - v_comoving  --> v must flip sign.
-  v[0] *= -1;
-  v[1] *= -1;
-  v[2] *= -1;
-
-  lorentz_transform(p,v);
-}
-
-void transport::transform_lab_to_comoving(particle* p) const
-{
-  double v[3];
-  grid->velocity_vector(p->ind,p->x,v); // v_comoving - v_lab
-
-  // new frame is lab frame. old frame is comoving frame.
-  // v_rel = v_comoving - v_lab  --> v keeps its sign.
-
-  lorentz_transform(p,v);
-}

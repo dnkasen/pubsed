@@ -39,7 +39,7 @@ public:
   int     get_zone(const double *) const;
   double  zone_volume(const int) const;
   void    sample_in_zone(int, std::vector<double>, double[3]);
-  void    velocity_vector(int i, double[3], double[3]);
+  void    get_velocity(int i, double[3], double[3], double[3], double*);
   void    write_out(int,double);
   void    expand(double);
 

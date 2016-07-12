@@ -22,6 +22,10 @@ class particle
   double       e;         // total energy in ergs of packet
   double      nu;         // frequency
 
+  double   gamma;         // lorentz factor
+  double   dshift;        // doppler shift
+  double   dvds;          // directional velocity derivative 
+
   double r() 
   { return sqrt(x[0]*x[0] + x[1]*x[1] + x[2]*x[2]); }
 

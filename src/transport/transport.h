@@ -126,10 +126,12 @@ class transport
   void sample_photon_frequency(particle*);
   
   // special relativistic functions
-  void   transform_comoving_to_lab(particle*) const;
-  void   transform_lab_to_comoving(particle*) const;
-  double dshift_comoving_to_lab(particle*) const;
-  double dshift_lab_to_comoving(particle*) const;
+  void   transform_comoving_to_lab(particle*);
+  void   transform_lab_to_comoving(particle*);
+  void   lorentz_transform(particle*, int);
+  double dshift_comoving_to_lab(particle*);
+  double dshift_lab_to_comoving(particle*);
+  double do_dshift(particle*, int);
 
   //propagation of particles functions
   ParticleFate propagate(particle &p, double tstop);
