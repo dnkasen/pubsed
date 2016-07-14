@@ -37,6 +37,7 @@ def compare(pdf):
 	py.plot(r,an,linewidth=4,color='red')
 
 	py.ylim(0,110)
+	py.title('2level_nlte test')
 	py.ylabel(r'level population ratio: $n_1/n_2$',size=15)
 	py.xlabel('radius/r_phot',size=15)
 	py.legend(['Sedona result','analytic result'],loc=2)
