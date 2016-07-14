@@ -226,49 +226,39 @@ int grid_1D_sphere::get_next_zone(const double *x, const double *D, int i, doubl
   double r_o = r_out[i];
   double l_out = -1*xdotD + sqrt(xdotD*xdotD + r_o*r_o - rsq);
 
-  // distance to inner shell edge
-  double l_in, r_i = 0, rad = 0;
-  int ind_in;
-  // inner zone, no core, nothing to go to
-  if ((i == 0)&&(r_core == 0))
-    l_in = -1;
+
+  double r_i = 0;
+  int ind_in = i-1;
+  if (i != 0)  r_i = r_out[i-1];
+  if (r_core >= r_i) {
+      r_i = r_core;
+      ind_in = -1; }
+
+
+  double l_in;
+  if ((i == 0)&&(r_core == 0)) l_in = -1;
   else
   {
-    if (i==0) r_i = r_core;
-    else r_i = r_out[i-1];
-    if (r_core >= r_i) 
-    {
-      r_i = r_core;
-      ind_in = -1;
-    }
-    else ind_in = i-1;
-    rad = xdotD*xdotD + r_i*r_i - rsq;
+    double rad = xdotD*xdotD + r_i*r_i - rsq;
     if   (rad < 0)  l_in = -1;
-    else if (r_i == 0) l_in = -1;
     else l_in = -1*xdotD - sqrt(rad);
- }
-
+  } 
 
   // find shortest positive distance
   int ind;
+  double tiny = 1 + 1e-10;
   if ((l_out < l_in)||(l_in < 0))
   {
     ind = i + 1;
     if (ind == n_zones) ind = -2;
-    *l = l_out;
+    *l = l_out*tiny;
   }
   else
   {
     ind = ind_in;
-    *l = l_in;
+    *l = l_in*tiny;
   }
 
-  // add a little extra distance so we don't land
-  // exactly on boundary
-  *l = *l*(1.0 + 1e-10);
-
-  //std::cout << sqrt(rsq) << "\t" << r_i << "\t" << r_out[i] << "\t" << rad << "\t";
-  //std::cout << l_in << "\t" << l_out << "\t" << *l << "\t" << i << "\t" << ind << "\n";
   return ind;
 }
 
@@ -297,6 +287,7 @@ void grid_1D_sphere::write_out(int iw, double tt)
     if (i > 0) rin = r_out[i-1];
     double T_rad = pow(z[i].e_rad/pc::a,0.25);
 
+    outf << std::setprecision(8);
     outf << r_out[i] << "\t";
     outf << z[i].rho << "\t";
     outf << z[i].v[0] << "\t";

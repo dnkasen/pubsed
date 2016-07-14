@@ -211,7 +211,6 @@ void transport::isotropic_scatter(particle *p, int redist)
   // choose new wavelength if redistributed
   if (redist) sample_photon_frequency(p);
 
-
   // outgoing velocity vector
   for (int i=0;i<3;i++) V[i] = -1*V[i];
   

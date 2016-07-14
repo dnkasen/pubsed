@@ -87,42 +87,32 @@ ParticleFate transport::propagate(particle &p, double dt)
   // pointer to current zone
   zone *zone = &(grid->z[p.ind]);
   
-  double continuum_opac_cmf, eps_absorb_cmf;
-  double dshift = dshift_lab_to_comoving(&p);
-  int i_nu = get_opacity(p,dshift,continuum_opac_cmf,eps_absorb_cmf);
-  double tot_opac_cmf      = continuum_opac_cmf;
-  double tot_opac_labframe = tot_opac_cmf*dshift;
-  double old_opac_labframe = tot_opac_labframe;
-
   // propagate until this flag is set
   while (fate == moving)
   {
     // set pointer to current zone
     zone = &(grid->z[p.ind]);
     
+    // get distance and index to the next zone boundary
     double d_bn; 
     int new_ind = grid->get_next_zone(p.x,p.D,p.ind,r_core_,&d_bn);
-  
+
     // determine the doppler shift from comoving to lab
-    //double dshift = dshift_comoving_to_lab(&p);
     double dshift = dshift_lab_to_comoving(&p);
 
     // get continuum opacity and absorption fraction (epsilon)
+    double continuum_opac_cmf,eps_absorb_cmf;
     int i_nu = get_opacity(p,dshift,continuum_opac_cmf,eps_absorb_cmf);
 
     // check for distance to next frequency bin
     // nushift = nu*(dvds*l)/c --> l = nushift/nu*c/dvds
     double d_nu = nu_grid.delta(i_nu)/p.nu*pc::c/p.dvds;
+    if (d_nu < 0) d_nu = -1*d_nu;
     if (d_nu < d_bn)
     {
       d_bn = d_nu;
-      new_ind = p.ind;
+      new_ind = p.ind; 
     }
-
-    // move particle the boundary distance
-    p.x[0] += d_bn*p.D[0];
-    p.x[1] += d_bn*p.D[1];
-    p.x[2] += d_bn*p.D[2]; 
 
     // convert opacity from comoving to lab frame for the purposes of 
     // determining the interaction distance in the lab frame
@@ -132,17 +122,14 @@ ParticleFate transport::propagate(particle &p, double dt)
     double tot_opac_cmf      = continuum_opac_cmf;
     double tot_opac_labframe = tot_opac_cmf*dshift;
     
-    double this_opac = 0.5*(tot_opac_labframe + old_opac_labframe);
-    old_opac_labframe = tot_opac_labframe;
-
     // random optical depth to next interaction
     double tau_r = -1.0*log(1 - gsl_rng_uniform(rangen));
     
     // step size to next interaction event
-    double d_sc  = tau_r/this_opac; //tot_opac_labframe;
-    if (this_opac == 0) d_sc = std::numeric_limits<double>::infinity();
-    if (d_sc <= 0) 
-      cout << "ERROR: non-positive interaction distance! " << d_sc << " " << p.nu << " " << dshift << " " <<
+    double d_sc  = tau_r/tot_opac_labframe;
+    if (tot_opac_labframe == 0) d_sc = std::numeric_limits<double>::infinity();
+    if (d_sc < 0) 
+      cout << "ERROR: negative interaction distance! " << d_sc << " " << p.nu << " " << dshift << " " <<
         tot_opac_labframe  << "\n";
     //std::cout << d_sc << "\t" << d_bn << "\t" << tot_opac_labframe << "\n";
 
@@ -150,8 +137,6 @@ ParticleFate transport::propagate(particle &p, double dt)
     double d_tm = (tstop - p.t)*pc::c;
     // if iterative calculation, give infinite time for particle escape
     if (this->steady_state) d_tm = std::numeric_limits<double>::infinity();
-
-    //std::cout << d_bn << "\t" << d_sc << "\n";
 
     // find out what event happens (shortest distance)
     double this_d;
@@ -180,14 +165,16 @@ ParticleFate transport::propagate(particle &p, double dt)
     // fx_rad =
 
     // move particle the distance
-    ///p.x[0] += this_d*p.D[0];
-    //p.x[1] += this_d*p.D[1];
-    //p.x[2] += this_d*p.D[2]; 
+    p.x[0] += this_d*p.D[0];
+    p.x[1] += this_d*p.D[1];
+    p.x[2] += this_d*p.D[2]; 
     // advance the time
     p.t = p.t + this_d/pc::c;
 
     // get photon radius
     //double r_p = p.r();
+   // check for inner boundary absorption
+//    if (r_p < r_core_)  {fate = absorbed;}
 
     // check for reflection back
     /*double r_out = 1.0098e14;
@@ -203,8 +190,7 @@ ParticleFate transport::propagate(particle &p, double dt)
        p.x[2] *= (1. - 1.e-16) * r_out/r_p;
     } */
 
-    // check for inner boundary absorption
-    //if (r_p < r_core_)  {fate = absorbed;}
+ 
 
     // Find position of the particle now
     //p.ind = grid->get_zone(p.x);
@@ -216,7 +202,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     // ---------------------------------
     if (event == boundary)
     {
-      p.ind = new_ind;
+      p.ind = new_ind; 
       if (p.ind == -1) fate = absorbed;
       if (p.ind == -2) fate = escaped;
     }
@@ -226,12 +212,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     // ---------------------------------
     else if (event == scatter)  
     {   
-      // move particle the distance
-      p.x[0] += (this_d - d_bn)*p.D[0];
-      p.x[1] += (this_d - d_bn)*p.D[1];
-      p.x[2] += (this_d - d_bn)*p.D[2]; 
-      
-      //eps_absorb_cmf = 0;
+       //eps_absorb_cmf = 0;
 
       if (fate == moving)
           //debug
