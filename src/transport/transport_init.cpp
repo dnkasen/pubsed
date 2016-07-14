@@ -112,71 +112,74 @@ void transport::init(ParameterReader* par, grid_general *g)
   core_frequency_ = params_->getScalar<double>("core_photon_frequency");
   L_core_         = params_->getScalar<double>("core_luminosity");
 
-  // allocate and set up core emission spectrum
-  core_emission_spectrum_.resize(nu_grid.size());
-
-  std::string core_spectrum_filename = params_->getScalar<string>("core_spectrum_file");  
-  vector<double> cspec_nu, cspec_Lnu;
-  if (core_spectrum_filename != "") 
+  int total_n_emit    = params_->getScalar<int>("core_n_emit");
+  if (total_n_emit > 0)
   {
-    double x1,x2;
-    std::ifstream specfile;
-    specfile.open(core_spectrum_filename.c_str());
-    while (!specfile.eof( ))   
-    {
-      specfile >> x1;
-      specfile >> x2;
-      cspec_nu.push_back(x1);
-      cspec_Lnu.push_back(x2);
-    }
-  }
+    // allocate and set up core emission spectrum
+    core_emission_spectrum_.resize(nu_grid.size());
 
-  // set up emission spectrum 
-  double L_sum = 0;
-  for (int j=0;j<nu_grid.size();j++)
-  { 
-    double nu  = nu_grid.center(j);
-    double dnu = nu_grid.delta(j);
-
-    // read in spectrum
+    std::string core_spectrum_filename = params_->getScalar<string>("core_spectrum_file");  
+    vector<double> cspec_nu, cspec_Lnu;
     if (core_spectrum_filename != "") 
     {
-      double Lnu;
-      int ind = lower_bound(cspec_nu.begin(),cspec_nu.end(),nu)- cspec_nu.begin() - 1;
-      if (ind < 0) Lnu = 0;
-      else if (ind >= cspec_nu.size()-1) Lnu = 0;
-      else 
+     double x1,x2;
+      std::ifstream specfile;
+      specfile.open(core_spectrum_filename.c_str());
+      while (!specfile.eof( ))   
       {
-        double slope = (cspec_Lnu[ind+1] - cspec_Lnu[ind-1])/(cspec_nu[ind+1] - cspec_nu[ind]);
-        Lnu = cspec_Lnu[ind] + slope*(nu - cspec_nu[ind]);
-      }
-      core_emission_spectrum_.set_value(j,Lnu*dnu); 
-      L_sum += Lnu*dnu;
-    }
-    else
-    // blackbody spectrum 
-    {
-      double bb;
-      if (T_core_ == 0) bb = 1;
-      else bb = blackbody_nu(T_core_,nu);
-      core_emission_spectrum_.set_value(j,bb*dnu);
-      // blackbody flux is pi*B(T)
-      L_sum += 4.0*pc::pi*r_core_*r_core_*pc::pi*bb*dnu;
-    }
-  
-  }
-  core_emission_spectrum_.normalize(); 
-  if (L_core_ == 0) L_core_ = L_sum;
+        specfile >> x1;
+        specfile >> x2;
+        cspec_nu.push_back(x1);
+        cspec_Lnu.push_back(x2);
+     }
+   }
 
-  if (verbose) 
-  {
-    if (core_spectrum_filename != "") 
-      cout << "# Inner source luminosity = " << L_core_ << 
-      " erg/s, read from file " << core_spectrum_filename << "\n";
-    else
-      cout << "# Inner source luminosity = " << L_core_ << 
-      " erg/s, from a blackbody T = " << T_core_ << "\n";
-  }
+    // set up emission spectrum 
+   double L_sum = 0;
+   for (int j=0;j<nu_grid.size();j++)
+   { 
+      double nu  = nu_grid.center(j);
+      double dnu = nu_grid.delta(j);
+
+      // read in spectrum
+      if (core_spectrum_filename != "") 
+      {
+        double Lnu;
+        int ind = lower_bound(cspec_nu.begin(),cspec_nu.end(),nu)- cspec_nu.begin() - 1;
+        if (ind < 0) Lnu = 0;
+        else if (ind >= cspec_nu.size()-1) Lnu = 0;
+       else 
+       {
+          double slope = (cspec_Lnu[ind+1] - cspec_Lnu[ind-1])/(cspec_nu[ind+1] - cspec_nu[ind]);
+          Lnu = cspec_Lnu[ind] + slope*(nu - cspec_nu[ind]);
+        }
+        core_emission_spectrum_.set_value(j,Lnu*dnu); 
+       L_sum += Lnu*dnu;
+      }
+      else
+      // blackbody spectrum 
+     {
+        double bb;
+        if (T_core_ == 0) bb = 1;
+        else bb = blackbody_nu(T_core_,nu);
+        core_emission_spectrum_.set_value(j,bb*dnu);
+        // blackbody flux is pi*B(T)
+       L_sum += 4.0*pc::pi*r_core_*r_core_*pc::pi*bb*dnu;
+      }
+    }
+   core_emission_spectrum_.normalize(); 
+   if (L_core_ == 0) L_core_ = L_sum;
+
+    if (verbose) 
+    {
+      if (core_spectrum_filename != "") 
+        cout << "# Inner source luminosity = " << L_core_ << 
+       " erg/s, read from file " << core_spectrum_filename << "\n";
+      else
+        cout << "# Inner source luminosity = " << L_core_ << 
+        "  erg/s, from a blackbody T = " << T_core_ << "\n";
+    }
+  } 
   // -----------------------------------------------------------
 
   // parameters for treatment of detailed lines
