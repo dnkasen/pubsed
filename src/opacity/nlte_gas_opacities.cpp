@@ -13,9 +13,10 @@ void nlte_gas::computeOpacity(std::vector<double>& abs,
 			      std::vector<double>& emis)
 {
   int ns = nu_grid.size();
-  std::vector<double> opac;
+  std::vector<double> opac, evec;
   opac.resize(ns);
-  
+  evec.resize(ns);
+
   // zero out passed opacity arrays
   for (int i=0;i<ns;i++) {abs[i] = 0; scat[i] = 0;}
   
@@ -97,10 +98,12 @@ void nlte_gas::computeOpacity(std::vector<double>& abs,
   //-- set emissivity, just thermal now
   for (int i=0;i<ns;i++)
   {
-    double nu = nu_grid[i];
+    double nu = nu_grid.center(i);
+    double dnu = nu_grid.delta(i);
+
     double zeta = pc::h*nu/pc::k/temp;
     double bb = 2.0*nu*nu*nu*pc::h/pc::c/pc::c/(exp(zeta)-1);
-    emis[i] = bb*abs[i];
+    emis[i] = bb*abs[i]*dnu;
   }
 }
 
@@ -196,10 +199,7 @@ void nlte_gas::bound_bound_opacity(std::vector<double>& opac)
 //----------------------------------------------------------------
 void nlte_gas::bound_bound_opacity(int iatom, std::vector<double>& opac)
 {
-  double vd;
-  vd = sqrt(2*pc::k*temp/pc::m_p/elem_A[iatom]);
-  if (line_velocity_width_ > 0) vd += line_velocity_width_;
-  atoms[iatom].bound_bound_opacity(vd/pc::c,opac);
+  atoms[iatom].bound_bound_opacity(opac);
 }
 
 

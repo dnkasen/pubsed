@@ -110,8 +110,9 @@ public:
   double n_dens;       // number density of this atom (cm^-3)
   double e_gamma;      // radioactive energy deposited (ergs/sec/cm^3)
 
-  int use_betas;        // include escape probabilites in nlte
-  int no_ground_recomb; // suppress recombinations to ground
+  double line_beta_dop_; // doppler width of lines = v/c
+  int use_betas;         // include escape probabilites in nlte
+  int no_ground_recomb;  // suppress recombinations to ground
 
   // classes
   nlte_level *levels;       // array of level data
@@ -136,7 +137,7 @@ public:
   void   compute_sobolev_taus(double time);
   // opacities
   void   bound_free_opacity(std::vector<double>&);
-  void  bound_bound_opacity(double, std::vector<double>&);
+  void   bound_bound_opacity(std::vector<double>&);
 
 
   // returns

@@ -145,37 +145,33 @@ void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu, double temp)
     double alpha  = 2.753e-14*pow(lam_H,1.5)/fact;
     R_rec = alpha;
 
-
     levels[i].P_ic = R_ion; 
     levels[i].R_ci = R_rec;
   }
 
   // calculate line J's
-  //debug -- hard code line width
-  double line_beta = 0.01; //v/c
   double x_max = 5;
   double dx    = 0.05;
 
   for (int i=0;i<n_lines;i++)
   {
     double nu0 = lines[i].nu;
-    double dnu = nu0*line_beta;
     double sum  = 0;
     double J0   = 0;
 
-    double nu_d = line_beta*nu0;
-    double gamma = lines[i].A_ul;
+    double nu_d    = nu0*line_beta_dop_;
+    double gamma   = lines[i].A_ul;
     double a_voigt = gamma/4/pc::pi/nu_d;
 
     for (double x=-1*x_max;x<=x_max;x+=dx)
     {
       double phi = voigt_profile_.getProfile(x,a_voigt);
-      double n = nu0 + x*dnu;
+      double n = nu0 + x*nu_d;
       double J1 = nu_grid.value_at(n,J_nu)*phi;
       sum += 0.5*(J1 + J0)*dx;
       J0 = J1;
     }
-    lines[i].J = sum; 
+    lines[i].J = sum;
   }
 }
 
@@ -314,7 +310,7 @@ void nlte_atom::set_rates(double T, double ne, std::vector<real> J_nu)
     rates[ic][i] += levels[i].R_ci*ne;
     rates[i][ic] += levels[i].P_ic;
 
-    //printf("pc::pi: %d %d %e %e\n",i,ic,R_rec,levels[i].P_ic);
+    printf("pc::pi: %d %d %e\n",i,ic,levels[i].P_ic);
     //printf("CI: %d %d %e %e\n",i,ic,C_rec,C_ion);
     
   }
@@ -506,7 +502,7 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac)
 // calculate the bound-free extinction coefficient
 // (units cm^{-1}) for all levels
 //---------------------------------------------------------
-void nlte_atom::bound_bound_opacity(double beta_dop, std::vector<double>& opac)
+void nlte_atom::bound_bound_opacity(std::vector<double>& opac)
 {
   // zero out array
   for (int i=0;i<opac.size();i++) opac[i] = 0;
@@ -523,7 +519,7 @@ void nlte_atom::bound_bound_opacity(double beta_dop, std::vector<double>& opac)
     double gu = levels[lu].g;
     double nu_0 = lines[i].nu;
 
-    double dnu = beta_dop*nu_0;
+    double dnu = line_beta_dop_*nu_0;
     double gamma = lines[i].A_ul;
     double a_voigt = gamma/4/pc::pi/dnu;
 

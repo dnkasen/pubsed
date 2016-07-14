@@ -225,11 +225,16 @@ double nlte_gas::get_ionization_state()
 //-----------------------------------------------------------
 int nlte_gas::solve_state(std::vector<real> J_nu)
 {
+
   for (int i=0;i<atoms.size();i++)
   {
     atoms[i].n_dens  = dens*mass_frac[i]/(elem_A[i]*pc::m_p);
     atoms[i].e_gamma = e_gamma*mass_frac[i];
     atoms[i].no_ground_recomb = no_ground_recomb;
+    // line widths
+    double vd = sqrt(2*pc::k*temp/pc::m_p/elem_A[i]);
+    if (line_velocity_width_ > 0) vd = line_velocity_width_;
+    atoms[i].line_beta_dop_ = vd/pc::c;
   }
 
   double max_ne = 10*dens/(A_mu*pc::m_p);
