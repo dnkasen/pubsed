@@ -11,7 +11,8 @@ tstep_time_stop    = 2e-10
 tstep_max_dt       = 2e-12
 tstep_min_dt       = 2e-12
 tstel_max_delta    = 1.0
-grid_write_out     = 1e-11
+
+output_write_times  = 1e-11
 
 
 transport_nu_grid  = {1,1,1}

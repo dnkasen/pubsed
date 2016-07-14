@@ -13,7 +13,8 @@ tstep_max_steps  = 1000
 tstep_time_stop  = 200*days
 tstep_max_dt     = 1*days
 tstep_min_dt     = 1*days
-grid_write_out   = 10*days
+
+output_write_times  = 10*days
 
 transport_nu_grid  = {1e13,1e17,0.01,1}  -- frequency grid
 

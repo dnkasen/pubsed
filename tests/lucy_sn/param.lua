@@ -4,8 +4,6 @@ grid_type    = "grid_1D_sphere"        -- grid geometry; match input model
 model_file   = "models/lucy_1D.mod"    -- input model file
 hydro_module = "homologous"
 
-grid_write_out      = 100
-
 -- time stepping
 days = 3600.0*24
 tstep_max_steps  = 1000

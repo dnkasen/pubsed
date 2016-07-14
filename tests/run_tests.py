@@ -5,7 +5,7 @@ matplotlib.use('Agg')
 from matplotlib.backends.backend_pdf import PdfPages
 import importlib
 import time
-
+import optparse
 
 ########################################
 # runs a series of tests of sedona
@@ -13,10 +13,17 @@ import time
 # test_results_%date.pdf
 ########################################
 
+parser = optparse.OptionParser()
+parser.add_option("-n",dest="nproc")
+(opts, args) = parser.parse_args()
+
+nproc = 1
+if (opts.nproc): nproc = opts.nproc
+
 ## executable directory and file
 exec_dir   = "../src/EXEC/"
 executable = "gomc"
-runcommand = "mpirun -np 2 ./gomc"
+runcommand = "mpirun -np " + str(nproc) + " ./gomc"
 
 outfile = 'test_results_' + time.strftime("%m-%d-%y") + '.pdf'
 pdf = PdfPages(outfile)
