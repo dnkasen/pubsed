@@ -2,7 +2,7 @@ defaults_file = "../defaults.lua"
 model_file    = "vacuum.mod"       
 data_atomic_file     = "../../data/2level_atomdata.hdf5"
 
-transport_nu_grid  = {0.2e14,5.0e15,1e13}  -- frequency grid
+transport_nu_grid  = {0.2e14,5.0e15,0.01,1}  -- frequency grid
 transport_radiative_equilibrium  = 1
 transport_steady_iterate         = 1
 

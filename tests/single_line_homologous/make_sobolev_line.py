@@ -1,7 +1,7 @@
 import numpy as np
 
 # parameters of model
-lam0  = 1215.0
+lam0  = 1215.7
 vmax  = 2.0e9
 vphot = 1.0e9
 tau0  = 4.0
