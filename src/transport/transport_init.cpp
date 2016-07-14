@@ -12,8 +12,10 @@
 
 #include "transport.h"
 #include "ParameterReader.h"
+#include "physical_constants.h"
 
 using std::cout;
+namespace pc = physical_constants;
 
 
 //----------------------------------------------------------------------------
@@ -158,6 +160,8 @@ void transport::init(ParameterReader* par, grid_general *g)
       if (T_core_ == 0) bb = 1;
       else bb = blackbody_nu(T_core_,nu);
       core_emission_spectrum_.set_value(j,bb*dnu);
+      // blackbody flux is pi*B(T)
+      L_sum += 4.0*pc::pi*r_core_*r_core_*pc::pi*bb*dnu;
     }
   
   }
