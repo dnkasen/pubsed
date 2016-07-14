@@ -156,8 +156,8 @@ void transport::init(ParameterReader* par, grid_general *g)
     {
       double bb;
       if (T_core_ == 0) bb = 1;
-      else bb = blackbody_nu(T_core_,nu)*dnu;
-      core_emission_spectrum_.set_value(j,bb);
+      else bb = blackbody_nu(T_core_,nu);
+      core_emission_spectrum_.set_value(j,bb*dnu);
     }
   
   }
