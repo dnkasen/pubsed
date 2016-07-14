@@ -5,7 +5,6 @@ data_fuzzline_file = ""
 
 -- grid
 grid_type      = "grid_1D_sphere"  -- grid geometry; must match input model
-grid_write_out = 1 -- how often to write out grid data
 
 -- default hydro module is none
 hydro_module = "none"
@@ -24,7 +23,7 @@ core_photon_frequency = 0
 core_spectrum_file    = ""
 
 -- default particle params
-particles_max_total = 1e6
+particles_max_total = 5e6
 particles_step_size = 0.3
 particles_n_emit_radioactive   = 0
 particles_n_initialize         = 0
@@ -36,6 +35,11 @@ tstep_time_stop  = 100.0
 tstep_max_dt     = 1000.0
 tstep_min_dt     = 0.0
 tstep_max_delta  = 0.1
+
+-- output parameters
+output_write_levels = 0
+output_write_grid   = 1
+output_write_times  = 0  -- how often to write out grid data
 
 -- limiting values for calculation
 limits_temp_max = 1e8
