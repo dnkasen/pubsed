@@ -5,6 +5,10 @@
 #include <sstream>
 
 #include "transport.h"
+#include "physical_constants.h"
+
+namespace pc = physical_constants;
+
 
 //--------------------------------------------------------------
 // Finalize the spectrum and output it
@@ -88,6 +92,8 @@ void transport::write_opacities(int iw)
   H5LTmake_dataset(file_id,"rho",RANK,dims_z,H5T_NATIVE_FLOAT,zone_arr);
   for (int i=0;i<grid->n_zones;i++)  zone_arr[i] = grid->z[i].T_gas;
   H5LTmake_dataset(file_id,"T_gas",RANK,dims_z,H5T_NATIVE_FLOAT,zone_arr);
+  for (int i=0;i<grid->n_zones;i++)  zone_arr[i] = pow(grid->z[i].e_rad/pc::a,0.25);;
+  H5LTmake_dataset(file_id,"T_rad",RANK,dims_z,H5T_NATIVE_FLOAT,zone_arr);
 
   int n_nu = nu_grid.size();
   float* tmp_array = new float[n_nu];
