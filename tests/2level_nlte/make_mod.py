@@ -3,7 +3,7 @@ temp = 5e4;
 texp = 20.0;
 rmin = 3e13
 rmax = 1e14
-rho  = 1e-20
+rho  = 1e-30
 vel  = 0
 
 dr = (rmax - rmin)/(1.0*nx)

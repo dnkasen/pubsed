@@ -11,7 +11,7 @@ def compare(pdf):
 	rp = 3.0e13
 
 	r    = py.array(fin['x'])
-	rmid = r - (r[1] - r[0])
+	rmid = r #- 0.5*(r[1] - r[0])
 	r   = r/rp
 	rho = py.array(fin['rho'])
 	nz = len(rho)
