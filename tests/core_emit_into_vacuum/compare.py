@@ -23,7 +23,8 @@ def compare(pdf):
     r0 = 0.5e15
 
     data = py.loadtxt('ray_00001.dat')
-    r = data[:,0] 
+    r = data[:,0]
+    r = r - 0.5*(r[1] - r[0])
     trad = data[:,4]
     tgas = data[:,3]
 

@@ -7,11 +7,10 @@ transport_radiative_equilibrium  = 1
 transport_steady_iterate         = 1
 
 -- inner source emission
-core_n_emit      = 1e4
+core_n_emit      = 1e6
 core_radius      = 5.0e14
 core_luminosity  = 1.0e43
 core_temperature = 1.0e4
-
 -- output spectrum
 spectrum_nu_grid   = transport_nu_grid
 
