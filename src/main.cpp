@@ -50,6 +50,7 @@ int main(int argc, char **argv)
   if( argc > 1 ) param_file = std::string( argv[ 1 ] );
   ParameterReader params(param_file,verbose);
 
+
   //---------------------------------------------------------------------
   // SET UP THE GRID 
   //---------------------------------------------------------------------
@@ -112,13 +113,17 @@ int main(int argc, char **argv)
     t_stop   = params.getScalar<double>("tstep_time_stop"); }
 
   // parameters for writing data to file
-  double write_out   = params.getScalar<double>("grid_write_out");
+
+  int write_levels = params.getScalar<int>("output_write_levels");
+  int write_grid   = params.getScalar<int>("output_write_grid");
+  double write_out = params.getScalar<double>("output_write_times");
   int    iw = 0;
 
   // loop over time/iterations
   double dt, t = grid->t_now;
   for(int it=1; it<=n_steps; it++,t+=dt)
   {
+
     // get this time step
     if (!steady_iterate)
     {
@@ -135,9 +140,10 @@ int main(int argc, char **argv)
     if (verbose) 
     {
       if (steady_iterate) cout << "# ITERATION: " << it << "\t";
-      else cout << "# TIME STEP: " << it << "\t" << t << "\t" << dt << "\t";
-      cout << mcarlo.n_particles() << "\n";
+      else cout << "# TSTEP #" << it << " ; t = "  << t << "; dt = " << dt;
+      cout << "; npacket = " << mcarlo.n_particles() << "\n";
     }
+
 
     // integrate mass 
      double mass =0;
@@ -161,8 +167,8 @@ int main(int argc, char **argv)
       if (steady_iterate) t_write = t;
       printf("# writing zone file %d at time %e\n",iw+1, t_write);
       grid->write_out(iw+1,t_write);
-      mcarlo.write_opacities(iw+1);
-      mcarlo.write_levels(iw+1);
+      if (write_grid)   mcarlo.write_opacities(iw+1);
+      if (write_levels) mcarlo.write_levels(iw+1);
       iw++;
     }
 
