@@ -15,10 +15,10 @@ tstep_min_dt     = 0.0
 tstep_max_delta  = 0.05
 
 -- emission parameters
-particles_n_emit_radioactive = 1e3
+particles_n_emit_radioactive = 1e4
 
 -- output spectrum
-spectrum_time_grid = {-5*days,100*days,1*days}
+spectrum_time_grid = {-5*days,100*days,0.5*days}
 spectrum_name = "optical_spectrum"
 gamma_name    = "gamma_spectrum"
 

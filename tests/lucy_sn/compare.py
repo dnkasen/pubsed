@@ -24,9 +24,9 @@ def compare(pdf):
     gdep = []
     for j in range(1,150):
         ray = 'ray_00'
-        if (j< 100): ray = ray + '0'
-        if (j < 10): ray = ray + '0'
-        ray = ray + str(j)
+        if (j< 100): ray = ray + '0' 
+        if (j < 10): ray = ray + '0' 
+        ray = ray + str(j) + '.dat'
         fin = open(ray,'r')
         line = fin.readline()
         tdep.append(float(line.split()[3])/3600.0/24.0)
@@ -39,7 +39,6 @@ def compare(pdf):
             vol = 4.0*3.14159/3.0*(r1**3 - r0**3)
             sum += float(data[5])*vol
             r0 = r1
-            print vol
         gdep.append(sum)
         
     py.plot(tdep,gdep,'o')
@@ -49,7 +48,7 @@ def compare(pdf):
     py.plot(x,y,color='red',linewidth=2)
     x,y = py.loadtxt('lucy_gr.dat',unpack=1)
     py.plot(x,y,color='blue',linewidth=2)
-
+    py.ylim(1e40,0.4e44)
 
     py.title
     py.legend(['sedona LC','sedona GR','lucy LC','lucy GR'])
