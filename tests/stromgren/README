@@ -1,0 +1,5 @@
+based on Iliev et al. (2006)
+L = 1e39
+Q = 5e48 photons/s^{-1}
+nH = 1e-3 cm^{-3}
+Rbox = 6.6 kpc
