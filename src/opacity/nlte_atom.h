@@ -76,7 +76,6 @@ class nlte_atom
 
 private:
 
-
   // matrices, vectors to solve NLTE
   double     **rates;
   gsl_matrix *M_nlte;
@@ -87,17 +86,12 @@ private:
   // frequency bin array
   locate_array nu_grid;
 
-  // functions for NLTE multidimensional solver
-  //  int Rate_Equations();
-  //void Set_Rates(double N_e, double T, double *J, double egam, double efrac);
-
   // Voigt profile class
   VoigtProfile voigt_profile_;
 
   double blackbody_nu(double T, double nu);
   double Calculate_Milne(int lev, double temp);
-  void   set_rates(double T, double ne, std::vector<real> J_nu);
-  void   calculate_radiative_rates(std::vector<real> J_nu, double);
+  void   set_rates(double ne);
 
 public:
 
@@ -109,6 +103,7 @@ public:
   int n_lines;         // number of line transitions   
   double n_dens;       // number density of this atom (cm^-3)
   double e_gamma;      // radioactive energy deposited (ergs/sec/cm^3)
+  double gas_temp_;        // temperature of gas
 
   double line_beta_dop_; // doppler width of lines = v/c
   int use_betas;         // include escape probabilites in nlte
@@ -127,17 +122,19 @@ public:
   int read_fuzzfile(std::string);
 
   // solve state
-  void solve_lte (double T, double ne, double time);
-  int  solve_nlte(double T, double ne, double time, std::vector<real> J_nu);
+  void calculate_radiative_rates(std::vector<real> J_nu);
+  void solve_lte (double ne);
+  int  solve_nlte(double ne, double time);
   void print();
 
   // sobolev
   double get_ion_frac();
   double compute_sobolev_tau(int i, double time);
   void   compute_sobolev_taus(double time);
+
   // opacities
-  void   bound_free_opacity(std::vector<double>&);
-  void   bound_bound_opacity(std::vector<double>&);
+  void   bound_free_opacity (std::vector<double>&, std::vector<double>&);
+  void   bound_bound_opacity(std::vector<double>&, std::vector<double>&);
 
 
   // returns

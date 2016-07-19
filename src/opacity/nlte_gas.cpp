@@ -225,20 +225,23 @@ double nlte_gas::get_ionization_state()
 //-----------------------------------------------------------
 int nlte_gas::solve_state(std::vector<real> J_nu)
 {
-
+  // set key properties of all atoms
   for (int i=0;i<atoms.size();i++)
   {
     atoms[i].n_dens  = dens*mass_frac[i]/(elem_A[i]*pc::m_p);
     atoms[i].e_gamma = e_gamma*mass_frac[i];
     atoms[i].no_ground_recomb = no_ground_recomb;
+    atoms[i].gas_temp_ = temp;
     // line widths
     double vd = sqrt(2*pc::k*temp/pc::m_p/elem_A[i]);
     if (line_velocity_width_ > 0) vd = line_velocity_width_;
     atoms[i].line_beta_dop_ = vd/pc::c;
+    // radiative rates
+    if (use_nlte_) atoms[i].calculate_radiative_rates(J_nu);
   }
 
-  double max_ne = 10*dens/(A_mu*pc::m_p);
-  double min_ne = 1e-20*dens/(A_mu*pc::m_p);;
+  double max_ne = 100*dens/(A_mu*pc::m_p);
+  double min_ne = 1e-10*dens/(A_mu*pc::m_p);;
   double tol    = 1e-3;
   solve_error_  = 0;
   ne = ne_brent_method(min_ne,max_ne,tol,J_nu);
@@ -262,8 +265,8 @@ double nlte_gas::charge_conservation(double ne,std::vector<real> J_nu)
   for (int i=0;i<atoms.size();i++) 
   {
     // Solve the LTE or NLTE with this value of Ne
-    if (use_nlte_) atoms[i].solve_nlte(temp,ne,time,J_nu);
-    else atoms[i].solve_lte (temp,ne,time);   
+    if (use_nlte_) atoms[i].solve_nlte(ne,time);
+    else atoms[i].solve_lte (ne);   
 
     // total electron donation from this atomic species
     f += dens*mass_frac[i]/(elem_A[i]*pc::m_p)*atoms[i].get_ion_frac();

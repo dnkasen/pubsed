@@ -10,12 +10,12 @@ namespace pc = physical_constants;
 //----------------------------------------------------------------
 void nlte_gas::computeOpacity(std::vector<double>& abs, 
 			      std::vector<double>& scat, 
-			      std::vector<double>& emis)
+			      std::vector<double>& tot_emis)
 {
   int ns = nu_grid.size();
-  std::vector<double> opac, evec;
+  std::vector<double> opac, emis;
   opac.resize(ns);
-  evec.resize(ns);
+  emis.resize(ns);
 
   // zero out passed opacity arrays
   for (int i=0;i<ns;i++) {abs[i] = 0; scat[i] = 0;}
@@ -42,36 +42,49 @@ void nlte_gas::computeOpacity(std::vector<double>& abs,
     {
       double es_opac = electron_scattering_opacity();
       for (int i=0;i<ns;i++) {
-        scat[i] += es_opac;
-	       // debug -- a bit of small thermalization
-	       abs[i] += es_opac*1e-10; }
+        scat[i] += es_opac; }
     }
 
      //---
     if (use_free_free_opacity) 
     {
-      free_free_opacity(opac);
-      for (int i=0;i<ns;i++) {
-         abs[i] += opac[i]; }
+      free_free_opacity(opac,emis);
+      for (int i=0;i<ns;i++) 
+      {
+         abs[i] += opac[i]; 
+         tot_emis[i] += emis[i];
+      }
     }
 
      //---
     if (use_bound_free_opacity) 
     {
-      bound_free_opacity(opac);
-      for (int i=0;i<ns;i++) {
-         abs[i] += opac[i]; }
+      bound_free_opacity(opac, emis);
+      double sum = 0;
+      for (int i=0;i<ns;i++) 
+      {
+         abs[i] += opac[i]; 
+         tot_emis[i] += emis[i]*ne;
+         sum += emis[i]*ne;
+       }
+       //std::cout << "bf: " << sum << "\n";
     }
 
     //---
     if (use_bound_bound_opacity) 
     {
-      bound_bound_opacity(opac);
-      for (int i=0;i<ns;i++) {
-         abs[i] += opac[i]; }
+      bound_bound_opacity(opac, emis);
+            double sum = 0;
+
+      for (int i=0;i<ns;i++)
+      {
+         abs[i] += opac[i]; 
+         tot_emis[i] += emis[i];
+         sum += emis[i];
+      }
+             //std::cout << "bb: " << sum << "\n";
+
     }
-
-
 
     //---
     if (use_line_expansion_opacity) 
@@ -80,7 +93,11 @@ void nlte_gas::computeOpacity(std::vector<double>& abs,
       for (int i=0;i<ns;i++) {
     	 abs[i]  += epsilon_*opac[i];
     	 scat[i] += (1-epsilon_)*opac[i];
-        }
+       double nu = nu_grid.center(i);
+       double ezeta = exp(1.0*pc::h*nu/pc::k/temp);
+       double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(ezeta-1);
+       tot_emis[i] += bb*abs[i]*nu_grid.delta(i);
+      }
     }
   
     //---
@@ -94,17 +111,6 @@ void nlte_gas::computeOpacity(std::vector<double>& abs,
     }
   }
 
-  
-  //-- set emissivity, just thermal now
-  for (int i=0;i<ns;i++)
-  {
-    double nu = nu_grid.center(i);
-    double dnu = nu_grid.delta(i);
-
-    double zeta = pc::h*nu/pc::k/temp;
-    double bb = 2.0*nu*nu*nu*pc::h/pc::c/pc::c/(exp(zeta)-1);
-    emis[i] = bb*abs[i]*dnu;
-  }
 }
 
 
@@ -121,11 +127,14 @@ double nlte_gas::electron_scattering_opacity()
 // free-free opacity (brehmstrahlung)
 // note the gaunt factor is being set to 1 here
 //----------------------------------------------------------------
-void nlte_gas::free_free_opacity(std::vector<double>& opac)
+void nlte_gas::free_free_opacity(std::vector<double>& opac, std::vector<double>& emis)
 {
   int npts   = nu_grid.size();
   int natoms = atoms.size();
-
+  
+  // zero out opacity/emissivity vector
+  for (int j=0;j<npts;j++) {opac[j] = 0; emis[j] = 0; }
+  
   // calculate sum of n_ion*Z**2
   double fac = 0;
   for (int i=0;i<natoms;i++)
@@ -144,7 +153,10 @@ void nlte_gas::free_free_opacity(std::vector<double>& opac)
   for (int i=0;i<npts;i++)
   {
     double nu = nu_grid[i];
-    opac[i] = fac/nu/nu/nu*(1 - exp(-pc::h*nu/pc::k/temp));
+    double ezeta = exp(-1.0*pc::h*nu/pc::k/temp);
+    double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(1.0/ezeta-1);
+    opac[i] = fac/nu/nu/nu*(1 - ezeta);
+    emis[i] = opac[i]*bb*nu_grid.delta(i);
   }      
   
 }
@@ -153,11 +165,11 @@ void nlte_gas::free_free_opacity(std::vector<double>& opac)
 //----------------------------------------------------------------
 // bound-free opacity (photoionization) from all elements
 //----------------------------------------------------------------
-void nlte_gas::bound_free_opacity(std::vector<double>& opac)
+void nlte_gas::bound_free_opacity(std::vector<double>& opac, std::vector<double>& emis)
 {
-  // zero out opacity vector
+  // zero out opacity/emissivity vector
   int ng = nu_grid.size();
-  for (int j=0;j<ng;j++) opac[j] = 0;
+  for (int j=0;j<ng;j++) {opac[j] = 0; emis[j] = 0; }
 
   std::vector<double> atom_opac(ng);
   int na = atoms.size();
@@ -165,7 +177,7 @@ void nlte_gas::bound_free_opacity(std::vector<double>& opac)
   // sum up the bound-free opacity from every atom
   for (int i=0;i<na;i++)
   {
-    atoms[i].bound_free_opacity(atom_opac);
+    atoms[i].bound_free_opacity(atom_opac, emis);
     for (int j=0;j<ng;j++) opac[j] += atom_opac[j];
   }
 }
@@ -176,20 +188,22 @@ void nlte_gas::bound_free_opacity(std::vector<double>& opac)
 // bound-bound opacity (lines)
 // uses Doppler broadening for now
 //----------------------------------------------------------------
-void nlte_gas::bound_bound_opacity(std::vector<double>& opac)
+void nlte_gas::bound_bound_opacity(std::vector<double>& opac, std::vector<double>& emis)
 {
   // zero out opacity vector
   int ng = nu_grid.size();
-  for (int j=0;j<ng;j++) opac[j] = 0;
+  for (int j=0;j<ng;j++) {opac[j] = 0; emis[j] = 0;}
   
-  std::vector<double> atom_opac(ng);
+  std::vector<double> atom_opac(ng), atom_emis(ng);
   int na = atoms.size();
   
   // sum up the bound-bound opacity from every atom
   for (int i=0;i<na;i++)
   {
-    bound_bound_opacity(i,atom_opac);
-    for (int j=0;j<ng;j++) opac[j] += atom_opac[j];
+    bound_bound_opacity(i,atom_opac, atom_emis);
+    for (int j=0;j<ng;j++) {
+        opac[j] += atom_opac[j];
+        emis[j] += atom_emis[j]; }
   }
 }
 
@@ -197,9 +211,12 @@ void nlte_gas::bound_bound_opacity(std::vector<double>& opac)
 //----------------------------------------------------------------
 // bound-bound opacity (line) from single element iatom
 //----------------------------------------------------------------
-void nlte_gas::bound_bound_opacity(int iatom, std::vector<double>& opac)
+void nlte_gas::bound_bound_opacity(int iatom, std::vector<double>& opac, std::vector<double>& emis)
 {
-  atoms[iatom].bound_bound_opacity(opac);
+  // zero out opacity vector
+  int ng = nu_grid.size();
+  for (int j=0;j<ng;j++) {opac[j] = 0; emis[j] = 0;}
+  atoms[iatom].bound_bound_opacity(opac, emis);
 }
 
 

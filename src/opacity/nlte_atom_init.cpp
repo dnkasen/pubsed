@@ -187,7 +187,7 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
   // if not available, just use hydrogenic approx
   // ----------------------------------------
   int npts     = 1000;
-  double fmax  = 10;
+  double fmax  = 5;
   for (int i=0;i<n_levels;i++) 
   {
      // set photoionization cross-section
@@ -199,22 +199,8 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
      {
         double E = levels[i].s_photo.x[j];
         double neff = sqrt(levels[i].g/2.0);
-        double sigma = 6e-18*neff*pow(E/E_ion,-3);
+        double sigma = 6.3e-18*neff*pow(E/E_ion,-3);
         levels[i].s_photo.y[j] = sigma;
-     }
-
-    // set recombination rates
-    levels[i].a_rec.init(1e3,1e5,5e3);
-    for (int j=0;j<levels[i].a_rec.size();j++)
-    {
-       double temp = levels[i].a_rec.x[j];
-       levels[i].a_rec.y[j] = 2e-13*pow(temp/1e4,-0.5);
-       // debug
-       // if (i == 0) levels[i].a_rec.y[j] = 5.83e-14;
-       // if (i == 1) levels[i].a_rec.y[j] = 2.02e-14;
-       // if (i == 2) levels[i].a_rec.y[j] = 9.67e-15;
-
-  //     // levels[i].a_rec.y[j] = Calculate_Milne(i,temp);
      }
   }
 
