@@ -64,6 +64,8 @@ class transport
   double L_core_, r_core_, T_core_, core_frequency_;
   // emission spectrum from inner boundary
   cdf_array core_emission_spectrum_;
+  // emission distribution across zones
+  cdf_array zone_emission_cdf_;
 
   // minimum and maximum temperatures
   double temp_max_value_, temp_min_value_;
@@ -86,6 +88,9 @@ class transport
   
   // the frequency grid for emissivity/opacity (Hz)
   locate_array nu_grid;
+
+  // boundary conditions
+  int boundary_in_reflect_, boundary_out_reflect_;
 
   // the zone opacity/emissivity variables
   vector< cdf_array >    emissivity_;

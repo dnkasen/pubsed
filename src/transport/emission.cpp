@@ -100,21 +100,46 @@ void transport::create_isotropic_particle
 //------------------------------------------------------------
 void transport::initialize_particles(int init_particles)
 {
-  int n_add = 0;
+  int my_n_emit = init_particles/(1.0*MPI_nprocs);
+
+   // check that we have enough space to add these particles
+  if (my_n_emit > max_total_particles) {
+      if (verbose) cout << "# Not enough particle space to initialize\n";
+      return; }
+
+  if (verbose) cout << "# init with " << init_particles << " total particles ";
+  if (verbose) cout << "(" << my_n_emit << " per MPI proc)\n";  
+  if (my_n_emit == 0) return;
+  
+  // set up emission distribution across zones
+  double E_sum = 0;
+  int ng = nu_grid.size();
   for (int i=0;i<grid->n_zones;i++)
   {
-    // lab frame energy
+    double T = grid->z[i].T_gas;
     double E_zone = grid->z[i].e_rad*grid->zone_volume(i);
-    // particle energy
-    double Ep = E_zone/(init_particles);
-
-    // create init_particles particles
-    if (E_zone > 0) {
-      for (int q=0;q<init_particles;q++) 
-	create_isotropic_particle(i,photon,Ep,t_now_);
-      n_add += init_particles; }
+    zone_emission_cdf_.set_value(i,E_zone);
+    E_sum += E_zone;
+    // setup blackbody emissivity for initialization
+    for (int j=0;j<ng;j++) 
+    {
+      double nu_m = nu_grid.center(j);
+      double emis = blackbody_nu(T,nu_m)*nu_grid.delta(j);
+      emissivity_[i].set_value(j,emis);
+    }
+    emissivity_[i].normalize();
   }
-  if (verbose) cout << "# initializing with " << n_add << " particles\n";  
+  zone_emission_cdf_.normalize();
+
+  // emit particles
+  double Ep = E_sum/(1.0*my_n_emit);
+  for (int q=0;q<my_n_emit;q++) 
+  {
+    int i = zone_emission_cdf_.sample(gsl_rng_uniform(rangen));
+    create_isotropic_particle(i,photon,Ep,t_now_);
+  }
+ 
+  
 }
 
 

@@ -45,7 +45,6 @@ void transport::init(ParameterReader* par, grid_general *g)
   rangen = gsl_rng_alloc (TypeR);
   
   // read relevant parameters
-  step_size_          = params_->getScalar<double>("particles_step_size");
   max_total_particles = params_->getScalar<int>("particles_max_total");
   radiative_eq    = params_->getScalar<int>("transport_radiative_equilibrium");
   steady_state    = (params_->getScalar<int>("transport_steady_iterate") > 0);
@@ -104,6 +103,10 @@ void transport::init(ParameterReader* par, grid_general *g)
   gas.use_nlte_ 
     = params_->getScalar<int>("opacity_use_nlte");
   first_step_ = 1;
+
+  // set up outer inner boundary condition
+  boundary_in_reflect_ = params_->getScalar<int>("transport_boundary_in_reflect");
+  boundary_out_reflect_ = params_->getScalar<int>("transport_boundary_out_reflect");
 
   // -----------------------------------------------------------
   // set up inner boundary emission properties
@@ -212,6 +215,8 @@ void transport::init(ParameterReader* par, grid_general *g)
   compton_opac.resize(grid->n_zones);
   photoion_opac.resize(grid->n_zones);
   
+  // allocate space for emission distribution function across zones
+  zone_emission_cdf_.resize(grid->n_zones);
 
   // initialize time
   t_now_ = g->t_now;

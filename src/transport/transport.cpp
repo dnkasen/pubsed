@@ -78,6 +78,8 @@ ParticleFate transport::propagate(particle &p, double dt)
   ParticleFate  fate = moving;
   p.ind = grid->get_zone(p.x);
   
+  if (p.ind == -1) {std::cout << "ok " << p.r() << "\n";}
+
   if (p.ind == -1) {return absorbed;}
   if (p.ind == -2) {return  escaped;}
   
@@ -94,7 +96,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     zone = &(grid->z[p.ind]);
     
     // get distance and index to the next zone boundary
-    double d_bn; 
+    double d_bn = 0;
     int new_ind = grid->get_next_zone(p.x,p.D,p.ind,r_core_,&d_bn);
 
     // determine the doppler shift from comoving to lab
@@ -113,6 +115,8 @@ ParticleFate transport::propagate(particle &p, double dt)
       d_bn = d_nu;
       new_ind = p.ind; 
     }
+
+    if (d_bn == 0) std::cout << "zerob\n";
 
     // convert opacity from comoving to lab frame for the purposes of 
     // determining the interaction distance in the lab frame
@@ -159,6 +163,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     {
       zone->e_abs  += this_E*dshift*(continuum_opac_cmf)*eps_absorb_cmf*dshift;
       J_nu_[p.ind][i_nu] += this_E;
+    //      std::cout << i_nu << "\n";
     }
       
     // put back in radiation force tally here
@@ -171,40 +176,46 @@ ParticleFate transport::propagate(particle &p, double dt)
     // advance the time
     p.t = p.t + this_d/pc::c;
 
-    // get photon radius
-    //double r_p = p.r();
-   // check for inner boundary absorption
-//    if (r_p < r_core_)  {fate = absorbed;}
-
-    // check for reflection back
-    /*double r_out = 1.0098e14;
-    if (r_p > r_out)
-    {
-      // flip direction
-       p.D[0] *= -1;
-       p.D[1] *= -1;
-       p.D[2] *= -1;
-       // put on edge, slightly in
-       p.x[0] *= (1. - 1.e-16) * r_out/r_p;
-       p.x[1] *= (1. - 1.e-16) * r_out/r_p;
-       p.x[2] *= (1. - 1.e-16) * r_out/r_p;
-    } */
-
- 
-
-    // Find position of the particle now
-    //p.ind = grid->get_zone(p.x);
-    //if (p.ind == -1) fate = absorbed;
-    //if (p.ind == -2) fate = escaped;
-
     // ---------------------------------
     // do a boundary event
     // ---------------------------------
     if (event == boundary)
     {
-      p.ind = new_ind; 
-      if (p.ind == -1) fate = absorbed;
-      if (p.ind == -2) fate = escaped;
+      // inner boundary hit
+      if (new_ind == -1) 
+      {
+        if (boundary_in_reflect_)
+        {  
+          // flip direction
+          p.D[0] *= -1; 
+          p.D[1] *= -1;
+          p.D[2] *= -1;
+        }
+        else 
+        {
+          std::cout << "absor";
+          p.ind = new_ind; 
+          fate = absorbed;
+        }
+      } 
+      // outer boundary hit
+      else if (new_ind == -2) 
+      {
+        if (boundary_out_reflect_)
+        {  
+          // flip direction
+          p.D[0] *= -1;
+          p.D[1] *= -1;
+          p.D[2] *= -1;
+        }
+        else 
+        {
+          p.ind = new_ind; 
+          fate = escaped;
+        }
+      } 
+      // just another cell
+      else p.ind = new_ind;
     }
 
     // ---------------------------------
@@ -215,18 +226,17 @@ ParticleFate transport::propagate(particle &p, double dt)
        //eps_absorb_cmf = 0;
 
       if (fate == moving)
-          //debug
-       //if (gsl_rng_uniform(rangen) > eps_absorb_cmf) 
-        fate = do_scatter(&p,eps_absorb_cmf);
-        //else
-        //fate = absorbed;
-        //if (gsl_rng_uniform(rangen) > 0.38)
-       // fate = absorbed; 
-       //else fate = do_scatter(&p,0); 
+      {
+ //        fate = do_scatter(&p,eps_absorb_cmf);
+   //     if (gsl_rng_uniform(rangen) > 0.38)
+    //    fate = absorbed; 
+        //else fate = do_scatter(&p,0); 
          // debug
-//        fate = do_scatter(&p,eps_absorb_cmf);  
-
+        fate = do_scatter(&p,1);
+        //if (p.nu*pc::h < pc::rydberg) fate = escaped;
      }
+
+    }
 
     // ---------------------------------
     // do an end of timestep event
@@ -234,6 +244,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     else if (event == tstep) 
        fate = stopped;
   }
+
 
   // Add escaped photons to output spectrum
   if (fate == escaped) 
