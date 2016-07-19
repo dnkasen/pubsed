@@ -103,7 +103,7 @@ void transport::init(ParameterReader* par, grid_general *g)
     = params_->getScalar<int>("opacity_free_free");
   gas.use_nlte_ 
     = params_->getScalar<int>("opacity_use_nlte");
-  first_step_ = 0;
+  first_step_ = 1;
 
   // -----------------------------------------------------------
   // set up inner boundary emission properties
@@ -150,8 +150,8 @@ void transport::init(ParameterReader* par, grid_general *g)
         else if (ind >= cspec_nu.size()-1) Lnu = 0;
        else 
        {
-          double slope = (cspec_Lnu[ind+1] - cspec_Lnu[ind-1])/(cspec_nu[ind+1] - cspec_nu[ind]);
-          Lnu = cspec_Lnu[ind] + slope*(nu - cspec_nu[ind]);
+          double slope = 0; //(cspec_Lnu[ind+1] - cspec_Lnu[ind-1])/(cspec_nu[ind+1] - cspec_nu[ind]);
+          Lnu = cspec_Lnu[ind]; // + slope*(nu - cspec_nu[ind]);
         }
         core_emission_spectrum_.set_value(j,Lnu*dnu); 
        L_sum += Lnu*dnu;

@@ -172,7 +172,7 @@ void transport::emit_radioactive(double dt)
 
       // determine if make gamma-ray or positron
       if (gsl_rng_uniform(rangen) < gamma_frac[i])
-	create_isotropic_particle(i,gammaray,E_p,t);
+	       create_isotropic_particle(i,gammaray,E_p,t);
       else
       {
 	// positrons are just immediately made into photons
