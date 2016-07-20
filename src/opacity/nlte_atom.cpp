@@ -202,13 +202,9 @@ void nlte_atom::set_rates(double ne)
     double R_ul = lines[l].B_ul*lines[l].J + lines[l].A_ul;
     double R_lu = lines[l].B_lu*lines[l].J;
 
-    // add in escape probability suppresion
-    if (this->use_betas) 
-    {
-      std::cout << "HI\n";
-      R_ul *= lines[l].beta;
-      R_lu *= lines[l].beta; 
-    }
+    // check for transition between degenerate levels
+    if (lines[l].nu == 0)
+      { R_ul = 0; R_lu = 0;}
 
     // add into rates
     rates[ll][lu] += R_lu;
@@ -231,7 +227,7 @@ void nlte_atom::set_rates(double ne)
 
     double dE = (levels[lu].E - levels[ll].E)*pc::ev_to_ergs;
     double R_lu = e_gamma/n_dens/dE; //*(lines[l].f_lu/norm);
-
+    if (dE == 0) R_lu = 0;
     if (ll != 0) R_lu = 0;
 
     // add into rates
@@ -268,7 +264,7 @@ void nlte_atom::set_rates(double ne)
       	 // use condition that collision rates give LTE
 	       double gl = levels[i].g;
 	       double gu = levels[j].g;
-	       C = C*gu/gl*exp(-zeta);      
+         C = C*gu/gl*exp(-zeta);      
       }
 
       // add into rates
@@ -322,9 +318,10 @@ void nlte_atom::set_rates(double ne)
 
   // print out rates if you so like
   //printf("------- rates ----------\n");
-  //for (int i=0;i<n_levels;i++)
-   // for (int j=0;j<n_levels;j++)
-   //   printf("%5d %5d %14.5e\n",i,j,rates[i][j]);
+  for (int i=0;i<n_levels;i++)
+    for (int j=0;j<n_levels;j++)
+      if (isnan(rates[i][j]))
+      printf("%5d %5d %14.5e\n",i,j,rates[i][j]);
    //printf("\n");
    //for (int i=0;i<n_levels;i++)
    // for (int j=0;j<n_levels;j++)   {
