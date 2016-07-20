@@ -86,8 +86,6 @@ ParticleFate transport::propagate(particle &p, double dt)
   ParticleFate  fate = moving;
   p.ind = grid->get_zone(p.x);
   
-  if (p.ind == -1) {std::cout << "ok " << p.r() << "\n";}
-
   if (p.ind == -1) {return absorbed;}
   if (p.ind == -2) {return  escaped;}
   
@@ -201,7 +199,6 @@ ParticleFate transport::propagate(particle &p, double dt)
         }
         else 
         {
-          std::cout << "absor";
           p.ind = new_ind; 
           fate = absorbed;
         }
