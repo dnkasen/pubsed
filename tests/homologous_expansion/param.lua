@@ -15,7 +15,7 @@ tstel_max_delta    = 1.0
 
 
 -- inner source
-particles_n_initialize  = 10
+particles_n_initialize  = 1e4
 core_n_emit        =   0
 
 

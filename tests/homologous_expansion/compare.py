@@ -33,6 +33,13 @@ def compare(pdf):
 		yn = y*texp/(texp + (i)*10.0 + 0.5)
 		py.plot(xn/r0,yn,'--',color=cols[i])
 
+	py.title('adiabatic expansion test: radiation field snapshots')
+	py.xticks(size=15)
+	py.yticks(size=15)
+	py.ylabel('radius/initial raidus',size=15)
+	py.xlabel('radiation temperature',size=15)
+	py.legend(['sedona','analytic result'])
+
 	py.xlim(0,3)
 	if (pdf != ''): pdf.savefig()
 	else:
@@ -51,7 +58,7 @@ def compare(pdf):
 		x,y = np.loadtxt(name,unpack=1,usecols=[0,4])
 		tn = max(x)/1e9/3600.0/24.0
 		t.append(tn)
-		r.append(np.average(y[0:40]))
+		r.append(np.average(y[10:40]))
 
 
 	py.plot(t,r,'o',markersize=8,markerfacecolor='none')
@@ -61,7 +68,7 @@ def compare(pdf):
 
 	py.xticks(size=15)
 	py.yticks(size=15)
-	py.title('homologous expansion test: mean radiation temp')
+	py.title('adiabatic expansion test: mean radiation temp')
 	py.ylabel('mean interior temperature',size=15)
 	py.xlabel('time (days)',size=15)
 
