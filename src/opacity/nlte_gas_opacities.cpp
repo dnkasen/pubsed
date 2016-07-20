@@ -18,7 +18,7 @@ void nlte_gas::computeOpacity(std::vector<double>& abs,
   emis.resize(ns);
 
   // zero out passed opacity arrays
-  for (int i=0;i<ns;i++) {abs[i] = 0; scat[i] = 0;}
+  for (int i=0;i<ns;i++) {abs[i] = 0; scat[i] = 0; tot_emis[i] = 0;}
   
   //-----------------------------------------
   /// if grey opacity, just do simple thing
@@ -70,9 +70,7 @@ void nlte_gas::computeOpacity(std::vector<double>& abs,
       {
          abs[i] += opac[i]; 
          tot_emis[i] += emis[i]*ne;
-         sum += emis[i]*ne;
        }
-       //std::cout << "bf: " << sum << "\n";
     }
 
     //---
@@ -85,9 +83,7 @@ void nlte_gas::computeOpacity(std::vector<double>& abs,
       {
          abs[i] += opac[i]; 
          tot_emis[i] += emis[i];
-         sum += emis[i];
       }
-             //std::cout << "bb: " << sum << "\n";
 
     }
 
