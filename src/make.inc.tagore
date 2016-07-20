@@ -1,4 +1,5 @@
-CXX   = /usr/local/bin/mpicxx -g -Wall
+CXX   = /usr/local/bin/mpicxx -O3 -pedantic -Wall -Wno-c++11-long-long
+
 
 # location of gsl 
 GSL_INC=/usr/local/include
