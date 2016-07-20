@@ -26,9 +26,14 @@ void nlte_gas::computeOpacity(std::vector<double>& abs,
   if (grey_opacity_ != 0)
   {
     double opac = dens*grey_opacity_;
-    for (int i=0;i<ns;i++) {
+    for (int i=0;i<ns;i++) 
+    {
       abs[i]  = opac*epsilon_;
       scat[i] = opac*(1-epsilon_);
+      double nu = nu_grid.center(i);
+      double ezeta = exp(1.0*pc::h*nu/pc::k/temp);
+      double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(ezeta-1);
+      tot_emis[i] += bb*abs[i];
     }
   } 
 
@@ -96,7 +101,7 @@ void nlte_gas::computeOpacity(std::vector<double>& abs,
        double nu = nu_grid.center(i);
        double ezeta = exp(1.0*pc::h*nu/pc::k/temp);
        double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(ezeta-1);
-       tot_emis[i] += bb*abs[i]*nu_grid.delta(i);
+       tot_emis[i] += bb*abs[i];
       }
     }
   
@@ -156,7 +161,7 @@ void nlte_gas::free_free_opacity(std::vector<double>& opac, std::vector<double>&
     double ezeta = exp(-1.0*pc::h*nu/pc::k/temp);
     double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(1.0/ezeta-1);
     opac[i] = fac/nu/nu/nu*(1 - ezeta);
-    emis[i] = opac[i]*bb*nu_grid.delta(i);
+    emis[i] = opac[i]*bb;
   }      
   
 }

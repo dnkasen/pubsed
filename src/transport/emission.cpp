@@ -23,8 +23,8 @@ void transport::sample_photon_frequency(particle *p)
 {
   if (p->type == photon)
   {
-    int ilam  = emissivity_[p->ind].sample(gsl_rng_uniform(rangen));
-    p->nu = nu_grid.sample(ilam,gsl_rng_uniform(rangen));
+    int inu  = emissivity_[p->ind].sample(gsl_rng_uniform(rangen));
+    p->nu = nu_grid.sample(inu,gsl_rng_uniform(rangen));
     if (p->nu > 1e20) std::cout << "pnu " << p->nu << "\n";
   }
   else if (p->type == gammaray)
@@ -78,7 +78,8 @@ void transport::create_isotropic_particle
 
   // sample frequency from local emissivity
   sample_photon_frequency(&p);
-  
+//  p.nu = 1e16; //debug
+
   // set packet energy
   p.e  = Ep;
 

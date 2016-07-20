@@ -25,9 +25,14 @@ void transport::step(double dt)
   // nominal time for iterative calc is 1
   if (this->steady_state) dt = 1;
   
+  double tstr,tend;
+
   // calculate opacities
+  tstr = MPI_Wtime();
   set_opacity();
-  if (verbose) cout << "# Calculated opacities\n";
+  tend = MPI_Wtime();
+  if (verbose) cout << "# Calculated opacities (" << (tend-tstr) << " secs) \n";
+  tstr = MPI_Wtime();
 
   // clear the tallies of the radiation quantities in each zone
   wipe_radiation();
@@ -52,6 +57,9 @@ void transport::step(double dt)
   if ((verbose)&&(steady_state)) {
     cout << "# Percent particles escaped = " << 100.0*per_esc << "\n";
     optical_spectrum.rescale(1.0/per_esc); }
+
+  tend = MPI_Wtime();
+  if (verbose) cout << "# Propagated particles (" << (tend-tstr) << " secs) \n";
 
   // normalize and MPI combine radiation tallies
   reduce_radiation(dt);

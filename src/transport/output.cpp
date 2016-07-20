@@ -121,7 +121,7 @@ void transport::write_opacities(int iw)
     H5LTmake_dataset(zone_id,"epsilon",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
     // write emissivity 
-    for (int j=0;j<n_nu;j++)  tmp_array[j] = emissivity_[i].get_value(j);
+    for (int j=0;j<n_nu;j++)  tmp_array[j] = emissivity_[i].get_value(j)/nu_grid.delta(j);
     H5LTmake_dataset(zone_id,"emissivity",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
     // write radiation field J

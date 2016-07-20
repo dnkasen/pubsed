@@ -197,7 +197,6 @@ void transport::isotropic_scatter(particle *p, int redist)
   p->nu = p->nu*dshift_in;
   
   // sample new direction by rejection method
-  double E_ratio;
   double D_new[3];
 
   // choose new isotropic direction in comoving frame
