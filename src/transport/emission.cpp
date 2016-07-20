@@ -152,7 +152,7 @@ void transport::emit_radioactive(double dt)
   // number of radioctive particles to emit
   int total_n_emit = params_->getScalar<int>("particles_n_emit_radioactive");
   if (total_n_emit == 0) return;
-  int n_emit = total_n_emit/(1.0*MPI_nprocs);
+  int my_n_emit = total_n_emit/(1.0*MPI_nprocs);
   
   radioactive radio;
   double gfrac;
@@ -169,48 +169,39 @@ void transport::emit_radioactive(double dt)
     grid->z[i].L_radio_emit = L_decay;
     gamma_frac[i] = gfrac;
     L_tot += L_decay;
+    zone_emission_cdf_.set_value(i,L_decay);
   }
-  
-  if (verbose) cout << "# total radioactive L = " << L_tot << " ergs/sec\n";
+  zone_emission_cdf_.normalize();
+
+
   if (L_tot == 0) return;
-  double E_p = L_tot*dt/(1.0*n_emit);
+  double E_p = L_tot*dt/(1.0*my_n_emit);
 
-  int n_add_tot = 0;
-  // loop over zones for emission
-  for (int i=0;i<grid->n_zones;i++)
+  // check that we have enough space to add these particles
+  if (particles.size()+my_n_emit > max_total_particles) {
+    if (verbose) cout << "# Out of particle space; not adding in\n";
+    return; }
+    
+  // emit particles
+  for (int q=0;q<my_n_emit;q++) 
   {
-    double E_emit =  grid->z[i].L_radio_emit*dt;
-    int n_add = floor(E_emit/E_p);
-    
-    // randomize last one
-    double extra = (E_emit - E_p*n_add)/E_p;
-    if (gsl_rng_uniform(rangen) < extra) n_add++;
+    int i = zone_emission_cdf_.sample(gsl_rng_uniform(rangen));
+    double t  = t_now_ + dt*gsl_rng_uniform(rangen);
 
-    // check that we have enough space to add these particles
-    if (particles.size()+n_add > this->max_total_particles) {
-      if (verbose) cout << "# Out of particle space; not adding in\n";
-      return; }
-    
-    // setup particles
-    for (int q=0;q<n_add;q++) 
+    // determine if make gamma-ray or positron
+    if (gsl_rng_uniform(rangen) < gamma_frac[i])
+      create_isotropic_particle(i,gammaray,E_p,t);
+    else
     {
-      double t  = t_now_ + dt*gsl_rng_uniform(rangen);
-
-      // determine if make gamma-ray or positron
-      if (gsl_rng_uniform(rangen) < gamma_frac[i])
-	       create_isotropic_particle(i,gammaray,E_p,t);
-      else
-      {
-	// positrons are just immediately made into photons
-	grid->z[i].L_radio_dep += E_p;
-	create_isotropic_particle(i,photon,E_p,t);
-      }
+	     // positrons are just immediately made into photons
+	     grid->z[i].L_radio_dep += E_p;
+	     create_isotropic_particle(i,photon,E_p,t);
     }
-
-    n_add_tot += n_add;
   }
-  
-  if (verbose) cout << "# added " << n_add_tot << " radiaoctive particles per proc\n";
+
+  if (verbose) cout << "# L_radioactive = " << L_tot << " ergs/s; ";
+  if (verbose) cout << "added " << total_n_emit << " particles ";
+  if (verbose) cout << "(" << my_n_emit << " per MPI proc)\n";  
   delete[] gamma_frac;
 }
 
