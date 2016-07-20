@@ -15,9 +15,6 @@ class grid_1D_sphere: public grid_general
 
 private:
 
-  // specifics to this geometry
-  double r_inner;
-
   // store location of the outer edge of the zone.
   locate_array r_out;
 

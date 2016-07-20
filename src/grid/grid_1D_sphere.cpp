@@ -183,7 +183,6 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr, 
 void grid_1D_sphere::expand(double e) 
 {
   for (int i=0;i<n_zones;i++) r_out[i] *= e; 
-  r_inner   *=e;
   r_out.min *=e;
   
   // recalculate shell volume
@@ -246,17 +245,17 @@ int grid_1D_sphere::get_next_zone(const double *x, const double *D, int i, doubl
 
   // find shortest positive distance
   int ind;
-  double tiny = 1 + 1e-10;
+  //double tiny = 1 + 1e-10;
   if ((l_out < l_in)||(l_in < 0))
   {
     ind = i + 1;
     if (ind == n_zones) ind = -2;
-    *l = l_out*tiny;
+    *l = l_out; //*tiny;
   }
   else
   {
     ind = ind_in;
-    *l = l_in*tiny;
+    *l = l_in; //*tiny;
   }
 
   return ind;
@@ -283,7 +282,7 @@ void grid_1D_sphere::write_out(int iw, double tt)
 
   for (int i=0;i<n_zones;i++)
   {
-    double rin = r_inner;
+    double rin = r_out.min;
     if (i > 0) rin = r_out[i-1];
     double T_rad = pow(z[i].e_rad/pc::a,0.25);
 
@@ -319,11 +318,12 @@ void grid_1D_sphere::sample_in_zone
 {
   // inner radius of shell
   double r_0;
-  if (i == 0) r_0 = r_inner; 
+  if (i == 0) r_0 = r_out.min; 
   else r_0 = r_out[i-1];
 
   // thickness of shell
   double dr = r_out[i] - r_0;
+
   // sample radial position in shell
   r_0 = r_0 + dr*ran[0];
 
@@ -350,7 +350,7 @@ void grid_1D_sphere::get_velocity(int i, double x[3], double D[3], double v[3], 
 
   // linearly interpolate velocity here
   double v_0, r_0;
-  if (i == 0) {v_0 = 0; r_0 = r_inner; }
+  if (i == 0) {v_0 = 0; r_0 = r_out.min; }
   else {v_0 = z[i-1].v[0]; r_0 = r_out[i-1]; }
   double dr = rr - r_0;
   double dv_dr = (z[i].v[0] - v_0)/(r_out[i] - r_0);
