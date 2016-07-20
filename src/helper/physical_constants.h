@@ -19,6 +19,8 @@ namespace physical_constants
   const double thomson_cs = 0.66523e-24;       // Thomson cross-section cm-2 
   const double sigma_tot = 0.0265400193567;    // integrated line coefficent (cm^2 Hz)
   const double alpha_fs  = 0.007;              // fine structure constant
+  const double rydberg   = 2.1798741e-11;     // rydberg constant in ergs
+
 
   // conversion factors
   const double ev_to_ergs   =  1.60217646e-12; 
