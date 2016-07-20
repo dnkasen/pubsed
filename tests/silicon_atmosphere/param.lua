@@ -13,9 +13,8 @@ core_temperature = 0.6e4
 
 nu1 = 0.5e14
 nu2 = 1.5e15
-dnu = 2e12
 transport_nu_grid   = {nu1,nu2,0.0002,1}
-spectrum_nu_grid   =  {nu1,nu2,dnu}
+spectrum_nu_grid   =  {nu1,nu2,0.0005,1}
 
 opacity_epsilon  = 0.0
 opacity_electron_scattering = 0

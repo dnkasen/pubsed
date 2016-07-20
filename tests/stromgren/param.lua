@@ -22,7 +22,7 @@ core_n_emit           = 1e6
 transport_nu_grid  = {0.1*nu,5*nu,0.0001,1}  
 
 -- output spectrum
-spectrum_nu_grid   = transport_nu_grid
+spectrum_nu_grid   = transport_nu_grid    
 
 output_write_levels = 1
 
