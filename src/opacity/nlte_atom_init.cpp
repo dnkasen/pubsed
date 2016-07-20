@@ -186,8 +186,8 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
   // read photoionization cross-sections
   // if not available, just use hydrogenic approx
   // ----------------------------------------
-  int npts     = 1000;
-  double fmax  = 5;
+  int npts     = 500;
+  double fmax  = 10;
   for (int i=0;i<n_levels;i++) 
   {
      // set photoionization cross-section
