@@ -74,6 +74,7 @@ void nlte_atom::bound_bound_opacity(std::vector<double>& opac, std::vector<doubl
     double a_voigt = gamma/4/pc::pi/dnu;
 
     // extinction coefficient
+    if (nlow == 0) continue;
     double alpha_0 = nlow*n_dens*gup/glow*lines[i].A_ul/(8*pc::pi)*pc::c*pc::c;
     // correction for stimulated emission
     alpha_0 = alpha_0*(1 - nup*glow/(nlow*gup));
@@ -98,6 +99,8 @@ void nlte_atom::bound_bound_opacity(std::vector<double>& opac, std::vector<doubl
       double phi = voigt_profile_.getProfile(x,a_voigt)/dnu;
       opac[j] += alpha_0/nu/nu*phi;
       emis[j] += line_j*nu*phi;
+
+      //if (isnan(alpha_0/nu/nu*phi)) std::cout << alpha_0 << " " << nlow << " " << nup << "\n";
     //  std::cout << nu_0 << " " << nu-nu_0 << " " << line_j*nu*phi/(alpha_0/nu/nu*phi) << " " 
     //    << 2*pc::h*nu*nu*nu/pc::c/pc::c/(exp(pc::h*nu/pc::k/gas_temp_) - 1) << "\n"; 
     }
