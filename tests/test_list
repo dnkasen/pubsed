@@ -1,10 +1,17 @@
 ### This is the list of tests you would like to run
 ### comment out ones with a hash
 
+
 ## sedona main codes tests 
-#core_emit_into_vacuum  
+advected_pulse
+spherical_diffusion
+2level_nlte
+homologous_expansion
+core_emit_into_vacuum  
 lucy_sn         
-#silicon_atmosphere
+silicon_atmosphere
+single_line_homologous
+stromgren
 
 ## sedona modules tests 
 #test_opacity        
