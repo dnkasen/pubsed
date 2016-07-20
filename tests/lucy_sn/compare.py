@@ -60,4 +60,5 @@ def compare(pdf):
         py.show()
         j = raw_input()
 
-compare('')
+if __name__=='__main__': compare('')
+

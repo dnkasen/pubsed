@@ -13,6 +13,8 @@ hydro_module = "none"
 transport_nu_grid  = {1,1,1}
 transport_radiative_equilibrium  = 1
 transport_steady_iterate         = 1
+transport_boundary_in_reflect    = 0
+transport_boundary_out_reflect   = 0
 
 -- inner source emission = none
 core_n_emit           = 0
@@ -24,7 +26,6 @@ core_spectrum_file    = ""
 
 -- default particle params
 particles_max_total = 5e6
-particles_step_size = 0.3
 particles_n_emit_radioactive   = 0
 particles_n_initialize         = 0
 
@@ -60,6 +61,7 @@ opacity_use_nlte            = 0
 -- line treatment parameters
 line_velocity_width         = 0
 line_profile                = "voigt"
+line_x_extent               = 100
 
 -- output spectrum information
 spectrum_name      = "spectrum";

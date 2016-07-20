@@ -2,10 +2,10 @@ m_p = 1.67262158e-24   # mass of proton (g)
 kpc    = 3.08e21       # kiloparsec in cm
 
 
-nx   = 100
+nx   = 150
 temp = 1e4;
 rho  = 1e-3*m_p
-rmax = 6.6*kpc
+rmax = 25*kpc
 
 fout = open("constant.mod","w")
 
