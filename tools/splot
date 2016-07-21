@@ -1,0 +1,139 @@
+#!/usr/bin/env python
+ 
+import optparse
+import numpy as np
+import pylab as py
+
+#cm = py.get_cmap('rainbow')
+
+parser = optparse.OptionParser()
+parser.add_option("-x",dest="cols")
+parser.add_option("-s",dest="ofile")
+parser.add_option("-l",dest="log")
+parser.add_option("-n",action="store_true", dest="norm")
+parser.add_option("-m",action="store_true", dest="max")
+parser.add_option("--xr",dest="xrange")
+parser.add_option("--yr",dest="yrange")
+parser.add_option("--yt",dest="ytitle")
+parser.add_option("--xt",dest="xtitle")
+parser.add_option("--title",dest="title")
+parser.add_option("--math",dest="math")
+parser.add_option("--line",dest="linestyle")
+parser.add_option("--legend",dest="legend")
+parser.add_option("--offset",dest="offset")
+parser.add_option("--shift",dest="shift")
+parser.add_option("--skip",dest="skip")
+parser.add_option("--velplot",dest="velplot")
+parser.add_option("--nu",action="store_true",dest="nu")
+
+(opts, args) = parser.parse_args()
+print args
+
+
+xcol = []
+ycol = []
+if (opts.cols):
+   col_plot = opts.cols.split(',')
+   for cp in col_plot:
+      cols =  cp.split(':')
+      xcol.append(int(cols[0]) - 1)
+      ycol.append(int(cols[1]) - 1)
+else:
+   xcol = [0]
+   ycol = [1]
+
+n = len(args)
+
+if (opts.linestyle): line = opts.linestyle
+else: line = ''
+
+if (opts.skip): skip = int(opts.skip)
+else: skip = 0
+
+for i in range(n):
+    data = np.loadtxt(args[i],skiprows=skip)
+    for j in range(len(xcol)):
+
+       # check for default 1 column file
+       if (data.ndim == 1): 
+          x = np.arange(len(data))
+          y = data
+       else:
+       # otherwise get columns requested
+          if (xcol[j] == -1): x = np.arange(len(data))
+          else: x = data[:,xcol[j]]
+          if (ycol[j] == -1): y = np.arange(len(data))
+          else: y = data[:,ycol[j]]
+
+
+       # calculate bolometric sum
+       bolsum = 0
+       for k in range(len(x)-1):
+          dx = x[k+1] - x[k]
+          bolsum += 0.5*(y[k+1] + y[k])*dx
+       print args[i] + ' bolometric = ' + str(bolsum)
+
+       if (opts.math):
+          val = float(opts.math[2:])
+          if (opts.math[0] == 'y'):
+             if (opts.math[1] == '*'): y = y*val
+             if (opts.math[1] == '/'): y = y/val
+             if (opts.math[1] == '+'): y = y+val
+             if (opts.math[1] == '-'): y = y-val
+          if (opts.math[0] == 'x'):
+             if (opts.math[1] == '*'): x = x*val
+             if (opts.math[1] == '/'): x = x/val
+             if (opts.math[1] == '+'): x = x+val
+             if (opts.math[1] == '-'): x = x-val
+             
+
+       # convert to lambda, L_lam
+       if (not opts.nu): 
+          y = y*x*x/2.99e10
+          x = 2.99e10/x*1e8
+       if (opts.norm or opts.offset): y = y/np.mean(y)
+       if (opts.max): y = y/np.max(y)
+       if (opts.offset): y = y + i*float(opts.offset)
+       if (opts.shift and i > 0): y=y*float(opts.shift)
+
+       # do a velocity plot
+       if (opts.velplot):
+          x0 = float(opts.velplot)
+          x = (x - x0)/x0*3e10
+
+       ## plot it up
+       py.plot(x,y,line)
+
+if (opts.log == 'y'): py.yscale('log')
+if (opts.log == 'x'): py.xscale('log')
+if (opts.log == 'xy' or opts.log == 'yx'): 
+   py.yscale('log')
+   py.xscale('log')
+
+
+if (opts.xrange):
+   xx = opts.xrange.split(',')
+   x1 = float(xx[0])
+   x2 = float(xx[1])
+   py.xlim((x1,x2))
+
+if (opts.yrange):
+   xx = opts.yrange.split(',')
+   x1 = float(xx[0])
+   x2 = float(xx[1])
+   py.ylim((x1,x2))
+
+if (opts.xtitle):  py.xlabel(opts.xtitle)
+if (opts.ytitle):  py.ylabel(opts.ytitle)
+if (opts.title):   py.title(opts.title)
+
+if (opts.legend):
+   if (opts.legend == '0'): names = args
+   else: names = opts.legend.split(',')
+   py.legend(names)
+
+if opts.ofile: py.savefig(opts.ofile)
+
+py.ion()
+py.show()
+j = raw_input('press > ')
