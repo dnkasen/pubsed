@@ -16,8 +16,6 @@ public:
   real rho;             // density (g/cm^3)
   real cs;              // sound speed (cm/s)
   real p_gas;           // gas pressure
-  real e_gas;           // gas energy density per gram
-  real E_gas;           // gas total energy
   real T_gas;           // gas temperature
 
   // composition of gas
