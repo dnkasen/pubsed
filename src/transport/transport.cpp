@@ -99,6 +99,7 @@ ParticleFate transport::propagate(particle &p, double dt)
   while (fate == moving)
   {
     // set pointer to current zone
+    assert(p.ind >= 0);
     zone = &(grid->z[p.ind]);
     
     // get distance and index to the next zone boundary
@@ -237,9 +238,9 @@ ParticleFate transport::propagate(particle &p, double dt)
     //    fate = absorbed; 
         //else fate = do_scatter(&p,0); 
          // debug
-        fate = do_scatter(&p,1);
+        fate = do_scatter(&p,eps_absorb_cmf);
         //if (p.nu*pc::h < pc::rydberg) fate = escaped;
-     }
+       }
 
     }
 
@@ -247,8 +248,8 @@ ParticleFate transport::propagate(particle &p, double dt)
     // do an end of timestep event
     // ---------------------------------
     else if (event == tstep) 
-       fate = stopped;
-  }
+       fate = stopped;  
+   }
 
 
   // Add escaped photons to output spectrum
@@ -262,6 +263,5 @@ ParticleFate transport::propagate(particle &p, double dt)
   }
   return fate;
 }
-
 
 

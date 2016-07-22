@@ -33,7 +33,7 @@ void hydro_1D_lagrangian::init(ParameterReader *params, grid_general *g)
   {
   	grid->z[i].p_gas = pc::k*grid->z[i].rho/pc::m_p*grid->z[i].T_gas;
   	grid->z[i].cs = sqrt(gamfac_ * grid->z[i].p_gas/grid->z[i].rho);
- 	eden_[i] = grid->z[i].p_gas/(gamfac_- 1.0)/g->z[i].rho;
+ 	  eden_[i] = grid->z[i].p_gas/(gamfac_- 1.0)/g->z[i].rho;
     visq_[i] = compute_artificial_viscosity(i);
     mass_[i] = grid->z[i].rho*grid->zone_volume(i);
   }

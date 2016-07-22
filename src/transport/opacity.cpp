@@ -96,7 +96,6 @@ int transport::get_opacity(particle &p, double dshift, double &opac, double &eps
 {
   assert(p.ind >= 0);
 
-
   // comoving frame frequency
   double nu = p.nu*dshift;
   int i_nu = 0;
