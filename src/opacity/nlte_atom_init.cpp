@@ -195,11 +195,25 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
      double E_max = E_ion*fmax;
      double dE = (E_max - E_ion)/npts;
      levels[i].s_photo.init(E_ion,E_max, dE);
+
+    // effective excitation quantum number
+     double E_ground = ions[levels[i].ion].chi;
+     double n_eff = pow(1 - (E_ground - E_ion)/E_ground,-0.5);
+     double s_fac = n_eff/(levels[i].ion+1)/(levels[i].ion + 1);
+     //verner data
+     // double V_Eth = 0.1360E+02;
+     // double V_E0  = 0.4298E+00;
+     // double V_s0  = 0.5475E+05;
+     // double V_ya  = 0.3288E+02;
+     // double V_P   = 0.2963E+01;
+     // double V_yw  = 0.0000E+00;
+
      for (int j=0;j<npts;j++) 
      {
         double E = levels[i].s_photo.x[j];
-        double neff = sqrt(levels[i].g/2.0);
-        double sigma = 6.3e-18*neff*pow(E/E_ion,-3);
+        //double y = E/V_E0;
+        //double Fr = ((y-1)*(y-1) + V_yw*V_yw)*
+        double sigma = 6.3e-18*s_fac*pow(E/E_ion,-2.5);
         levels[i].s_photo.y[j] = sigma;
      }
   }
