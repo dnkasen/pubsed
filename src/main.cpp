@@ -9,6 +9,7 @@
 #include "grid_1D_sphere.h"
 #include "hydro_general.h"
 #include "hydro_homologous.h"
+#include "hydro_1D_lagrangian.h"
 #include "transport.h"
 
 namespace pc = physical_constants;
@@ -74,7 +75,10 @@ int main(int argc, char **argv)
   // SET UP the transport module
   //---------------------------------------------------------------------
   transport mcarlo;
-  mcarlo.init(&params, grid);
+  string transport_type = params.getScalar<string>("transport_module");
+  int use_transport = 0;
+  if (transport_type != "") use_transport = 1;
+  if (use_transport) mcarlo.init(&params, grid);
   
   //---------------------------------------------------------------------
   // SET UP the hydro module
@@ -87,18 +91,18 @@ int main(int argc, char **argv)
     hydro = new hydro_homologous;
   else if (hydro_type == "none") 
     hydro = NULL;
+  else if (hydro_type == "1D_lagrangian")
+    hydro = new hydro_1D_lagrangian;
   else {
     if (verbose) cout << "# ERROR: the hydro type is not implemented\n";
     exit(3); 
   }
-
   int use_hydro = (hydro != NULL);
   if (use_hydro) hydro->init(&params, grid);
 
   //---------------------------------------------------------------------
   // DO TIME/ITERATION LOOP
   //---------------------------------------------------------------------
-  
   
   // read in time stepping parameters
   int steady_iterate  = params.getScalar<int>("transport_steady_iterate");
@@ -123,7 +127,6 @@ int main(int argc, char **argv)
   double dt, t = grid->t_now;
   for(int it=1; it<=n_steps; it++,t+=dt)
   {
-
     // get this time step
     if (!steady_iterate)
     {
@@ -131,8 +134,14 @@ int main(int argc, char **argv)
       double dt_min  = params.getScalar<double>("tstep_min_dt");
       double dt_del  = params.getScalar<double>("tstep_max_delta");
       dt = dt_max;
+      if (use_hydro) 
+      {
+        double dt_hydro = hydro->get_time_step();
+        if (dt_hydro < dt) dt = dt_hydro;
+      }
       if ((dt_del > 0)&&(t > 0)) if (dt > t*dt_del) dt = t*dt_del;
       if (dt < dt_min) dt =  dt_min;
+
     }
     else dt = 0;
 
@@ -144,21 +153,16 @@ int main(int argc, char **argv)
       cout << "; npacket = " << mcarlo.n_particles() << "\n";
     }
 
-
-    // integrate mass 
-     double mass =0;
-     for (int i=0;i<grid->n_zones;i++)
-       mass += grid->z[i].rho*grid->zone_volume(i);
-     //std::cout << "mass =" << mass/pc::m_sun << "\n";
-
     // do hydro step
     if (use_hydro) hydro->step(dt);
 
     // do transport step
-    mcarlo.step(dt);
-
-    // print out spectrum if an iterative calc
-    if (steady_iterate) mcarlo.output_spectrum(it);
+    if (use_transport) 
+    {
+      mcarlo.step(dt);
+      // print out spectrum if an iterative calc
+      if (steady_iterate) mcarlo.output_spectrum(it);
+    }
 
     // writeout zone state when appropriate 
     if ((verbose)&&((t >= write_out*iw)||(steady_iterate)))
@@ -167,8 +171,11 @@ int main(int argc, char **argv)
       if (steady_iterate) t_write = t;
       printf("# writing zone file %d at time %e\n",iw+1, t_write);
       grid->write_out(iw+1,t_write);
-      if (write_grid)   mcarlo.write_opacities(iw+1);
-      if (write_levels) mcarlo.write_levels(iw+1);
+      if (use_transport)
+      {
+        if (write_grid)   mcarlo.write_opacities(iw+1);
+        if (write_levels) mcarlo.write_levels(iw+1);
+      }
       iw++;
     }
 
@@ -177,7 +184,7 @@ int main(int argc, char **argv)
   }
 
   // print out final spectrum
-  if (!steady_iterate)  mcarlo.output_spectrum();
+  if ((use_transport)&&(!steady_iterate))  mcarlo.output_spectrum();
 
   //---------------------------------------------------------------------
   // CALCULATION DONE; WRITE OUT AND FINISH
