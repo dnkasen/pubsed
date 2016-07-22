@@ -17,6 +17,8 @@ private:
 
   // store location of the outer edge of the zone.
   locate_array r_out;
+  // velocity at inner boundary
+  double v_inner_; 
 
   // store volumes explicitly
   std::vector<double> vol;
@@ -31,10 +33,15 @@ public:
 
   void read_model_file(ParameterReader*);
 
+  virtual void get_radial_edges
+     (std::vector<double>&, double&, std::vector<double>&, double&) const;
+  virtual void set_radial_edges
+    (const std::vector<double>, const double, const std::vector<double>, const double);
+
 
   // required functions
   int     get_zone(const double *) const;
-  double  zone_volume(const int) const;
+  double  zone_volume(const int)   const;
   void    sample_in_zone(int, std::vector<double>, double[3]);
   void    get_velocity(int i, double[3], double[3], double[3], double*);
   void    write_out(int,double);

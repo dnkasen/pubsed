@@ -83,6 +83,16 @@ class grid_general
   // expand the grid by a factor of e
   virtual void expand(double) = 0;
 
+  //****** empty functions to overide
+  virtual void get_radial_edges
+  (std::vector<double>&, double&, std::vector<double>&, double&) const 
+  { }
+  
+  virtual void set_radial_edges
+  (const std::vector<double>, double, const std::vector<double>, double) 
+  { }
+
+
 };
 
 

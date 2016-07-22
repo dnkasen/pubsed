@@ -80,6 +80,9 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr, 
   infile >> texp;
   this->t_now = texp;
 
+  // set v at inner boundary = 0
+  v_inner_ = 0;
+
   if (t_start > 0) this->t_now = t_start;
 
   // read element isotopes, format is Z.A
@@ -108,8 +111,8 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr, 
       r_out[i] = z[i].v[0]*t_now;
       // homologously expand
       if (t_start > 0)
-	{z[i].rho  = z[i].rho*pow(texp/t_now,3);
-	z[i].T_gas = z[i].T_gas*(texp/t_now);	}
+	     {z[i].rho  = z[i].rho*pow(texp/t_now,3);
+	     z[i].T_gas = z[i].T_gas*(texp/t_now);	}
     }
     else
     {
@@ -118,13 +121,14 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr, 
       infile >> z[i].rho;
       infile >> z[i].T_gas;
     }
-
     // read composition
+    z[i].mu = 0;
     for (int k=0;k<n_elems;k++)
     {
       double x;
       infile >> x;
       z[i].X_gas.push_back(x);
+      z[i].mu += x*elems_A[k];
     }
 
     // assume LTE radiation field to start
@@ -350,7 +354,7 @@ void grid_1D_sphere::get_velocity(int i, double x[3], double D[3], double v[3], 
 
   // linearly interpolate velocity here
   double v_0, r_0;
-  if (i == 0) {v_0 = 0; r_0 = r_out.min; }
+  if (i == 0) {v_0 = v_inner_; r_0 = r_out.min; }
   else {v_0 = z[i-1].v[0]; r_0 = r_out[i-1]; }
   double dr = rr - r_0;
   double dv_dr = (z[i].v[0] - v_0)/(r_out[i] - r_0);
@@ -373,4 +377,29 @@ void grid_1D_sphere::get_velocity(int i, double x[3], double D[3], double v[3], 
   *dvds = dv_dr;  // not quite right, but upper limit
 
 }
+
+void grid_1D_sphere::get_radial_edges
+(std::vector<double> &r, double &r0, std::vector<double> &v, double &v0) const
+{
+  for (int i=0;i<n_zones;i++)
+  {
+    r[i] = r_out[i];
+    v[i] = z[i].v[0];
+  }
+  r0 = r_out.min;
+  v0 = v_inner_;
+}
+void grid_1D_sphere::set_radial_edges
+(const std::vector<double> r, const double r0, 
+const std::vector<double> v, const double v0) 
+{
+  for (int i=0;i<n_zones;i++)
+  {
+    r_out[i] = r[i];
+    z[i].v[0] = v[i];
+  }
+  r_out.min = r0;
+  v_inner_ = v0;
+}
+
 
