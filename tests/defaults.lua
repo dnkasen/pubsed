@@ -31,7 +31,7 @@ core_photon_frequency = 0
 core_spectrum_file    = ""
 
 -- default particle params
-particles_max_total = 5e6
+particles_max_total = 1e7
 particles_n_emit_radioactive   = 0
 particles_n_initialize         = 0
 
