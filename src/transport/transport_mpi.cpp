@@ -18,14 +18,74 @@ void transport::wipe_radiation()
     grid->z[i].L_radio_dep = 0;
     for (int j=0;j<nu_grid.size();j++)
       J_nu_[i][j] = 0;
-    //grid->z[i].L_radio_emit = 0;
+    grid->z[i].L_radio_emit = 0;
     //grid->z[i].fx_rad = 0;
     //grid->z[i].fy_rad = 0;
     //grid->z[i].fz_rad = 0;
   }
 }
 
+//------------------------------------------------------------
+// Combine the opacity calculations in all zones
+// from all processors using MPI 
+//------------------------------------------------------------
+void transport::reduce_opacities()
+{
+  // eventually do a smarter reduction
+  int ng = nu_grid.size();
+  int nz = grid->n_zones;
+  int blocksize = 100000; // transfer around 10 million # per round
+  int nz_per_block = floor(blocksize/ng);
+  if (nz_per_block > nz) nz_per_block = nz;
+  if (nz_per_block < 1)  nz_per_block  = 1;
 
+  // new block size
+  blocksize = ng;
+  double *src = new double[blocksize];
+  double *dst = new double[blocksize];
+  for (int i=0;i<nz;i++)
+  {
+
+    //-----------------------------
+    // absorptive opacity
+    //-----------------------------
+    for (int j=0;j<blocksize;j++)
+    {
+      src[j] = abs_opacity_[i][j];
+      dst[j] = 0.0;
+    }
+    MPI_Allreduce(src,dst,blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    for (int j=0;j<blocksize;j++)
+      abs_opacity_[i][j] = dst[j];
+
+    //-----------------------------
+    // scattering opacity
+    //-----------------------------
+    for (int j=0;j<blocksize;j++)
+    {
+      src[j] = scat_opacity_[i][j];
+      dst[j] = 0.0;
+    }
+    MPI_Allreduce(src,dst,blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    for (int j=0;j<blocksize;j++)
+      scat_opacity_[i][j] = dst[j];
+
+    //-----------------------------
+    // emissivity
+    //-----------------------------
+    for (int j=0;j<blocksize;j++)
+    {
+      src[j] = emissivity_[i].get_value(j);
+      dst[j] = 0.0;
+    }
+    MPI_Allreduce(src,dst,blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    for (int j=0;j<blocksize;j++)
+      emissivity_[i].set_value(j,dst[j]);
+
+  }
+  delete[] src;
+  delete[] dst;
+}
 
 //------------------------------------------------------------
 // Combine the radiation tallies in all zones
@@ -46,6 +106,34 @@ void transport::wipe_radiation()
     for (int j=0;j<nu_grid.size();j++)
       J_nu_[i][j] /= vol*dt*4*pc::pi*nu_grid.delta(j);
   }
+
+  // eventually do a smarter reduction
+  int ng = nu_grid.size();
+  int nz = grid->n_zones;
+  int blocksize = 100000; // transfer around 10 million # per round
+  int nz_per_block = floor(blocksize/ng);
+  if (nz_per_block > nz) nz_per_block = nz;
+  if (nz_per_block < 1)  nz_per_block  = 1;
+
+  // new block size
+  blocksize = ng;
+  double *src = new double[blocksize];
+  double *dst = new double[blocksize];
+  for (int i=0;i<nz;i++)
+  {
+    for (int j=0;j<blocksize;j++)
+    {
+      src[j] = J_nu_[i][j];
+      dst[j] = 0.0;
+    }
+    MPI_Allreduce(src,dst,blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    for (int j=0;j<blocksize;j++)
+      J_nu_[i][j] = dst[j]/MPI_nprocs;
+  }
+  delete[] src;
+  delete[] dst;
+}
+
 
 
 //   vector<real> send, receive;
@@ -71,4 +159,3 @@ void transport::wipe_radiation()
 
 //     // TODO - need to put in other quantities...
 //   }
-}
