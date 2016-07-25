@@ -121,11 +121,13 @@ class transport
   void   set_opacity();
   double klein_nishina(double);
   double blackbody_nu(double T, double nu);
+  void   reduce_opacities();
 
   // creation of particles functions
   void   emit_particles(double dt);
   void   emit_inner_source(double dt);
   void   emit_radioactive(double dt);
+  void   emit_thermal(double dt);
   void   create_isotropic_particle(int,PType,double,double);
   void   initialize_particles(int);
   void sample_photon_frequency(particle*);
