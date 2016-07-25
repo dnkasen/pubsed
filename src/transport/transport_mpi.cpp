@@ -31,6 +31,11 @@ void transport::wipe_radiation()
 //------------------------------------------------------------
 void transport::reduce_opacities()
 {
+
+  //=************************************************
+  // do zone vectors
+  //=************************************************
+
   // eventually do a smarter reduction
   int ng = nu_grid.size();
   int nz = grid->n_zones;
@@ -45,7 +50,6 @@ void transport::reduce_opacities()
   double *dst = new double[blocksize];
   for (int i=0;i<nz;i++)
   {
-
     //-----------------------------
     // absorptive opacity
     //-----------------------------
@@ -82,7 +86,33 @@ void transport::reduce_opacities()
     for (int j=0;j<blocksize;j++)
       emissivity_[i].set_value(j,dst[j]);
 
+    // normalize emissivity cdf
+    emissivity_[i].normalize();
   }
+  delete[] src;
+  delete[] dst;
+
+  //=************************************************
+  // do zone scalars
+  //=************************************************
+  src = new double[nz];
+  dst = new double[nz];
+  for (int i=0;i<nz;i++)
+  {
+    src[i] = compton_opac[i];
+    dst[i] = 0.0;
+  }
+  MPI_Allreduce(src,dst,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  for (int i=0;i<nz;i++) compton_opac[i] = dst[i];
+
+  for (int i=0;i<nz;i++)
+  {
+    src[i] = photoion_opac[i];
+    dst[i] = 0.0;
+  }
+  MPI_Allreduce(src,dst,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  for (int i=0;i<nz;i++) photoion_opac[i] = dst[i];
+
   delete[] src;
   delete[] dst;
 }

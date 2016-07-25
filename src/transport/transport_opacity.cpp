@@ -10,7 +10,6 @@ namespace pc = physical_constants;
 //-----------------------------------------------------------------
 void transport::set_opacity()
 {
-
   // tmp vector to hold emissivity
   vector<double> emis(nu_grid.size());
   
@@ -21,9 +20,9 @@ void transport::set_opacity()
   int nlte = gas.use_nlte_;
   if (first_step_) gas.use_nlte_ = 0;
 
-  // loop over all zones
+  // loop over my zones to calculate
   int solve_error = 0;
-  for (int i=0;i<grid->n_zones;i++)
+  for (int i=my_zone_start_;i<my_zone_stop_;i++)
   {
     // pointer to current zone for easy access
     zone* z = &(grid->z[i]);
@@ -45,10 +44,20 @@ void transport::set_opacity()
     gas.computeOpacity(abs_opacity_[i],scat_opacity_[i],emis);
   
     // save and normalize emissivity cdf
-    for (int j=0;j<nu_grid.size();j++)
-      emissivity_[i].set_value(j,emis[j]*nu_grid.delta(j));
-    emissivity_[i].normalize();
-  
+    grid->z[i].L_thermal = 0;
+    if (nu_grid.size() == 1)
+    {
+      double bb_int = pc::sb*pow(grid->z[i].T_gas,4)/pc::pi;
+      grid->z[i].L_thermal += 4*pc::pi*abs_opacity_[i][0]*bb_int;
+      emissivity_[i].set_value(0,1);
+    }
+    else for (int j=0;j<nu_grid.size();j++)
+    {
+      double ednu = emis[j]*nu_grid.delta(j);
+      emissivity_[i].set_value(j,ednu);
+      grid->z[i].L_thermal += 4*pc::pi*emis[j]*ednu;
+    }
+    
     // set line opacities
     if (use_detailed_lines_)
       gas.get_line_opacities(line_opacity_[i]);
@@ -70,8 +79,10 @@ void transport::set_opacity()
       photo *= pow(pc::m_e_MeV,3.5);
       photoion_opac[i] += ndens*2.0*pc::thomson_cs*photo;
     }
-
   }
+
+  // mpi combine the opacities calculated
+  reduce_opacities();
 
   // turn nlte back on after first step, if wanted
   if (first_step_) {
