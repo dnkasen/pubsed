@@ -1,8 +1,10 @@
 #!/usr/bin/env python
  
+import bisect
 import optparse
 import numpy as np
 import pylab as py
+import h5py 
 
 #cm = py.get_cmap('rainbow')
 
@@ -11,6 +13,7 @@ parser.add_option("-x",dest="cols")
 parser.add_option("-s",dest="ofile")
 parser.add_option("-l",dest="log")
 parser.add_option("-n",action="store_true", dest="norm")
+parser.add_option("-t",dest="plottime",default=20.0)
 parser.add_option("-m",action="store_true", dest="max")
 parser.add_option("--xr",dest="xrange")
 parser.add_option("--yr",dest="yrange")
@@ -25,23 +28,11 @@ parser.add_option("--shift",dest="shift")
 parser.add_option("--skip",dest="skip")
 parser.add_option("--velplot",dest="velplot")
 parser.add_option("--nu",action="store_true",dest="nu")
+parser.add_option("--secs",action="store_true",dest="secs")
+parser.add_option("--bol",action="store_true",dest="plotbol")
+
 
 (opts, args) = parser.parse_args()
-print args
-
-
-xcol = []
-ycol = []
-if (opts.cols):
-   col_plot = opts.cols.split(',')
-   for cp in col_plot:
-      cols =  cp.split(':')
-      xcol.append(int(cols[0]) - 1)
-      ycol.append(int(cols[1]) - 1)
-else:
-   xcol = [0]
-   ycol = [1]
-
 n = len(args)
 
 if (opts.linestyle): line = opts.linestyle
@@ -50,59 +41,49 @@ else: line = ''
 if (opts.skip): skip = int(opts.skip)
 else: skip = 0
 
+
 for i in range(n):
-    data = np.loadtxt(args[i],skiprows=skip)
-    for j in range(len(xcol)):
 
-       # check for default 1 column file
-       if (data.ndim == 1): 
-          x = np.arange(len(data))
-          y = data
-       else:
-       # otherwise get columns requested
-          if (xcol[j] == -1): x = np.arange(len(data))
-          else: x = data[:,xcol[j]]
-          if (ycol[j] == -1): y = np.arange(len(data))
-          else: y = data[:,ycol[j]]
+  if (".h5" in args[i]):
+    fin = h5py.File(args[i],'r')
+    nu    = py.array(fin['nu'])
+    times = py.array(fin['time'])
+    Lnu   = py.array(fin['Lnu'])
+  else:
+    nu,Lnu,count = py.loadtxt(args[i],skiprows=1,unpack=1)
+    times = []
 
+  # calculate bolometric LC
+  nt  = len(times)
+  nnu = len(nu)
+  bol = np.zeros(nt)
+  for it in range(nt):
+    bol[it] = py.trapz(Lnu[it,:],x=nu)
 
-       # calculate bolometric sum
-       bolsum = 0
-       for k in range(len(x)-1):
-          dx = x[k+1] - x[k]
-          bolsum += 0.5*(y[k+1] + y[k])*dx
-       print args[i] + ' bolometric = ' + str(bolsum)
+  if (len(times) == 0):
+    if (not opts.nu):
+      Lnu = Lnu*nu**2/2.99e10/1e8
+      nu  = 2.99e10/nu*1e8
+      py.plot(nu,Lnu)
+  else:
+    if (not opts.secs): 
+      times = times/3600.0/24.0
+    if (opts.plotbol):
+      py.plot(times,bol)
+    else:
+      indt = bisect.bisect(times,float(opts.plottime))
+      py.xlabel('frequency (Hz)')
+      if (not opts.nu):
+        Lnu = Lnu*nu**2/2.99e10/1e8
+        nu  = 2.99e10/nu*1e8
+        py.xlabel('wavelength (angstroms)')
+      py.plot(nu,Lnu[indt,:])
+      py.ylabel('specific luminosity')
 
-       if (opts.math):
-          val = float(opts.math[2:])
-          if (opts.math[0] == 'y'):
-             if (opts.math[1] == '*'): y = y*val
-             if (opts.math[1] == '/'): y = y/val
-             if (opts.math[1] == '+'): y = y+val
-             if (opts.math[1] == '-'): y = y-val
-          if (opts.math[0] == 'x'):
-             if (opts.math[1] == '*'): x = x*val
-             if (opts.math[1] == '/'): x = x/val
-             if (opts.math[1] == '+'): x = x+val
-             if (opts.math[1] == '-'): x = x-val
-             
+      py.title('spectrum at time t = ' + str(opts.plottime))
 
-       # convert to lambda, L_lam
-       if (not opts.nu): 
-          y = y*x*x/2.99e10
-          x = 2.99e10/x*1e8
-       if (opts.norm or opts.offset): y = y/np.mean(y)
-       if (opts.max): y = y/np.max(y)
-       if (opts.offset): y = y + i*float(opts.offset)
-       if (opts.shift and i > 0): y=y*float(opts.shift)
+######################
 
-       # do a velocity plot
-       if (opts.velplot):
-          x0 = float(opts.velplot)
-          x = (x - x0)/x0*3e10
-
-       ## plot it up
-       py.plot(x,y,line)
 
 if (opts.log == 'y'): py.yscale('log')
 if (opts.log == 'x'): py.xscale('log')
