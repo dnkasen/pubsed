@@ -36,7 +36,7 @@ int main(int argc, char **argv)
     cout << "################################\n";
     cout << "##########  SEDONA  ############\n";
     cout << "################################\n";
-    cout << "# MPI cores used = " << n_procs << endl;
+    cout << "# MPI tasks = " << n_procs << endl;
   }
   
   // start timer 
