@@ -4,6 +4,9 @@
 #include <math.h>
 #include <string.h>
 #include <vector>
+#include "hdf5.h"
+#include "hdf5_hl.h"
+
 #include "spectrum_array.h"
 #include "physical_constants.h"
 
@@ -138,7 +141,11 @@ void spectrum_array::count(double t, double w, double E, double *D)
 //--------------------------------------------------------------
 void spectrum_array::print()
 {
-  FILE *out = fopen(name,"w");
+   // get file name
+  char specfile[1000];
+  sprintf(specfile,"%s.dat",name);
+
+  FILE *out = fopen(specfile,"w");
 
   int n_times  = this->time_grid.size();
   int n_wave   = this->wave_grid.size();
@@ -150,21 +157,56 @@ void spectrum_array::print()
   for (int k=0;k<n_mu;k++)
     for (int m=0;m<n_phi;m++)
       for (int i=0;i<n_times;i++)
-	for (int j=0;j<n_wave;j++) 
+	     for (int j=0;j<n_wave;j++) 
         {
-	  int id = index(i,j,k,m);
-	  if (n_times > 1)  fprintf(out,"%12.4e ",time_grid.center(i));;
-	  if (n_wave > 1)   fprintf(out,"%12.4e ",wave_grid.center(j));
-	  if (n_mu > 1)     fprintf(out,"%12.4f ",mu_grid.center(k));
-	  if (n_phi> 1)     fprintf(out,"%12.4f ",phi_grid.center(m));
+	       int id = index(i,j,k,m);
+	       if (n_times > 1)  fprintf(out,"%12.4e ",time_grid.center(i));;
+	       if (n_wave > 1)   fprintf(out,"%12.4e ",wave_grid.center(j));
+	       if (n_mu > 1)     fprintf(out,"%12.4f ",mu_grid.center(k));
+	       if (n_phi> 1)     fprintf(out,"%12.4f ",phi_grid.center(m));
 
-	  double norm = n_mu*n_phi;
-	  if (n_wave > 1)  norm *= wave_grid.delta(j);
-	  if (n_times > 1) norm *= time_grid.delta(i);
+    	   double norm = n_mu*n_phi;
+	       if (n_wave > 1)  norm *= wave_grid.delta(j);
+	       if (n_times > 1) norm *= time_grid.delta(i);
 	  
-	  fprintf(out,"%12.5e %10d\n", flux[id]/norm,click[id]);
-	}
+         // normalize it
+         flux[id] = flux[id]/norm;
+
+    	   fprintf(out,"%12.5e %10d\n", flux[id],click[id]);
+    	 }
   fclose(out);
+
+  // write hdf5 spectrum file
+  sprintf(specfile,"%s.h5",name);
+  hid_t file_id = H5Fcreate( specfile, H5F_ACC_TRUNC, H5P_DEFAULT,  H5P_DEFAULT);
+  const int RANK = 1;
+
+  // write nu grid
+  int n_nu = wave_grid.size();
+  float* tmp_array = new float[n_nu];
+  hsize_t  dims_nu[RANK]={n_nu};
+  for (int j=0;j<n_nu;j++) tmp_array[j] = wave_grid.center(j);
+  H5LTmake_dataset(file_id,"nu",RANK,dims_nu,H5T_NATIVE_FLOAT,tmp_array);
+  delete[] tmp_array;
+
+  // write time grid
+  int n_t = time_grid.size();
+  tmp_array = new float[n_t];
+  hsize_t dims_t[RANK]={n_t};
+  for (int j=0;j<n_t;j++) tmp_array[j] = time_grid.center(j);
+  H5LTmake_dataset(file_id,"time",RANK,dims_t,H5T_NATIVE_FLOAT,tmp_array);
+  delete[] tmp_array;
+
+  // write fluxes array
+  const int RANKF = 2;
+  double *darray = new double[n_elements];
+  for (int i=0;i<n_elements;i++) darray[i] = flux[i];
+  hsize_t  dims_flux[RANKF]={n_t,n_nu};
+  H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
+  delete[] darray;
+
+  H5Fclose (file_id);
+
 }
 
 

@@ -25,7 +25,7 @@ void transport::output_spectrum(int it)
   string specname = params_->getScalar<string>("spectrum_name");
   if (specname != "") 
     {
-    optical_spectrum.set_name(specname + base + ".dat");
+    optical_spectrum.set_name(specname + base);
     optical_spectrum.MPI_average();
     if (verbose) optical_spectrum.print();
   }
@@ -34,7 +34,7 @@ void transport::output_spectrum(int it)
   string gamname = params_->getScalar<string>("gamma_name");
   if (gamname != "") 
   {
-    gamma_spectrum.set_name(gamname + base + ".dat");
+    gamma_spectrum.set_name(gamname + base);
     gamma_spectrum.MPI_average();
     if (verbose) gamma_spectrum.print();
   }
