@@ -281,7 +281,7 @@ void grid_1D_sphere::write_out(int iw, double tt)
   outf << std::setprecision(4);
   outf << std::scientific;
 
-  outf << "# t = " << tt << "; rmin = " << r_out.min << "\n";
+  outf << "# t = " << tt << "  ; rmin = " << r_out.min << "\n";
   outf << "#   r              rho              v              T_gas          T_rad         L_dep_nuc       L_emit_nuc\n";
 
   for (int i=0;i<n_zones;i++)
