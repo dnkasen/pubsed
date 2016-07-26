@@ -160,7 +160,6 @@ ParticleFate transport::propagate(particle &p, double dt)
 
     // tally in contribution to zone's radiation energy (both *lab* frame)
     double this_E = p.e*this_d; 
-    zone->e_rad  += this_E; 
 
     // store absorbed energy in *comoving* frame 
     // (will turn into rate by dividing by dt later)

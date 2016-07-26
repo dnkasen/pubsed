@@ -324,7 +324,7 @@ void transport::emit_thermal(double dt)
 //------------------------------------------------------------
 void transport::emit_inner_source(double dt)
 {
-  // get the emisison propoerties from lua file
+  // get the emisison properties from lua file
   // this could be set to be a function if we want
   int total_n_emit    = params_->getScalar<int>("core_n_emit");
   if (total_n_emit == 0) return;
