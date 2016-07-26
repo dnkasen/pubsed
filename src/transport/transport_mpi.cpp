@@ -31,7 +31,6 @@ void transport::wipe_radiation()
 //------------------------------------------------------------
 void transport::reduce_opacities()
 {
-
   //=************************************************
   // do zone vectors
   //=************************************************
@@ -123,20 +122,6 @@ void transport::reduce_opacities()
 //------------------------------------------------------------
  void transport::reduce_radiation(double dt)
 {
-  // properly normalize the radiative quantities
-  for (int i=0;i<grid->n_zones;i++) 
-  {
-    double vol = grid->zone_volume(i);
-    grid->z[i].e_rad   /= vol*pc::c*dt;
-    grid->z[i].e_abs   /= vol*dt;
-    grid->z[i].L_radio_dep /= dt;
-    //grid->z[i].fx_rad  /= vol*pc::c*dt; 
-    //grid->z[i].fy_rad  /= vol*pc::c*dt;
-    //grid->z[i].fz_rad  /= vol*pc::c*dt;
-    for (int j=0;j<nu_grid.size();j++)
-      J_nu_[i][j] /= vol*dt*4*pc::pi*nu_grid.delta(j);
-  }
-
   // eventually do a smarter reduction
   int ng = nu_grid.size();
   int nz = grid->n_zones;
@@ -162,7 +147,54 @@ void transport::reduce_opacities()
   }
   delete[] src;
   delete[] dst;
+
+   //=************************************************
+  // do zone scalars
+  //=************************************************
+  src = new double[nz];
+  dst = new double[nz];
+  for (int i=0;i<nz;i++)
+  {
+    src[i] = grid->z[i].e_abs;
+    dst[i] = 0.0;
+  }
+  MPI_Allreduce(src,dst,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  for (int i=0;i<nz;i++) grid->z[i].e_abs = dst[i]/MPI_nprocs;
+  for (int i=0;i<nz;i++)
+  {
+    src[i] = grid->z[i].L_radio_dep;
+    dst[i] = 0.0;
+  }
+  MPI_Allreduce(src,dst,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  for (int i=0;i<nz;i++) grid->z[i].L_radio_dep = dst[i]/MPI_nprocs;
+
+
+  delete[] src;
+  delete[] dst;
+
+  //=************************************************
+  // properly normalize the radiative quantities
+  //=************************************************
+  for (int i=0;i<grid->n_zones;i++) 
+  {
+    double vol = grid->zone_volume(i);
+    grid->z[i].e_abs   /= vol*dt;
+    grid->z[i].L_radio_dep /= dt;
+    //grid->z[i].fx_rad  /= vol*pc::c*dt; 
+    //grid->z[i].fy_rad  /= vol*pc::c*dt;
+    //grid->z[i].fz_rad  /= vol*pc::c*dt;
+
+    double esum = 0;
+    for (int j=0;j<nu_grid.size();j++) 
+    {
+      J_nu_[i][j] /= vol*dt*4*pc::pi*nu_grid.delta(j);
+      esum += J_nu_[i][j]*nu_grid.delta(j)*4*pc::pi/pc::c; 
+    }
+    grid->z[i].e_rad = esum;
+  }
 }
+
+
 
 
 

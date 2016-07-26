@@ -35,8 +35,25 @@ void transport::init(ParameterReader* par, grid_general *g)
   verbose = (MPI_myID==0);
 
   // determine my zones to work on
-  
-  
+  int nz = grid->n_zones;
+  int blocks = floor(nz/MPI_nprocs);
+  int remainder = nz - blocks*MPI_nprocs;
+
+  int rcount = 0;
+  for (int i=0;i<MPI_nprocs;i++)
+  {
+    int start = i*blocks + rcount;
+    int stop  = start + blocks;
+    if (rcount < remainder) { stop += 1; rcount += 1;}
+    if (i == MPI_myID) 
+    {
+      my_zone_start_ = start;
+      my_zone_stop_  = stop;
+    }
+  }
+  std::cout << MPI_myID <<  " " << my_zone_start_ << " " << my_zone_stop_ << 
+   " " << my_zone_stop_ - my_zone_start_ << "\n";
+
   // setup and seed random number generator
   const gsl_rng_type * TypeR;
   gsl_rng_env_setup();
@@ -103,6 +120,8 @@ void transport::init(ParameterReader* par, grid_general *g)
   gas.use_nlte_ 
     = params_->getScalar<int>("opacity_use_nlte");
   first_step_ = 1;
+
+  if (verbose) gas.print_properties();
 
   // set up outer inner boundary condition
   boundary_in_reflect_ = params_->getScalar<int>("transport_boundary_in_reflect");

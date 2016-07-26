@@ -12,13 +12,27 @@ void transport::set_opacity()
 {
   // tmp vector to hold emissivity
   vector<double> emis(nu_grid.size());
-  
+  emis.assign(emis.size(),0.0);
+
   // tmp vector to hold line stuff
   vector<double> lopac(n_lines_);
 
   // always do LTE on first step
   int nlte = gas.use_nlte_;
   if (first_step_) gas.use_nlte_ = 0;
+
+  // zero out opacities, etc...
+  for (int i=0;i<grid->n_zones;i++)
+  {
+    compton_opac[i]  = 0;
+    photoion_opac[i] = 0;
+    emissivity_[i].wipe();
+    for (int j=0;j<nu_grid.size();j++)
+    {
+      abs_opacity_[i][j] = 0;
+      scat_opacity_[i][j] = 0;
+    }
+  }
 
   // loop over my zones to calculate
   int solve_error = 0;
