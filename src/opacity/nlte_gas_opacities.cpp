@@ -105,6 +105,10 @@ void nlte_gas::computeOpacity(std::vector<double>& abs,
       for (int i=0;i<ns;i++) {
 	     abs[i]  += epsilon_*opac[i];
 	     scat[i] += (1-epsilon_)*opac[i];
+       double nu = nu_grid.center(i);
+       double ezeta = exp(1.0*pc::h*nu/pc::k/temp);
+       double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(ezeta-1);
+       tot_emis[i] += bb*abs[i];
       }
     }
   }

@@ -186,7 +186,7 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
   // read photoionization cross-sections
   // if not available, just use hydrogenic approx
   // ----------------------------------------
-  int npts     = 500;
+  int npts     = 200;
   double fmax  = 10;
   for (int i=0;i<n_levels;i++) 
   {
@@ -213,7 +213,7 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
         double E = levels[i].s_photo.x[j];
         //double y = E/V_E0;
         //double Fr = ((y-1)*(y-1) + V_yw*V_yw)*
-        double sigma = 6.3e-18*s_fac*pow(E/E_ion,-2.5);
+        double sigma = 6.3e-18*s_fac*pow(E/E_ion,-3.0); //2.5);
         levels[i].s_photo.y[j] = sigma;
      }
   }
@@ -295,8 +295,12 @@ int nlte_atom::read_fuzzfile(std::string fname)
   for (int i=0;i<nl;i++) fuzz_lines.ion[i] = iarr[i];
 
   // get frequency bin of line
-  for (int i=0;i<nl;i++) 
-    fuzz_lines.bin[i] = nu_grid.locate(fuzz_lines.nu[i]);
+  for (int i=0;i<nl;i++) {
+    int ind = nu_grid.locate(fuzz_lines.nu[i])-1;
+    if (ind < 0) ind = 0;
+    fuzz_lines.bin[i] = ind;
+    //std::cout << fuzz_lines.nu[i] << " " << nu_grid[fuzz_lines.bin[i]-1] << "\n";
+  }
 
   delete[] darr;
   delete[] iarr;

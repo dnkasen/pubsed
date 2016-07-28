@@ -28,7 +28,7 @@ nlte_gas::nlte_gas()
 // locate_array ng:  locate_array giving the freq. array
 //---------------------------------------------------------------
 void nlte_gas::initialize
-(std::string atomfile, std::vector<int> e, std::vector<int> A, locate_array ng)
+(std::string af, std::vector<int> e, std::vector<int> A, locate_array ng)
 {
   // verbosity
   int my_rank;
@@ -42,12 +42,14 @@ void nlte_gas::initialize
   // copy the nugrid
   nu_grid.copy(ng);
 
+  atomfile_ = af;
+
   // check if atomfile is there
-  std::ifstream afile(atomfile);
+  std::ifstream afile(atomfile_);
   if (!afile) 
   {
     if (verbose) 
-      std::cout << "Can't open atom datafile " << atomfile << "; exiting\n"; 
+      std::cout << "Can't open atom datafile " << atomfile_ << "; exiting\n"; 
     exit(1); 
   }
   afile.close();
@@ -57,10 +59,10 @@ void nlte_gas::initialize
   int level_id = 0;
   for (int i=0;i<atoms.size();i++) 
   {
-    int error = atoms[i].initialize(atomfile, elem_Z[i],ng,level_id); 
+    int error = atoms[i].initialize(atomfile_, elem_Z[i],ng,level_id); 
     if ((error)&&(verbose))
       std::cout << "# ERROR: incomplete data for atom Z=" << elem_Z[i] <<
-	" in file " << atomfile << "\n";
+	" in file " << atomfile_ << "\n";
   }
   
 
@@ -389,8 +391,34 @@ double nlte_gas::get_level_departure(int i, int j)
   return atoms[i].level_depature(j);
 }
 
+//-----------------------------------------------------------
+// print out of the gas properties
+//-----------------------------------------------------------
+void nlte_gas::print_properties()
+{
+
+  std::cout << "#---------------------------------------\n";
+  std::cout << "# atomic data from: " << atomfile_ << "\n";
+  std::cout << "#---------------------------------------\n";
+  std::cout << "#  Z  n_ions  n_levels  n_lines\n";
+  std::cout << "#---------------------------------------\n";
+  for (int i=0;i<atoms.size();i++)
+  {
+    printf("# %2d.%d ",elem_Z[i],elem_A[i]);
+    printf(" %4d %8d   %8d",atoms[i].n_ions,atoms[i].n_levels,atoms[i].n_lines);
+    printf("\n");
+  }
 
 
+
+  std::cout << "# opacity settings\n";
+  if (grey_opacity_ != 0) std::cout << "# grey opacity = " << grey_opacity_ << "\n";
+  else
+  {
+    std::cout << "# use_nlte = " << use_nlte_ << "\n";
+//    std::cout << "# bound_free = "; 
+  }
+}
 
 //-----------------------------------------------------------
 // print out of the gas class

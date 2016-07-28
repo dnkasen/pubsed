@@ -20,6 +20,16 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
   double lam_fac = 2*pc::h/pc::c/pc::c*lam_t*lam_t*lam_t/2.0;
   double kt = pc::k_ev*gas_temp_;
 
+  std::vector<double> lev_fac(n_levels);
+  for (int j=0;j<n_levels;j++)
+  {
+    int ic = levels[j].ic;
+    double nc = n_dens*levels[ic].n;
+    double gl_o_gc = (1.0*levels[j].g)/(1.0*levels[ic].g);
+    double E_t = levels[j].E_ion;
+    lev_fac[j] = nc*gl_o_gc*exp(E_t/kt);
+  }
+
   for (int i=0;i<ng;i++)
   {
     opac[i] = 0;
@@ -27,24 +37,25 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
     double E     = pc::h*nu*pc::ergs_to_ev;
     double fac   = lam_fac*nu*nu*nu;
 
+    // correction for stim emis  debug
+    double ezeta = exp(E/kt);
+    double se = (1 + 1.0/(ezeta - 1));
+    fac = fac/ezeta*se;
+
     for (int j=0;j<n_levels;j++)
     {
+      // check if above threshold
+      if (E < levels[j].E_ion) continue;
       // check if their is an ionization stage above
       int ic = levels[j].ic;
       if (ic == -1) continue;
-      // check if above threshold
-      double E_t = levels[j].E_ion;
-      if (E < E_t) continue;
+
       // get extinction coefficient and emissivity
       double sigma = levels[j].s_photo.value_at_with_zero_edges(E);
       opac[i]  += n_dens*sigma*levels[j].n;
-      double nc = n_dens*levels[ic].n;
-      double gl_o_gc = (1.0*levels[j].g)/(1.0*levels[ic].g);
-
-      // correction for stim emis  debug
-      double se = (1 + 1.0/(exp(E/kt) - 1));
-      emis[i]  += nc*sigma*gl_o_gc*fac*exp((E_t - E)/kt)*se;
+      emis[i]  += lev_fac[j]*sigma*fac;
     }
+
   }
 }
 
@@ -81,11 +92,13 @@ void nlte_atom::bound_bound_opacity(std::vector<double>& opac, std::vector<doubl
 
     //if (alpha_0 < 0) std::cout << "LASER " << levels[ll].E << " " << levels[lu].E << "\n";
     //if (alpha_0 < 0) {std::cout << "LASER: " << nlow*gup << " " << nup*glow << "\n"; continue;}
-    if (alpha_0 < 0) continue; 
+    if (alpha_0 <= 0) continue; 
     
+    //if (alpha_0/nu_0/nu_0/dnu*1e15 < 1e-10) continue;
+
     // region to add to -- hard code to 20 doppler widths
-    double nu_1 = nu_0 - dnu*100;
-    double nu_2 = nu_0 + dnu*100;
+    double nu_1 = nu_0 - dnu*5; //*30;
+    double nu_2 = nu_0 + dnu*5; //*30; //debug
     int inu1 = nu_grid.locate(nu_1);
     int inu2 = nu_grid.locate(nu_2);
 
@@ -94,7 +107,7 @@ void nlte_atom::bound_bound_opacity(std::vector<double>& opac, std::vector<doubl
     double line_j = lines[i].A_ul*nup*n_dens*pc::h/(4.0*pc::pi);
     for (int j = inu1;j<inu2;j++)
     {
-      double nu = nu_grid[j];
+      double nu = nu_grid.center(j);
       double x  = (nu_0 - nu)/dnu;
       double phi = voigt_profile_.getProfile(x,a_voigt)/dnu;
       opac[j] += alpha_0/nu/nu*phi;

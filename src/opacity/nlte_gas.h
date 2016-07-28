@@ -30,6 +30,7 @@ class nlte_gas
   locate_array nu_grid;
   int verbose;
   int solve_error_;
+  std::string atomfile_;
 
   // global list of all levels of all atoms
   std::vector <int> globalLevelList_atom_;
@@ -209,6 +210,7 @@ class nlte_gas
   void fuzz_expansion_opacity(std::vector<double>&);
   void get_line_opacities(std::vector<double>&);
 
+  void print_properties();
   void print();
 };
 
