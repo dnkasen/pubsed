@@ -5,10 +5,14 @@
 #include <math.h>
 #include <string.h>
 #include <iostream>
+#include <limits>
 
 #include "hydro_1D_lagrangian.h"
 #include "physical_constants.h"
 namespace pc = physical_constants;
+
+
+
 
 void hydro_1D_lagrangian::init(ParameterReader *params, grid_general *g)
 {
@@ -27,11 +31,12 @@ void hydro_1D_lagrangian::init(ParameterReader *params, grid_general *g)
   C_q_ = params->getScalar<double>("hydro_viscosity_parameter");
 
   grid->get_radial_edges(r_out_,r_min_,v_out_,v_min_);
+  v_min_ = params->getScalar<double>("hydro_v_piston");
 
   // make sure things are calculated
   for (int i = 0;i < nz_;i++)
   {
-  	grid->z[i].p_gas = pc::k*grid->z[i].rho/pc::m_p*grid->z[i].T_gas;
+  	grid->z[i].p_gas = pc::k*grid->z[i].rho/(pc::m_p*grid->z[i].mu)*grid->z[i].T_gas;
   	grid->z[i].cs = sqrt(gamfac_ * grid->z[i].p_gas/grid->z[i].rho);
  	  eden_[i] = grid->z[i].p_gas/(gamfac_- 1.0)/g->z[i].rho;
     visq_[i] = compute_artificial_viscosity(i);
@@ -124,6 +129,7 @@ void hydro_1D_lagrangian::step(double dt)
     v_out_[i] += accel*dt;
     r_out_[i] += v_out_[i]*dt;
   }
+  r_min_ += v_min_*dt;
 
  //  // inner boundary conditions
  //  grid->z[0].v_dn = v_inner;
@@ -160,10 +166,12 @@ void hydro_1D_lagrangian::step(double dt)
     // eps_imc should be by default forced to 1 if thermal_equilibrium is enforced
     //double dE = grid->z[i].eps_imc*Sgam;
     //if (use_transport) 
-    //  dE += (grid->z[i].e_abs*dt - grid->z[i].e_emit)/new_rho;
     
-    double dE = qgam - grid->z[i].p_gas*dtau;
+    
+    double dE = 0; //qgam - grid->z[i].p_gas*dtau;
+    dE += (grid->z[i].e_abs - grid->z[i].L_thermal)*new_vol*dt/new_rho; // - grid->z[i].e_emit)/new_rho;
     eden_[i] += dE;
+    //std::cout << grid->z[i].L_thermal*new_vol*dt << " " << eden_[i]*new_rho << " " << dE << "\n";
 
 	if (eden_[i] < 0)   
 	 	printf("ERROR: e_gas < 0; %d %e %e %e %e\n",i,qgam,grid->z[i].p_gas,eden_[i],dE);
