@@ -397,27 +397,37 @@ double nlte_gas::get_level_departure(int i, int j)
 void nlte_gas::print_properties()
 {
 
-  std::cout << "#---------------------------------------\n";
+  std::cout << "#-------------------------------------------------\n";
   std::cout << "# atomic data from: " << atomfile_ << "\n";
-  std::cout << "#---------------------------------------\n";
-  std::cout << "#  Z  n_ions  n_levels  n_lines\n";
-  std::cout << "#---------------------------------------\n";
+  std::cout << "#--------------------------------------------------\n";
+  std::cout << "#  Z    n_ions  n_levels  n_lines  n_fuzz_lines\n";
+  std::cout << "#-------------------------------------------------\n";
   for (int i=0;i<atoms.size();i++)
   {
     printf("# %2d.%d ",elem_Z[i],elem_A[i]);
-    printf(" %4d %8d   %8d",atoms[i].n_ions,atoms[i].n_levels,atoms[i].n_lines);
+    printf(" %4d %8d  %8d  %8d",atoms[i].n_ions,atoms[i].n_levels,atoms[i].n_lines,
+        atoms[i].get_n_fuzz_lines());
     printf("\n");
   }
-
+  std::cout << "#-------------------------------------------------\n";
 
 
   std::cout << "# opacity settings\n";
+  std::cout << "#-------------------------------------------------\n";
+
   if (grey_opacity_ != 0) std::cout << "# grey opacity = " << grey_opacity_ << "\n";
   else
   {
-    std::cout << "# use_nlte = " << use_nlte_ << "\n";
-//    std::cout << "# bound_free = "; 
+    std::cout << "# use_nlte         = " << use_nlte_ << "\n";
+    std::cout << "# use_free_free    = " << use_free_free_opacity << "\n";
+    std::cout << "# use_bound_free   = " << use_bound_free_opacity << "\n";
+    std::cout << "# use_bound_bound  = " << use_bound_bound_opacity << "\n";
+    std::cout << "# use_line_exp     = " << use_line_expansion_opacity << "\n";
+    std::cout << "# use_fuzz_exp     = " << use_fuzz_expansion_opacity << "\n";
+
   }
+  std::cout << "#---------------------------------------\n";
+
 }
 
 //-----------------------------------------------------------

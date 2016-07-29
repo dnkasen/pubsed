@@ -1,6 +1,7 @@
 #include "nlte_atom.h"
 #include "physical_constants.h"
 #include <iostream>
+#include <limits>
 
 namespace pc = physical_constants;
 

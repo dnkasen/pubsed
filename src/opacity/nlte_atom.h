@@ -138,6 +138,11 @@ public:
 
 
   // returns
+  int get_n_fuzz_lines()
+  {
+    return fuzz_lines.n_lines;
+  }
+
   double partition(int ion) 
   {
     for (int i = 0;i < n_ions; i++)
