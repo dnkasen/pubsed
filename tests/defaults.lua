@@ -1,4 +1,3 @@
-
 -- atomic data files
 data_atomic_file   = "../../data/cmfgen_atomdata.hdf5"
 data_fuzzline_file = ""
@@ -10,8 +9,8 @@ grid_type      = "grid_1D_sphere"  -- grid geometry; must match input model
 hydro_module      = "none"
 hydro_gamma_index = 4.0/3.0
 hydro_cfl         = 0.1
+hydro_v_piston    = 0
 hydro_viscosity_parameter = 5;
-
 
 -- default nu_grid is nothing
 transport_module = "monte_carlo"
@@ -20,7 +19,6 @@ transport_radiative_equilibrium  = 0
 transport_steady_iterate         = 0
 transport_boundary_in_reflect    = 0
 transport_boundary_out_reflect   = 0
-
 
 -- inner source emission = none
 core_n_emit           = 0
@@ -33,7 +31,9 @@ core_spectrum_file    = ""
 -- default particle params
 particles_max_total = 1e7
 particles_n_emit_radioactive   = 0
+particles_n_emit_thermal       = 0
 particles_n_initialize         = 0
+
 
 -- time stepping
 tstep_max_steps  = 1000
