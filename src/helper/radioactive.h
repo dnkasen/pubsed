@@ -4,8 +4,8 @@
 #include <vector>
 
 // radioactive decay constonstants
-#define TAU_NI  760579         // decay time = 8.803   days
-#define TAU_CO  9.81599e+06    // decay time = 113.611 days 
+#define TAU_NI  757241.7         // decay time = 8.803   days
+#define TAU_CO  9627378.       // decay time = 113.611 days 
 #define TAU_FE  29790.0        // 8.275 hours
 #define TAU_MN  1266.0         // 21.1 minute
 #define TAU_CR  77616.0        // 21.56 hours  
@@ -26,10 +26,13 @@ class radioactive
  
 public:
 
-  double decay(std::vector<int> elem_Z, std::vector<int> elem_A, 
+	void decay_composition
+	(std::vector<int> elem_Z, std::vector<int> elem_A, std::vector<double>& X, double t);
+
+	double decay(std::vector<int> elem_Z, std::vector<int> elem_A, 
 	       std::vector<double> X, double t, double *gfrac);
 
-  double decay_energy_rate(int, int, double, double*);
+	double decay_energy_rate(int, int, double, double*);		
   //  double sample_particle_energy(int, int, double);
   //void   Fractions(int i, double *x, double t);
 
