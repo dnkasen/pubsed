@@ -2,6 +2,7 @@
 #include <cassert>
 #include "transport.h"
 #include "physical_constants.h"
+#include "radioactive.h"
 
 namespace pc = physical_constants;
 
@@ -34,6 +35,9 @@ void transport::set_opacity()
     }
   }
 
+  radioactive radio;
+  vector<double> X_now(grid->n_elems);
+
   // loop over my zones to calculate
   int solve_error = 0;
   for (int i=my_zone_start_;i<my_zone_stop_;i++)
@@ -49,8 +53,12 @@ void transport::set_opacity()
     gas.dens = z->rho;
     gas.temp = z->T_gas;
     gas.time = t_now_;
-    gas.set_mass_fractions(z->X_gas);
-    
+
+    // radioactive decay the composition
+    for (int j=0;j<X_now.size();j++) X_now[j] = z->X_gas[j];
+    radio.decay_composition(grid->elems_Z,grid->elems_A,X_now,t_now_);
+    gas.set_mass_fractions(X_now);
+   
     // solve for the state 
     if (!gas.grey_opacity_) solve_error = gas.solve_state(J_nu_[i]);
 
