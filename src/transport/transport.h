@@ -116,6 +116,10 @@ class transport
   vector< vector<real> > line_opacity_;
   double line_velocity_width_;
 
+
+  // setup functions
+  void setup_core_emission();
+
   // opacity functions
   int   get_opacity(particle&, double, double&, double&);
   void   set_opacity();

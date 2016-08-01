@@ -51,8 +51,8 @@ void transport::init(ParameterReader* par, grid_general *g)
       my_zone_stop_  = stop;
     }
   }
-  std::cout << MPI_myID <<  " " << my_zone_start_ << " " << my_zone_stop_ << 
-   " " << my_zone_stop_ - my_zone_start_ << "\n";
+//  std::cout << MPI_myID <<  " " << my_zone_start_ << " " << my_zone_stop_ << 
+//   " " << my_zone_stop_ - my_zone_start_ << "\n";
 
   // setup and seed random number generator
   const gsl_rng_type * TypeR;
@@ -127,12 +127,65 @@ void transport::init(ParameterReader* par, grid_general *g)
   boundary_in_reflect_ = params_->getScalar<int>("transport_boundary_in_reflect");
   boundary_out_reflect_ = params_->getScalar<int>("transport_boundary_out_reflect");
 
+  // parameters for treatment of detailed lines
+  use_detailed_lines_  = params_->getScalar<double>("opacity_lines");
+  line_velocity_width_ = params_->getScalar<double>("line_velocity_width");
+  gas.line_velocity_width_ = line_velocity_width_;
+
+  // get line frequencies and ion masses
+  line_nu_ = gas.get_line_frequency_list();
+  line_sqrt_Mion_ = gas.get_line_ion_mass_list();
+  for (int i=0;i<line_sqrt_Mion_.size();i++)
+    line_sqrt_Mion_[i] = sqrt(line_sqrt_Mion_[i]);
+
+  // allocate and initalize space for opacities
+  n_lines_ = gas.get_number_of_lines();
+  line_opacity_.resize(grid->n_zones);
+  abs_opacity_.resize(grid->n_zones);
+  scat_opacity_.resize(grid->n_zones);
+  emissivity_.resize(grid->n_zones);
+  J_nu_.resize(grid->n_zones);
+  for (int i=0; i<grid->n_zones;  i++)
+  {
+    if (use_detailed_lines_)
+      line_opacity_[i].resize(n_lines_);
+    abs_opacity_[i].resize(nu_grid.size());
+    scat_opacity_[i].resize(nu_grid.size());
+    emissivity_[i].resize(nu_grid.size());
+    J_nu_[i].resize(nu_grid.size());
+  }
+  compton_opac.resize(grid->n_zones);
+  photoion_opac.resize(grid->n_zones);
+  
+  // allocate space for emission distribution function across zones
+  zone_emission_cdf_.resize(grid->n_zones);
+
+  // read pamaeters for core emission and setup
+  setup_core_emission();
+
+  // initialize time
+  t_now_ = g->t_now;
+
+  // initialize particles
+  int n_parts = params_->getScalar<int>("particles_n_initialize");
+  initialize_particles(n_parts);
+}
+
+
+void transport::setup_core_emission()
+{
+
   // -----------------------------------------------------------
   // set up inner boundary emission properties
   r_core_         = params_->getScalar<double>("core_radius");
   T_core_         = params_->getScalar<double>("core_temperature");
   core_frequency_ = params_->getScalar<double>("core_photon_frequency");
   L_core_         = params_->getScalar<double>("core_luminosity");
+
+  // set blackbody from L and R if appropriate
+  if ((L_core_ !=0)&&(r_core_ != 0)&&(T_core_ == 0))
+    T_core_ = pow(L_core_/(4.0*pc::pi*r_core_*r_core_*pc::sb),0.25);
+
 
   int total_n_emit    = params_->getScalar<int>("core_n_emit");
   if (total_n_emit > 0)
@@ -182,7 +235,7 @@ void transport::init(ParameterReader* par, grid_general *g)
       // blackbody spectrum 
      {
         double bb;
-        if (T_core_ == 0) bb = 1;
+        if (T_core_ <= 0) bb = 1;
         else bb = blackbody_nu(T_core_,nu);
         core_emission_spectrum_.set_value(j,bb*dnu);
         // blackbody flux is pi*B(T)
@@ -204,45 +257,5 @@ void transport::init(ParameterReader* par, grid_general *g)
   } 
   // -----------------------------------------------------------
 
-  // parameters for treatment of detailed lines
-  use_detailed_lines_  = params_->getScalar<double>("opacity_lines");
-  line_velocity_width_ = params_->getScalar<double>("line_velocity_width");
-  gas.line_velocity_width_ = line_velocity_width_;
-
-  // get line frequencies and ion masses
-  line_nu_ = gas.get_line_frequency_list();
-  line_sqrt_Mion_ = gas.get_line_ion_mass_list();
-  for (int i=0;i<line_sqrt_Mion_.size();i++)
-    line_sqrt_Mion_[i] = sqrt(line_sqrt_Mion_[i]);
-
-  // allocate and initalize space for opacities
-  n_lines_ = gas.get_number_of_lines();
-  line_opacity_.resize(grid->n_zones);
-  abs_opacity_.resize(grid->n_zones);
-  scat_opacity_.resize(grid->n_zones);
-  emissivity_.resize(grid->n_zones);
-  J_nu_.resize(grid->n_zones);
-  for (int i=0; i<grid->n_zones;  i++)
-  {
-    if (use_detailed_lines_)
-      line_opacity_[i].resize(n_lines_);
-    abs_opacity_[i].resize(nu_grid.size());
-    scat_opacity_[i].resize(nu_grid.size());
-    emissivity_[i].resize(nu_grid.size());
-    J_nu_[i].resize(nu_grid.size());
-  }
-  compton_opac.resize(grid->n_zones);
-  photoion_opac.resize(grid->n_zones);
-  
-  // allocate space for emission distribution function across zones
-  zone_emission_cdf_.resize(grid->n_zones);
-
-  // initialize time
-  t_now_ = g->t_now;
-
-  // initialize particles
-  int n_parts = params_->getScalar<int>("particles_n_initialize");
-  initialize_particles(n_parts);
-
-  
 }
+
