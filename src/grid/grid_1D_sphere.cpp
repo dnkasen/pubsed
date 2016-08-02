@@ -296,8 +296,8 @@ void grid_1D_sphere::write_out(int iw, double tt)
     outf << z[i].v[0] << "\t";
     outf << z[i].T_gas << "\t";
     outf << T_rad << "\t";
-    outf << z[i].L_radio_dep/zone_volume(i) << "\t";
-    outf << z[i].L_radio_emit/zone_volume(i) << "\t";
+    outf << z[i].L_radio_dep << "\t";
+    outf << z[i].L_radio_emit << "\t";
     outf << endl;
   }
 }

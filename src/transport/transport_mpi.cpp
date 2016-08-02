@@ -179,7 +179,9 @@ void transport::reduce_opacities()
   {
     double vol = grid->zone_volume(i);
     grid->z[i].e_abs   /= vol*dt;
-    grid->z[i].L_radio_dep /= dt;
+    grid->z[i].L_radio_dep /= vol*dt;
+    grid->z[i].L_radio_emit /= vol;
+
     //grid->z[i].fx_rad  /= vol*pc::c*dt; 
     //grid->z[i].fy_rad  /= vol*pc::c*dt;
     //grid->z[i].fz_rad  /= vol*pc::c*dt;
