@@ -393,13 +393,21 @@ void grid_1D_sphere::set_radial_edges
 (const std::vector<double> r, const double r0, 
 const std::vector<double> v, const double v0) 
 {
+  r_out.min = r0;
+  v_inner_ = v0;
   for (int i=0;i<n_zones;i++)
   {
     r_out[i] = r[i];
     z[i].v[0] = v[i];
+
+    // calculate shell volume
+    double r0;
+    if(i==0) r0 = r_out.min;
+    else     r0 = r_out[i-1];
+    vol[i] = 4.0*pc::pi/3.0*(r_out[i]*r_out[i]*r_out[i] - r0*r0*r0);
   }
-  r_out.min = r0;
-  v_inner_ = v0;
+
+
 }
 
 
