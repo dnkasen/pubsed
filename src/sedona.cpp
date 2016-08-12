@@ -33,10 +33,11 @@ int main(int argc, char **argv)
   const int verbose = (my_rank == 0);
   if (verbose) 
   {
-    cout << "################################\n";
-    cout << "##########  SEDONA  ############\n";
-    cout << "################################\n";
-    cout << "# MPI tasks = " << n_procs << endl;
+    cout << "##################################\n";
+    cout << "############  sedona  ############\n";
+    cout << "##################################\n";
+    cout << "#\n# MPI tasks = " << n_procs << endl;
+
   }
   
   // start timer 
@@ -107,17 +108,21 @@ int main(int argc, char **argv)
   // read in time stepping parameters
   int steady_iterate  = params.getScalar<int>("transport_steady_iterate");
   if (steady_iterate) use_hydro = 0;
-  
+  double dt_max  = params.getScalar<double>("tstep_max_dt");
+  double dt_min  = params.getScalar<double>("tstep_min_dt");
+  double dt_del  = params.getScalar<double>("tstep_max_delta");
+
   // check for steady state iterative calculation
   // or a time dependent calculation
   int n_steps   = steady_iterate;
   double t_stop = 0; 
-  if (!steady_iterate)  {
+  if (!steady_iterate)  
+  {
     n_steps  = params.getScalar<int>("tstep_max_steps");
-    t_stop   = params.getScalar<double>("tstep_time_stop"); }
+    t_stop   = params.getScalar<double>("tstep_time_stop");   
+  }
 
   // parameters for writing data to file
-
   int write_levels = params.getScalar<int>("output_write_levels");
   int write_grid   = params.getScalar<int>("output_write_grid");
   double write_out = params.getScalar<double>("output_write_times");
@@ -130,9 +135,7 @@ int main(int argc, char **argv)
     // get this time step
     if (!steady_iterate)
     {
-      double dt_max  = params.getScalar<double>("tstep_max_dt");
-      double dt_min  = params.getScalar<double>("tstep_min_dt");
-      double dt_del  = params.getScalar<double>("tstep_max_delta");
+     
       dt = dt_max;
       if (use_hydro) 
       {

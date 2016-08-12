@@ -59,7 +59,7 @@ int main(int argc, char **argv)
   std::string atomdata = params.getScalar<string>("data_atomic_file");  
   gas.initialize(atomdata,elems_Z,elems_A,nu_grid);
   std::string fuzzfile = params.getScalar<string>("data_fuzzline_file");  
-  int nl = gas.read_fuzzfile(fuzzfile);
+  gas.read_fuzzfile(fuzzfile);
   std::vector<double> massfrac = params.getVector<double>("mass_fractions");
   gas.set_mass_fractions(massfrac);
 
@@ -144,7 +144,7 @@ int main(int argc, char **argv)
       gas.temp = temp;
       gas.dens = this_dens;
       std::vector<double> J_nu;
-      int solve_error = gas.solve_state(J_nu);
+      gas.solve_state(J_nu);
       gas.computeOpacity(abs_opacity,scat_opacity,emissivity);
 
       for (int i=0;i<ng;i++)
