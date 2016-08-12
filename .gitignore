@@ -1,1 +1,8 @@
 EXEC/
+grid*h5
+ray*dat
+level*h5
+spectrum*dat
+spectrum*h5
+*~
+*.pyc
