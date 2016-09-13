@@ -4,16 +4,20 @@
 #include <vector>
 
 // radioactive decay constonstants
+
+// 56Ni chain data can be found
+// http://adsabs.harvard.edu/abs/1994ApJS...92..527N
 #define TAU_NI  757241.7         // decay time = 8.803   days
 #define TAU_CO  9627378.       // decay time = 113.611 days 
+// average energy per decay in MeV
+#define AVERAGE_NI_ENERGY 1.728
+#define AVERAGE_CO_ENERGY 3.73
+#define CO_POSITRON_FRACTION 0.0321
+
 #define TAU_FE  29790.0        // 8.275 hours
 #define TAU_MN  1266.0         // 21.1 minute
 #define TAU_CR  77616.0        // 21.56 hours  
 #define TAU_VN  1.38007e6      // 15.973 days
-
-// average energy per decay in MeV
-#define AVERAGE_NI_ENERGY 1.728
-#define AVERAGE_CO_ENERGY 3.566
 #define AVERAGE_FE_ENERGY 0.86
 #define AVERAGE_MN_ENERGY 3.415
 #define AVERAGE_CR_ENERGY 0.42

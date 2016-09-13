@@ -134,8 +134,22 @@ double radioactive::decay_energy_rate(int Z, int A, double t, double *gfrac)
     double ni_E = ni56*(AVERAGE_NI_ENERGY*pc::Mev_to_ergs);
     double co_E = co56*(AVERAGE_CO_ENERGY*pc::Mev_to_ergs);
 
-    gtotal = ni_E + 0.98*co_E;
+    gtotal = ni_E + (1 - CO_POSITRON_FRACTION)*co_E;
     total  = ni_E + co_E;
+  }
+
+  // Do 56Co decay
+  if ((Z == 27)&&(A == 56))
+  {
+    // exponential factors to be used
+    double e_co = exp(-t/TAU_CO);
+    // number divided by decay time)
+    double co56 = 1.0/(TAU_CO)*e_co;
+    // get the energy from decays in ergs/s, using unit conversions
+    double co_E = co56*(AVERAGE_CO_ENERGY*pc::Mev_to_ergs);
+
+    gtotal = (1 - CO_POSITRON_FRACTION)*co_E;
+    total  = co_E;
   }
     
   // // Do 52Fe decay
