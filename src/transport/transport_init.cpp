@@ -156,7 +156,21 @@ void transport::init(ParameterReader* par, grid_general *g)
   }
   compton_opac.resize(grid->n_zones);
   photoion_opac.resize(grid->n_zones);
-  
+
+  // setup emissivity weight  -- debug
+  emissivity_weight_.resize(nu_grid.size());
+  double norm = 0;
+  for (int j=0;j<nu_grid.size();j++)
+  { 
+    double nu  = nu_grid.center(j);
+    double w = 1.0; // - 1.0/(1.0 + pow(nu/3e15,2.0));
+    //if (nu > 2e15) w = 100;
+    emissivity_weight_[j] = w;
+    norm += w;
+  }
+  for (int j=0;j<nu_grid.size();j++) emissivity_weight_[j] *= nu_grid.size()/norm;
+ // for (int j=0;j<nu_grid.size();j++) std::cout << nu_grid.center(j) << " " << emissivity_weight_[j] << "\n";
+
   // allocate space for emission distribution function across zones
   zone_emission_cdf_.resize(grid->n_zones);
 
@@ -228,7 +242,7 @@ void transport::setup_core_emission()
           double slope = 0; //(cspec_Lnu[ind+1] - cspec_Lnu[ind-1])/(cspec_nu[ind+1] - cspec_nu[ind]);
           Lnu = cspec_Lnu[ind]; // + slope*(nu - cspec_nu[ind]);
         }
-        core_emission_spectrum_.set_value(j,Lnu*dnu); 
+        core_emission_spectrum_.set_value(j,Lnu*dnu*emissivity_weight_[j]); 
        L_sum += Lnu*dnu;
       }
       else
@@ -237,7 +251,7 @@ void transport::setup_core_emission()
         double bb;
         if (T_core_ <= 0) bb = 1;
         else bb = blackbody_nu(T_core_,nu);
-        core_emission_spectrum_.set_value(j,bb*dnu);
+        core_emission_spectrum_.set_value(j,bb*dnu*emissivity_weight_[j]);
         // blackbody flux is pi*B(T)
        L_sum += 4.0*pc::pi*r_core_*r_core_*pc::pi*bb*dnu;
       }

@@ -92,6 +92,9 @@ class transport
   // boundary conditions
   int boundary_in_reflect_, boundary_out_reflect_;
 
+  // array to weight the emissivity(size of nu_grid)
+  vector<real>  emissivity_weight_;
+
   // the zone opacity/emissivity variables
   vector< cdf_array >    emissivity_;
   vector< vector<real> > abs_opacity_;

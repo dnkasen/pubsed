@@ -54,9 +54,11 @@ void transport::step(double dt)
 
   // calculate percent particles escaped, and rescale if wanted
   double per_esc = (1.0*n_escape)/(1.0*n_active);
-  if ((verbose)&&(steady_state)) {
+  if ((verbose)&&(steady_state)) 
+  {
     cout << "# Percent particles escaped = " << 100.0*per_esc << "\n";
-    optical_spectrum.rescale(1.0/per_esc); }
+  //  optical_spectrum.rescale(1.0/per_esc); 
+  }
 
   tend = MPI_Wtime();
   if (verbose) cout << "# Propagated particles (" << (tend-tstr) << " secs) \n";
@@ -169,7 +171,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     {
       zone->e_abs  += this_E*dshift*(continuum_opac_cmf)*eps_absorb_cmf*dshift;
       J_nu_[p.ind][i_nu] += this_E;
-    //      std::cout << i_nu << "\n";
+      //std::cout << p.ind << " " << i_nu << " " << this_E << " " << J_nu_[p.ind][i_nu] << "\n";
     }
       
     // put back in radiation force tally here

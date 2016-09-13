@@ -394,9 +394,9 @@ void transport::emit_inner_source(double dt)
     else
     {
       // sample frequency from blackbody 
-      int ilam = core_emission_spectrum_.sample(gsl_rng_uniform(rangen));
-      p.nu = nu_grid.sample(ilam,gsl_rng_uniform(rangen));
-
+      int inu = core_emission_spectrum_.sample(gsl_rng_uniform(rangen));
+      p.nu = nu_grid.sample(inu,gsl_rng_uniform(rangen));
+      p.e  /= emissivity_weight_[inu];
       // straight bin emission
       //int ilam = gsl_rng_uniform(rangen)*nu_grid.size(); 
       //p.e *= core_emis.get_value(ilam)*nu_grid.size(); 
