@@ -15,7 +15,12 @@ void transport::solve_eq_temperature()
 {
   // solve radiative equilibrium temperature
   for (int i=0;i<grid->n_zones;i++) 
-    grid->z[i].T_gas = temp_brent_method(i);
+  {
+    if (radiative_eq == 1)
+      grid->z[i].T_gas = temp_brent_method(i);
+    else if (radiative_eq == 2)
+      grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
+  }
        
   // mpi reduce the results
   //grid->reduce_T_gas();
@@ -31,9 +36,10 @@ void transport::solve_eq_temperature()
 double transport::rad_eq_function(int c,double T)
 {
   // total energy absorbed in zone
-  double E_absorbed = grid->z[c].e_abs;
+  double E_absorbed = grid->z[c].e_abs; // debug + grid->z[c].L_radio_dep;
   // total energy emitted (to be calculated)
   double E_emitted = 0.;
+  double Eab = 0;
 
   // Calculate total emission assuming no frequency (grey) opacity
   if (nu_grid.size() == 1)
@@ -42,7 +48,7 @@ double transport::rad_eq_function(int c,double T)
   }
   // integrate emisison over frequency (angle
   // integration gives the 4*PI) to get total
-  // radiation energy emitted. Opacities are
+  // ergs/sec/cm^3 radition emitted. Opacities are
   // held constant for this (assumed not to change
   // much from the last time step).
   else for (int i=0;i<nu_grid.size();i++)
@@ -52,7 +58,9 @@ double transport::rad_eq_function(int c,double T)
     double B_nu = blackbody_nu(T,nu);
     double kappa_abs = abs_opacity_[c][i];
     E_emitted += 4.0*pc::pi*kappa_abs*B_nu*dnu;
+    Eab += 4.0*pc::pi*kappa_abs*J_nu_[c][i]*dnu;
   }
+  //if (verbose) std::cout << c << " " << E_emitted << " " << Eab << " " << grid->z[c].e_abs << " " << grid->z[c].L_radio_dep << "\n";
 
   //std::cout << E_emitted << " " << E_absorbed << "\n";
   // radiative equillibrium condition: "emission equals absorbtion"

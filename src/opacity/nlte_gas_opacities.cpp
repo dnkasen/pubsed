@@ -46,8 +46,12 @@ void nlte_gas::computeOpacity(std::vector<double>& abs,
     if (use_electron_scattering_opacity) 
     {
       double es_opac = electron_scattering_opacity();
-      for (int i=0;i<ns;i++) {
-        scat[i] += es_opac; }
+      for (int i=0;i<ns;i++) 
+      {
+        scat[i] += es_opac; 
+        // debug -- small amount of thermalizing in e-scat
+        abs[i]  += 1e-20*epsilon_*es_opac;
+      }
     }
 
      //---
