@@ -186,13 +186,20 @@ void transport::reduce_opacities()
     //grid->z[i].fy_rad  /= vol*pc::c*dt;
     //grid->z[i].fz_rad  /= vol*pc::c*dt;
 
-    double esum = 0;
-    for (int j=0;j<nu_grid.size();j++) 
+    if (nu_grid.size() == 1)
     {
-      J_nu_[i][j] /= vol*dt*4*pc::pi*nu_grid.delta(j);
-      esum += J_nu_[i][j]*nu_grid.delta(j)*4*pc::pi/pc::c; 
+      grid->z[i].e_rad = J_nu_[i][0]/(vol*dt*pc::c);
     }
-    grid->z[i].e_rad = esum;
+    else 
+    {
+      double esum = 0;
+      for (int j=0;j<nu_grid.size();j++) 
+      {
+        J_nu_[i][j] /= vol*dt*4*pc::pi*nu_grid.delta(j);
+        esum += J_nu_[i][j]*nu_grid.delta(j)*4*pc::pi/pc::c; 
+      }
+      grid->z[i].e_rad = esum;
+    }
   }
 }
 
