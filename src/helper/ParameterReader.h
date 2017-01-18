@@ -89,6 +89,39 @@ class ParameterReader
 		   "\" in either param file or defaults; exiting\n";
     exit(1);
   }
+
+  template< typename T > std::vector< T > getArray( const char* label )
+  {   
+    std::vector<T> list = getVector<double>(label);
+    std::vector<T> arr;
+
+    double start,stop,del;
+    if (list.size() == 1)
+    {
+      start = list[0];
+      stop  = list[0];
+      del   = 1;
+    }
+    else if (list.size() == 2)
+    {
+      std::cout << "List " << label << " cannot have 2 numbers\n";
+      exit(1);
+    }
+    else 
+    {
+      start = list[0];
+      stop  = list[1];
+      del   = list[2];
+    }
+  
+    for (double v = start; v <= stop;)
+    {
+      arr.push_back(v);
+      if (list.size() == 4) v = v*(1.0+del);
+      else v = v += del;
+    }
+    return arr;
+  }
 };
 
 
