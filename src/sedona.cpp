@@ -71,7 +71,7 @@ int main(int argc, char **argv)
   // initialize the grid (including reading the model file)
   grid->init(&params);
 
-  
+
   //---------------------------------------------------------------------
   // SET UP the transport module
   //---------------------------------------------------------------------
@@ -81,6 +81,7 @@ int main(int argc, char **argv)
   if (transport_type != "") use_transport = 1;
   if (use_transport) mcarlo.init(&params, grid);
   
+
   //---------------------------------------------------------------------
   // SET UP the hydro module
   //---------------------------------------------------------------------
