@@ -9,7 +9,7 @@ MAKE_INC = make.inc.tagore
 EXECDIR = ./EXEC
 
 all:
-	cp -p sedona.cpp snopac.cpp $(EXECDIR)
+	cp -p sedona.cpp  $(EXECDIR)
 	cp -p transport/*.cpp transport/*.h $(EXECDIR)	
 	cp -p hydro/*.cpp hydro/*.h $(EXECDIR)	
 	cp -p helper/*.cpp helper/*.h $(EXECDIR)		

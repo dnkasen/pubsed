@@ -141,6 +141,7 @@ class nlte_gas
   //    == 2 maximum iterations reached in n_e solve
   //-----------------------------------------------------------  
   int solve_state(std::vector<real>);
+  int solve_state();
 
   //-----------------------------------------------------------
   // return the ionization state, i.e., electron density

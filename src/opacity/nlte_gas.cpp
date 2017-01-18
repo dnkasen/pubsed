@@ -210,7 +210,7 @@ int nlte_gas::read_fuzzfile(std::string fuzzfile)
 
 //-----------------------------------------------------------
 // return the ionization state, i.e., electron density
-// ovr total ion number density
+// over total ion number density
 //-----------------------------------------------------------
 double nlte_gas::get_ionization_state()
 {
@@ -221,9 +221,20 @@ double nlte_gas::get_ionization_state()
 //-----------------------------------------------------------
 // Solve for the gas state (excitation/ionization)
 // the level populations will be stored internally for
+// Assumes no radiation field given, so in LTE
+// returns: any error
+//-----------------------------------------------------------
+int nlte_gas::solve_state()
+{
+  std::vector<real> J_nu;
+  return solve_state(J_nu);
+}
+
+//-----------------------------------------------------------
+// Solve for the gas state (excitation/ionization)
+// the level populations will be stored internally for
 // further calculations
-// input:
-// int lte: 1 = do it in LTE, 0 = do it in NLTE
+// Returns: any error 
 //-----------------------------------------------------------
 int nlte_gas::solve_state(std::vector<real> J_nu)
 {
