@@ -14,6 +14,7 @@ namespace pc = physical_constants;
 //----------------------------------------------------------------
 nlte_gas::nlte_gas()
 {
+  use_nlte_ = 0;
   e_gamma = 0;
   no_ground_recomb = 0;
 }
@@ -28,7 +29,7 @@ nlte_gas::nlte_gas()
 // locate_array ng:  locate_array giving the freq. array
 //---------------------------------------------------------------
 void nlte_gas::initialize
-(std::string af, std::vector<int> e, std::vector<int> A, locate_array ng)
+(std::string af, std::vector<int> e, std::vector<int> A, locate_array ng, int usenlte)
 {
   // verbosity
   int my_rank;
@@ -42,7 +43,9 @@ void nlte_gas::initialize
   // copy the nugrid
   nu_grid.copy(ng);
 
+  // set passed variables
   atomfile_ = af;
+  use_nlte_ = usenlte;
 
   // check if atomfile is there
   std::ifstream afile(atomfile_);
@@ -59,13 +62,12 @@ void nlte_gas::initialize
   int level_id = 0;
   for (int i=0;i<atoms.size();i++) 
   {
-    int error = atoms[i].initialize(atomfile_, elem_Z[i],ng,level_id); 
+    int error = atoms[i].initialize(atomfile_, elem_Z[i],ng,level_id,use_nlte_); 
     if ((error)&&(verbose))
       std::cout << "# ERROR: incomplete data for atom Z=" << elem_Z[i] <<
 	" in file " << atomfile_ << "\n";
   }
   
-
   // set up global list of levels (i.e., levels of all atoms)
   level_id = 0;
   for (int i=0;i<atoms.size();i++) 

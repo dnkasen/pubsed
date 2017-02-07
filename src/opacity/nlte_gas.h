@@ -88,11 +88,20 @@ class nlte_gas
   // std::vector<int> e:  vector of atomic numbers
   // std::vector<int> A:  vector of atomic weights (in atomic units)
   // locate_array ng:  locate_array giving the freq. array
+  // int: use_nlte: whether to use nlte
   //---------------------------------------------------------------
   void initialize
-    (std::string, std::vector<int>, std::vector<int>, locate_array);
+  (std::string, std::vector<int>, std::vector<int>, locate_array, int);
 
-  
+  //---------------------------------------------------------------
+  // initialize: overload above with default is use_nlte = 0
+  //---------------------------------------------------------------
+  void initialize
+  (std::string af, std::vector<int> e, std::vector<int> A, locate_array ng)
+  {
+    initialize(af,e,A,ng,0);
+  }
+
   //-----------------------------------------------------------
   // read fuzz lines from a file
   // input:

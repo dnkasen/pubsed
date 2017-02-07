@@ -118,7 +118,7 @@ public:
   
   // Constructor and Init
   nlte_atom();
-  int initialize(std::string, int, locate_array, int&);
+  int initialize(std::string, int, locate_array, int&, int);
   int read_fuzzfile(std::string);
 
   // solve state

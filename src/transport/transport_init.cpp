@@ -96,7 +96,9 @@ void transport::init(ParameterReader* par, grid_general *g)
   
   // initialize nlte_gas class
   std::string atomdata = params_->getScalar<string>("data_atomic_file");  
-  gas.initialize(atomdata,grid->elems_Z,grid->elems_A,nu_grid);
+  int use_nlte = params_->getScalar<int>("opacity_use_nlte");
+  gas.initialize(atomdata,grid->elems_Z,grid->elems_A,nu_grid,use_nlte);
+
   std::string fuzzfile = params_->getScalar<string>("data_fuzzline_file");  
   int nl = gas.read_fuzzfile(fuzzfile);
   if (verbose) std::cout << "# From fuzzfile \"" << fuzzfile << "\" " << 
@@ -117,8 +119,6 @@ void transport::init(ParameterReader* par, grid_general *g)
     = params_->getScalar<int>("opacity_bound_bound");
   gas.use_free_free_opacity  
     = params_->getScalar<int>("opacity_free_free");
-  gas.use_nlte_ 
-    = params_->getScalar<int>("opacity_use_nlte");
   first_step_ = 1;
 
   if (verbose) gas.print_properties();

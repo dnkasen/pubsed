@@ -13,7 +13,7 @@
 
 namespace pc = physical_constants;
 
-int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
+int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID, int use_NLTE)
 {
   // set atomic number
   this->atomic_number = z;
@@ -221,26 +221,29 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
   //----------------------------------------------
   // allocate memory for arrays
   //----------------------------------------------
-  rates = new double*[n_levels];
-  for (int i=0;i<n_levels;i++) rates[i] = new double[n_levels];
+  if (use_NLTE)
+  {
+    rates = new double*[n_levels];
+    for (int i=0;i<n_levels;i++) rates[i] = new double[n_levels];
 
-  // matrix to solve
-  M_nlte = gsl_matrix_calloc(n_levels,n_levels);
-  gsl_matrix_set_zero(M_nlte);
+    // matrix to solve
+    M_nlte = gsl_matrix_calloc(n_levels,n_levels);
+    gsl_matrix_set_zero(M_nlte);
 
-  // vector of level populations
-  x_nlte = gsl_vector_calloc(n_levels);
-  gsl_vector_set_zero(x_nlte);
+    // vector of level populations
+    x_nlte = gsl_vector_calloc(n_levels);
+    gsl_vector_set_zero(x_nlte);
 
-  // right hand side vector
-  b_nlte = gsl_vector_calloc(n_levels);
-  gsl_vector_set_zero(b_nlte);
+    // right hand side vector
+    b_nlte = gsl_vector_calloc(n_levels);
+    gsl_vector_set_zero(b_nlte);
 
-  // permuation vector, used internally for linear algebra solve
-  p_nlte = gsl_permutation_alloc(n_levels);
-  gsl_permutation_init(p_nlte);
-  //---------------------------------------------------
-
+    // permuation vector, used internally for linear algebra solve
+    p_nlte = gsl_permutation_alloc(n_levels);
+    gsl_permutation_init(p_nlte);
+    //---------------------------------------------------
+  }
+  
   H5Fclose(file_id);
 
   return 0;
