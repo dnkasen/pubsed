@@ -54,7 +54,7 @@ int main(int argc, char **argv)
   std::vector<int> elems_A, elems_Z;
   for (int i=0;i<elements.size();i++)  
   {
-    std::string species = std::to_string(static_cast<long long>(elements[i]));
+    std::string species = std::to_string(static_cast<long double>(elements[i]));
     int ind1 = species.find(".");
     int ind2 = species.find("0");
     std::string el_Z = species.substr(0,ind1);
