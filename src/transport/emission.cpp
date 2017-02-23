@@ -12,9 +12,11 @@ using std::cout;
 //------------------------------------------------------------
 void transport::emit_particles(double dt)
 {
-  emit_inner_source(dt);
+ 
   emit_radioactive(dt);
   emit_thermal(dt);
+  emit_heating_source(dt);
+  emit_inner_source(dt);
 }
 
 //------------------------------------------------------------
@@ -316,7 +318,16 @@ void transport::emit_thermal(double dt)
   //  }
   //  if (verbose) printf("Added %ld particles\n",n_add_tot);
 
-
+//------------------------------------------------------------
+// A generic heating source, hacked up for now
+//------------------------------------------------------------
+void transport::emit_heating_source(double dt)
+{
+  double Ep = 1e52;
+  double tp = 3600.0*24.0*20.0;
+  double Lheat = Ep/tp/(1 + t_now_/tp)/(1 + t_now_/tp);
+  L_core_ = Lheat;  
+}
 
 
 //------------------------------------------------------------
@@ -410,7 +421,7 @@ void transport::emit_inner_source(double dt)
     transform_comoving_to_lab(&p);
 
     // set time to current
-    p.t  = t_now_;
+    p.t  = t_now_ + gsl_rng_uniform(rangen)*dt;
     
     // set type to photon
     p.type = photon;

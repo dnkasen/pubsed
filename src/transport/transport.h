@@ -135,6 +135,8 @@ class transport
   void   emit_inner_source(double dt);
   void   emit_radioactive(double dt);
   void   emit_thermal(double dt);
+  void   emit_heating_source(double dt);
+
   void   create_isotropic_particle(int,PType,double,double);
   void   initialize_particles(int);
   void sample_photon_frequency(particle*);
