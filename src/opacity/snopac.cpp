@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 
   std::vector<double> elements = params.getVector<double>("elements");
   std::vector<int> elems_A, elems_Z;
-  for (int i=0;i<elements.size();i++)  
+  for (size_t i=0;i<elements.size();++i)  
   {
     std::string species = std::to_string(static_cast<long double>(elements[i]));
     int ind1 = species.find(".");
@@ -133,7 +133,7 @@ void write_frequency_file(std::string outfile, int style)
       gas.computeOpacity(abs_opacity,scat_opacity,emissivity);
 
       double x;
-      for (int i=0;i<nu_grid.size();i++)
+      for (int i=0;i<nu_grid.size();++i)
       {
         int ind = i;
         if (style == 1) ind = nu_grid.size() - i - 1;
@@ -198,7 +198,7 @@ void write_mesa_file(std::string mesafile)
       gas.solve_state(J_nu);
       gas.computeOpacity(abs_opacity,scat_opacity,emissivity);
 
-      for (int i=0;i<nu_grid.size();i++)
+      for (int i=0;i<nu_grid.size();++i)
       {
         tot_opacity[i] = abs_opacity[i] + scat_opacity[i];
       }
@@ -222,7 +222,7 @@ double rosseland_mean(std::vector<double> opac)
   // calculate rosseland opacity
   double norm = 0;
   double sum  = 0;
-  for (int i = 1;i < nu_grid.size(); i++)
+  for (int i = 1;i < nu_grid.size(); ++i)
   {
     double dnu = nu_grid[i] - nu_grid[i-1];
     double nu0 = 0.5*(nu_grid[i] + nu_grid[i-1]);
@@ -245,7 +245,7 @@ double planck_mean(std::vector<double> opac)
   // calculate planck mean opacity
   double norm = 0;
   double sum  = 0;
-  for (int i = 1;i < nu_grid.size(); i++)
+  for (int i = 1;i < nu_grid.size(); ++i)
   {
     double dnu = nu_grid[i] - nu_grid[i-1];
     double nu0 = 0.5*(nu_grid[i] + nu_grid[i-1]);
