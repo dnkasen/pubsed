@@ -45,17 +45,17 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID,
   double *ion_darr = new double[n_ions];
   status = H5LTread_dataset_double(file_id,dset,ion_darr);
   if (status != 0) return -1;
-  for (int i=0;i<n_ions;i++) ions[i].chi  = ion_darr[i];
+  for (int i=0;i<n_ions;++i) ions[i].chi  = ion_darr[i];
   
   // read ground state levels
   sprintf(dset,"%s%s",atomname,"ion_ground");
   int *ion_iarr = new int[n_ions];
   status = H5LTread_dataset_int(file_id,dset,ion_iarr);
   if (status != 0) return -1;
-  for (int i=0;i<n_ions;i++) ions[i].ground  = ion_iarr[i];
+  for (int i=0;i<n_ions;++i) ions[i].ground  = ion_iarr[i];
 
   // initialize other quantities
-  for (int i=0;i<n_ions;i++)
+  for (int i=0;i<n_ions;++i)
   {
     ions[i].part   = 0;
     ions[i].frac   = 0;
@@ -82,20 +82,20 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID,
   // read level statistical weights
   sprintf(dset,"%s%s",atomname,"level_g");
   status = H5LTread_dataset_int(file_id,dset,lev_iarr);
-  for (int i=0;i<n_levels;i++) levels[i].g = lev_iarr[i];
+  for (int i=0;i<n_levels;++i) levels[i].g = lev_iarr[i];
 
   // read level ionization stage
   sprintf(dset,"%s%s",atomname,"level_i");
   status = H5LTread_dataset_int(file_id,dset,lev_iarr);
-  for (int i=0;i<n_levels;i++) levels[i].ion = lev_iarr[i];
+  for (int i=0;i<n_levels;++i) levels[i].ion = lev_iarr[i];
 
   // read level excitation energy
   sprintf(dset,"%s%s",atomname,"level_E");
   status = H5LTread_dataset_double(file_id,dset,lev_darr);
-  for (int i=0;i<n_levels;i++) levels[i].E = lev_darr[i];
+  for (int i=0;i<n_levels;++i) levels[i].E = lev_darr[i];
   
   // set other parameters
-  for (int i=0;i<n_levels;i++) 
+  for (int i=0;i<n_levels;++i) 
   { 
     levels[i].n         = 0.0;
     levels[i].E_ion     = ions[levels[i].ion].chi - levels[i].E;
@@ -135,24 +135,25 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID,
     // read line lower levels
     sprintf(dset,"%s%s",atomname,"line_l");
     status = H5LTread_dataset_int(file_id,dset,lin_iarr);
-    for (int i=0;i<n_lines;i++) lines[i].ll = lin_iarr[i];  
+    if (status != 0) return -1;
+    for (int i=0;i<n_lines;++i) lines[i].ll = lin_iarr[i];  
 
     // read line upper levels
     sprintf(dset,"%s%s",atomname,"line_u");
     status = H5LTread_dataset_int(file_id,dset,lin_iarr);
-    for (int i=0;i<n_lines;i++) lines[i].lu = lin_iarr[i];  
+    for (int i=0;i<n_lines;++i) lines[i].lu = lin_iarr[i];  
 
     // read line Einstein A
     sprintf(dset,"%s%s",atomname,"line_A");
     status = H5LTread_dataset_double(file_id,dset,lin_darr);
-    for (int i=0;i<n_lines;i++) lines[i].A_ul = lin_darr[i];  
+    for (int i=0;i<n_lines;++i) lines[i].A_ul = lin_darr[i];  
 
     delete[] lin_darr;
     delete[] lin_iarr;
   }
 
   // set additional line properties
-  for (int i=0;i<n_lines;i++)
+  for (int i=0;i<n_lines;++i)
   {
     int ll = lines[i].ll;
     int lu = lines[i].lu;
@@ -188,7 +189,7 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID,
   // ----------------------------------------
   int npts     = 200;
   double fmax  = 10;
-  for (int i=0;i<n_levels;i++) 
+  for (int i=0;i<n_levels;++i) 
   {
      // set photoionization cross-section
      double E_ion = levels[i].E_ion;
@@ -224,7 +225,7 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID,
   if (use_NLTE)
   {
     rates = new double*[n_levels];
-    for (int i=0;i<n_levels;i++) rates[i] = new double[n_levels];
+    for (int i=0;i<n_levels;++i) rates[i] = new double[n_levels];
 
     // matrix to solve
     M_nlte = gsl_matrix_calloc(n_levels,n_levels);
@@ -265,6 +266,8 @@ int nlte_atom::read_fuzzfile(std::string fname)
 
   int nl;
   status = H5LTget_attribute_int(file_id, atomname, "n_lines", &nl);
+  if (status != 0) return -1;
+
   fuzz_lines.n_lines = nl;
   
   fuzz_lines.nu.resize(nl);
@@ -280,25 +283,25 @@ int nlte_atom::read_fuzzfile(std::string fname)
   // read line frequency
   sprintf(dset,"%s%s",atomname,"nu");
   status = H5LTread_dataset_double(file_id,dset,darr);
-  for (int i=0;i<nl;i++) fuzz_lines.nu[i] = darr[i];
+  for (int i=0;i<nl;++i) fuzz_lines.nu[i] = darr[i];
 
   // read line gf
   sprintf(dset,"%s%s",atomname,"gf");
   status = H5LTread_dataset_double(file_id,dset,darr);
-  for (int i=0;i<nl;i++) fuzz_lines.gf[i] = darr[i];
+  for (int i=0;i<nl;++i) fuzz_lines.gf[i] = darr[i];
 
   // read line lower level excitation energy
   sprintf(dset,"%s%s",atomname,"El");
   status = H5LTread_dataset_double(file_id,dset,darr);
-  for (int i=0;i<nl;i++) fuzz_lines.El[i] = darr[i];
+  for (int i=0;i<nl;++i) fuzz_lines.El[i] = darr[i];
   
   // read line ionization state
   sprintf(dset,"%s%s",atomname,"ion");
   status = H5LTread_dataset_int(file_id,dset,iarr);
-  for (int i=0;i<nl;i++) fuzz_lines.ion[i] = iarr[i];
+  for (int i=0;i<nl;++i) fuzz_lines.ion[i] = iarr[i];
 
   // get frequency bin of line
-  for (int i=0;i<nl;i++) {
+  for (int i=0;i<nl;++i) {
     int ind = nu_grid.locate(fuzz_lines.nu[i])-1;
     if (ind < 0) ind = 0;
     fuzz_lines.bin[i] = ind;

@@ -36,8 +36,8 @@ void nlte_gas::initialize
   MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
   verbose = (my_rank == 0);
   
-  for (size_t i=0;i<e.size();i++) elem_Z.push_back(e[i]);
-  for (size_t i=0;i<e.size();i++) elem_A.push_back(A[i]);
+  for (size_t i=0;i<e.size();++i) elem_Z.push_back(e[i]);
+  for (size_t i=0;i<e.size();++i) elem_A.push_back(A[i]);
   mass_frac.resize(e.size());
 
   // copy the nugrid
@@ -60,7 +60,7 @@ void nlte_gas::initialize
   // read in the atom data
   atoms.resize(elem_Z.size());
   int level_id = 0;
-  for (size_t i=0;i<atoms.size();i++) 
+  for (size_t i=0;i<atoms.size();++i) 
   {
     int error = atoms[i].initialize(atomfile_, elem_Z[i],ng,level_id,use_nlte_); 
     if ((error)&&(verbose))
@@ -70,7 +70,7 @@ void nlte_gas::initialize
   
   // set up global list of levels (i.e., levels of all atoms)
   level_id = 0;
-  for (size_t i=0;i<atoms.size();i++) 
+  for (size_t i=0;i<atoms.size();++i) 
   {
     for (int j=0;j<atoms[i].n_levels;j++)
     {
@@ -80,7 +80,7 @@ void nlte_gas::initialize
   }
   
   // set up global line list (lines from all atoms)
-  for (size_t i=0;i<atoms.size();i++) 
+  for (size_t i=0;i<atoms.size();++i) 
   {
     for (int j=0;j<atoms[i].n_lines;j++)
     {
@@ -154,7 +154,7 @@ void nlte_gas::get_global_line_data(std::vector<double> nu,
   iLowerLevel.resize(n_lines);
   iUpperLevel.resize(n_lines);
 
-  for (int i=0;i<n_lines;i++)
+  for (int i=0;i<n_lines;++i)
   {
     nu[i]          = globalLineList_[i].nu;
     f_osc[i]       = globalLineList_[i].f_osc;
@@ -176,18 +176,18 @@ void nlte_gas::get_global_line_data(std::vector<double> nu,
 void nlte_gas::set_mass_fractions(std::vector<double> x)
 { 
   double norm = 0.0;
-  for (size_t i=0;i<mass_frac.size();i++) 
+  for (size_t i=0;i<mass_frac.size();++i) 
   {
     mass_frac[i] = x[i]; 
     norm += x[i];
   }
     
   // make sure it is normalized
-  for (size_t i=0;i<mass_frac.size();i++) mass_frac[i] /= norm;
+  for (size_t i=0;i<mass_frac.size();++i) mass_frac[i] /= norm;
   
   // find mean weight of gas
   this->A_mu = 0;
-  for (size_t i=0;i<mass_frac.size();i++) 
+  for (size_t i=0;i<mass_frac.size();++i) 
     A_mu += mass_frac[i]*elem_A[i]; 
 }
 
@@ -205,7 +205,7 @@ int nlte_gas::read_fuzzfile(std::string fuzzfile)
   FILE *fin = fopen(fuzzfile.c_str(),"r");
   if (fin == NULL) return 0;
     
-  for (size_t i=0;i<atoms.size();i++) n_tot += atoms[i].read_fuzzfile(fuzzfile);
+  for (size_t i=0;i<atoms.size();++i) n_tot += atoms[i].read_fuzzfile(fuzzfile);
   return n_tot;
 }
 
@@ -241,7 +241,7 @@ int nlte_gas::solve_state()
 int nlte_gas::solve_state(std::vector<real> J_nu)
 {
   // set key properties of all atoms
-  for (size_t i=0;i<atoms.size();i++)
+  for (size_t i=0;i<atoms.size();++i)
   {
     atoms[i].n_dens  = dens*mass_frac[i]/(elem_A[i]*pc::m_p);
     atoms[i].e_gamma = e_gamma*mass_frac[i];
@@ -277,7 +277,7 @@ double nlte_gas::charge_conservation(double ne,std::vector<real> J_nu)
   // start with charge conservation function f set to zero
   double f  = 0;
   // loop over all atoms
-  for (size_t i=0;i<atoms.size();i++) 
+  for (size_t i=0;i<atoms.size();++i) 
   {
     // Solve the LTE or NLTE with this value of Ne
     if (use_nlte_) atoms[i].solve_nlte(ne,time);
@@ -415,7 +415,7 @@ void nlte_gas::print_properties()
   std::cout << "#--------------------------------------------------\n";
   std::cout << "#  Z    n_ions  n_levels  n_lines  n_fuzz_lines\n";
   std::cout << "#-------------------------------------------------\n";
-  for (size_t i=0;i<atoms.size();i++)
+  for (size_t i=0;i<atoms.size();++i)
   {
     printf("# %2d.%d ",elem_Z[i],elem_A[i]);
     printf(" %4d %8d  %8d  %8d",atoms[i].n_ions,atoms[i].n_levels,atoms[i].n_lines,
@@ -451,9 +451,9 @@ void nlte_gas::print()
   std::cout << "# dens = " << dens << "\n";
   std::cout << "# temp = " << temp << "\n";
   std::cout << "# A_mu = " << A_mu << "\n";
-  for (size_t i=0;i<elem_Z.size();i++)
+  for (size_t i=0;i<elem_Z.size();++i)
     printf("%4d %12.4e %12.4e\n",elem_Z[i],mass_frac[i],atoms[i].get_ion_frac());
-  for (size_t i=0;i<elem_Z.size();i++)
+  for (size_t i=0;i<elem_Z.size();++i)
     atoms[i].print();
 }
  
