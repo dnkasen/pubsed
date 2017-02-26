@@ -187,7 +187,7 @@ class nlte_gas
   std::vector<double> get_line_frequency_list()
   {
     std::vector<double> nu;
-    for (int i=0;i<globalLineList_.size();i++)
+    for (size_t i=0;i<globalLineList_.size();i++)
       nu.push_back(globalLineList_[i].nu);
     return nu;
   }
@@ -199,7 +199,7 @@ class nlte_gas
   std::vector<double> get_line_ion_mass_list()
   {
     std::vector<double> m;
-    for (int i=0;i<globalLineList_.size();i++)
+    for (size_t i=0;i<globalLineList_.size();i++)
       m.push_back(elem_A[globalLineList_[i].iAtom]);
     return m;
   }

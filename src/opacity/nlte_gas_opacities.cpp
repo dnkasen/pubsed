@@ -246,8 +246,10 @@ void nlte_gas::line_expansion_opacity(std::vector<double>& opac)
   // zero out opacity array
   std::fill(opac.begin(),opac.end(),0);
 
+  int na = atoms.size();
+
   // loop over atoms
-  for (int i=0;i<atoms.size();i++)
+  for (int i=0;i<na;i++)
   {
     //compute line sobolev taus
     atoms[i].compute_sobolev_taus(time);
@@ -262,7 +264,7 @@ void nlte_gas::line_expansion_opacity(std::vector<double>& opac)
   }
 
   // renormalize opacity array
-  for (int i=0;i<opac.size();i++) 
+  for (size_t i=0;i<opac.size();i++) 
     opac[i] = opac[i]*nu_grid.center(i)/nu_grid.delta(i)/pc::c/time;
 }
 
@@ -280,10 +282,10 @@ void nlte_gas::fuzz_expansion_opacity(std::vector<double>& opac)
   double exp_max = 100;
 
   // zero out opacity array
-  for (int i=0;i<opac.size();i++) opac[i] = 0;
+  for (size_t i=0;i<opac.size();i++) opac[i] = 0;
 
   // loop over atoms
-  for (int i=0;i<atoms.size();i++)
+  for (size_t i=0;i<atoms.size();i++)
   {
     // loop over lines in atom
     for (int j=0;j<atoms[i].fuzz_lines.n_lines;j++)
@@ -315,7 +317,7 @@ void nlte_gas::fuzz_expansion_opacity(std::vector<double>& opac)
   }
 
   // renormalize opacity array
-  for (int i=0;i<opac.size();i++) 
+  for (size_t i=0;i<opac.size();i++) 
     opac[i] = opac[i]*nu_grid.center(i)/nu_grid.delta(i)/pc::c/time;
 }
 
