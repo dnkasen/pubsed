@@ -118,7 +118,7 @@ class ParameterReader
     {
       arr.push_back(v);
       if (list.size() == 4) v = v*(1.0+del);
-      else v = v += del;
+      else v += del;
     }
     return arr;
   }
