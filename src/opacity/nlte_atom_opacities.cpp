@@ -14,7 +14,7 @@ namespace pc = physical_constants;
 void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double>& emis)
 {
   // zero out arrays
-  for (int i=0;i<opac.size();i++) {opac[i] = 0; emis[i] = 0;}
+  for (size_t i=0;i<opac.size();++i) {opac[i] = 0; emis[i] = 0;}
 
   int ng = nu_grid.size();
   double lam_t   = sqrt(pc::h*pc::h/(2*pc::pi*pc::m_e*pc::k*gas_temp_));
@@ -22,7 +22,7 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
   double kt = pc::k_ev*gas_temp_;
 
   std::vector<double> lev_fac(n_levels);
-  for (int j=0;j<n_levels;j++)
+  for (int j=0;j<n_levels;++j)
   {
     int ic = levels[j].ic;
     double nc = n_dens*levels[ic].n;
@@ -31,7 +31,7 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
     lev_fac[j] = nc*gl_o_gc*exp(E_t/kt);
   }
 
-  for (int i=0;i<ng;i++)
+  for (int i=0;i<ng;++i)
   {
     opac[i] = 0;
     double nu    = nu_grid[i];
@@ -43,7 +43,7 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
     double se = (1 + 1.0/(ezeta - 1));
     fac = fac/ezeta*se;
 
-    for (int j=0;j<n_levels;j++)
+    for (int j=0;j<n_levels;++j)
     {
       // check if above threshold
       if (E < levels[j].E_ion) continue;
@@ -67,10 +67,10 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
 void nlte_atom::bound_bound_opacity(std::vector<double>& opac, std::vector<double>& emis)
 {
   // zero out arrays
-  for (int i=0;i<opac.size();i++) {opac[i] = 0; emis[i] = 0;}
+  for (size_t i=0;i<opac.size();++i) {opac[i] = 0; emis[i] = 0;}
 
   // loop over all lines
-  for (int i=0;i<n_lines;i++)
+  for (int i=0;i<n_lines;++i)
   {
     int ll = lines[i].ll;
     int lu = lines[i].lu;
@@ -106,7 +106,7 @@ void nlte_atom::bound_bound_opacity(std::vector<double>& opac, std::vector<doubl
     // line emissivity: ergs/sec/cm^3/str
     // multiplied by phi below to get per Hz
     double line_j = lines[i].A_ul*nup*n_dens*pc::h/(4.0*pc::pi);
-    for (int j = inu1;j<inu2;j++)
+    for (int j = inu1;j<inu2;++j)
     {
       double nu = nu_grid.center(j);
       double x  = (nu_0 - nu)/dnu;
@@ -128,7 +128,7 @@ void nlte_atom::bound_bound_opacity(std::vector<double>& opac, std::vector<doubl
 
 void nlte_atom::compute_sobolev_taus(double time)
 {
-  for (int i=0;i<n_lines;i++) compute_sobolev_tau(i,time);
+  for (int i=0;i<n_lines;++i) compute_sobolev_tau(i,time);
 }
 
 double nlte_atom::compute_sobolev_tau(int i, double time)

@@ -44,8 +44,8 @@ void nlte_atom::solve_lte(double ne)
 {
 
   // calculate partition functions
-  for (int i=0;i<n_ions;i++) ions[i].part = 0;
-  for (int i=0;i<n_levels;i++)
+  for (int i=0;i<n_ions;++i) ions[i].part = 0;
+  for (int i=0;i<n_levels;++i)
   {
     levels[i].n = levels[i].g*exp(-levels[i].E/pc::k_ev/gas_temp_);
     ions[levels[i].ion].part += levels[i].n;
@@ -58,7 +58,7 @@ void nlte_atom::solve_lte(double ne)
   // calculate saha ratios
   ions[0].frac = 1.0;
   double norm  = 1.0;
-  for (int i=1;i<n_ions;i++) 
+  for (int i=1;i<n_ions;++i) 
   {
     // calculate the ratio of i to i-1
     double saha = exp(-1.0*ions[i-1].chi/pc::k_ev/gas_temp_);
@@ -72,10 +72,10 @@ void nlte_atom::solve_lte(double ne)
     norm += ions[i].frac;
   }
   // renormalize ionization fractions
-  for (int i=0;i<n_ions;i++) ions[i].frac = ions[i].frac/norm;
+  for (int i=0;i<n_ions;++i) ions[i].frac = ions[i].frac/norm;
   
   // calculate level densities (bolztmann factors)
-  for (int i=0;i<n_levels;i++)
+  for (int i=0;i<n_levels;++i)
   {
     double E = levels[i].E;
     int    g = levels[i].g;
@@ -97,7 +97,7 @@ void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu)
 {
 
   // zero out recombination/photoionization rates
-  for (int j=0;j<n_levels;j++)
+  for (int j=0;j<n_levels;++j)
   {
     levels[j].P_ic = 0; 
     levels[j].R_ci = 0;
@@ -109,14 +109,14 @@ void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu)
   // recombination rate includes stimulated recombination
   double fac1 = 2/pc::c/pc::c;
   int ng = nu_grid.size();
-  for (int i=1;i<ng;i++)
+  for (int i=1;i<ng;++i)
   {
     double nu     = nu_grid.center(i);
     double E_ergs = pc::h*nu; 
     double E_ev   = E_ergs*pc::ergs_to_ev;
     double J      = J_nu[i];
     double dnu    = nu_grid.delta(i);
-    for (int j=0;j<n_levels;j++)
+    for (int j=0;j<n_levels;++j)
     {
       int ic = levels[j].ic;
       if (ic == -1) continue;
@@ -136,7 +136,7 @@ void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu)
   // multiply by overall factors
   double lam_t = sqrt(pc::h*pc::h/(2*pc::pi*pc::m_e*pc::k*gas_temp_));
   double saha_fac = lam_t*lam_t*lam_t/2.0;
-  for (int j=0;j<n_levels;j++)
+  for (int j=0;j<n_levels;++j)
   {
     int ic = levels[j].ic;
     if (ic == -1) continue;
@@ -145,7 +145,7 @@ void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu)
     levels[j].R_ci *= 4*pc::pi*gl_o_gc*saha_fac; 
   }
 
-  //for (int j=0;j<n_levels;j++)
+  //for (int j=0;j<n_levels;++j)
    // if (levels[j].ic != -1)
     //  levels[j].R_ci = 2.58e-13;
     //std::cout << j << " " << levels[j].P_ic << " " << levels[j].R_ci << "\n";
@@ -154,7 +154,7 @@ void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu)
   double x_max = 100;
   double dx    = 0.05;
 
-  for (int i=0;i<n_lines;i++)
+  for (int i=0;i<n_lines;++i)
   {
     double nu0 = lines[i].nu;
       double sum  = 0;
@@ -185,8 +185,8 @@ void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu)
 void nlte_atom::set_rates(double ne)
 {
   // zero out rate matrix
-  for (int i=0;i<n_levels;i++)
-    for (int j=0;j<n_levels;j++)
+  for (int i=0;i<n_levels;++i)
+    for (int j=0;j<n_levels;++j)
       rates[i][j] = 0;
 
   // ------------------------------------------------
@@ -240,8 +240,8 @@ void nlte_atom::set_rates(double ne)
   // ------------------------------------------------
   // collisional bound-bound transitions
   // ------------------------------------------------
-  for (int i=0;i<n_levels;i++)
-    for (int j=0;j<n_levels;j++)
+  for (int i=0;i<n_levels;++i)
+    for (int j=0;j<n_levels;++j)
     {
       // skip transitions to same level
       if (i == j) continue;
@@ -276,7 +276,7 @@ void nlte_atom::set_rates(double ne)
   // ------------------------------------------------
   // bound-free transitions
   // ------------------------------------------------
-  for (int i=0;i<n_levels;i++)
+  for (int i=0;i<n_levels;++i)
   {
     int ic = levels[i].ic;
     if (ic == -1) continue;
@@ -312,19 +312,19 @@ void nlte_atom::set_rates(double ne)
 
   // multiply by rates by lte pop in level coming from
   // (becuase we will solve for depature coeffs)
-  for (int i=0;i<n_levels;i++)
-      for (int j=0;j<n_levels;j++)
+  for (int i=0;i<n_levels;++i)
+      for (int j=0;j<n_levels;++j)
         rates[i][j] *= levels[i].n_lte;
 
   // print out rates if you so like
   //printf("------- rates ----------\n");
-  for (int i=0;i<n_levels;i++)
-    for (int j=0;j<n_levels;j++)
+  for (int i=0;i<n_levels;++i)
+    for (int j=0;j<n_levels;++j)
       if (isnan(rates[i][j]))
       printf("%5d %5d %14.5e\n",i,j,rates[i][j]);
    //printf("\n");
-   //for (int i=0;i<n_levels;i++)
-   // for (int j=0;j<n_levels;j++)   {
+   //for (int i=0;i<n_levels;++i)
+   // for (int j=0;j<n_levels;++j)   {
    //     if (isnan(rates[i][j])) std::cout << "NAN RATE\n";
    //     if (isinf(rates[i][j])) std::cout << "INF RATE: " << i << " - " << j << "\n"; }
 }
@@ -350,28 +350,28 @@ int nlte_atom::solve_nlte(double ne,double time)
     gsl_permutation_init(p_nlte);
 
     // set up diagonal elements of rate matrix
-    for (int i=0;i<n_levels;i++) 
+    for (int i=0;i<n_levels;++i) 
     {
       double Rout = 0.0;
       // don't worry i = j rate should be zero
-      for (int j=0;j<n_levels;j++) Rout += rates[i][j];
+      for (int j=0;j<n_levels;++j) Rout += rates[i][j];
       Rout = -1*Rout;
       gsl_matrix_set(M_nlte,i,i,Rout);
     }
     
     // set off diagonal elements of rate matrix
-    for (int i=0;i<n_levels;i++) 
-      for (int j=0;j<n_levels;j++)
+    for (int i=0;i<n_levels;++i) 
+      for (int j=0;j<n_levels;++j)
 	       if (i != j) gsl_matrix_set(M_nlte,i,j,rates[j][i]);
     
     // last row expresses number conservation
-    for (int i=0;i<n_levels;i++) 
+    for (int i=0;i<n_levels;++i) 
       gsl_matrix_set(M_nlte,n_levels-1,i,levels[i].n_lte);
     gsl_vector_set(b_nlte,n_levels-1,1.0);
 
     //printf("----\n");
-    //for (int i=0;i<n_levels;i++) 
-    //  for (int j=0;j<n_levels;j++)
+    //for (int i=0;i<n_levels;++i) 
+    //  for (int j=0;j<n_levels;++j)
     //   printf("%5d %5d %14.3e\n",i,j,gsl_matrix_get(M_nlte,i,j));
     // printf("----\n");
     
@@ -382,7 +382,7 @@ int nlte_atom::solve_nlte(double ne,double time)
 
     // the x vector should now have the solved level 
     // depature coefficients
-    for (int i=0;i<n_levels;i++) 
+    for (int i=0;i<n_levels;++i) 
     {
       double b = gsl_vector_get(x_nlte,i);
       double n_nlte = b*levels[i].n_lte;
@@ -392,8 +392,8 @@ int nlte_atom::solve_nlte(double ne,double time)
     }
 
     // set the ionization fraction
-    for (int i=0;i<n_ions;i++) ions[i].frac = 0;
-    for (int i=0;i<n_levels;i++)
+    for (int i=0;i<n_ions;++i) ions[i].frac = 0;
+    for (int i=0;i<n_levels;++i)
       ions[levels[i].ion].frac += levels[i].n;
 
     if (!this->use_betas) return 1;
@@ -401,7 +401,7 @@ int nlte_atom::solve_nlte(double ne,double time)
     // see if the betas have converged
     int converged   = 1;
     double beta_tol = 0.1;
-    for (int i=0; i<n_lines; i++)
+    for (int i=0; i<n_lines; ++i)
     { 
       double old_beta = lines[i].beta;
       compute_sobolev_tau(i,time);
@@ -422,7 +422,7 @@ int nlte_atom::solve_nlte(double ne,double time)
 double nlte_atom::get_ion_frac()
 {
   double x = 0;
-  for (int i=0;i<n_levels;i++)
+  for (int i=0;i<n_levels;++i)
     x += levels[i].n*levels[i].ion;
   return x;
 }
@@ -449,7 +449,7 @@ double nlte_atom::Calculate_Milne(int lev, double temp)
   double old_coef = coef;
 
   // integrate over velocity/frequency
-  for (int i=1;i<levels[lev].s_photo.size();i++)
+  for (int i=1;i<levels[lev].s_photo.size();++i)
   {
     // recombination cross-section
     double E = levels[lev].s_photo.x[i];
@@ -486,7 +486,7 @@ void nlte_atom::print()
   cout << "#---------------------------------------------------------------\n";
 
   
-  for (int i=0;i<n_ions;i++)
+  for (int i=0;i<n_ions;++i)
     cout << "#   "<<  ions[i].stage << "\t" << ions[i].part << "\t" << ions[i].frac 
 	 << "\t" << ions[i].chi << endl;
  
@@ -497,7 +497,7 @@ void nlte_atom::print()
   cout << "# lev   ion     E_ex        g      pop          b_i       ion_to\n";
   cout << "#---------------------------------------------------------------\n";
 
-  for (int i=0;i<n_levels;i++)
+  for (int i=0;i<n_levels;++i)
   {
     printf("%5d %4d %12.3e %5d %12.3e %12.3e %5d\n",
 	   levels[i].globalID,levels[i].ion,
@@ -507,7 +507,7 @@ void nlte_atom::print()
 
   printf("\n--- line data\n");
 
-  for (int i=0;i<n_lines;i++)
+  for (int i=0;i<n_lines;++i)
   {
     printf("%8d %4d %4d %12.3e %12.3e %12.3e %12.3e %12.3e\n",
     	   i,lines[i].ll,lines[i].lu,lines[i].nu,lines[i].f_lu,
@@ -516,7 +516,7 @@ void nlte_atom::print()
 
   printf("\n--- line optical depths\n");
 
-  for (int i=0;i<n_lines;i++)
+  for (int i=0;i<n_lines;++i)
   {
     int    ll = lines[i].ll;
     double nl = levels[ll].n;
