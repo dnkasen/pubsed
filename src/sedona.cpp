@@ -7,6 +7,7 @@
 #include "ParameterReader.h"
 #include "grid_general.h"
 #include "grid_1D_sphere.h"
+#include "grid_2D_cyln.h"
 #include "hydro_general.h"
 #include "hydro_homologous.h"
 #include "hydro_1D_lagrangian.h"
@@ -62,7 +63,8 @@ int main(int argc, char **argv)
   string grid_type = params.getScalar<string>("grid_type");
 
   // create a grid of the appropriate type
-  if     (grid_type == "grid_1D_sphere") grid = new grid_1D_sphere;
+  if      (grid_type == "grid_1D_sphere") grid = new grid_1D_sphere;
+  else if (grid_type == "grid_2D_cyln"  ) grid = new grid_2D_cyln;
   //else if(grid_type == "grid_3D_cart"  ) grid = new grid_3D_cart;
   else  {
     if(verbose) cout << "# ERROR: the grid type is not implemented\n";
