@@ -5,6 +5,8 @@
 #include <iomanip>   
 #include <math.h>
 #include <cassert>
+#include <limits>
+
 #include "hdf5.h"
 #include "hdf5_hl.h"
 
@@ -46,6 +48,7 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   dx_ = dr[0];
   dz_ = dr[1];
   n_zones = nz_*nx_;
+  zcen_ = dz_*nz_/2.0;
   z.resize(n_zones);
   vol_.resize(n_zones);
 
@@ -94,8 +97,8 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
     double *elem_mass = new double[n_elems];
     for (int k = 0;k < n_elems; k++) elem_mass[k] = 0;
     int cnt = 0;
-    for (int i=0;i<nx_;i++)
-      for (int j=0;j<nz_;j++)
+    for (int i=0;i<nx_;++i)
+      for (int j=0;j<nz_;++j)
       {
         double rx   = (i+1)*dx_;
         double vrsq = z[cnt].v[0]*z[cnt].v[0] + z[cnt].v[2]*z[cnt].v[2];
@@ -150,25 +153,118 @@ void grid_2D_cyln::expand(double e)
 //************************************************************
 int grid_2D_cyln::get_zone(const double *x) const
 {
-    double p = sqrt(x[0]*x[0] + x[1]*x[1]);
-    int ix = floor(p/dx_);
-    int iz = floor(x[2]/dz_) + nz_*dz_/2;
+  double p = sqrt(x[0]*x[0] + x[1]*x[1]);
+  int ix = floor(p/dx_);
+  int iz = floor((x[2] + zcen_)/dz_);
 
-    // check if off boundaries
-    if (ix >= nx_) return -2;
-    if (iz <= nz_) return -2;
-    if (iz >= nz_) return -2;
+  // check if off boundaries
+  if (ix >= nx_) return -2;
+  if (iz <    0) return -2;
+  if (iz >= nz_) return -2;
 
-    return ix*nx_ + iz;
+  return ix*nz_ + iz;
 }
 
 
 //************************************************************
 // Overly simple search to find zone
 //************************************************************
-int grid_2D_cyln::get_next_zone(const double *x, const double *D, int i, double r_core, double *l) const
+int grid_2D_cyln::get_next_zone
+(const double *x, const double *D, int i, double r_core, double *l) const
 {
- /* 
+  // impact parameter of particle position
+  double  p = sqrt(x[0]*x[0] + x[1]*x[1]);
+  // z position and direction vector
+  double  z = x[2];
+  double Dz = D[2];
+
+  int ix = index_x_[i]; //floor(p/dx_);
+  int iz = index_z_[i]; //floor(z/dz_); // note this index can be negative
+
+  double lp,lz;
+  int d_ip, d_iz;
+
+  //std::cout << "p: " << ix*dx_ << " " << p << " " << (ix+1)*dx_ << "\n";
+  //std::cout << "z: " << iz*dz_ - zcen_ << " " << z << " " << (iz+1)*dz_ - zcen_ << "\n";
+  //std::cout << "i: " << i << " " << " ix: " << index_x_[i] << " iz:" << index_z_[i] << " ";
+  //std::cout << "ii: " << get_zone(x) << "\n";
+
+  // tiny offset so we don't land exactly on boundaries
+  double tiny = 1e-2;
+  // distance to z interface
+  if (Dz > 0)
+  {
+    // up interface
+    double zt = dz_*(iz + 1) - zcen_ + dz_*tiny;
+    lz   = (zt - z)/Dz;
+    //std::cout << "iz_up = "<< iz << "; Dz = " << Dz << "; zt = " << zt << "; z = " << z << "; lz = " << lz << "\n";
+    d_iz = 1;
+  }
+  else
+  {
+    // down interface
+    double zt = dz_*iz - zcen_ - dz_*tiny;
+    lz   = (zt - z)/Dz;
+    if (Dz == 0) lz = std::numeric_limits<double>::infinity();
+    //std::cout << "Dz_dn = " << Dz << ";zt = " << zt << "; z = " << z << "; lz = " << lz << "\n";
+    d_iz = -1;
+  }
+
+  // distance to p interface (annulus)
+  if ((D[0]*x[0] + D[1]*x[1] > 0)||(ix == 0))
+  { 
+    // outer annulus
+    double pt = dx_*(ix + 1) + dx_*tiny;
+    double a = D[0]*D[0] + D[1]*D[1];
+    double b = 2*(x[0]*D[0] + x[1]*D[1]);
+    double c = p*p - pt*pt;
+    lp = -1.0*b + sqrt(b*b - 4*a*c);
+    lp = lp/(2*a);
+    if (a == 0) lp = std::numeric_limits<double>::infinity();
+    //std::cout << "Lp_up = " << ix << "; Dp = " << sqrt(a) << "; pt = " << pt << "; p = " << p << "; lp = " << lp << "\n";
+
+    d_ip = 1;
+
+  }
+  else
+  {
+    //  inner annulus
+    double pt = dx_*(ix) - dx_*tiny;
+    double a = D[0]*D[0] + D[1]*D[1];
+    double b = 2*(x[0]*D[0] + x[1]*D[1]);
+    double c = p*p - pt*pt;    
+    lp = -1.0*b + sqrt(b*b - 4*a*c);
+    lp = lp/(2*a);
+    if (a == 0) lp = std::numeric_limits<double>::infinity();
+    //std::cout << "Lp_dn = " << lp << " " << p << " " << pt << "\n";
+
+    d_ip = -1;
+  }
+
+  int new_iz = index_z_[i];
+  int new_ip = index_x_[i];
+  // find smallest interface
+  if (lz < lp)
+  {
+    *l = lz;
+    new_iz += d_iz;
+    //std::cout << "step z " << new_iz << " " << d_iz << " " << lz << "\n";
+  }
+  else
+  {
+    *l = lp;
+    new_ip += d_ip;
+    //std::cout << "step p " << new_ip << " " << d_ip << " " << lp << "\n";
+  }
+
+  // escaped 
+  if ((new_iz < 0)||(new_iz >= nz_)||(new_ip >= nx_)) return -2;
+  // refeflection along z-axis
+  if (new_ip < 0) new_ip = 0;
+
+  return new_ip*nz_ + new_iz;
+
+; /* 
   double rsq   = (x[0]*x[0] + x[1]*x[1] + x[2]*x[2]);
   double xdotD = (D[0]*x[0] + D[1]*x[1] + D[2]*x[2]);
 
@@ -247,6 +343,7 @@ void grid_2D_cyln::sample_in_zone
     r[0] = p*cos(phi);
     r[1] = p*sin(phi);
     r[2] = iz*dz_ - dz_*iz/2.0 + dz_*ran[2];
+    std::cout << ix << " " << iz << " sample\n";
 }
 
 
@@ -256,7 +353,7 @@ void grid_2D_cyln::sample_in_zone
 //************************************************************
 void grid_2D_cyln::get_velocity(int i, double x[3], double D[3], double v[3], double *dvds)
 {
- /*
+  /*
   // radius in zone
   double rr = sqrt(x[0]*x[0] + x[1]*x[1] + x[2]*x[2]);
 

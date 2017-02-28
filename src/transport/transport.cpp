@@ -103,7 +103,12 @@ ParticleFate transport::propagate(particle &p, double dt)
     // set pointer to current zone
     assert(p.ind >= 0);
     zone = &(grid->z[p.ind]);
-    
+
+    // printout for debug    
+    //std::cout << " p = " << sqrt(p.x[0]*p.x[0] + p.x[1]*p.x[1]) << "; z = " << p.x[2];
+    //std::cout << " x = " << p.x[0] << " y = " << p.x[1] << "\n";
+    //std::cout << "D = " << p.D[0] << ", " << p.D[1] << ", " << p.D[2] << "\n";
+
     // get distance and index to the next zone boundary
     double d_bn = 0;
     int new_ind = grid->get_next_zone(p.x,p.D,p.ind,r_core_,&d_bn);
@@ -121,6 +126,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     if (d_nu < 0) d_nu = -1*d_nu;
     if (d_nu < d_bn)
     {
+      std::cout << "nu\n";
       d_bn = d_nu;
       new_ind = p.ind; 
     }
@@ -144,7 +150,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     if (d_sc < 0) 
       cout << "ERROR: negative interaction distance! " << d_sc << " " << p.nu << " " << dshift << " " <<
         tot_opac_labframe  << "\n";
-    //std::cout << d_sc << "\t" << d_bn << "\t" << tot_opac_labframe << "\n";
+    //std::cout << "dists: "<< d_sc << "\t" << d_bn << "\t" << tot_opac_labframe << "\n";
 
     // find distance to end of time step
     double d_tm = (tstop - p.t)*pc::c;

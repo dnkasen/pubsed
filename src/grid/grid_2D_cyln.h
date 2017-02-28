@@ -18,6 +18,7 @@ private:
 
   int    nx_, nz_; // number of zones in each dimension
   double dx_, dz_; // length of each zone in each dimension
+  double zcen_   ; // center coordinate of the z-axis
 
   std::vector<int> index_x_; // map to x index from 1D index
   std::vector<int> index_z_; // map to z index from 1D index
