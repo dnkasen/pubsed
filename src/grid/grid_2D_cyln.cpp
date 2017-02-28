@@ -336,14 +336,11 @@ double  grid_2D_cyln::zone_volume(const int i) const
 void grid_2D_cyln::sample_in_zone
 (int i, std::vector<double> ran, double r[3])
 {
-    int ix = floor(i/nx_);
-    int iz = i - ix*nx_;
-    double p   = ix*dx_ + dx_*ran[0];
-    double phi = 2*pc::pi*ran[1];
-    r[0] = p*cos(phi);
-    r[1] = p*sin(phi);
-    r[2] = iz*dz_ - dz_*iz/2.0 + dz_*ran[2];
-    std::cout << ix << " " << iz << " sample\n";
+  double p   = index_x_[i]*dx_ + dx_*ran[0];
+  double phi = 2*pc::pi*ran[1];
+  r[0] = p*cos(phi);
+  r[1] = p*sin(phi);
+  r[2] = index_z_[i]*dz_ + zcen_ + dz_*ran[2];
 }
 
 
