@@ -15,7 +15,7 @@ void transport::emit_particles(double dt)
  
   emit_radioactive(dt);
   emit_thermal(dt);
-  emit_heating_source(dt);
+  //emit_heating_source(dt);
   emit_inner_source(dt);
 }
 
@@ -411,7 +411,6 @@ void transport::emit_inner_source(double dt)
       // straight bin emission
       //int ilam = gsl_rng_uniform(rangen)*nu_grid.size(); 
       //p.e *= core_emis.get_value(ilam)*nu_grid.size(); 
-
     } 
 
     // get index of current zone
