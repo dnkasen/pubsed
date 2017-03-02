@@ -44,6 +44,7 @@ void cdf_array::normalize()
 //---------------------------------------------------------
 int cdf_array::sample(const double yval) const
 {
+  if (y.size() == 1) return 0;
   return upper_bound(y.begin(), y.end(), yval) - y.begin();
 }
 
