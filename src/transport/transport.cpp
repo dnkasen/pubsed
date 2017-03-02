@@ -48,6 +48,7 @@ void transport::step(double dt)
   {
     ParticleFate fate = propagate(*pIter,dt);
     if (fate == escaped) n_escape++;
+
     if ((fate == escaped)||(fate == absorbed)) pIter = particles.erase(pIter);
     else pIter++;
   }
@@ -105,14 +106,14 @@ ParticleFate transport::propagate(particle &p, double dt)
     zone = &(grid->z[p.ind]);
 
     // printout for debug    
-    //std::cout << " p = " << sqrt(p.x[0]*p.x[0] + p.x[1]*p.x[1]) << "; z = " << p.x[2];
-    //std::cout << " x = " << p.x[0] << " y = " << p.x[1] << "\n";
+    //std::cout << " p = " << sqrt(p.x[0]*p.x[0] + p.x[1]*p.x[1]);
+    //std::cout << " x = " << p.x[0] << " y = " << p.x[1] << "; z = " << p.x[2]"\n";
     //std::cout << "D = " << p.D[0] << ", " << p.D[1] << ", " << p.D[2] << "\n";
 
     // get distance and index to the next zone boundary
     double d_bn = 0;
     int new_ind = grid->get_next_zone(p.x,p.D,p.ind,r_core_,&d_bn);
-
+    
     // determine the doppler shift from comoving to lab
     double dshift = dshift_lab_to_comoving(&p);
 
@@ -123,10 +124,10 @@ ParticleFate transport::propagate(particle &p, double dt)
     // check for distance to next frequency bin
     // nushift = nu*(dvds*l)/c --> l = nushift/nu*c/dvds
     double d_nu = nu_grid.delta(i_nu)/p.nu*pc::c/p.dvds;
+    if (p.dvds == 0) d_nu = std::numeric_limits<double>::infinity();
     if (d_nu < 0) d_nu = -1*d_nu;
     if (d_nu < d_bn)
     {
-      std::cout << "nu\n";
       d_bn = d_nu;
       new_ind = p.ind; 
     }
@@ -177,7 +178,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     {
       zone->e_abs  += this_E*dshift*(continuum_opac_cmf)*eps_absorb_cmf*dshift;
       J_nu_[p.ind][i_nu] += this_E;
-      //std::cout << p.ind << " " << i_nu << " " << this_E << " " << J_nu_[p.ind][i_nu] << "\n";
+      //std::cout << p.ind << " " << i_nu << " " << p.e << " " << this_E << " " << J_nu_[p.ind][i_nu] << "\n";
     }
       
     // put back in radiation force tally here
@@ -189,6 +190,8 @@ ParticleFate transport::propagate(particle &p, double dt)
     p.x[2] += this_d*p.D[2]; 
     // advance the time
     p.t = p.t + this_d/pc::c;
+
+  
 
     // ---------------------------------
     // do a boundary event
@@ -255,7 +258,10 @@ ParticleFate transport::propagate(particle &p, double dt)
     // do an end of timestep event
     // ---------------------------------
     else if (event == tstep) 
+    {
+      std::cout << "dists: "<< d_sc << "\t" << d_bn << "\t" << d_tm << "\t" << d_nu << "\n";
        fate = stopped;  
+    }
    }
 
 
