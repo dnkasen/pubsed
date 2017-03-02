@@ -214,7 +214,12 @@ void transport::setup_core_emission()
      double x1,x2;
       std::ifstream specfile;
       specfile.open(core_spectrum_filename.c_str());
-      while (!specfile.eof( ))   
+      if (!specfile.is_open()) 
+      {
+        if (verbose) std::cout << "Can't open core_spectrum_file " << core_spectrum_filename << "\n";
+        core_spectrum_filename = "";
+      }
+      else while (!specfile.eof( ))   
       {
         specfile >> x1;
         specfile >> x2;
