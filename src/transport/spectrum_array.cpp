@@ -198,12 +198,21 @@ void spectrum_array::print()
   delete[] tmp_array;
 
   // write fluxes array
-  const int RANKF = 2;
-  double *darray = new double[n_elements];
-  for (int i=0;i<n_elements;i++) darray[i] = flux[i];
-  hsize_t  dims_flux[RANKF]={n_t,n_nu};
-  H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
-  delete[] darray;
+  float *farray = new float[n_elements];
+  for (int i=0;i<n_elements;i++) farray[i] = flux[i];
+  if (n_mu == 1)
+  { 
+    const int RANKF = 2;
+    hsize_t  dims_flux[RANKF]={n_t,n_nu};
+    H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_FLOAT,farray);
+  }
+  else
+  { 
+    const int RANKF = 3;
+    hsize_t  dims_flux[RANKF]={n_t,n_nu,n_mu};
+    H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_FLOAT,farray);
+  }
+  delete[] farray;
 
   H5Fclose (file_id);
 
