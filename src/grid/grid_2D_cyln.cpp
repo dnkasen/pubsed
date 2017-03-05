@@ -28,8 +28,6 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   int my_rank;
   MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
   const int verbose = (my_rank == 0);
-  hsize_t     dims[3];
-  double dr[2];
   
   // open up the model file, complaining if it fails to open
   string model_file = params->getScalar<string>("model_file");
@@ -38,7 +36,14 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   hid_t file_id = H5Fopen (model_file.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   herr_t status;
 
-  // get dimensions
+  // get time
+  double tt[1];
+  status = H5LTread_dataset_double(file_id,"/time",tt);
+  t_now = tt[0];
+
+  // get grid size and dimensions
+  hsize_t     dims[3];
+  double dr[2];
   status = H5LTget_dataset_info(file_id,"/comp",dims, NULL, NULL);
   status = H5LTread_dataset_double(file_id,"/dr",dr);
 
@@ -100,9 +105,10 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
     for (int i=0;i<nx_;++i)
       for (int j=0;j<nz_;++j)
       {
-        double rx   = (i+1)*dx_;
+        double r0   = i*dx_;
+        double r1   = (i+1)*dx_;
         double vrsq = z[cnt].v[0]*z[cnt].v[0] + z[cnt].v[2]*z[cnt].v[2];
-        vol_[cnt]   = 2*pc::pi*rx*dx_*dz_;
+        vol_[cnt]   = pc::pi*(r1*r1 - r0*r0)*dz_;
         index_x_.push_back(i);
         index_z_.push_back(j);
 
@@ -124,6 +130,64 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   } 
 }
     
+
+
+//************************************************************
+// Write out the file
+//************************************************************
+void grid_2D_cyln::write_out(int iw, double tt)
+{
+  // get file name
+  char zonefile[1000];
+  sprintf(zonefile,"zone_%05d.h5",iw);
+
+  // open hdf5 file
+  hid_t file_id = H5Fcreate( zonefile, H5F_ACC_TRUNC, H5P_DEFAULT,  H5P_DEFAULT);
+
+  // print out time
+  hsize_t  dims_t[1]={1};
+  float time_a[1];
+  time_a[0] = tt;
+  H5LTmake_dataset(file_id,"time",1,dims_t,H5T_NATIVE_FLOAT,time_a);
+
+  // print out radial size
+  hsize_t  dims_dr[1]={2};
+  float dr[2];
+  dr[0] = dx_;
+  dr[1] = dz_;
+  H5LTmake_dataset(file_id,"dr",1,dims_dr,H5T_NATIVE_FLOAT,dr);
+
+  // print out z array
+  hsize_t  dims_z[1]={(hsize_t)nz_};
+  float *zarr = new float[nz_];
+  for (int i=0;i<nz_;i++) zarr[i] = i*dz_ - zcen_;
+  H5LTmake_dataset(file_id,"z",1,dims_z,H5T_NATIVE_FLOAT,zarr);
+  delete [] zarr;
+
+  // print out x array
+  hsize_t  dims_x[1]={(hsize_t)nx_};
+  float *xarr = new float[nx_];
+  for (int i=0;i<nx_;i++) xarr[i] = i*dx_;
+  H5LTmake_dataset(file_id,"r",1,dims_x,H5T_NATIVE_FLOAT,xarr);
+  delete [] xarr;
+
+
+  // print out zone arrays
+  hsize_t  dims_g[2]={(hsize_t) nx_,(hsize_t) nz_};
+  float *arr = new float[n_zones];
+
+  // print out rho
+  for (int i=0;i<n_zones;++i) arr[i] = z[i].rho; 
+  H5LTmake_dataset(file_id,"rho",2,dims_g,H5T_NATIVE_FLOAT,arr);
+
+  // print out T_rad
+  for (int i=0;i<n_zones;++i) arr[i] = pow(z[i].e_rad/pc::a,0.25);
+  H5LTmake_dataset(file_id,"T_rad",2,dims_g,H5T_NATIVE_FLOAT,arr);
+
+  delete [] arr;
+
+}
+
 
 
 //************************************************************
@@ -190,7 +254,7 @@ int grid_2D_cyln::get_next_zone
   //std::cout << "ii: " << get_zone(x) << "\n";
 
   // tiny offset so we don't land exactly on boundaries
-  double tiny = 1e-2;
+  double tiny = 1e-10;
   // distance to z interface
   if (Dz > 0)
   {
@@ -210,35 +274,41 @@ int grid_2D_cyln::get_next_zone
     d_iz = -1;
   }
 
-  // distance to p interface (annulus)
-  if ((D[0]*x[0] + D[1]*x[1] > 0)||(ix == 0))
-  { 
-    // outer annulus
-    double pt = dx_*(ix + 1) + dx_*tiny;
-    double a = D[0]*D[0] + D[1]*D[1];
-    double b = 2*(x[0]*D[0] + x[1]*D[1]);
-    double c = p*p - pt*pt;
-    lp = -1.0*b + sqrt(b*b - 4*a*c);
-    lp = lp/(2*a);
-    if (a == 0) lp = std::numeric_limits<double>::infinity();
-    //std::cout << "Lp_up = " << ix << "; Dp = " << sqrt(a) << "; pt = " << pt << "; p = " << p << "; lp = " << lp << "\n";
-
-    d_ip = 1;
-
-  }
+  // distance to  p interfaces (annulus)
+  double pt,c,lp_out,lp_in,det;
+  double a = D[0]*D[0] + D[1]*D[1];
+  double b = 2*(x[0]*D[0] + x[1]*D[1]);
+  
+  if (a == 0) lp = std::numeric_limits<double>::infinity();
   else
   {
-    //  inner annulus
-    double pt = dx_*(ix) - dx_*tiny;
-    double a = D[0]*D[0] + D[1]*D[1];
-    double b = 2*(x[0]*D[0] + x[1]*D[1]);
-    double c = p*p - pt*pt;    
-    lp = -1.0*b + sqrt(b*b - 4*a*c);
-    lp = lp/(2*a);
-    if (a == 0) lp = std::numeric_limits<double>::infinity();
-    //std::cout << "Lp_dn = " << lp << " " << p << " " << pt << "\n";
+    // outer interface
+    pt = dx_*(ix + 1) + dx_*tiny;
+    c  = p*p - pt*pt;
+    det = b*b - 4*a*c;
+    if (det < 0) lp_out =  std::numeric_limits<double>::infinity();
+    else lp_out = (-1.0*b + sqrt(det))/(2*a);
+    if (lp_out < 0) lp_out =  std::numeric_limits<double>::infinity();
+ 
+    // inner interface
+    pt = dx_*(ix) - dx_*tiny;
+    c = p*p - pt*pt; 
+    det = b*b - 4*a*c;
+    if (det < 0) lp_in =  std::numeric_limits<double>::infinity();
+    else lp_in = (-1.0*b - sqrt(det))/(2*a);
+    if (lp_in < 0) lp_in =  std::numeric_limits<double>::infinity();
+    if (ix == 0) lp_in   =  std::numeric_limits<double>::infinity();
 
-    d_ip = -1;
+    if (lp_in < lp_out) 
+    {
+     lp  = lp_in;
+     d_ip = -1;
+    }
+    else
+    {
+     lp = lp_out;
+     d_ip = 1;
+    }
   }
 
   int new_iz = index_z_[i];
@@ -257,10 +327,15 @@ int grid_2D_cyln::get_next_zone
     //std::cout << "step p " << new_ip << " " << d_ip << " " << lp << "\n";
   }
 
+  if (isnan(*l)) 
+  {
+  //   std::cout << "step p " << new_ip << " " << d_ip << " " << lp << "\n";
+   // std::cout << "step z " << new_iz << " " << d_iz << " " << lz << "\n";
+
+  }
+
   // escaped 
   if ((new_iz < 0)||(new_iz >= nz_)||(new_ip >= nx_)) return -2;
-  // refeflection along z-axis
-  if (new_ip < 0) new_ip = 0;
 
   return new_ip*nz_ + new_iz;
 
@@ -311,14 +386,6 @@ int grid_2D_cyln::get_next_zone
 
 
 
-//************************************************************
-// Write out the file
-//************************************************************
-void grid_2D_cyln::write_out(int iw, double tt)
-{
-  
-}
-
 
 
 //************************************************************
@@ -350,6 +417,11 @@ void grid_2D_cyln::sample_in_zone
 //************************************************************
 void grid_2D_cyln::get_velocity(int i, double x[3], double D[3], double v[3], double *dvds)
 {
+  v[0] = 0;
+  v[1] = 0;
+  v[2] = 0;
+  *dvds = 0;
+
   /*
   // radius in zone
   double rr = sqrt(x[0]*x[0] + x[1]*x[1] + x[2]*x[2]);
