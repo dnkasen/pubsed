@@ -10,7 +10,12 @@ hydro_module      = "none"
 hydro_gamma_index = 4.0/3.0
 hydro_cfl         = 0.1
 hydro_v_piston    = 0
-hydro_viscosity_parameter = 5;
+hydro_viscosity_parameter = 5
+hydro_central_point_mass  = 0
+hydro_use_gravity    = 0
+hydro_accrete_radius = 0
+hydro_bomb_radius    = 0
+hydro_bomb_energy    = 0
 
 -- default nu_grid is nothing
 transport_module = "monte_carlo"
@@ -33,7 +38,6 @@ particles_max_total = 1e7
 particles_n_emit_radioactive   = 0
 particles_n_emit_thermal       = 0
 particles_n_initialize         = 0
-
 
 -- time stepping
 tstep_max_steps  = 1000
@@ -63,6 +67,7 @@ opacity_bound_bound         = 0
 opacity_free_free           = 0
 opacity_lines               = 0
 opacity_use_nlte            = 0
+opacity_minimum_extinction  = 0
 
 -- line treatment parameters
 line_velocity_width         = 0
