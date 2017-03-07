@@ -39,13 +39,16 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   // get time
   double tt[1];
   status = H5LTread_dataset_double(file_id,"/time",tt);
+  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find time\n";
   t_now = tt[0];
 
   // get grid size and dimensions
   hsize_t     dims[3];
   double dr[2];
   status = H5LTget_dataset_info(file_id,"/comp",dims, NULL, NULL);
+  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find comp\n";
   status = H5LTread_dataset_double(file_id,"/dr",dr);
+  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find dr\n";
 
   nx_     = dims[0];
   nz_     = dims[1];
@@ -59,26 +62,33 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
 
   int *etmp = new int[n_elems];
   status = H5LTread_dataset_int(file_id,"/Z",etmp);
+  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find Z\n";
   for (int k=0;k<n_elems;k++) elems_Z.push_back(etmp[k]);
   status = H5LTread_dataset_int(file_id,"/A",etmp);
+  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find A\n";
   for (int k=0;k<n_elems;k++) elems_A.push_back(etmp[k]);
   delete [] etmp;
 
   double *tmp = new double[n_zones];
   // read density
   status = H5LTread_dataset_double(file_id,"/rho",tmp);
+  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find rho\n";
   for (int i=0; i < n_zones; i++) z[i].rho = tmp[i];
   // read temperature
   status = H5LTread_dataset_double(file_id,"/temp",tmp);
+  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find temp\n";
   for (int i=0; i < n_zones; i++) z[i].T_gas = tmp[i];
   // read vx
   status = H5LTread_dataset_double(file_id,"/vx",tmp);
+  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find vx\n";
   for (int i=0; i < n_zones; i++) z[i].v[0] = tmp[i];
   // read vz
   status = H5LTread_dataset_double(file_id,"/vz",tmp);
+  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find vz\n";
   for (int i=0; i < n_zones; i++) z[i].v[2] = tmp[i];
   // read erad
   status = H5LTread_dataset_double(file_id,"/erad",tmp);
+  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find erad\n";
   for (int i=0; i < n_zones; i++) z[i].e_rad = tmp[i];
   delete [] tmp;
 
@@ -87,14 +97,19 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   status = H5LTread_dataset_double(file_id,"/comp",ctmp);
   int cnt = 0;
   for (int i=0; i < n_zones; i++)
+  {
+    z[i].X_gas.resize(n_elems);
     for (int k=0; k < n_elems;  k++)
     {
-      z[i].X_gas.push_back(ctmp[cnt]);
+      z[i].X_gas[k] = ctmp[cnt];
       cnt++;
     }
+  }
   delete [] ctmp;
 
+  //---------------------------------------------------
   // Print out properties
+  //---------------------------------------------------
   if (verbose)
   {
     std::cout << "# grid: n_zones = " << n_zones << " ; nx = " << nx_ << "; nz = " << nz_ << "\n";
@@ -246,7 +261,8 @@ int grid_2D_cyln::get_next_zone
   int iz = index_z_[i]; //floor(z/dz_); // note this index can be negative
 
   double lp,lz;
-  int d_ip, d_iz;
+  int d_ip = 0;
+  int d_iz = 0;
 
   //std::cout << "p: " << ix*dx_ << " " << p << " " << (ix+1)*dx_ << "\n";
   //std::cout << "z: " << iz*dz_ - zcen_ << " " << z << " " << (iz+1)*dz_ - zcen_ << "\n";
@@ -407,7 +423,7 @@ void grid_2D_cyln::sample_in_zone
   double phi = 2*pc::pi*ran[1];
   r[0] = p*cos(phi);
   r[1] = p*sin(phi);
-  r[2] = index_z_[i]*dz_ + zcen_ + dz_*ran[2];
+  r[2] = index_z_[i]*dz_ - zcen_ + dz_*ran[2];
 }
 
 
