@@ -97,11 +97,15 @@ void nlte_atom::bound_bound_opacity(std::vector<double>& opac, std::vector<doubl
     
     //if (alpha_0/nu_0/nu_0/dnu*1e15 < 1e-10) continue;
 
+    // don't bother calculating very small opacities
+    if (alpha_0/(nu_0*nu_0*dnu) < minimum_extinction_) continue;
+
     // region to add to -- hard code to 20 doppler widths
     double nu_1 = nu_0 - dnu*5; //*30;
     double nu_2 = nu_0 + dnu*5; //*30; //debug
     int inu1 = nu_grid.locate(nu_1);
     int inu2 = nu_grid.locate(nu_2);
+
 
     // line emissivity: ergs/sec/cm^3/str
     // multiplied by phi below to get per Hz
@@ -120,7 +124,6 @@ void nlte_atom::bound_bound_opacity(std::vector<double>& opac, std::vector<doubl
     }
     //printf("%e %e %e %d %d\n",lines[i].nu,nl,alpha_0,inu1,inu2,nu_grid[inu2]);
   } 
-  
 }
 
 

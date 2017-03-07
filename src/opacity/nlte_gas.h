@@ -219,6 +219,11 @@ class nlte_gas
   void line_expansion_opacity(std::vector<double>&);
   void fuzz_expansion_opacity(std::vector<double>&);
   void get_line_opacities(std::vector<double>&);
+ 
+  void set_minimum_extinction(double d)
+  {
+    for (size_t i=0;i<atoms.size();++i) atoms[i].minimum_extinction_ = d;
+  }
 
   void print_properties();
   void print();

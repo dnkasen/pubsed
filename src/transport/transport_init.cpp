@@ -119,6 +119,8 @@ void transport::init(ParameterReader* par, grid_general *g)
     = params_->getScalar<int>("opacity_bound_bound");
   gas.use_free_free_opacity  
     = params_->getScalar<int>("opacity_free_free");
+  double min_ext = params_->getScalar<double>("opacity_minimum_extinction");
+  gas.set_minimum_extinction(min_ext);
   first_step_ = 1;
 
   if (verbose) gas.print_properties();
@@ -135,7 +137,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   // get line frequencies and ion masses
   line_nu_ = gas.get_line_frequency_list();
   line_sqrt_Mion_ = gas.get_line_ion_mass_list();
-  for (int i=0;i<line_sqrt_Mion_.size();i++)
+  for (size_t i=0;i<line_sqrt_Mion_.size();i++)
     line_sqrt_Mion_[i] = sqrt(line_sqrt_Mion_[i]);
 
   // allocate and initalize space for opacities
@@ -162,7 +164,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   double norm = 0;
   for (int j=0;j<nu_grid.size();j++)
   { 
-    double nu  = nu_grid.center(j);
+    //double nu  = nu_grid.center(j);
     double w = 1.0; // - 1.0/(1.0 + pow(nu/3e15,2.0));
     //if (nu > 2e15) w = 100;
     emissivity_weight_[j] = w;
@@ -241,10 +243,10 @@ void transport::setup_core_emission()
         double Lnu;
         int ind = lower_bound(cspec_nu.begin(),cspec_nu.end(),nu)- cspec_nu.begin() - 1;
         if (ind < 0) Lnu = 0;
-        else if (ind >= cspec_nu.size()-1) Lnu = 0;
+        else if ((size_t)ind >= cspec_nu.size()-1) Lnu = 0;
        else 
        {
-          double slope = 0; //(cspec_Lnu[ind+1] - cspec_Lnu[ind-1])/(cspec_nu[ind+1] - cspec_nu[ind]);
+          //double slope = 0; //(cspec_Lnu[ind+1] - cspec_Lnu[ind-1])/(cspec_nu[ind+1] - cspec_nu[ind]);
           Lnu = cspec_Lnu[ind]; // + slope*(nu - cspec_nu[ind]);
         }
         core_emission_spectrum_.set_value(j,Lnu*dnu*emissivity_weight_[j]); 
