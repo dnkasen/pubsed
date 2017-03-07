@@ -105,9 +105,10 @@ public:
   double e_gamma;      // radioactive energy deposited (ergs/sec/cm^3)
   double gas_temp_;        // temperature of gas
 
-  double line_beta_dop_; // doppler width of lines = v/c
-  int use_betas;         // include escape probabilites in nlte
-  int no_ground_recomb;  // suppress recombinations to ground
+  double minimum_extinction_;  // minimum alpha = 1/mfp to calculate 
+  double line_beta_dop_;       // doppler width of lines = v/c
+  int use_betas;               // include escape probabilites in nlte
+  int no_ground_recomb;        // suppress recombinations to ground
 
   // classes
   nlte_level *levels;       // array of level data

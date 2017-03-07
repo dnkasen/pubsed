@@ -36,6 +36,7 @@ nlte_atom::nlte_atom()
   e_gamma = 0;
   no_ground_recomb = 0;
   use_betas = 0;
+  minimum_extinction_ = 0;
 }
 
 
