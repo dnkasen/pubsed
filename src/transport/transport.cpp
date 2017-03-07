@@ -48,7 +48,6 @@ void transport::step(double dt)
   {
     ParticleFate fate = propagate(*pIter,dt);
     if (fate == escaped) n_escape++;
-
     if ((fate == escaped)||(fate == absorbed)) pIter = particles.erase(pIter);
     else pIter++;
   }
@@ -259,7 +258,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     // ---------------------------------
     else if (event == tstep) 
     {
-      std::cout << "dists: "<< d_sc << "\t" << d_bn << "\t" << d_tm << "\t" << d_nu << "\n";
+//      std::cout << "dists: "<< d_sc << "\t" << d_bn << "\t" << d_tm << "\t" << d_nu << "\n";
        fate = stopped;  
     }
    }
