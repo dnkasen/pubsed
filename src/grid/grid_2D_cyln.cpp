@@ -210,20 +210,15 @@ void grid_2D_cyln::write_out(int iw, double tt)
 //************************************************************
 void grid_2D_cyln::expand(double e) 
 {
-  /*
+  dx_ *= e;
+  dz_ *= e;
+  zcen_ = dz_*nz_/2.0;
 
-  for (int i=0;i<n_zones;i++) r_out[i] *= e; 
-  r_out.min *=e;
-  
   // recalculate shell volume
   for (int i=0;i<n_zones;i++) 
   {
-    double r0;
-    if(i==0) r0 = r_out.min;
-    else     r0 = r_out[i-1];
-    vol[i] = 4.0*pc::pi/3.0*(r_out[i]*r_out[i]*r_out[i] - r0*r0*r0);
+    vol_[i] = vol_[i]*e*e*e;
   }
-  */
 
 }
 
