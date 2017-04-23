@@ -40,7 +40,10 @@ nlte_atom::nlte_atom()
 }
 
 
-
+//-------------------------------------------------------
+// solve for LTE level populations and
+// ionization state
+//-------------------------------------------------------
 void nlte_atom::solve_lte(double ne)
 {
 
@@ -50,7 +53,7 @@ void nlte_atom::solve_lte(double ne)
   {
     levels[i].n = levels[i].g*exp(-levels[i].E/pc::k_ev/gas_temp_);
     ions[levels[i].ion].part += levels[i].n;
-  }
+  }  
 
   // thermal debroglie wavelength, lam_t**3
   double lt = pc::h*pc::h/(2.0*pc::pi*pc::m_e*pc::k*gas_temp_);
@@ -131,6 +134,7 @@ void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu)
 
       // recombination term
       levels[j].R_ci += (sigma*fac1*nu*nu + Jterm)*exp(-1.0*(E_ev - chi)/pc::k_ev/gas_temp_)*dnu;  
+
     }
   }   
 
@@ -144,6 +148,9 @@ void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu)
     double gl_o_gc = (1.0*levels[j].g)/(1.0*levels[ic].g);
     levels[j].P_ic *= 4*pc::pi;
     levels[j].R_ci *= 4*pc::pi*gl_o_gc*saha_fac; 
+
+//    std::cout << "Pic = " << levels[j].P_ic << " ; R_ci " << levels[j].R_ci << "\n";
+
   }
 
   //for (int j=0;j<n_levels;++j)
@@ -174,7 +181,6 @@ void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu)
       J0 = J1;
     }
     lines[i].J = sum; 
-//    std::cout << i << " " << lines[i].J << "\n";
   }
 }
 
@@ -211,8 +217,8 @@ void nlte_atom::set_rates(double ne)
     rates[ll][lu] += R_lu;
     rates[lu][ll] += R_ul;
 
-    //printf("RR %d %d %e\n",ll,lu,R_lu);
-    //printf("RR %d %d %e\n",lu,ll,R_ul);
+   // printf("RR %d %d %e\n",ll,lu,R_lu);
+   // printf("RR %d %d %e\n",lu,ll,R_ul);
   }
 
   // ------------------------------------------------
@@ -234,7 +240,7 @@ void nlte_atom::set_rates(double ne)
     // add into rates
     rates[ll][lu] += R_lu;
 
-    //printf("GR %d %d %e %e %e\n",ll,lu,R_lu,e_gamma,dE);
+    // printf("GR %d %d %e %e %e\n",ll,lu,R_lu,e_gamma,dE);
   }
 
 
@@ -311,11 +317,11 @@ void nlte_atom::set_rates(double ne)
     
   }
 
-  // multiply by rates by lte pop in level coming from
+   // multiply by rates by lte pop in level coming from
   // (becuase we will solve for depature coeffs)
   for (int i=0;i<n_levels;++i)
       for (int j=0;j<n_levels;++j)
-        rates[i][j] *= levels[i].n_lte;
+        rates[i][j] *= levels[i].n_lte; 
 
   // print out rates if you so like
   //printf("------- rates ----------\n");
