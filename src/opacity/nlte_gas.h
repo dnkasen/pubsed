@@ -152,6 +152,32 @@ class nlte_gas
   int solve_state(std::vector<real>);
   int solve_state();
 
+
+  //***********************************************************
+  // RETURN BASIC DATA
+  //***********************************************************
+
+  //-----------------------------------------------------------
+  // get essential parameters 
+  //-----------------------------------------------------------
+  double get_density()             {return dens;} 
+  double get_temperature()         {return temp;}
+  double get_mean_atomic_weight()  {return A_mu;}
+  double get_electron_density()    {return ne;}
+
+  //-----------------------------------------------------------
+  // return the the number of atoms, or 
+  // number of ions in atom i
+  //-----------------------------------------------------------
+  int get_number_atoms()
+  {
+    return (int)(atoms.size());
+  }
+  int get_number_ions(int i)
+  {
+    return atoms[i].n_ions;
+  }
+
   //-----------------------------------------------------------
   // return the ionization state, i.e., electron density
   // over total ion number density

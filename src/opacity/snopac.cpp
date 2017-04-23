@@ -138,10 +138,7 @@ void write_frequency_file(std::string outfile, int style)
         if (temperature_list.size() > 1) fprintf(fout,"%12.5e ",*temp);
         fprintf(fout,"%12.5e %12.5e\n",x,tot_opacity[ind]);
       }
-      printf("%e %e %e %e\n",gas.temp,gas.get_partition_function(0,0),
-          gas.get_partition_function(0,1),gas.get_partition_function(0,2));
-=    }
-
+    }
 }
 
 
@@ -151,14 +148,26 @@ void write_frequency_file(std::string outfile, int style)
 void write_gas_state(std::string statefile)
 {
   FILE *fout = fopen(statefile.c_str(),"w");
-  fprintf(fout,"density (g/cc)         = %12.4e\n",gas.dens);
-  fprintf(fout,"temperature (K)        = %12.4e\n",gas.temp);
-  fprintf(fout,"electron n-dens (1/cc) = %12.4e\n",gas.ne);
-  for (size_t i=0;i<gas.atoms.size();i++)
+  fprintf(fout,"---------------------------------------\n");
+  fprintf(fout,"density (g/cc)          = %12.4e\n",gas.get_density());
+  fprintf(fout,"temperature (K)         = %12.4e\n",gas.get_temperature());
+  fprintf(fout,"mean atomic weight      = %12.4e\n",gas.get_mean_atomic_weight());
+  fprintf(fout,"number density (g/cc)   = %12.4e\n",gas.get_density()/gas.get_mean_atomic_weight()/pc::m_p);
+  fprintf(fout,"electron density (1/cc) = %12.4e\n",gas.get_electron_density());
+  fprintf(fout,"---------------------------------------\n\n");
+
+  for (int i=0;i<gas.get_number_atoms();i++)
   {
-    fprintf(fout,"---------------------------------------")
-    fprintf(fout,"element Z.A = %d.%d ; mass_fraction = \n",
+    fprintf(fout,"--------------------------------------------------\n");
+    fprintf(fout,"element Z.A = %d.%d ; mass_fraction =  %.4e\n",
         gas.elem_Z[i],gas.elem_A[i],gas.mass_frac[i]);
+    fprintf(fout,"-------------------------------------------------\n");
+    fprintf(fout,"  ion   fraction    partition\n");
+    for (int j=0;j<gas.get_number_ions(i);j++)
+    {
+      fprintf(fout,"%4d %12.4e %12.4e\n",j,gas.get_ionization_fraction(i,j),
+        gas.get_partition_function(i,j));
+    }
   }
 }
 
