@@ -21,6 +21,7 @@ static double rosseland_mean(std::vector<double> opac);
 static double planck_mean(std::vector<double> opac);
 static void write_mesa_file(std::string);
 static void write_frequency_file(std::string, int);
+static void write_gas_state(std::string);
 
 int main(int argc, char **argv)
 {
@@ -49,19 +50,8 @@ int main(int argc, char **argv)
   //-------------------------------------------------------
   // get the elements to use
   //-------------------------------------------------------
-
-  std::vector<double> elements = params.getVector<double>("elements");
-  std::vector<int> elems_A, elems_Z;
-  for (size_t i=0;i<elements.size();++i)  
-  {
-    std::string species = std::to_string(static_cast<long double>(elements[i]));
-    int ind1 = species.find(".");
-    int ind2 = species.find("0");
-    std::string el_Z = species.substr(0,ind1);
-    std::string el_A = species.substr(ind1+1,ind2-ind1-1);
-    elems_Z.push_back(std::stoi(el_Z));
-    elems_A.push_back(std::stoi(el_A));
-  }
+  std::vector<int> elems_Z = params.getVector<int>("elements_Z");
+  std::vector<int> elems_A = params.getVector<int>("elements_A");
 
   //-------------------------------------------------------
   // Set up the gas class
@@ -111,6 +101,10 @@ int main(int argc, char **argv)
 
   std::string lambdafile = params.getScalar<string>("output_wavelength_file");  
   if (lambdafile != "") write_frequency_file(lambdafile,1);
+
+  std::string statefile = params.getScalar<string>("output_gas_state");  
+  if (statefile != "") write_gas_state(statefile);
+
 }
 
 
@@ -144,9 +138,28 @@ void write_frequency_file(std::string outfile, int style)
         if (temperature_list.size() > 1) fprintf(fout,"%12.5e ",*temp);
         fprintf(fout,"%12.5e %12.5e\n",x,tot_opacity[ind]);
       }
+      printf("%e %e %e %e\n",gas.temp,gas.get_partition_function(0,0),
+          gas.get_partition_function(0,1),gas.get_partition_function(0,2));
+=    }
 
-    }
+}
 
+
+//*********************************************************
+// Write out the gas state
+//*********************************************************
+void write_gas_state(std::string statefile)
+{
+  FILE *fout = fopen(statefile.c_str(),"w");
+  fprintf(fout,"density (g/cc)         = %12.4e\n",gas.dens);
+  fprintf(fout,"temperature (K)        = %12.4e\n",gas.temp);
+  fprintf(fout,"electron n-dens (1/cc) = %12.4e\n",gas.ne);
+  for (size_t i=0;i<gas.atoms.size();i++)
+  {
+    fprintf(fout,"---------------------------------------")
+    fprintf(fout,"element Z.A = %d.%d ; mass_fraction = \n",
+        gas.elem_Z[i],gas.elem_A[i],gas.mass_frac[i]);
+  }
 }
 
 //*********************************************************
