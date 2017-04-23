@@ -164,6 +164,14 @@ class nlte_gas
   //-----------------------------------------------------------
   double get_ionization_fraction(int i, int j);
 
+  //-----------------------------------------------------------
+  // return the fraction of atoms of index i that are in
+  // ionization state j.  
+  //-----------------------------------------------------------
+  double get_partition_function(int i, int j)
+  {
+    return atoms[i].partition(j);
+  }
 
   //-----------------------------------------------------------
   // return the fraction of atoms of index i that are in
