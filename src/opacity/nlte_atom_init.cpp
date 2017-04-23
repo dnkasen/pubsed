@@ -100,6 +100,8 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID,
     levels[i].n         = 0.0;
     levels[i].E_ion     = ions[levels[i].ion].chi - levels[i].E;
 
+//    std::cout << levels[i].ion << " " << i << " " << ions[levels[i].ion].chi << " " << levels[i].E << "\n";
+
     // set global ID (among all atoms being used)
     levels[i].globalID  = levID;
     levID += 1;
@@ -197,10 +199,25 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID,
      double dE = (E_max - E_ion)/npts;
      levels[i].s_photo.init(E_ion,E_max, dE);
 
-    // effective excitation quantum number
+     // effective excitation quantum number
      double E_ground = ions[levels[i].ion].chi;
      double n_eff = pow(1 - (E_ground - E_ion)/E_ground,-0.5);
      double s_fac = n_eff/(levels[i].ion+1)/(levels[i].ion + 1);
+
+    double nu_t = E_ion*pc::ev_to_ergs/pc::h;
+    int istart = 0; int istop = 0;
+    for (int k=0;k<nu_grid.size();k++)
+    {
+      if (nu_grid.center(k) > nu_t) 
+        if (istart == 0) istart = k;
+
+      if (nu_grid.center(k) > 10*nu_t)
+        if (istop == 0) istop = k; 
+    }
+//    std::cout << "is " << i << " " << nu_t << " " << E_ion << "\n"; //istop - istart << " " << istop << "\n";
+
+
+
      //verner data
      // double V_Eth = 0.1360E+02;
      // double V_E0  = 0.4298E+00;
