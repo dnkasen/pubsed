@@ -431,12 +431,13 @@ void nlte_gas::print_properties()
   if (grey_opacity_ != 0) std::cout << "# grey opacity = " << grey_opacity_ << "\n";
   else
   {
-    std::cout << "# use_nlte         = " << use_nlte_ << "\n";
-    std::cout << "# use_free_free    = " << use_free_free_opacity << "\n";
-    std::cout << "# use_bound_free   = " << use_bound_free_opacity << "\n";
-    std::cout << "# use_bound_bound  = " << use_bound_bound_opacity << "\n";
-    std::cout << "# use_line_exp     = " << use_line_expansion_opacity << "\n";
-    std::cout << "# use_fuzz_exp     = " << use_fuzz_expansion_opacity << "\n";
+    std::cout << "# use_nlte          = " << use_nlte_ << "\n";
+    std::cout << "# use_e_scattering  = " << use_electron_scattering_opacity << "\n";
+    std::cout << "# use_free_free     = " << use_free_free_opacity << "\n";
+    std::cout << "# use_bound_free    = " << use_bound_free_opacity << "\n";
+    std::cout << "# use_bound_bound   = " << use_bound_bound_opacity << "\n";
+    std::cout << "# use_line_exp      = " << use_line_expansion_opacity << "\n";
+    std::cout << "# use_fuzz_exp      = " << use_fuzz_expansion_opacity << "\n";
 
   }
   std::cout << "#---------------------------------------\n";
