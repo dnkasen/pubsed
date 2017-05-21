@@ -151,7 +151,10 @@ void transport::init(ParameterReader* par, grid_general *g)
   {
     if (use_detailed_lines_)
       line_opacity_[i].resize(n_lines_);
-    abs_opacity_[i].resize(nu_grid.size());
+  try {
+    abs_opacity_[i].resize(nu_grid.size()); }
+    catch (std::bad_alloc const&) {
+cout << "Memory allocation fail!" << std::endl; }
     scat_opacity_[i].resize(nu_grid.size());
     emissivity_[i].resize(nu_grid.size());
     J_nu_[i].resize(nu_grid.size());

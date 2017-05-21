@@ -180,12 +180,6 @@ void transport::isotropic_scatter(particle *p, int redist)
   double V[3], dvds;
   grid->get_velocity(p->ind,p->x,p->D,V,&dvds);
 
-  // debug
-  //double t_secs = t_now_;
-  //V[0] = p->x[0]/t_secs;
-  //V[1] = p->x[1]/t_secs;
-  //V[2] = p->x[2]/t_secs; 
-
   // local velocity vector
   double vdotD  = V[0]*p->D[0] + V[1]*p->D[1] + V[2]*p->D[2];
   double beta2 = (V[0]*V[0] + V[1]*V[1] + V[2]*V[2])/pc::c/pc::c;
