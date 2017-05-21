@@ -84,7 +84,7 @@ void spectrum_array::init(std::vector<double> t, std::vector<double> w,
 //--------------------------------------------------------------
 void spectrum_array::wipe()
 {
-  for (int i=0;i<click.size();i++) 
+  for (size_t i=0;i<click.size();i++) 
   {
     flux[i]   = 0;
     click[i]  = 0;
@@ -154,6 +154,7 @@ void spectrum_array::print()
 
   fprintf(out,"# %d %d %d %d\n",n_times,n_wave,n_mu,n_phi);
 
+  // unitize and printout
   for (int k=0;k<n_mu;k++)
     for (int m=0;m<n_phi;m++)
       for (int i=0;i<n_times;i++)
@@ -165,7 +166,7 @@ void spectrum_array::print()
 	       if (n_mu > 1)     fprintf(out,"%12.4f ",mu_grid.center(k));
 	       if (n_phi> 1)     fprintf(out,"%12.4f ",phi_grid.center(m));
 
-    	   double norm = n_mu*n_phi;
+    	   double norm = 1.0/(n_mu*n_phi);
 	       if (n_wave > 1)  norm *= wave_grid.delta(j);
 	       if (n_times > 1) norm *= time_grid.delta(i);
 	  
@@ -184,35 +185,42 @@ void spectrum_array::print()
   // write nu grid
   int n_nu = wave_grid.size();
   float* tmp_array = new float[n_nu];
-  hsize_t  dims_nu[RANK]={n_nu};
+  hsize_t  dims_nu[RANK]={(hsize_t)n_nu};
   for (int j=0;j<n_nu;j++) tmp_array[j] = wave_grid.center(j);
   H5LTmake_dataset(file_id,"nu",RANK,dims_nu,H5T_NATIVE_FLOAT,tmp_array);
+  delete[] tmp_array;
+
+  // write mu grid
+  tmp_array = new float[n_mu];
+  hsize_t  dims_mu[RANK]={(hsize_t)n_mu};
+  for (int j=0;j<n_mu;j++) tmp_array[j] = mu_grid[j];
+  H5LTmake_dataset(file_id,"mu",RANK,dims_mu,H5T_NATIVE_FLOAT,tmp_array);
   delete[] tmp_array;
 
   // write time grid
   int n_t = time_grid.size();
   tmp_array = new float[n_t];
-  hsize_t dims_t[RANK]={n_t};
+  hsize_t dims_t[RANK]={(hsize_t)n_t};
   for (int j=0;j<n_t;j++) tmp_array[j] = time_grid.center(j);
   H5LTmake_dataset(file_id,"time",RANK,dims_t,H5T_NATIVE_FLOAT,tmp_array);
   delete[] tmp_array;
 
   // write fluxes array
-  float *farray = new float[n_elements];
-  for (int i=0;i<n_elements;i++) farray[i] = flux[i];
+  double *darray = new double[n_elements];
+  for (int i=0;i<n_elements;i++) darray[i] = flux[i];
   if (n_mu == 1)
   { 
     const int RANKF = 2;
-    hsize_t  dims_flux[RANKF]={n_t,n_nu};
-    H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_FLOAT,farray);
+    hsize_t  dims_flux[RANKF]={(hsize_t)n_t,(hsize_t)n_nu};
+    H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
   }
   else
   { 
     const int RANKF = 3;
-    hsize_t  dims_flux[RANKF]={n_t,n_nu,n_mu};
-    H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_FLOAT,farray);
+    hsize_t  dims_flux[RANKF]={(hsize_t)n_t,(hsize_t)n_nu,(hsize_t)n_mu};
+    H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
   }
-  delete[] farray;
+  delete[] darray;
 
   H5Fclose (file_id);
 
@@ -221,7 +229,7 @@ void spectrum_array::print()
 
 void  spectrum_array::rescale(double r)
 {
-  for (int i=0;i<flux.size();i++) flux[i] *= r;
+  for (size_t i=0;i<flux.size();i++) flux[i] *= r;
 }
 
 
@@ -255,7 +263,7 @@ void spectrum_array::MPI_average()
   MPI_Comm_size( MPI_COMM_WORLD, &mpi_procs );
   MPI_Comm_rank( MPI_COMM_WORLD, &myID      );
   if(myID == receiving_ID){
-    #pragma omp parallel for
+ //   #pragma omp parallel for
     for (int i=0;i<n_elements;i++)
     {
       flux[i]  /= mpi_procs;
