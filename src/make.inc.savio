@@ -1,4 +1,4 @@
-CXX = mpicc -std=c++0x
+CXX  = mpicxx -O3  -DMPICH_IGNORE_CXX_SEEK -std=c++0x
 
 # location of gsl 
 GSL_INC   = /global/software/centos-5.x86_64/modules/gsl/1.9-intel/gsl-1.9/include
