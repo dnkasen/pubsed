@@ -3,6 +3,7 @@ import h5py
 
 def compare(pdf):
 
+	py.clf()
 	rp = 3e13
 
 	rr,s1,s2 = py.loadtxt('NLTE_analytic_solution.dat',unpack=True,skiprows=1)
