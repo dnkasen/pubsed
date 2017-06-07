@@ -2,6 +2,8 @@
 #define _LOCATE_ARRAY_H 
 
 #include <vector>
+#include <math.h>
+#include <limits>
 
 class locate_array {
 
@@ -29,6 +31,11 @@ public:
   void copy(locate_array l);
   void swap(locate_array new_array);
 
+  // operators for easy access
+  double  operator[] (const int i) const {return x[i];};
+  double& operator[] (const int i)       {return x[i];};
+  void resize(int i) {x.resize(i);};
+
   // center of the bin left of nu_i
   double center(const int i) const{
     if (i == 0) return 0.5*(min    + x[0]);
@@ -46,19 +53,112 @@ public:
   double minval() {return min; }
 
   int    locate(const double) const;
-  double interpolate_between(const double,const int,const int,const std::vector<double>&) const;
-  double log_interpolate_between(const double,const int,const int,const std::vector<double>&) const;
   double sample(const int, const double) const;
   void   print() const;
-  double value_at(const double nu, const std::vector<double>& array,int) const;
-  double value_at(const double nu, const std::vector<double>& array) const;
-  
-  double value_at_extrapolate(const double nu, const std::vector<double>& array) const;
 
-  // operators for easy access
-  double  operator[] (const int i) const {return x[i];};
-  double& operator[] (const int i)       {return x[i];};
-  void resize(int i) {x.resize(i);};
+  //---------------------------------------------------------
+// Linear Interpolation of a passed array
+//---------------------------------------------------------
+template<typename T> 
+T interpolate_between(const double xval, const int i1, const int i2, const std::vector<T>& y) const 
+{
+  if (x.size() == 1) return y[0];
+  double slope = (y[i2]-y[i1]) / (x[i2]-x[i1]);
+  double yval = y[i1] + slope*(xval - x[i1]);
+  return yval;
+}
+
+
+//---------------------------------------------------------
+// Log-Log Interpolation of a passed array
+//---------------------------------------------------------
+template<typename T> 
+T log_interpolate_between(const double xval, const int i1, const int i2, const std::vector<T>& y) const
+{
+  if (x.size() == 1) return y[0];
+
+  // safeguard against equal opacities
+  if(y[i1]==y[i2]) return y[i1];
+
+  // safeguard against nonsensical values
+  if(y[i1]<=0 || y[i2]<=0) return interpolate_between(xval, i1, i2, y);
+
+  // do logarithmic interpolation
+  double slope = log(y[i2]/y[i1]) / log(x[i2]/x[i1]);
+  double logyval = log(y[i1]) + slope*log(xval/x[i1]);
+  return exp(logyval);
+}
+
+//---------------------------------------------------------
+// find the value of y at the locate_array's value of xval
+// assumes 1-1 correspondence between y and locate_array
+// will extrapolate to regions off either end of the
+// array grid
+//---------------------------------------------------------
+template<typename T>
+T value_at_extrapolate(const double xval, const std::vector<T>& y) const{
+
+  int ind = locate(xval);
+  int i1, i2;
+
+  if (x.size() == 1) return y[0];
+
+  if(ind == 0){                // If off left side of grid
+    i1 = 0;
+    i2 = 1;
+  }
+  else if(ind < x.size()){    // If within expected region of grid
+    i1 = ind - 1;
+    i2 = ind;
+  }
+  else{ //if(ind == x.size()) // If off the right side of the grid
+    i1 = x.size() - 2;
+    i2 = x.size() - 1;
+  }
+
+  if(do_log_interpolate) return log_interpolate_between(xval, i1, i2, y);
+  else                   return     interpolate_between(xval, i1, i2, y);
+}
+
+
+//---------------------------------------------------------
+// find the value of y at the locate_array's value of xval
+// assumes 1-1 correspondence between y and locate_array
+// will not extrapolate off of array -- if passed xval
+// is out of bounds, will just return the end values
+//
+// overloaded so that doesn't need to do the locate if
+// already known and passed.
+//---------------------------------------------------------
+template<typename T>
+T value_at(const double xval, const std::vector<T>& y) const
+{
+  int ind = locate(xval);
+  return value_at(xval,y,ind);
+}
+
+template<typename T>
+T value_at(const double xval, const std::vector<T>& y,int ind) const
+{
+
+  int i1, i2;
+
+  if (x.size() == 1) return y[0];
+
+  if(ind == 0){                // If off left side of grid
+    return y[0];
+  }
+  else if(ind < x.size()){    // If within expected region of grid
+    i1 = ind - 1;
+    i2 = ind;
+  }
+  else{ //if(ind == x.size()) // If off the right side of the grid
+    return y[x.size()-1];
+  }
+
+  if(do_log_interpolate) return log_interpolate_between(xval, i1, i2, y);
+  else                   return     interpolate_between(xval, i1, i2, y);
+}
+
 };
-
 #endif
