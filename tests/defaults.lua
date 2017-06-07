@@ -68,6 +68,7 @@ opacity_free_free           = 0
 opacity_lines               = 0
 opacity_use_nlte            = 0
 opacity_minimum_extinction  = 0
+opacity_no_scattering       = 0
 
 -- line treatment parameters
 line_velocity_width         = 0
