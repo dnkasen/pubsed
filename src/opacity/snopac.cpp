@@ -5,6 +5,7 @@
 #include "locate_array.h"
 #include "physical_constants.h"
 #include "ParameterReader.h"
+#include "sedona.h"
 
 #include <mpi.h>
 
@@ -14,11 +15,11 @@ namespace pc = physical_constants;
 static locate_array nu_grid;
 static nlte_gas gas;
 static ParameterReader params;
-static std::vector<double> abs_opacity, scat_opacity, tot_opacity, emissivity;
+static std::vector<OpacityType> abs_opacity, scat_opacity, tot_opacity, emissivity;
 
 // functions
-static double rosseland_mean(std::vector<double> opac);
-static double planck_mean(std::vector<double> opac);
+static double rosseland_mean(std::vector<OpacityType> opac);
+static double planck_mean(std::vector<OpacityType> opac);
 static void write_mesa_file(std::string);
 static void write_frequency_file(std::string, int);
 static void write_gas_state(std::string);
@@ -239,7 +240,7 @@ void write_mesa_file(std::string mesafile)
 }
 
 
-double rosseland_mean(std::vector<double> opac)
+double rosseland_mean(std::vector<OpacityType> opac)
 {
   // calculate rosseland opacity
   double norm = 0;
@@ -262,7 +263,7 @@ double rosseland_mean(std::vector<double> opac)
 }
 
 
-double planck_mean(std::vector<double> opac)
+double planck_mean(std::vector<OpacityType> opac)
 {
   // calculate planck mean opacity
   double norm = 0;
