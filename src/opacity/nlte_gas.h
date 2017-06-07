@@ -243,8 +243,8 @@ class nlte_gas
   //***********************************************************
   // OPACITIES AND EMISSIVITIES
   //***********************************************************
-  void computeOpacity(std::vector<double>&, std::vector<double>&, 
-		      std::vector<double>&);
+  void computeOpacity(std::vector<OpacityType>&, std::vector<OpacityType>&, 
+		      std::vector<OpacityType>&);
   double electron_scattering_opacity();
   void free_free_opacity  (std::vector<double>&, std::vector<double>&);
   void bound_free_opacity (std::vector<double>&, std::vector<double>&);

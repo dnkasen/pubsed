@@ -8,9 +8,9 @@ namespace pc = physical_constants;
 //----------------------------------------------------------------
 // calculate the total absorptive and scattering opacity
 //----------------------------------------------------------------
-void nlte_gas::computeOpacity(std::vector<double>& abs, 
-			      std::vector<double>& scat, 
-			      std::vector<double>& tot_emis)
+void nlte_gas::computeOpacity(std::vector<OpacityType>& abs, 
+			      std::vector<OpacityType>& scat, 
+			      std::vector<OpacityType>& tot_emis)
 {
   int ns = nu_grid.size();
   std::vector<double> opac, emis;
