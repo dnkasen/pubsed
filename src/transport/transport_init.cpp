@@ -142,9 +142,10 @@ void transport::init(ParameterReader* par, grid_general *g)
 
   // allocate and initalize space for opacities
   n_lines_ = gas.get_number_of_lines();
+  omit_scattering_ = params_->getScalar<int>("opacity_no_scattering");
   line_opacity_.resize(grid->n_zones);
   abs_opacity_.resize(grid->n_zones);
-  scat_opacity_.resize(grid->n_zones);
+  if (!omit_scattering_) scat_opacity_.resize(grid->n_zones);
   emissivity_.resize(grid->n_zones);
   J_nu_.resize(grid->n_zones);
   for (int i=0; i<grid->n_zones;  i++)

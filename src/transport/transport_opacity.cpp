@@ -13,6 +13,7 @@ void transport::set_opacity()
 {
   // tmp vector to hold emissivity
   vector<OpacityType> emis(nu_grid.size());
+  vector<OpacityType> scat(nu_grid.size());
   emis.assign(emis.size(),0.0);
 
   // tmp vector to hold line stuff
@@ -31,7 +32,7 @@ void transport::set_opacity()
     for (int j=0;j<nu_grid.size();j++)
     {
       abs_opacity_[i][j] = 0;
-      scat_opacity_[i][j] = 0;
+      if (!omit_scattering_) scat_opacity_[i][j] = 0;
     }
   }
 
@@ -55,7 +56,7 @@ void transport::set_opacity()
     gas.time = t_now_;
 
     // radioactive decay the composition
-    for (int j=0;j<X_now.size();j++) X_now[j] = z->X_gas[j];
+    for (size_t j=0;j<X_now.size();j++) X_now[j] = z->X_gas[j];
     radio.decay_composition(grid->elems_Z,grid->elems_A,X_now,t_now_);
     gas.set_mass_fractions(X_now);
    
@@ -63,7 +64,7 @@ void transport::set_opacity()
     if (!gas.grey_opacity_) solve_error = gas.solve_state(J_nu_[i]);
 
     // calculate the opacities/emissivities
-    gas.computeOpacity(abs_opacity_[i],scat_opacity_[i],emis);
+    gas.computeOpacity(abs_opacity_[i],scat,emis);
   
     // save and normalize emissivity cdf
     grid->z[i].L_thermal = 0;
@@ -72,12 +73,14 @@ void transport::set_opacity()
       double bb_int = pc::sb*pow(grid->z[i].T_gas,4)/pc::pi;
       grid->z[i].L_thermal += 4*pc::pi*abs_opacity_[i][0]*bb_int;
       emissivity_[i].set_value(0,1);
+      if (!omit_scattering_) scat_opacity_[i][0] = scat[0];
     }
     else for (int j=0;j<nu_grid.size();j++)
     {
       double ednu = emis[j]*nu_grid.delta(j);
       emissivity_[i].set_value(j,ednu);
       grid->z[i].L_thermal += 4*pc::pi*emis[j]*ednu;
+      if (!omit_scattering_) scat_opacity_[i][j] = scat[j];
     }
     
     // set line opacities

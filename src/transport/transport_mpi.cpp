@@ -59,19 +59,22 @@ void transport::reduce_opacities()
     }
     MPI_Allreduce(src,dst,blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
     for (int j=0;j<blocksize;j++)
-      abs_opacity_[i][j] = dst[j];
+      abs_opacity_[i][j] = (OpacityType)dst[j];
 
     //-----------------------------
     // scattering opacity
     //-----------------------------
-    for (int j=0;j<blocksize;j++)
+    if (!omit_scattering_)
     {
-      src[j] = scat_opacity_[i][j];
-      dst[j] = 0.0;
+      for (int j=0;j<blocksize;j++)
+      {
+        src[j] = scat_opacity_[i][j];
+        dst[j] = 0.0;
+      }
+      MPI_Allreduce(src,dst,blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+      for (int j=0;j<blocksize;j++)
+        scat_opacity_[i][j] = (OpacityType)dst[j];
     }
-    MPI_Allreduce(src,dst,blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    for (int j=0;j<blocksize;j++)
-      scat_opacity_[i][j] = dst[j];
 
     //-----------------------------
     // emissivity
@@ -83,7 +86,7 @@ void transport::reduce_opacities()
     }
     MPI_Allreduce(src,dst,blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
     for (int j=0;j<blocksize;j++)
-      emissivity_[i].set_value(j,dst[j]);
+      emissivity_[i].set_value(j,(OpacityType)dst[j]);
 
     // normalize emissivity cdf
     emissivity_[i].normalize();

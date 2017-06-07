@@ -110,14 +110,26 @@ void transport::write_opacities(int iw)
     hid_t zone_id =  H5Gcreate1( file_id, zfile, 0 );
 
     // write total opacity
-    for (int j=0;j<n_nu;j++)
-      tmp_array[j] = (scat_opacity_[i][j] + abs_opacity_[i][j])/grid->z[i].rho;
+    if (omit_scattering_)
+      for (int j=0;j<n_nu;j++)
+        tmp_array[j] = (abs_opacity_[i][j])/grid->z[i].rho;
+    else
+      for (int j=0;j<n_nu;j++)
+        tmp_array[j] = (scat_opacity_[i][j] + abs_opacity_[i][j])/grid->z[i].rho;
     H5LTmake_dataset(zone_id,"opacity",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
     // write absorption fraction
-    for (int j=0;j<n_nu;j++) {
-      tmp_array[j] = abs_opacity_[i][j]/(scat_opacity_[i][j] + abs_opacity_[i][j]);
-      if (scat_opacity_[i][j] + abs_opacity_[i][j] == 0) tmp_array[j] = 0; }
+    for (int j=0;j<n_nu;j++) 
+    {
+      double eps = 1;
+      if (!omit_scattering_) 
+      {
+        double topac = scat_opacity_[i][j] + abs_opacity_[i][j];
+        if (topac == 0) eps = 1;
+        else eps = abs_opacity_[i][j]/topac;
+      }
+      tmp_array[j] = eps;
+    }
     H5LTmake_dataset(zone_id,"epsilon",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
     // write emissivity 
