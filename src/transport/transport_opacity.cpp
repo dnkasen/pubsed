@@ -12,7 +12,7 @@ namespace pc = physical_constants;
 void transport::set_opacity()
 {
   // tmp vector to hold emissivity
-  vector<double> emis(nu_grid.size());
+  vector<OpacityType> emis(nu_grid.size());
   emis.assign(emis.size(),0.0);
 
   // tmp vector to hold line stuff
