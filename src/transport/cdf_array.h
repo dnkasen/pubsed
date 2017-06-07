@@ -2,6 +2,8 @@
 #define _CDF_H 1
 
 #include <vector>
+#include <algorithm>
+
 
 //**********************************************************
 // CDF == Comulative Distribution Function
