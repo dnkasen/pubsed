@@ -4,5 +4,5 @@
 // define real to choose either double or float precision
 //typedef float real;
 typedef double real;
-
+typedef float  OpacityType;
 #endif

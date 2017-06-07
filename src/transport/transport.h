@@ -63,9 +63,9 @@ class transport
   // inner boundary
   double L_core_, r_core_, T_core_, core_frequency_;
   // emission spectrum from inner boundary
-  cdf_array core_emission_spectrum_;
+  cdf_array<double> core_emission_spectrum_;
   // emission distribution across zones
-  cdf_array zone_emission_cdf_;
+  cdf_array<double> zone_emission_cdf_;
 
   // minimum and maximum temperatures
   double temp_max_value_, temp_min_value_;
@@ -96,9 +96,9 @@ class transport
   vector<real>  emissivity_weight_;
 
   // the zone opacity/emissivity variables
-  vector< cdf_array >    emissivity_;
-  vector< vector<real> > abs_opacity_;
-  vector< vector<real> > scat_opacity_;
+  vector< cdf_array<OpacityType> >    emissivity_;
+  vector< vector<OpacityType> >       abs_opacity_;
+  vector< vector<OpacityType> >       scat_opacity_;
   vector< vector<real> > J_nu_;
   vector<real> compton_opac;
   vector<real> photoion_opac;
