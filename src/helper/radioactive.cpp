@@ -90,7 +90,7 @@ void radioactive::decay_composition
 // integrated over all species
 //--------------------------------------------------------------
 double radioactive::decay
-(std::vector<int> elem_Z, std::vector<int> elem_A, std::vector<double> X, double t, double *gfrac)
+(std::vector<int> elem_Z, std::vector<int> elem_A, std::vector<real> X, double t, double *gfrac)
 {
   double total  = 0;
   double gtotal = 0;
@@ -194,24 +194,24 @@ double radioactive::decay_energy_rate(int Z, int A, double t, double *gfrac)
 
 
   //   // R-process decay
-  //   if (ZONE::radio[i] > 50)
-  //   {
-  //     double at = log10(time);
-  //     double rproc = 0;
-  //     for (int j=0;j<n_R_proc_fit;j++) rproc += R_proc_fit[j]*pow(at,j);
-  //     rproc = pow(10.0,rproc)*z.rho;
+    if ((Z >= 58))
+    {
+       double at = log10(t);
+       double rproc = 0;
+       for (int j=0;j<n_R_proc_fit;j++) rproc += R_proc_fit[j]*pow(at,j);
+       rproc = pow(10.0,rproc)*(A*pc::m_p);
 
-  //     // fission fragments versus beta decay
-  //     double fission_E  = 0.1*rproc;
-  //     double beta_E     = 0.9*rproc;
+       // fission fragments versus beta decay
+       double fission_E  = 0.1*rproc;
+       double beta_E     = 0.9*rproc;
       
-  //     // account for lost neutrino energy
-  //     beta_E = 0.75*beta_E;
+       // account for lost neutrino energy
+       beta_E = 0.75*beta_E;
       
-  //     total  += (fission_E + beta_E);
-  //     // half of the beta energy comes out as gamma-rays
-  //     gtotal += 0.5*beta_E;
-  //   }
+       total  += (fission_E + beta_E);
+       // half of the beta energy comes out as gamma-rays
+       gtotal += 0.5*beta_E;
+     }
       
   *gfrac = gtotal/total;
   if (total == 0) *gfrac = 0;
