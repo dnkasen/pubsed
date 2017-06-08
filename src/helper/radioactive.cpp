@@ -4,6 +4,7 @@
 #include <iostream>
 #include "radioactive.h"
 #include "physical_constants.h"
+#include "sedona.h"
 
 namespace pc = physical_constants;
 
@@ -90,7 +91,7 @@ void radioactive::decay_composition
 // integrated over all species
 //--------------------------------------------------------------
 double radioactive::decay
-(std::vector<int> elem_Z, std::vector<int> elem_A, std::vector<real> X, double t, double *gfrac)
+(std::vector<int> elem_Z, std::vector<int> elem_A, std::vector<double> X, double t, double *gfrac)
 {
   double total  = 0;
   double gtotal = 0;
