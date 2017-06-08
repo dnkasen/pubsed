@@ -57,6 +57,7 @@ class transport
   int    verbose;
   int    use_detailed_lines_;
   int    omit_scattering_;
+  int    store_Jnu_; 
 
   // current time in simulation
   double t_now_;

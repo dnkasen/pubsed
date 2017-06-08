@@ -58,7 +58,7 @@ double transport::rad_eq_function(int c,double T)
     double B_nu = blackbody_nu(T,nu);
     double kappa_abs = abs_opacity_[c][i];
     E_emitted += 4.0*pc::pi*kappa_abs*B_nu*dnu;
-    Eab += 4.0*pc::pi*kappa_abs*J_nu_[c][i]*dnu;
+    //Eab += 4.0*pc::pi*kappa_abs*J_nu_[c][i]*dnu;
   }
   //if (verbose) std::cout << c << " " << E_emitted << " " << Eab << " " << grid->z[c].e_abs << " " << grid->z[c].L_radio_dep << "\n";
 

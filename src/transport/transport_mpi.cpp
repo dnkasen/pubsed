@@ -16,8 +16,9 @@ void transport::wipe_radiation()
     grid->z[i].e_rad  = 0;
     grid->z[i].e_abs  = 0;
     grid->z[i].L_radio_dep = 0;
-    for (int j=0;j<nu_grid.size();j++)
-      J_nu_[i][j] = 0;
+    if (store_Jnu_)
+      for (int j=0;j<nu_grid.size();j++)
+        J_nu_[i][j] = 0;
     grid->z[i].L_radio_emit = 0;
     //grid->z[i].fx_rad = 0;
     //grid->z[i].fy_rad = 0;
@@ -134,28 +135,31 @@ void transport::reduce_opacities()
   if (nz_per_block < 1)  nz_per_block  = 1;
 
   // new block size
-  blocksize = ng;
-  double *src = new double[blocksize];
-  double *dst = new double[blocksize];
-  for (int i=0;i<nz;i++)
+  if (store_Jnu_)
   {
-    for (int j=0;j<blocksize;j++)
+    blocksize = ng;
+    double *src = new double[blocksize];
+    double *dst = new double[blocksize];
+    for (int i=0;i<nz;i++)
     {
+      for (int j=0;j<blocksize;j++)
+      {
       src[j] = J_nu_[i][j];
       dst[j] = 0.0;
+      }
+      MPI_Allreduce(src,dst,blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+      for (int j=0;j<blocksize;j++)
+        J_nu_[i][j] = dst[j]/MPI_nprocs;
     }
-    MPI_Allreduce(src,dst,blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    for (int j=0;j<blocksize;j++)
-      J_nu_[i][j] = dst[j]/MPI_nprocs;
-  }
-  delete[] src;
-  delete[] dst;
+    delete[] src;
+    delete[] dst;
+  } 
 
    //=************************************************
   // do zone scalars
   //=************************************************
-  src = new double[nz];
-  dst = new double[nz];
+  double *src = new double[nz];
+  double *dst = new double[nz];
   for (int i=0;i<nz;i++)
   {
     src[i] = grid->z[i].e_abs;
@@ -189,7 +193,7 @@ void transport::reduce_opacities()
     //grid->z[i].fy_rad  /= vol*pc::c*dt;
     //grid->z[i].fz_rad  /= vol*pc::c*dt;
 
-    if (nu_grid.size() == 1)
+    if ((nu_grid.size() == 1)||(!store_Jnu_))
     {
       grid->z[i].e_rad = J_nu_[i][0]/(vol*dt*pc::c);
     }

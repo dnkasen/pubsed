@@ -137,7 +137,9 @@ void transport::write_opacities(int iw)
     H5LTmake_dataset(zone_id,"emissivity",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
     // write radiation field J
-    for (int j=0;j<n_nu;j++)  tmp_array[j] = J_nu_[i][j];
+    for (int j=0;j<n_nu;j++)  {
+      if (store_Jnu_) tmp_array[j] = J_nu_[i][j];
+      else tmp_array[j] = 0; }
     H5LTmake_dataset(zone_id,"Jnu",RANK,dims,H5T_NATIVE_FLOAT,tmp_array); 
 
     H5Gclose(zone_id);

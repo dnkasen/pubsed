@@ -140,25 +140,48 @@ void transport::init(ParameterReader* par, grid_general *g)
   for (size_t i=0;i<line_sqrt_Mion_.size();i++)
     line_sqrt_Mion_[i] = sqrt(line_sqrt_Mion_[i]);
 
-  // allocate and initalize space for opacities
+  // parameters for storing opacities
   n_lines_ = gas.get_number_of_lines();
   omit_scattering_ = params_->getScalar<int>("opacity_no_scattering");
+  store_Jnu_ = params_->getScalar<int>("transport_store_Jnu");
+  // sanity check
+  if ((!store_Jnu_)&&(use_nlte)) 
+    std::cout << "WARNING: not storing Jnu while using NLTE; Bad idea!\n";
+
   line_opacity_.resize(grid->n_zones);
   abs_opacity_.resize(grid->n_zones);
   if (!omit_scattering_) scat_opacity_.resize(grid->n_zones);
   emissivity_.resize(grid->n_zones);
   J_nu_.resize(grid->n_zones);
+
   for (int i=0; i<grid->n_zones;  i++)
   {
     if (use_detailed_lines_)
       line_opacity_[i].resize(n_lines_);
-  try {
-    abs_opacity_[i].resize(nu_grid.size()); }
+   
+    // allocate absorptive opacity
+    try {
+      abs_opacity_[i].resize(nu_grid.size()); }
     catch (std::bad_alloc const&) {
-cout << "Memory allocation fail!" << std::endl; }
-    scat_opacity_[i].resize(nu_grid.size());
+      cout << "Memory allocation fail!" << std::endl; }
+   
+    // allocate scattering opacity
+    if (!omit_scattering_)
+    {
+      try {
+        scat_opacity_[i].resize(nu_grid.size()); }
+     catch (std::bad_alloc const&) {
+        cout << "Memory allocation fail!" << std::endl; }
+    }
+
+    // allocate emissivity
     emissivity_[i].resize(nu_grid.size());
-    J_nu_[i].resize(nu_grid.size());
+
+    // allocate Jnu (radiation field)
+    if (store_Jnu_)
+      J_nu_[i].resize(nu_grid.size());
+    else 
+      J_nu_[i].resize(1);
   }
   compton_opac.resize(grid->n_zones);
   photoion_opac.resize(grid->n_zones);
