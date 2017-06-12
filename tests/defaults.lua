@@ -24,6 +24,7 @@ transport_radiative_equilibrium  = 0
 transport_steady_iterate         = 0
 transport_boundary_in_reflect    = 0
 transport_boundary_out_reflect   = 0
+transport_store_Jnu              = 1
 
 -- inner source emission = none
 core_n_emit           = 0
