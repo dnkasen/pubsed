@@ -108,32 +108,36 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   delete [] ctmp;
 
   //---------------------------------------------------
-  // Print out properties
+  // Calculate volume, indices, model properties
+  //---------------------------------------------------
+  double totmass = 0, totke = 0, totrad = 0;
+  double *elem_mass = new double[n_elems];
+  for (int k = 0;k < n_elems; k++) elem_mass[k] = 0;
+  cnt = 0;
+  for (int i=0;i<nx_;++i)
+    for (int j=0;j<nz_;++j)
+    {
+      double r0   = i*dx_;
+      double r1   = (i+1)*dx_;
+      double vrsq = z[cnt].v[0]*z[cnt].v[0] + z[cnt].v[2]*z[cnt].v[2];
+      vol_[cnt]   = pc::pi*(r1*r1 - r0*r0)*dz_;
+      index_x_.push_back(i);
+      index_z_.push_back(j);
+
+      // compute integral quantities
+      totmass    += vol_[cnt]*z[cnt].rho;
+      totke      += 0.5*vol_[cnt]*z[cnt].rho*vrsq;
+      totrad     += vol_[cnt]*z[cnt].e_rad;
+      for (int k = 0;k < n_elems; k++) elem_mass[k] += vol_[cnt]*z[cnt].rho*z[cnt].X_gas[k];
+      cnt++;
+    }
+
+  //--------------------------------------------------- 
+  // Printout model properties
   //---------------------------------------------------
   if (verbose)
   {
     std::cout << "# grid: n_zones = " << n_zones << " ; nx = " << nx_ << "; nz = " << nz_ << "\n";
-    double totmass = 0, totke = 0, totrad = 0;
-    double *elem_mass = new double[n_elems];
-    for (int k = 0;k < n_elems; k++) elem_mass[k] = 0;
-    int cnt = 0;
-    for (int i=0;i<nx_;++i)
-      for (int j=0;j<nz_;++j)
-      {
-        double r0   = i*dx_;
-        double r1   = (i+1)*dx_;
-        double vrsq = z[cnt].v[0]*z[cnt].v[0] + z[cnt].v[2]*z[cnt].v[2];
-        vol_[cnt]   = pc::pi*(r1*r1 - r0*r0)*dz_;
-        index_x_.push_back(i);
-        index_z_.push_back(j);
-
-        // compute integral quantities
-        totmass    += vol_[cnt]*z[cnt].rho;
-        totke      += 0.5*vol_[cnt]*z[cnt].rho*vrsq;
-        totrad     += vol_[cnt]*z[cnt].e_rad;
-        for (int k = 0;k < n_elems; k++) elem_mass[k] += vol_[cnt]*z[cnt].rho*z[cnt].X_gas[k];
-        cnt++;
-      }
     printf("# mass = %.4e (%.4e Msun)\n",totmass,totmass/pc::m_sun);
     for (int k=0;k<n_elems;k++) {
       cout << "# " << elems_Z[k] << "." << elems_A[k] <<  "\t";
