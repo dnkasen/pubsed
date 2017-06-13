@@ -22,7 +22,7 @@ def compare(pdf):
     pi  = 3.14159          # just pi
     py.ion()
 
-    T   = 1e4
+    T   = 1.0e4
     L  = 1e43
     r0 = 0.5e15
 
@@ -35,7 +35,9 @@ def compare(pdf):
     Trad = py.array(fin['T_rad'])
 
     
-    py.matshow(Trad)
+    py.matshow(Trad)    
+    py.title('2D core into vacuum test: radiation field')
+    
     if (pdf != ''): pdf.savefig()
     else:
     	py.show()
@@ -50,10 +52,10 @@ def compare(pdf):
 	    rr = (p*p + z[j]*z[j])**0.5
 	    w    = 0.5*(1 - (1 - r0**2/rr**2)**0.5)
 	    TW = (L*w/(4.0*pi*r0**2)/sb)**0.25
-	    py.plot(p,TW,color='red',linewidth=2)
+	    py.plot(p,TW,color='k',linewidth=3)
     
-    py.legend(['sedona Trad','sedona Tgas','analytic solution'])
-    py.title('core into vacuum test: radiation field')
+    py.legend(['sedona Trad','analytic solution'])
+    py.title('2D core into vacuum test: radiation field')
     py.xlabel('radius (cm)')
     py.ylabel('radiation temperature (aT^4 = erad)')
 
@@ -72,20 +74,22 @@ def compare(pdf):
     Lnu = py.array(fin['Lnu'])
     nmu = (Lnu.shape)[2]
     for i in range(nmu):
-	    py.plot(nu,Lnu[0,:,i]) #,color=cmap[i])
+	    py.plot(nu,Lnu[0,:,i],'o') #,color=cmap[i])
     # blackbody spectrum
-    f = 2.0*h*nu**3/c**2/(py.exp(h*nu/k/T) - 1)
+    f = 2.0*nu*h*nu**2.0/c**2/(py.exp(h*nu/k/T) - 1)
     f = f/(sb*T**4/pi)*L
-    py.plot(nu,f,color='black',linewidth=3)
+    py.plot(nu,f,color='black',linewidth=5)
+    py.plot(nu,f,color='white',linewidth=3)
+
 
     py.legend(['sedona','analytic blackbody'])
-    py.title('core into vacuum test: output spectrum')
+    py.title('2D core into vacuum test: output spectrum')
     py.xlabel('frequency (Hz)')
     py.ylabel('Flux')
     py.yscale('log')
     py.xscale('log')
-    py.xlim(1e13,5e15)
-#    py.ylim(1e22,1e29)
+    py.xlim(2e13,4e15)
+    py.ylim(1e24,3e28)
 
     if (pdf != ''): pdf.savefig()
     else:
