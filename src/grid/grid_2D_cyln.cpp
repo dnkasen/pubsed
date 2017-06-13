@@ -432,9 +432,16 @@ void grid_2D_cyln::sample_in_zone
 //************************************************************
 void grid_2D_cyln::get_velocity(int i, double x[3], double D[3], double v[3], double *dvds)
 {
-  v[0] = 0;
-  v[1] = 0;
-  v[2] = 0;
+  double  p = sqrt(x[0]*x[0] + x[1]*x[1]);
+  v[0] = z[i].v[0]*x[0]/p;
+  v[1] = z[i].v[0]*x[1]/p;
+  v[2] = z[i].v[2];
+  if (p == 0)
+  {
+    v[0] = 0;
+    v[1] = 0;
+  }
+
   *dvds = 0;
 
   /*
@@ -468,36 +475,5 @@ void grid_2D_cyln::get_velocity(int i, double x[3], double D[3], double v[3], do
 
 }
 
-// void grid_1D_sphere::get_radial_edges
-// (std::vector<double> &r, double &r0, std::vector<double> &v, double &v0) const
-// {
-//   for (int i=0;i<n_zones;i++)
-//   {
-//     r[i] = r_out[i];
-//     v[i] = z[i].v[0];
-//   }
-//   r0 = r_out.min;
-//   v0 = v_inner_;
-// }
-// void grid_1D_sphere::set_radial_edges
-// (const std::vector<double> r, const double r0, 
-// const std::vector<double> v, const double v0) 
-// {
-//   r_out.min = r0;
-//   v_inner_ = v0;
-//   for (int i=0;i<n_zones;i++)
-//   {
-//     r_out[i] = r[i];
-//     z[i].v[0] = v[i];
-
-//     // calculate shell volume
-//     double r0;
-//     if(i==0) r0 = r_out.min;
-//     else     r0 = r_out[i-1];
-//     vol[i] = 4.0*pc::pi/3.0*(r_out[i]*r_out[i]*r_out[i] - r0*r0*r0);
-//   }
-
-
-//}
 
 
