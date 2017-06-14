@@ -203,6 +203,9 @@ void grid_2D_cyln::write_out(int iw, double tt)
   for (int i=0;i<n_zones;++i) arr[i] = pow(z[i].e_rad/pc::a,0.25);
   H5LTmake_dataset(file_id,"T_rad",2,dims_g,H5T_NATIVE_FLOAT,arr);
 
+  // Close the file 
+  H5Fclose(file_id);
+  
   delete [] arr;
 
 }
