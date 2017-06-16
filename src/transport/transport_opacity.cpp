@@ -143,7 +143,7 @@ int transport::get_opacity(particle &p, double dshift, double &opac, double &eps
     i_nu = nu_grid.locate(nu);
     double a_opac = nu_grid.value_at(nu,abs_opacity_[p.ind],i_nu);
     double s_opac = 0;
-    if (!omit_scattering_) nu_grid.value_at(nu,scat_opacity_[p.ind],i_nu);
+    if (!omit_scattering_) s_opac = nu_grid.value_at(nu,scat_opacity_[p.ind],i_nu);
     opac = a_opac + s_opac;
     if (opac == 0) eps = 0;
     else eps  = a_opac/opac;
