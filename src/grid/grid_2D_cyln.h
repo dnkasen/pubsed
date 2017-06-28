@@ -30,18 +30,16 @@ public:
 
   virtual ~grid_2D_cyln() {}
 
-  void read_model_file(ParameterReader*);
 
   // required functions
+  void    read_model_file(ParameterReader*);
+  void    write_out(int,double);
   int     get_zone(const double *) const;
   double  zone_volume(const int)   const;
   void    sample_in_zone(int, std::vector<double>, double[3]);
   void    get_velocity(int i, double[3], double[3], double[3], double*);
-  void    write_out(int,double);
   void    expand(double);
-
-  int get_next_zone(const double *x, const double *D, int, double, double *dist) const;
-
+  int     get_next_zone(const double *x, const double *D, int, double, double *dist) const;
   void    coordinates(int i,double r[3]) {
     r[0] = 0; r[1] = 0; r[2] = 0;}
 

@@ -137,7 +137,11 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   //---------------------------------------------------
   if (verbose)
   {
-    std::cout << "# grid: n_zones = " << n_zones << " ; nx = " << nx_ << "; nz = " << nz_ << "\n";
+    std::cout << "# gridtype: 2D cylndrical\n";
+    std::cout << "# n_zones = " << n_zones << "\n";
+    std::cout << "# (nx,nz) = (" << nx_ << ", " << nz_ << ")\n";
+    std::cout << "# (dx,dz) = (" << dx_ << ", " << dz_ << ")\n";
+
     printf("# mass = %.4e (%.4e Msun)\n",totmass,totmass/pc::m_sun);
     for (int k=0;k<n_elems;k++) {
       cout << "# " << elems_Z[k] << "." << elems_A[k] <<  "\t";
@@ -248,7 +252,7 @@ int grid_2D_cyln::get_zone(const double *x) const
 
 
 //************************************************************
-// Overly simple search to find zone
+// Find distance to next zone along path
 //************************************************************
 int grid_2D_cyln::get_next_zone
 (const double *x, const double *D, int i, double r_core, double *l) const
