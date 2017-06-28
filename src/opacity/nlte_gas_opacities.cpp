@@ -25,11 +25,11 @@ void nlte_gas::computeOpacity(std::vector<OpacityType>& abs,
   //-----------------------------------------
   if (grey_opacity_ != 0)
   {
-    double opac = dens*grey_opacity_;
+    double gopac = dens*grey_opacity_;
     for (int i=0;i<ns;i++) 
     {
-      abs[i]  = opac*epsilon_;
-      scat[i] = opac*(1-epsilon_);
+      abs[i]  = gopac*epsilon_;
+      scat[i] = gopac*(1-epsilon_);
       double nu = nu_grid.center(i);
       double ezeta = exp(1.0*pc::h*nu/pc::k/temp);
       double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(ezeta-1);
