@@ -8,6 +8,7 @@
 #include "grid_general.h"
 #include "grid_1D_sphere.h"
 #include "grid_2D_cyln.h"
+#include "grid_3D_cart.h"
 #include "hydro_general.h"
 #include "hydro_homologous.h"
 #include "hydro_1D_lagrangian.h"
@@ -37,7 +38,7 @@ int main(int argc, char **argv)
     cout << "##################################\n";
     cout << "############  sedona  ############\n";
     cout << "##################################\n";
-    cout << "#\n# MPI tasks = " << n_procs << endl;
+    cout << "#\n# MPI tasks = " << n_procs << endl << "#" << endl;
 
   }
   
@@ -65,7 +66,7 @@ int main(int argc, char **argv)
   // create a grid of the appropriate type
   if      (grid_type == "grid_1D_sphere") grid = new grid_1D_sphere;
   else if (grid_type == "grid_2D_cyln"  ) grid = new grid_2D_cyln;
-  //else if(grid_type == "grid_3D_cart"  ) grid = new grid_3D_cart;
+  else if (grid_type == "grid_3D_cart"  ) grid = new grid_3D_cart;
   else  {
     if(verbose) cout << "# ERROR: the grid type is not implemented\n";
     exit(3);   }
@@ -155,8 +156,8 @@ int main(int argc, char **argv)
     if (verbose) 
     {
       if (steady_iterate) cout << "# ITERATION: " << it << "\t";
-      else cout << "# TSTEP #" << it << " ; t = "  << t << "; dt = " << dt;
-      cout << "; npacket = " << mcarlo.n_particles() << "\n";
+      else cout << "# TSTEP #" << it << " ; t = " << t << " sec (" << t/3600/24.0 << " days); dt = " << dt;
+      cout << "; particles on grid = " << mcarlo.n_particles() << "\n";
     }
 
     // do hydro step
