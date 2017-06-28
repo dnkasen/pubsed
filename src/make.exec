@@ -10,7 +10,7 @@ include make.inc
 CCOPT = -I$(GSL_INC) -I$(LUA_INC) -I$(HDF_INC)
 CLOPT = -I$(LUA_INC) -L$(GSL_LIB) -L$(LUA_LIB) -L$(HDF_LIB) -llua -lgsl -lgslcblas -lhdf5 -lhdf5_hl
 
-EXCLUDE=sedona.cpp snopac.cpp thread_RNG.cpp grid_3D_cart.cpp
+EXCLUDE=sedona.cpp snopac.cpp thread_RNG.cpp 
 SOURCES=$(filter-out $(EXCLUDE), $(wildcard *.cpp))
 OBJECTS=$(SOURCES:.cpp=.o)
 
