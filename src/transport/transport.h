@@ -63,7 +63,7 @@ class transport
   double t_now_;
 
   // inner boundary
-  double L_core_, r_core_, T_core_, core_frequency_;
+  double L_core_, r_core_, T_core_, time_core_, core_frequency_;
   // emission spectrum from inner boundary
   cdf_array<double> core_emission_spectrum_;
   // emission distribution across zones
@@ -178,6 +178,7 @@ class transport
 
   transport()
   {
+    time_core_ = 0;
   }
 
   //----- functions ---------------

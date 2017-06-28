@@ -224,6 +224,7 @@ void transport::setup_core_emission()
   T_core_         = params_->getScalar<double>("core_temperature");
   core_frequency_ = params_->getScalar<double>("core_photon_frequency");
   L_core_         = params_->getScalar<double>("core_luminosity");
+  time_core_      = params_->getScalar<double>("core_timescale");
 
   // set blackbody from L and R if appropriate
   if ((L_core_ !=0)&&(r_core_ != 0)&&(T_core_ == 0))

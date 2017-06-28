@@ -32,6 +32,7 @@ core_radius           = 0
 core_luminosity       = 0
 core_temperature      = 0
 core_photon_frequency = 0
+core_timescale        = 0
 core_spectrum_file    = ""
 
 -- default particle params
