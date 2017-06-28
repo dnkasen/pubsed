@@ -14,7 +14,7 @@
 #include "nlte_gas.h"
 #include "ParameterReader.h"
 #include "VoigtProfile.h"
-
+#include "sedona.h"
 
 using std::vector;
 
@@ -48,7 +48,9 @@ class transport
   int MPI_myID;
   MPI_Datatype MPI_real;
   int my_zone_start_, my_zone_stop_;
-  
+  double *src_MPI_block, *dst_MPI_block;
+  double *src_MPI_zones, *dst_MPI_zones;
+
   // simulation parameters
   double step_size_;
   int    steady_state;

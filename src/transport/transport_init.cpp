@@ -51,6 +51,12 @@ void transport::init(ParameterReader* par, grid_general *g)
       my_zone_stop_  = stop;
     }
   }
+  // arrays for communication 
+  src_MPI_block = new double[Max_MPI_Blocksize];
+  dst_MPI_block = new double[Max_MPI_Blocksize];
+  src_MPI_zones = new double[nz];
+  dst_MPI_zones = new double[nz];
+
 //  std::cout << MPI_myID <<  " " << my_zone_start_ << " " << my_zone_stop_ << 
 //   " " << my_zone_stop_ - my_zone_start_ << "\n";
 

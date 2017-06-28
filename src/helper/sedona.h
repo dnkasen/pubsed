@@ -4,5 +4,8 @@
 // define real to choose either double or float precision
 //typedef float real;
 typedef double real;
-typedef float  OpacityType;
+typedef double  OpacityType;
+
+#define Max_MPI_Blocksize 1000000
+
 #endif

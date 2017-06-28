@@ -42,7 +42,11 @@ void transport::reduce_opacities()
   int nz = grid->n_zones;
 
   // maximum size of transfer blocks
-  int max_blocksize = 1000000;
+  int max_blocksize = Max_MPI_Blocksize;
+  if (nw > Max_MPI_Blocksize) {
+    std::cout << "Error, frequency grid is bigger than MPI_Max_Blocksize\n";
+    exit(1);
+  }
 
   // number of zones that fit into a transfer block
   int nz_per_block      = floor(1.0*max_blocksize/nw);
@@ -53,12 +57,13 @@ void transport::reduce_opacities()
   int last_blocksize    = nw*nz - n_blocks*blocksize;
   int last_nz_per_block = nz - nz_per_block*n_blocks;
 
- // std::cout << nz_per_block << " " << n_blocks << " " << blocksize << " " << blocksize*n_blocks << " " << last_blocksize << "\n";
- // std::cout << nw*nz << " " << blocksize*n_blocks + last_blocksize << " " << last_nz_per_block << "\n";
+  // sanity check
+  if (blocksize > Max_MPI_Blocksize)
+  {
+    std::cout << "Error, Blocksize greater than MPI_Max_Blocksize\n";
+    exit(1);
+  }
 
-  double *src = new double[blocksize];
-  double *dst = new double[blocksize];
-  
   int cnt;
   //-----------------------------
   // loop over blocks
@@ -80,19 +85,19 @@ void transport::reduce_opacities()
       int iz = i*nz_per_block + j; 
       for (int k=0;k<nw;k++)
       {
-        src[cnt] = abs_opacity_[iz][k];
-        dst[cnt] = 0.0;
+        src_MPI_block[cnt] = abs_opacity_[iz][k];
+        dst_MPI_block[cnt] = 0.0;
         cnt++;
       }
     }
-    MPI_Allreduce(src,dst,this_blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    MPI_Allreduce(src_MPI_block,dst_MPI_block,this_blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
     cnt = 0;
     for (int j=0;j<this_nz;j++)
     {
       int iz = i*nz_per_block + j; 
       for (int k=0;k<nw;k++)
       {
-        abs_opacity_[iz][k] = (OpacityType)dst[cnt];
+        abs_opacity_[iz][k] = (OpacityType)dst_MPI_block[cnt];
         cnt++;
       }
     }
@@ -109,19 +114,19 @@ void transport::reduce_opacities()
         int iz = i*nz_per_block + j; 
         for (int k=0;k<nw;k++)
         {
-          src[cnt] = scat_opacity_[iz][k];
-          dst[cnt] = 0.0;
+          src_MPI_block[cnt] = scat_opacity_[iz][k];
+          dst_MPI_block[cnt] = 0.0;
           cnt++;
         }
       }
-      MPI_Allreduce(src,dst,this_blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+      MPI_Allreduce(src_MPI_block,dst_MPI_block,this_blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
       cnt = 0;
       for (int j=0;j<this_nz;j++)
       {
         int iz = i*nz_per_block + j; 
         for (int k=0;k<nw;k++)
         {  
-          scat_opacity_[iz][k] = (OpacityType)dst[cnt];
+          scat_opacity_[iz][k] = (OpacityType)dst_MPI_block[cnt];
           cnt++;
         }
       }
@@ -136,52 +141,42 @@ void transport::reduce_opacities()
       int iz = i*nz_per_block + j; 
       for (int k=0;k<nw;k++)
       {
-        src[cnt] = emissivity_[iz].get_value(k);
-        dst[cnt] = 0.0;
+        src_MPI_block[cnt] = emissivity_[iz].get_value(k);
+        dst_MPI_block[cnt] = 0.0;
         cnt++;
       }
     }
-    MPI_Allreduce(src,dst,this_blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    MPI_Allreduce(src_MPI_block,dst_MPI_block,this_blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
     cnt = 0;
     for (int j=0;j<this_nz;j++)
     {
       int iz = i*nz_per_block + j; 
       for (int k=0;k<nw;k++)
       {
-        emissivity_[iz].set_value(k,(OpacityType)dst[cnt]);
+        emissivity_[iz].set_value(k,(OpacityType)dst_MPI_block[cnt]);
         cnt++;
       }
     }
   }
-  // normalize emissivity cdf just in case
-  //for (int i=0;i<nz;i++) emissivity_[i].normalize();
-
-  delete[] src;
-  delete[] dst;
 
   //=************************************************
   // do zone scalars
   //=************************************************
-  src = new double[nz];
-  dst = new double[nz];
   for (int i=0;i<nz;i++)
   {
-    src[i] = compton_opac[i];
-    dst[i] = 0.0;
+    src_MPI_zones[i] = compton_opac[i];
+    dst_MPI_zones[i] = 0.0;
   }
-  MPI_Allreduce(src,dst,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-  for (int i=0;i<nz;i++) compton_opac[i] = dst[i];
+  MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  for (int i=0;i<nz;i++) compton_opac[i] = dst_MPI_zones[i];
 
   for (int i=0;i<nz;i++)
   {
-    src[i] = photoion_opac[i];
-    dst[i] = 0.0;
+    src_MPI_zones[i] = photoion_opac[i];
+    dst_MPI_zones[i] = 0.0;
   }
-  MPI_Allreduce(src,dst,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-  for (int i=0;i<nz;i++) photoion_opac[i] = dst[i];
-
-  delete[] src;
-  delete[] dst;
+  MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  for (int i=0;i<nz;i++) photoion_opac[i] = dst_MPI_zones[i];
 }
 
 //------------------------------------------------------------
@@ -196,20 +191,16 @@ void transport::reduce_opacities()
   // do zone scalar
   //=************************************************
   int nz = grid->n_zones;
-  double *src = new double[nz];
-  double *dst = new double[nz];
   for (int i=0;i<nz;i++)
   {
-    src[i] = 0;
-    dst[i] = 0.0;
+    src_MPI_zones[i] = 0;
+    dst_MPI_zones[i] = 0.0;
   }
   for (int i=my_zone_start_;i<my_zone_stop_;i++)
-    src[i] = grid->z[i].T_gas;
+    src_MPI_zones[i] = grid->z[i].T_gas;
 
-  MPI_Allreduce(src,dst,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-  for (int i=0;i<nz;i++) grid->z[i].T_gas = dst[i];
-  delete[] src;
-  delete[] dst;
+  MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  for (int i=0;i<nz;i++) grid->z[i].T_gas = dst_MPI_zones[i];
  }
 
 //------------------------------------------------------------
@@ -252,26 +243,20 @@ void transport::reduce_opacities()
      //=************************************************
     // do zone scalars
     //=************************************************
-    double *src = new double[nz];
-    double *dst = new double[nz];
     for (int i=0;i<nz;i++)
     {
-      src[i] = grid->z[i].e_abs;
-      dst[i] = 0.0;
+      src_MPI_zones[i] = grid->z[i].e_abs;
+      dst_MPI_zones[i] = 0.0;
     }
-    MPI_Allreduce(src,dst,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    for (int i=0;i<nz;i++) grid->z[i].e_abs = dst[i]/MPI_nprocs;
+    MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    for (int i=0;i<nz;i++) grid->z[i].e_abs = dst_MPI_zones[i]/MPI_nprocs;
     for (int i=0;i<nz;i++)
     {
-      src[i] = grid->z[i].L_radio_dep;
-      dst[i] = 0.0;
+      src_MPI_zones[i] = grid->z[i].L_radio_dep;
+      dst_MPI_zones[i] = 0.0;
     }
-    MPI_Allreduce(src,dst,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    for (int i=0;i<nz;i++) grid->z[i].L_radio_dep = dst[i]/MPI_nprocs;
-
-
-    delete[] src;
-    delete[] dst;
+    MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    for (int i=0;i<nz;i++) grid->z[i].L_radio_dep = dst_MPI_zones[i]/MPI_nprocs;
   }
 
   //=************************************************
