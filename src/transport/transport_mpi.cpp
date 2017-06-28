@@ -35,63 +35,127 @@ void transport::reduce_opacities()
   //=************************************************
   // do zone vectors
   //=************************************************
+  if (MPI_nprocs == 1) return;
 
-  // eventually do a smarter reduction
-  int ng = nu_grid.size();
+  // dimensions
+  int nw = nu_grid.size();
   int nz = grid->n_zones;
-  int blocksize = 100000; // transfer around 10 million # per round
-  int nz_per_block = floor(blocksize/ng);
-  if (nz_per_block > nz) nz_per_block = nz;
-  if (nz_per_block < 1)  nz_per_block  = 1;
 
-  // new block size
-  blocksize = ng;
+  // maximum size of transfer blocks
+  int max_blocksize = 1000000;
+
+  // number of zones that fit into a transfer block
+  int nz_per_block      = floor(1.0*max_blocksize/nw);
+  // actual blocksize and # of blocks
+  int blocksize         = nz_per_block*nw;
+  int n_blocks          = floor(1.0*nw*nz/blocksize);
+  // size of last block to pick up remainder
+  int last_blocksize    = nw*nz - n_blocks*blocksize;
+  int last_nz_per_block = nz - nz_per_block*n_blocks;
+
+ // std::cout << nz_per_block << " " << n_blocks << " " << blocksize << " " << blocksize*n_blocks << " " << last_blocksize << "\n";
+ // std::cout << nw*nz << " " << blocksize*n_blocks + last_blocksize << " " << last_nz_per_block << "\n";
+
   double *src = new double[blocksize];
   double *dst = new double[blocksize];
-  for (int i=0;i<nz;i++)
+  
+  int cnt;
+  //-----------------------------
+  // loop over blocks
+  //-----------------------------
+  for (int i=0;i<n_blocks+1;i++)
   {
+    int this_nz        = nz_per_block;
+    int this_blocksize = blocksize;
+    if (i == n_blocks) {
+      this_nz = last_nz_per_block;
+      this_blocksize = last_blocksize; }
+
     //-----------------------------
     // absorptive opacity
     //-----------------------------
-    for (int j=0;j<blocksize;j++)
+    cnt = 0;
+    for (int j=0;j<this_nz;j++)
     {
-      src[j] = abs_opacity_[i][j];
-      dst[j] = 0.0;
+      int iz = i*nz_per_block + j; 
+      for (int k=0;k<nw;k++)
+      {
+        src[cnt] = abs_opacity_[iz][k];
+        dst[cnt] = 0.0;
+        cnt++;
+      }
     }
-    MPI_Allreduce(src,dst,blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    for (int j=0;j<blocksize;j++)
-      abs_opacity_[i][j] = (OpacityType)dst[j];
+    MPI_Allreduce(src,dst,this_blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    cnt = 0;
+    for (int j=0;j<this_nz;j++)
+    {
+      int iz = i*nz_per_block + j; 
+      for (int k=0;k<nw;k++)
+      {
+        abs_opacity_[iz][k] = (OpacityType)dst[cnt];
+        cnt++;
+      }
+    }
+
 
     //-----------------------------
     // scattering opacity
     //-----------------------------
     if (!omit_scattering_)
     {
-      for (int j=0;j<blocksize;j++)
+      cnt = 0;
+      for (int j=0;j<this_nz;j++)
       {
-        src[j] = scat_opacity_[i][j];
-        dst[j] = 0.0;
+        int iz = i*nz_per_block + j; 
+        for (int k=0;k<nw;k++)
+        {
+          src[cnt] = scat_opacity_[iz][k];
+          dst[cnt] = 0.0;
+          cnt++;
+        }
       }
-      MPI_Allreduce(src,dst,blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-      for (int j=0;j<blocksize;j++)
-        scat_opacity_[i][j] = (OpacityType)dst[j];
+      MPI_Allreduce(src,dst,this_blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+      cnt = 0;
+      for (int j=0;j<this_nz;j++)
+      {
+        int iz = i*nz_per_block + j; 
+        for (int k=0;k<nw;k++)
+        {  
+          scat_opacity_[iz][k] = (OpacityType)dst[cnt];
+          cnt++;
+        }
+      }
     }
 
     //-----------------------------
     // emissivity
     //-----------------------------
-    for (int j=0;j<blocksize;j++)
+    cnt = 0;
+    for (int j=0;j<this_nz;j++)
     {
-      src[j] = emissivity_[i].get_value(j);
-      dst[j] = 0.0;
+      int iz = i*nz_per_block + j; 
+      for (int k=0;k<nw;k++)
+      {
+        src[cnt] = emissivity_[iz].get_value(k);
+        dst[cnt] = 0.0;
+        cnt++;
+      }
     }
-    MPI_Allreduce(src,dst,blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    for (int j=0;j<blocksize;j++)
-      emissivity_[i].set_value(j,(OpacityType)dst[j]);
-
-    // normalize emissivity cdf
-    emissivity_[i].normalize();
+    MPI_Allreduce(src,dst,this_blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    cnt = 0;
+    for (int j=0;j<this_nz;j++)
+    {
+      int iz = i*nz_per_block + j; 
+      for (int k=0;k<nw;k++)
+      {
+        emissivity_[iz].set_value(k,(OpacityType)dst[cnt]);
+        cnt++;
+      }
+    }
   }
+  // normalize emissivity cdf just in case
+  //for (int i=0;i<nz;i++) emissivity_[i].normalize();
+
   delete[] src;
   delete[] dst;
 
@@ -121,63 +185,94 @@ void transport::reduce_opacities()
 }
 
 //------------------------------------------------------------
+// Combine the solved for temperature in zones
+// from all processors using MPI 
+//------------------------------------------------------------
+ void transport::reduce_Tgas()
+ {
+  if (MPI_nprocs == 1) return;
+
+  //=************************************************
+  // do zone scalar
+  //=************************************************
+  int nz = grid->n_zones;
+  double *src = new double[nz];
+  double *dst = new double[nz];
+  for (int i=0;i<nz;i++)
+  {
+    src[i] = 0;
+    dst[i] = 0.0;
+  }
+  for (int i=my_zone_start_;i<my_zone_stop_;i++)
+    src[i] = grid->z[i].T_gas;
+
+  MPI_Allreduce(src,dst,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  for (int i=0;i<nz;i++) grid->z[i].T_gas = dst[i];
+  delete[] src;
+  delete[] dst;
+ }
+
+//------------------------------------------------------------
 // Combine the radiation tallies in all zones
 // from all processors using MPI 
 //------------------------------------------------------------
  void transport::reduce_radiation(double dt)
 {
-  // eventually do a smarter reduction
-  int ng = nu_grid.size();
-  int nz = grid->n_zones;
-  int blocksize = 100000; // transfer around 10 million # per round
-  int nz_per_block = floor(blocksize/ng);
-  if (nz_per_block > nz) nz_per_block = nz;
-  if (nz_per_block < 1)  nz_per_block  = 1;
-
-  // new block size
-  if (store_Jnu_)
+  if (MPI_nprocs > 1)
   {
-    blocksize = ng;
-    double *src = new double[blocksize];
-    double *dst = new double[blocksize];
+  // eventually do a smarter reduction
+    int ng = nu_grid.size();
+    int nz = grid->n_zones;
+    int blocksize = 100000; // transfer around 10 million # per round
+    int nz_per_block = floor(blocksize/ng);
+    if (nz_per_block > nz) nz_per_block = nz;
+    if (nz_per_block < 1)  nz_per_block  = 1;
+
+    // new block size
+    if (store_Jnu_)
+    {
+      blocksize = ng;
+      double *src = new double[blocksize];
+      double *dst = new double[blocksize];
+      for (int i=0;i<nz;i++)
+      {
+        for (int j=0;j<blocksize;j++)
+        {
+        src[j] = J_nu_[i][j];
+        dst[j] = 0.0;
+        }
+        MPI_Allreduce(src,dst,blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+        for (int j=0;j<blocksize;j++)
+          J_nu_[i][j] = dst[j]/MPI_nprocs;
+      }
+      delete[] src;
+      delete[] dst;
+    } 
+
+     //=************************************************
+    // do zone scalars
+    //=************************************************
+    double *src = new double[nz];
+    double *dst = new double[nz];
     for (int i=0;i<nz;i++)
     {
-      for (int j=0;j<blocksize;j++)
-      {
-      src[j] = J_nu_[i][j];
-      dst[j] = 0.0;
-      }
-      MPI_Allreduce(src,dst,blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-      for (int j=0;j<blocksize;j++)
-        J_nu_[i][j] = dst[j]/MPI_nprocs;
+      src[i] = grid->z[i].e_abs;
+      dst[i] = 0.0;
     }
+    MPI_Allreduce(src,dst,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    for (int i=0;i<nz;i++) grid->z[i].e_abs = dst[i]/MPI_nprocs;
+    for (int i=0;i<nz;i++)
+    {
+      src[i] = grid->z[i].L_radio_dep;
+      dst[i] = 0.0;
+    }
+    MPI_Allreduce(src,dst,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    for (int i=0;i<nz;i++) grid->z[i].L_radio_dep = dst[i]/MPI_nprocs;
+
+
     delete[] src;
     delete[] dst;
-  } 
-
-   //=************************************************
-  // do zone scalars
-  //=************************************************
-  double *src = new double[nz];
-  double *dst = new double[nz];
-  for (int i=0;i<nz;i++)
-  {
-    src[i] = grid->z[i].e_abs;
-    dst[i] = 0.0;
   }
-  MPI_Allreduce(src,dst,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-  for (int i=0;i<nz;i++) grid->z[i].e_abs = dst[i]/MPI_nprocs;
-  for (int i=0;i<nz;i++)
-  {
-    src[i] = grid->z[i].L_radio_dep;
-    dst[i] = 0.0;
-  }
-  MPI_Allreduce(src,dst,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-  for (int i=0;i<nz;i++) grid->z[i].L_radio_dep = dst[i]/MPI_nprocs;
-
-
-  delete[] src;
-  delete[] dst;
 
   //=************************************************
   // properly normalize the radiative quantities

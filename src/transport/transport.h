@@ -162,6 +162,7 @@ class transport
   // radiation quantities functions
   void wipe_radiation();
   void reduce_radiation(double);
+  void reduce_Tgas();
 
   // solve equilibrium temperature
   void solve_eq_temperature();
