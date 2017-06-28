@@ -31,13 +31,19 @@ void transport::step(double dt)
   tstr = MPI_Wtime();
   set_opacity();
   tend = MPI_Wtime();
-  if (verbose) cout << "# Calculated opacities (" << (tend-tstr) << " secs) \n";
+  if (verbose) cout << "# Calculated opacities   (" << (tend-tstr) << " secs) \n";
+
+  // mpi combine the opacities calculated
   tstr = MPI_Wtime();
+  reduce_opacities();
+  tend = MPI_Wtime();
+  if (verbose) cout << "# Communicated opacities (" << (tend-tstr) << " secs) \n";
 
   // clear the tallies of the radiation quantities in each zone
   wipe_radiation();
 
   // emit new particles
+  tstr = MPI_Wtime();
   emit_particles(dt);
   
   // Propagate the particles
@@ -61,16 +67,24 @@ void transport::step(double dt)
   }
 
   tend = MPI_Wtime();
-  if (verbose) cout << "# Propagated particles (" << (tend-tstr) << " secs) \n";
+  if (verbose) cout << "# Propagated particles          (" << (tend-tstr) << " secs) \n";
 
   // normalize and MPI combine radiation tallies
   reduce_radiation(dt);
 
   // solve for T_gas structure if radiative eq. applied
-  if (radiative_eq) solve_eq_temperature();
-   
+  if (radiative_eq) 
+  {
+    tstr = MPI_Wtime();
+    solve_eq_temperature();
+    tend = MPI_Wtime();
+    if (verbose) cout << "# Calculated Radiative Equilib (" << (tend-tstr) << " secs) \n";
+  }
   // advance time step
   if (!steady_state) t_now_ += dt;
+
+ 
+
 }
 
 

@@ -65,7 +65,7 @@ void transport::set_opacity()
 
     // calculate the opacities/emissivities
     gas.computeOpacity(abs_opacity_[i],scat,emis);
-  
+
     // save and normalize emissivity cdf
     grid->z[i].L_thermal = 0;
     if (nu_grid.size() == 1)
@@ -82,7 +82,8 @@ void transport::set_opacity()
       grid->z[i].L_thermal += 4*pc::pi*emis[j]*ednu;
       if (!omit_scattering_) scat_opacity_[i][j] = scat[j];
     }
-    
+    emissivity_[i].normalize();
+
     // set line opacities
     if (use_detailed_lines_)
       gas.get_line_opacities(line_opacity_[i]);
@@ -105,9 +106,6 @@ void transport::set_opacity()
       photoion_opac[i] += ndens*2.0*pc::thomson_cs*photo;
     }
   }
-
-  // mpi combine the opacities calculated
-  reduce_opacities();
 
   // turn nlte back on after first step, if wanted
   if (first_step_) {
