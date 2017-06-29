@@ -55,7 +55,7 @@ fout.close()
 
 
 # openfile
-fout = h5py.File('nickelball_1d.h5','w')
+fout = h5py.File('nickelball_1D.h5','w')
 fout.create_dataset('Version',data=[0],dtype='i')
 fout.create_dataset('Z',data=Z,dtype='i')
 fout.create_dataset('A',data=A,dtype='i')
@@ -108,7 +108,7 @@ for i in range(nx):
 
 
 
-fout = h5py.File('nickelball_2d.h5','w')
+fout = h5py.File('nickelball_2D.h5','w')
 fout.create_dataset('Z',data=Z,dtype='i')
 fout.create_dataset('A',data=A,dtype='i')
 fout.create_dataset('rho',data=rho,dtype='d')
