@@ -85,6 +85,9 @@ class Lua
       /// Obtain a vector element from a table in the Lua state, without error even if nil.  Second value is true if not nil.
       template< typename T, typename U > std::pair< std::vector< T >, bool > vector_pair( const char* param, U const key );
 
+      std::pair<double,bool> get_function_pair(const char* param, double x);
+
+
    private :
 
       /// Puts a key on the end of the Lua state.
@@ -245,5 +248,9 @@ void Lua::get_value( const char* param, T& value )
    if( ! lua_isnumber( _lua_state, -1 ) ) error( "'%s' should be number\n", param );
    value = (T)lua_tonumber( _lua_state, -1 );
 }
+
+
+
+
 
 #endif

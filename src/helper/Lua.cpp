@@ -97,3 +97,43 @@ void Lua::get_value( const char* param, bool& value )
    if( ! lua_isboolean( _lua_state, -1 ) ) error( "'%s' should be a boolean\n", param );
    value = (bool)lua_toboolean( _lua_state, -1 );
 }
+
+std::pair< double, bool > Lua::get_function_pair(const char* param, double x)
+{
+   std::pair< double, bool > value;
+   value.second = true;
+
+   // set variable name
+   lua_getglobal(_lua_state, param);
+
+
+   // check if it exists
+   if( lua_isnil( _lua_state, -1 ) ) 
+   {
+      value.second = false;
+   }
+   else
+   {
+         printf("HI\n");
+      // check if this variable is a function
+      if (lua_isfunction(_lua_state, -1))
+      {
+         // pass the first argument 
+         lua_pushnumber(_lua_state, x);
+         // call the function with 1 arguments, return 1 result 
+         lua_call(_lua_state, 1, 1);
+         // get the result
+         value.first = (double)lua_tonumber(_lua_state, -1);
+         printf("YEAH\n");
+       }
+      // if not function try to return scalar
+      else
+      {
+         printf("GOG\n");
+         get_value( param, value.first );
+         value.second = true;
+      }
+    }
+   lua_pop(_lua_state, 1);
+   return value;
+}
