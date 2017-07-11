@@ -17,6 +17,7 @@ nlte_gas::nlte_gas()
   use_nlte_ = 0;
   e_gamma = 0;
   no_ground_recomb = 0;
+  line_velocity_width_ = 0;
 }
 
 //----------------------------------------------------------------
@@ -454,7 +455,7 @@ void nlte_gas::print()
   std::cout << "# A_mu = " << A_mu << "\n";
   for (size_t i=0;i<elem_Z.size();++i)
     printf("%4d %12.4e %12.4e\n",elem_Z[i],mass_frac[i],atoms[i].get_ion_frac());
-  for (size_t i=0;i<elem_Z.size();++i)
-    atoms[i].print();
+  //for (size_t i=0;i<elem_Z.size();++i)
+  //  atoms[i].print();
 }
  
