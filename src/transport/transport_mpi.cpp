@@ -102,7 +102,6 @@ void transport::reduce_opacities()
       }
     }
 
-
     //-----------------------------
     // scattering opacity
     //-----------------------------
@@ -131,7 +130,6 @@ void transport::reduce_opacities()
         }
       }
     }
-
     //-----------------------------
     // emissivity
     //-----------------------------
@@ -141,7 +139,7 @@ void transport::reduce_opacities()
       int iz = i*nz_per_block + j; 
       for (int k=0;k<nw;k++)
       {
-        src_MPI_block[cnt] = emissivity_[iz].get_value(k);
+        src_MPI_block[cnt] = emissivity_[iz].get(k);
         dst_MPI_block[cnt] = 0.0;
         cnt++;
       }
@@ -153,7 +151,7 @@ void transport::reduce_opacities()
       int iz = i*nz_per_block + j; 
       for (int k=0;k<nw;k++)
       {
-        emissivity_[iz].set_value(k,(OpacityType)dst_MPI_block[cnt]);
+        emissivity_[iz].set(k,(OpacityType)dst_MPI_block[cnt]);
         cnt++;
       }
     }
