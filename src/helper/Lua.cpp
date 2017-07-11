@@ -114,7 +114,6 @@ std::pair< double, bool > Lua::get_function_pair(const char* param, double x)
    }
    else
    {
-         printf("HI\n");
       // check if this variable is a function
       if (lua_isfunction(_lua_state, -1))
       {
@@ -124,12 +123,10 @@ std::pair< double, bool > Lua::get_function_pair(const char* param, double x)
          lua_call(_lua_state, 1, 1);
          // get the result
          value.first = (double)lua_tonumber(_lua_state, -1);
-         printf("YEAH\n");
        }
       // if not function try to return scalar
       else
       {
-         printf("GOG\n");
          get_value( param, value.first );
          value.second = true;
       }

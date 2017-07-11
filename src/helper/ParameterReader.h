@@ -56,7 +56,8 @@ class ParameterReader
 
 
   // get a scalar quantity
-  template< typename T > T getScalar( const char* label )
+  template< typename T > T 
+  getScalar( const char* label )
   {
     // look for  value in the parameter file
     std::pair< T, bool > value = params_.scalar_pair< T >( label );
@@ -74,7 +75,8 @@ class ParameterReader
 
 
   // get a vector quantity
-  template< typename T > std::vector< T > getVector( const char* label )
+  template< typename T > std::vector< T > 
+  getVector( const char* label )
   {
     // look for  value in the parameter file
     std::pair< std::vector<T>, bool > value = params_.vector_pair< T >( label );
@@ -90,7 +92,8 @@ class ParameterReader
     exit(1);
   }
 
-  template< typename T > std::vector< T > getArray( const char* label )
+  template< typename T > std::vector< T > 
+  getArray( const char* label )
   {   
     std::vector<T> list = getVector<double>(label);
     std::vector<T> arr;
@@ -122,7 +125,28 @@ class ParameterReader
     }
     return arr;
   }
+
+  // get a double quantity from a function with 1 parameter
+  double getFunction( const char* label, double x )
+  {
+    // look for  value in the parameter file
+    std::pair< double, bool > value = params_.get_function_pair( label, x );
+    // if there, return it
+    if (value.second) return value.first;
+    // otherwise look in the defaults file
+    value = defaults_.get_function_pair( label, x);
+    // if there, return it
+    if (value.second) return value.first;
+    // otherwise we have a problem
+    if (verbose_) std::cout << "Can't find parameter \"" << label << 
+       "\" in either param file or defaults; exiting\n";
+    exit(1);
+  }
+
+
 };
+
+
 
 
 #endif
