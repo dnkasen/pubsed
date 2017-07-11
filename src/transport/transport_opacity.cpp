@@ -62,6 +62,7 @@ void transport::set_opacity()
    
     // solve for the state 
     if (!gas.grey_opacity_) solve_error = gas.solve_state(J_nu_[i]);
+    //gas.print();
 
     // calculate the opacities/emissivities
     gas.computeOpacity(abs_opacity_[i],scat,emis);
@@ -81,6 +82,12 @@ void transport::set_opacity()
       emissivity_[i].set_value(j,ednu);
       grid->z[i].L_thermal += 4*pc::pi*emis[j]*ednu;
       if (!omit_scattering_) scat_opacity_[i][j] = scat[j];
+     
+      // check for maximum opacity
+      if (scat_opacity_[i][j] > maximum_opacity_* z->rho)
+        scat_opacity_[i][j]   = maximum_opacity_* z->rho;
+      if (abs_opacity_[i][j]  > maximum_opacity_* z->rho)
+        abs_opacity_[i][j]    = maximum_opacity_* z->rho;
     }
     emissivity_[i].normalize();
 

@@ -60,6 +60,7 @@ class transport
   int    use_detailed_lines_;
   int    omit_scattering_;
   int    store_Jnu_; 
+  double maximum_opacity_;
 
   // current time in simulation
   double t_now_;
