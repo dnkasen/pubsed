@@ -181,7 +181,7 @@ void transport::emit_radioactive(double dt)
   double E_p = L_tot*dt/(1.0*my_n_emit);
 
   // check that we have enough space to add these particles
-  if (particles.size()+my_n_emit > max_total_particles) {
+  if ((int)particles.size()+my_n_emit > max_total_particles) {
     if (verbose) cout << "# Out of particle space; not adding in\n";
     return; }
     
@@ -340,12 +340,11 @@ void transport::emit_inner_source(double dt)
   int total_n_emit    = params_->getScalar<int>("core_n_emit");
   if (total_n_emit == 0) return;
   int n_emit = total_n_emit/(1.0*MPI_nprocs);
-  double Lnow = L_core_;
-  if (time_core_ != 0)
-    Lnow = L_core_/(1 + t_now_/time_core_)/(1 + t_now_/time_core_);
-  double Ep  = Lnow*dt/n_emit;
+
+  L_core_ = params_->getFunction("core_luminosity", t_now_);
+  double Ep  = L_core_*dt/n_emit;
   
-  if (particles.size() + n_emit > this->max_total_particles)
+  if ((int)particles.size() + n_emit > this->max_total_particles)
     {cout << "# Not enough particle space\n"; return; }
 
   // inject particles from the source
@@ -433,7 +432,7 @@ void transport::emit_inner_source(double dt)
   }
 
   if (verbose) 
-    printf("# Core emitted %d particles (%d per proc)\n",total_n_emit,n_emit);
+    printf("# L_core = %e; emitted %d particles (%d per proc)\n",L_core_,total_n_emit,n_emit);
 }
 
 

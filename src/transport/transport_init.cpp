@@ -126,6 +126,8 @@ void transport::init(ParameterReader* par, grid_general *g)
   gas.use_free_free_opacity  
     = params_->getScalar<int>("opacity_free_free");
   double min_ext = params_->getScalar<double>("opacity_minimum_extinction");
+  //maximum_opacity_ = params_->getScalar<double>("opacity_maximum_opacity");
+
   gas.set_minimum_extinction(min_ext);
   first_step_ = 1;
 
@@ -229,7 +231,7 @@ void transport::setup_core_emission()
   r_core_         = params_->getScalar<double>("core_radius");
   T_core_         = params_->getScalar<double>("core_temperature");
   core_frequency_ = params_->getScalar<double>("core_photon_frequency");
-  L_core_         = params_->getScalar<double>("core_luminosity");
+  L_core_         = params_->getFunction("core_luminosity", 0);
   time_core_      = params_->getScalar<double>("core_timescale");
 
   // set blackbody from L and R if appropriate
@@ -303,7 +305,7 @@ void transport::setup_core_emission()
     if (verbose) 
     {
       if (core_spectrum_filename != "") 
-        cout << "# Inner source luminosity = " << L_core_ << 
+        cout << "# Inner source luminosity (at t = 0) = " << L_core_ << 
        " erg/s, read from file " << core_spectrum_filename << "\n";
       else
         cout << "# Inner source luminosity = " << L_core_ << 
