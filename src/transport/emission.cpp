@@ -155,8 +155,12 @@ void transport::emit_radioactive(double dt)
   // number of radioctive particles to emit
   int total_n_emit = params_->getScalar<int>("particles_n_emit_radioactive");
   if (total_n_emit == 0) return;
-  int my_n_emit = total_n_emit/(1.0*MPI_nprocs);
-  
+  int my_n_emit = floor(total_n_emit/(1.0*MPI_nprocs));
+
+  // randomize remainder
+  double remainder = total_n_emit/(1.0*MPI_nprocs) - my_n_emit;
+  if (gsl_rng_uniform(rangen) < remainder) my_n_emit += 1;
+
   radioactive radio;
   double gfrac;
 
