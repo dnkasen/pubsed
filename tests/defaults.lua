@@ -53,7 +53,7 @@ tstep_max_delta  = 0.1
 output_write_levels = 0
 output_write_grid   = 1
 output_write_times  = 0  -- how often to write out grid data
-
+output_write_log_times = 0 -- logarithimic spacing of write times
 -- limiting values for calculation
 limits_temp_max = 1e8
 limits_temp_min = 1000
