@@ -179,6 +179,7 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID,
   
     // find index of bin in deal
     lines[i].bin = nu_grid.locate(nu);
+    if (lines[i].bin == nu_grid.size()) lines[i].bin = nu_grid.size() - 1;
     
     // default init tau and beta
     lines[i].tau  = 0;
