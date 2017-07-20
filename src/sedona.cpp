@@ -132,10 +132,17 @@ int main(int argc, char **argv)
   double write_out_step = params.getScalar<double>("output_write_times");
   double write_out_log  = params.getScalar<double>("output_write_log_times");
   int    i_write = 0;
+ 
   // number iteration output from 1
   if (steady_iterate) i_write = 1;
   double next_write_out = grid->t_now;
 
+  // print out initial state
+  if (verbose)
+  {
+    printf("# writing intial plot file\n");
+    grid->write_plotfile(0,grid->t_now);
+  }
 
   // loop over time/iterations
   double dt, t = grid->t_now;
@@ -143,8 +150,7 @@ int main(int argc, char **argv)
   {
     // get this time step
     if (!steady_iterate)
-    {
-     
+    {    
       dt = dt_max;
       if (use_hydro) 
       {
@@ -176,13 +182,13 @@ int main(int argc, char **argv)
       if (steady_iterate) mcarlo.output_spectrum(it);
     }
 
-    // writeout zone state when appropriate 
+    // writeout output files when appropriate 
     if ((verbose)&&((t >= next_write_out)||(steady_iterate)))
     {
       double t_write = t + dt;
       if (steady_iterate) t_write = t;
-      printf("# writing zone file %d at time %e\n",i_write+1, t_write);
-      grid->write_out(i_write,t_write);
+      printf("# writing plot file %d at time %e\n",i_write+1, t_write);
+      grid->write_plotfile(i_write+1,t_write);
 
       if ((write_out_log > 0)&&(i_write > 0))
         next_write_out = next_write_out*(1.0 + write_out_log);
