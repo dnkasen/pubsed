@@ -100,8 +100,9 @@ int main(int argc, char **argv)
   if (hydro_type == "homologous")
   {
     double t_start = params.getScalar<double>("tstep_time_start");
-    hydro->step(t_start - grid->t_now);
-    grid->t_now = t_start;
+    if (t_start > 0) {
+      hydro->step(t_start - grid->t_now);
+      grid->t_now = t_start; }
   }
 
   //---------------------------------------------------------------------
