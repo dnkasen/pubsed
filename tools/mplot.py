@@ -1,10 +1,12 @@
 #!/usr/bin/env python
- 
+#
+# Python script for plotting up sedona plot files
+#
+
 import optparse
-import pylab as py
+import matplotlib.pyplot as py
+import numpy as np
 import h5py 
-
-
 
 parser = optparse.OptionParser()
 parser.add_option("-s",dest="ofile")
@@ -14,20 +16,20 @@ parser.add_option("-s",dest="ofile")
 py.ion()
 
 # read data
-fin = h5py.File(args[0],'r')
-Z = py.array(fin['Z'])
-A = py.array(fin['A'])
-rho = py.array(fin['rho'])
-temp = py.array(fin['temp'])
-comp = py.array(fin['comp'])
-dr   = py.array(fin['dr'])
-vx   = py.array(fin['vx'])
-vz   = py.array(fin['vz'])
+fin  = h5py.File(args[0],'r')
+Z    = np.array(fin['Z'])
+A    = np.array(fin['A'])
+rho  = np.array(fin['rho'])
+temp = np.array(fin['temp'])
+comp = np.array(fin['comp'])
+dr   = np.array(fin['dr'])
+vx   = np.array(fin['vx'])
+vz   = np.array(fin['vz'])
 
 nx = rho.shape[0]
 nz = rho.shape[1]
 mass  = 0
-cmass = py.zeros(len(Z))
+cmass = np.zeros(len(Z))
 ke    = 0
 for i in range(nx):
 	for j in range(nz):
@@ -50,15 +52,15 @@ for k in range(len(Z)):
 print '-----------------------------------------------------------'
 
 
-rho = py.swapaxes(rho,0,1)
-py.matshow(py.log10(rho))
+rho = np.swapaxes(rho,0,1)
+py.matshow(np.log10(rho))
 py.colorbar()
 py.title('log10 density')
 py.show()
 j = raw_input("press>")
 py.clf()
 
-temp = py.swapaxes(temp,0,1)
+temp = np.swapaxes(temp,0,1)
 py.matshow(temp)
 py.colorbar()
 py.title('temperature')
@@ -68,7 +70,7 @@ py.clf()
 
 nelm = (comp.shape)[2]
 for i in range(nelm):
-	carr = py.swapaxes(comp[:,:,i],0,1)
+	carr = np.swapaxes(comp[:,:,i],0,1)
 	py.matshow(carr)
 	py.colorbar()
 	py.title('mass fraction Z = ' + str(Z[i]) + '.' + str(A[i]))
