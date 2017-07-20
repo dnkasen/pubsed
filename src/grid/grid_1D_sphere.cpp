@@ -120,6 +120,7 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr, 
       infile >> z[i].v[0];
       infile >> z[i].rho;
       infile >> z[i].T_gas;
+      std::cout << i << " " << r_out[i] << "\n";
     }
     // read composition
     z[i].mu = 0;
@@ -270,11 +271,11 @@ int grid_1D_sphere::get_next_zone(const double *x, const double *D, int i, doubl
 //************************************************************
 // Write out the file
 //************************************************************
-void grid_1D_sphere::write_out(int iw, double tt)
+void grid_1D_sphere::write_plotfile(int iw, double tt)
 {
+  // write ascii version, for convenience
   char zonefile[1000];
-  sprintf(zonefile,"ray_%05d.dat",iw);
-
+  sprintf(zonefile,"plt_%05d.dat",iw);
 
   std::ofstream outf;
   outf.open(zonefile);
@@ -300,7 +301,33 @@ void grid_1D_sphere::write_out(int iw, double tt)
     outf << z[i].L_radio_emit << "\t";
     outf << endl;
   }
+
+  // write hdf5 file
+  sprintf(zonefile,"plt_%05d.h5",iw);
+
+  // open hdf5 file
+  hid_t file_id = H5Fcreate( zonefile, H5F_ACC_TRUNC, H5P_DEFAULT,  H5P_DEFAULT);
+ 
+  // print out r array
+  hsize_t  dims_x[1]={(hsize_t)n_zones};
+  float *xarr = new float[n_zones];
+  for (int i=0;i<n_zones;i++) xarr[i] = r_out[i];
+  H5LTmake_dataset(file_id,"r",1,dims_x,H5T_NATIVE_FLOAT,xarr);
+  delete [] xarr;
+
+  // print out r min
+  // print out time
+  hsize_t  dims_r[1]={1};
+  float r0 = r_out.min;
+  H5LTmake_dataset(file_id,"r_inner",1,dims_r,H5T_NATIVE_FLOAT,&r0); 
+
+  hsize_t  dims_g[1]={(hsize_t) n_zones};
+  write_hdf5_plotfile_zones(file_id, dims_g, 1, tt);
+
+  write_integrated_quantities(iw,tt);
+
 }
+
 
 
 

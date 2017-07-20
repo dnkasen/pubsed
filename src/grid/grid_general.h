@@ -24,6 +24,9 @@
 #include "zone.h"
 #include "ParameterReader.h"
 
+#include "hdf5.h"
+#include "hdf5_hl.h"
+
 class grid_general
 {
 
@@ -57,6 +60,10 @@ class grid_general
   void reduce_T_gas();
 
 
+  // output functions
+  void write_integrated_quantities(int iw, double tt);
+  void write_hdf5_plotfile_zones(hid_t file_id, hsize_t *dims_g, int ndims, double);
+
   //****** virtual functions (geometry specific)
 
   // get zone index from x,y,z position
@@ -78,7 +85,7 @@ class grid_general
   virtual void coordinates(int i,double r[3]) = 0;
   
   // write out the grid state
-  virtual void write_out(int,double) = 0;
+  virtual void write_plotfile(int,double) = 0;
 
   // expand the grid by a factor of e
   virtual void expand(double) = 0;

@@ -158,20 +158,15 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
 //************************************************************
 // Write out the file
 //************************************************************
-void grid_2D_cyln::write_out(int iw, double tt)
+void grid_2D_cyln::write_plotfile(int iw, double tt)
 {
+
   // get file name
   char zonefile[1000];
-  sprintf(zonefile,"zone_%05d.h5",iw);
+  sprintf(zonefile,"plt_%05d.h5",iw);
 
   // open hdf5 file
   hid_t file_id = H5Fcreate( zonefile, H5F_ACC_TRUNC, H5P_DEFAULT,  H5P_DEFAULT);
-
-  // print out time
-  hsize_t  dims_t[1]={1};
-  float time_a[1];
-  time_a[0] = tt;
-  H5LTmake_dataset(file_id,"time",1,dims_t,H5T_NATIVE_FLOAT,time_a);
 
   // print out radial size
   hsize_t  dims_dr[1]={2};
@@ -194,23 +189,9 @@ void grid_2D_cyln::write_out(int iw, double tt)
   H5LTmake_dataset(file_id,"r",1,dims_x,H5T_NATIVE_FLOAT,xarr);
   delete [] xarr;
 
-
-  // print out zone arrays
   hsize_t  dims_g[2]={(hsize_t) nx_,(hsize_t) nz_};
-  float *arr = new float[n_zones];
-
-  // print out rho
-  for (int i=0;i<n_zones;++i) arr[i] = z[i].rho; 
-  H5LTmake_dataset(file_id,"rho",2,dims_g,H5T_NATIVE_FLOAT,arr);
-
-  // print out T_rad
-  for (int i=0;i<n_zones;++i) arr[i] = pow(z[i].e_rad/pc::a,0.25);
-  H5LTmake_dataset(file_id,"T_rad",2,dims_g,H5T_NATIVE_FLOAT,arr);
-
-  // Close the file 
-  H5Fclose(file_id);
-  
-  delete [] arr;
+  write_hdf5_plotfile_zones(file_id, dims_g, 2, tt);
+  write_integrated_quantities(iw,tt);
 
 }
 
