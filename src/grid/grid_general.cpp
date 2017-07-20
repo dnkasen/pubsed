@@ -37,33 +37,33 @@ void grid_general::write_hdf5_plotfile_zones
 
 	// print out rho
 	for (int i=0;i<n_zones;++i) arr[i] = z[i].rho; 
-	H5LTmake_dataset(file_id,"rho",2,dims_g,H5T_NATIVE_FLOAT,arr);
+	H5LTmake_dataset(file_id,"rho",ndims,dims_g,H5T_NATIVE_FLOAT,arr);
  
  	// print out vel
 	for (int i=0;i<n_zones;++i) arr[i] = z[i].v[0]; 
-	H5LTmake_dataset(file_id,"velr",2,dims_g,H5T_NATIVE_FLOAT,arr);
+	H5LTmake_dataset(file_id,"velr",ndims,dims_g,H5T_NATIVE_FLOAT,arr);
 	
 	if (ndims > 1)
 	{
 		for (int i=0;i<n_zones;++i) arr[i] = z[i].v[2]; 
-		H5LTmake_dataset(file_id,"velz",2,dims_g,H5T_NATIVE_FLOAT,arr);
+		H5LTmake_dataset(file_id,"velz",ndims,dims_g,H5T_NATIVE_FLOAT,arr);
 	}
 
 	// print out T_rad
 	for (int i=0;i<n_zones;++i) arr[i] = pow(z[i].e_rad/pc::a,0.25);
-	H5LTmake_dataset(file_id,"T_rad",2,dims_g,H5T_NATIVE_FLOAT,arr);
+	H5LTmake_dataset(file_id,"T_rad",ndims,dims_g,H5T_NATIVE_FLOAT,arr);
 
 	// print out T_gas
 	for (int i=0;i<n_zones;++i) arr[i] = z[i].T_gas;
-	H5LTmake_dataset(file_id,"T_gas",2,dims_g,H5T_NATIVE_FLOAT,arr);
+	H5LTmake_dataset(file_id,"T_gas",ndims,dims_g,H5T_NATIVE_FLOAT,arr);
 
 	// print out radioactive deposition
 	for (int i=0;i<n_zones;++i) arr[i] = z[i].L_radio_dep;
-	H5LTmake_dataset(file_id,"e_nuc_dep",2,dims_g,H5T_NATIVE_FLOAT,arr);
+	H5LTmake_dataset(file_id,"e_nuc_dep",ndims,dims_g,H5T_NATIVE_FLOAT,arr);
 
 	// print out radioactive emission
 	for (int i=0;i<n_zones;++i) arr[i] = z[i].L_radio_emit;
-	H5LTmake_dataset(file_id,"e_nuc_emit",2,dims_g,H5T_NATIVE_FLOAT,arr);
+	H5LTmake_dataset(file_id,"e_nuc_emit",ndims,dims_g,H5T_NATIVE_FLOAT,arr);
 
 	// Close the file 
 	H5Fclose(file_id);
