@@ -55,14 +55,12 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
   z.resize(n_zones);
   r_out.resize(n_zones);
   vol.resize(n_zones);
-
-  double t_start = params->getScalar<double>("tstep_time_start");
   
   // read zone properties for a supernova remnant
   if (system == "SNR") 
-    read_SNR_file(infile,verbose,1,t_start);
+    read_SNR_file(infile,verbose,1);
   else if (system == "standard") 
-    read_SNR_file(infile,verbose,0,t_start);
+    read_SNR_file(infile,verbose,0);
   else {
     if (verbose) std::cout << " Don't recognize model type " << system << "; Exiting\n";
     exit(1); }
@@ -72,7 +70,7 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
     
 
 
-void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr, double t_start)
+void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
 {
   // read header, general properties
   double texp;
@@ -82,8 +80,6 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr, 
 
   // set v at inner boundary = 0
   v_inner_ = 0;
-
-  if (t_start > 0) this->t_now = t_start;
 
   // read element isotopes, format is Z.A
   infile >> this->n_elems;
@@ -109,10 +105,6 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr, 
       infile >> z[i].T_gas;
       // assume homology for radius
       r_out[i] = z[i].v[0]*t_now;
-      // homologously expand
-      if (t_start > 0)
-	     {z[i].rho  = z[i].rho*pow(texp/t_now,3);
-	     z[i].T_gas = z[i].T_gas*(texp/t_now);	}
     }
     else
     {

@@ -75,15 +75,6 @@ int main(int argc, char **argv)
   grid->init(&params);
 
 
-  //---------------------------------------------------------------------
-  // SET UP the transport module
-  //---------------------------------------------------------------------
-  transport mcarlo;
-  string transport_type = params.getScalar<string>("transport_module");
-  int use_transport = 0;
-  if (transport_type != "") use_transport = 1;
-  if (use_transport) mcarlo.init(&params, grid);
-  
 
   //---------------------------------------------------------------------
   // SET UP the hydro module
@@ -104,6 +95,23 @@ int main(int argc, char **argv)
   }
   int use_hydro = (hydro != NULL);
   if (use_hydro) hydro->init(&params, grid);
+
+  // evolve to start time if homologous
+  if (hydro_type == "homologous")
+  {
+    double t_start = params.getScalar<double>("tstep_time_start");
+    hydro->step(t_start - grid->t_now);
+    grid->t_now = t_start;
+  }
+
+  //---------------------------------------------------------------------
+  // SET UP the transport module
+  //---------------------------------------------------------------------
+  transport mcarlo;
+  string transport_type = params.getScalar<string>("transport_module");
+  int use_transport = 0;
+  if (transport_type != "") use_transport = 1;
+  if (use_transport) mcarlo.init(&params, grid);
 
   //---------------------------------------------------------------------
   // DO TIME/ITERATION LOOP
@@ -132,9 +140,6 @@ int main(int argc, char **argv)
   double write_out_step = params.getScalar<double>("output_write_times");
   double write_out_log  = params.getScalar<double>("output_write_log_times");
   int    i_write = 0;
- 
-  // number iteration output from 1
-  if (steady_iterate) i_write = 1;
   double next_write_out = grid->t_now;
 
   // print out initial state
@@ -166,7 +171,7 @@ int main(int argc, char **argv)
     // printout time step
     if (verbose) 
     {
-      if (steady_iterate) cout << "# ITERATION: " << it << "\t";
+      if (steady_iterate) cout << "# ITERATION: " << it << ";  t = " << t << "\t";
       else cout << "# TSTEP #" << it << " ; t = " << t << " sec (" << t/3600/24.0 << " days); dt = " << dt;
       cout << "; particles on grid = " << mcarlo.n_particles() << "\n";
     }

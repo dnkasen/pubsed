@@ -80,17 +80,18 @@ void grid_general::write_integrated_quantities(int iw, double tt)
   	if (fout == NULL) return;
 
   	// write header
-  	if (iw == 0)
+  	if (iw == 0) 
    	 fprintf(fout,"#    time(sec)     E_radiation      L_nuc_dep      L_nuc_emit\n");
 
 	// integrated qunaitites
-  	double L_dep = 0, L_emit = 0, E_rad = 0;
+  	double L_dep = 0, L_emit = 0, E_rad = 0, mass = 0;
   	for (int i=0;i<n_zones;++i)
  	{
     	double vol = zone_volume(i);
     	L_dep  += z[i].L_radio_dep*vol;
     	L_emit += z[i].L_radio_emit*vol;
     	E_rad  += z[i].e_rad*vol;
+    	mass   += z[i].rho*vol;
  	 }
   	fprintf(fout,"%15.6e %15.6e %15.6e %15.6e\n",tt,E_rad,L_dep,L_emit);
  	fclose(fout);
