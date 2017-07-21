@@ -67,6 +67,8 @@ void transport::set_opacity()
     // calculate the opacities/emissivities
     gas.computeOpacity(abs_opacity_[i],scat,emis);
 
+    double max_extinction = maximum_opacity_* z->rho;
+
     // save and normalize emissivity cdf
     grid->z[i].L_thermal = 0;
     if (nu_grid.size() == 1)
@@ -84,10 +86,13 @@ void transport::set_opacity()
       if (!omit_scattering_) scat_opacity_[i][j] = scat[j];
      
       // check for maximum opacity
-      if (scat_opacity_[i][j] > maximum_opacity_* z->rho)
-        scat_opacity_[i][j]   = maximum_opacity_* z->rho;
-      if (abs_opacity_[i][j]  > maximum_opacity_* z->rho)
-        abs_opacity_[i][j]    = maximum_opacity_* z->rho;
+      if (!omit_scattering_)
+      {
+        if (scat_opacity_[i][j] > max_extinction)
+          scat_opacity_[i][j]   = max_extinction;
+      }
+      if (abs_opacity_[i][j]  > max_extinction)
+        abs_opacity_[i][j]    = max_extinction;
     }
     emissivity_[i].normalize();
 
