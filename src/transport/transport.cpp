@@ -191,6 +191,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     {
       zone->e_abs  += this_E*dshift*(continuum_opac_cmf)*eps_absorb_cmf*dshift;
       if (store_Jnu_) J_nu_[p.ind][i_nu] += this_E;
+      else J_nu_[p.ind][0] += this_E;
       //std::cout << p.ind << " " << i_nu << " " << p.e << " " << this_E << " " << J_nu_[p.ind][i_nu] << "\n";
     }
       
