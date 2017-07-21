@@ -13,6 +13,7 @@
 
 Lua::Lua()
 {
+   _has_add_path = false; 
    _status = false;
 }
 
