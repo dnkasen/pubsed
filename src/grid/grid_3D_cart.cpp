@@ -121,6 +121,9 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
   }
   delete [] ctmp;
 
+  // close HDF5 input file
+  H5Fclose (file_id);
+
   // allocate indexs
   index_x_ = new int[n_zones];
   index_y_ = new int[n_zones];
@@ -182,6 +185,49 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
 //************************************************************
 void grid_3D_cart::write_plotfile(int iw, double tt)
 {
+	// get file name
+	char plotfilename[1000];
+	sprintf(plotfilename,"plt_%05d.h5",iw);
+
+	// open hdf5 file
+	hid_t file_id = H5Fcreate(plotfilename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+
+	// print out zone sizes
+	hsize_t  dims_dr[1]={3};
+	float dr[3];
+	dr[0] = dx_;
+  dr[1] = dy_;
+  dr[2] = dz_;
+  H5LTmake_dataset(file_id,"dr",1,dims_dr,H5T_NATIVE_FLOAT,dr);
+	
+	// print out x array
+	hsize_t  dims_x[1]={(hsize_t)nx_};
+	float *xarr = new float[nx_];
+	for (int i=0;i<nx_;i++) xarr[i] = i*dx_ + x0_;
+	H5LTmake_dataset(file_id,"x",1,dims_x,H5T_NATIVE_FLOAT,xarr);
+  delete [] xarr;
+
+  // print out y array
+	hsize_t  dims_y[1]={(hsize_t)ny_};
+	float *yarr = new float[ny_];
+	for (int i=0;i<ny_;i++) yarr[i] = i*dy_ + y0_;
+	H5LTmake_dataset(file_id,"y",1,dims_y,H5T_NATIVE_FLOAT,yarr);
+  delete [] yarr;
+
+  // print out z array
+	hsize_t  dims_z[1]={(hsize_t)nz_};
+	float *zarr = new float[nz_];
+	for (int i=0;i<nz_;i++) zarr[i] = i*dz_ + z0_;
+	H5LTmake_dataset(file_id,"z",1,dims_z,H5T_NATIVE_FLOAT,zarr);
+  delete [] zarr;
+ 
+  hsize_t  dims_g[3]={(hsize_t) nx_,(hsize_t) ny_,(hsize_t) nz_};
+  write_hdf5_plotfile_zones(file_id, dims_g, 3, tt);
+  write_integrated_quantities(iw,tt);
+  
+  // Close the output file
+  H5Fclose (file_id);
+
 }
 
 

@@ -65,9 +65,6 @@ void grid_general::write_hdf5_plotfile_zones
 	for (int i=0;i<n_zones;++i) arr[i] = z[i].L_radio_emit;
 	H5LTmake_dataset(file_id,"e_nuc_emit",ndims,dims_g,H5T_NATIVE_FLOAT,arr);
 
-	// Close the file 
-	H5Fclose(file_id);
-  	
   	delete [] arr;
 }
 

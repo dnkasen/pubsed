@@ -107,6 +107,9 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   }
   delete [] ctmp;
 
+  // close HDF5 input file
+  H5Fclose (file_id);
+
   //---------------------------------------------------
   // Calculate volume, indices, model properties
   //---------------------------------------------------
@@ -160,7 +163,6 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
 //************************************************************
 void grid_2D_cyln::write_plotfile(int iw, double tt)
 {
-
   // get file name
   char zonefile[1000];
   sprintf(zonefile,"plt_%05d.h5",iw);
@@ -193,6 +195,8 @@ void grid_2D_cyln::write_plotfile(int iw, double tt)
   write_hdf5_plotfile_zones(file_id, dims_g, 2, tt);
   write_integrated_quantities(iw,tt);
 
+  // close HDF5 input file
+  H5Fclose (file_id);
 }
 
 
