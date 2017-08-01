@@ -136,10 +136,11 @@ int main(int argc, char **argv)
   }
 
   // parameters for writing data to file
-  int write_levels = params.getScalar<int>("output_write_levels");
-  int write_grid   = params.getScalar<int>("output_write_grid");
-  double write_out_step = params.getScalar<double>("output_write_times");
-  double write_out_log  = params.getScalar<double>("output_write_log_times");
+  int write_levels     = params.getScalar<int>("output_write_atomic_levels");
+  int write_radiation  = params.getScalar<int>("output_write_radiation");
+ 
+  double write_out_step = params.getScalar<double>("output_write_plt_file_time");
+  double write_out_log  = params.getScalar<double>("output_write_plt_log_space");
   int    i_write = 0;
   double next_write_out = grid->t_now;
 
@@ -169,7 +170,7 @@ int main(int argc, char **argv)
     }
     else dt = 0;
 
-    // printout time step
+    // printout basic time step information
     if (verbose) 
     {
       if (steady_iterate) cout << "# ITERATION: " << it << ";  t = " << t << "\t";
@@ -193,19 +194,18 @@ int main(int argc, char **argv)
     {
       double t_write = t + dt;
       if (steady_iterate) t_write = t;
+
+      // write out what we want
       printf("# writing plot file %d at time %e\n",i_write+1, t_write);
       grid->write_plotfile(i_write+1,t_write);
+      if ((use_transport)&&(write_radiation))
+        mcarlo.write_radiation_file(i_write+1, write_levels);
 
+      // determine next write out
       if ((write_out_log > 0)&&(i_write > 0))
         next_write_out = next_write_out*(1.0 + write_out_log);
       else
         next_write_out = next_write_out + write_out_step;
-
-      if (use_transport)
-      {
-        if (write_grid)   mcarlo.write_opacities(i_write);
-        if (write_levels) mcarlo.write_levels(i_write);
-      }
       i_write++;
     }
 

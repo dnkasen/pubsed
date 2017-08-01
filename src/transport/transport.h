@@ -201,9 +201,7 @@ class transport
   void output_spectrum(int);
 
   // print out functions
-  void write_opacities(int);  
-  void write_levels(int);
-
+  void write_radiation_file(int, int);  
 
 };
 

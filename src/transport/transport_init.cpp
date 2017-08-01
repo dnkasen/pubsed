@@ -238,7 +238,6 @@ void transport::setup_core_emission()
   if ((L_core_ !=0)&&(r_core_ != 0)&&(T_core_ == 0))
     T_core_ = pow(L_core_/(4.0*pc::pi*r_core_*r_core_*pc::sb),0.25);
 
-
   int total_n_emit    = params_->getScalar<int>("core_n_emit");
   if (total_n_emit > 0)
   {
