@@ -73,12 +73,14 @@ void transport::write_radiation_file(int iw, int write_levels)
   for (int j=0;j<n_nu;j++) tmp_array[j] = nu_grid.center(j);
   H5LTmake_dataset(file_id,"nu",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
+  hid_t zone_dir = H5Gcreate1( file_id, "zonedata", 0 );
+
   // loop over zones for wavelength dependence opacities
   for (int i = 0; i < grid->n_zones; i++)
   {
     char zfile[100];
-    sprintf(zfile,"zone_%d",i);
-    hid_t zone_id =  H5Gcreate1( file_id, zfile, 0 );
+    sprintf(zfile,"%d",i);
+    hid_t zone_id =  H5Gcreate1( zone_dir, zfile, 0 );
 
     // write total opacity
     if (omit_scattering_)
@@ -157,6 +159,8 @@ void transport::write_radiation_file(int iw, int write_levels)
     }
     H5Gclose(zone_id);
   }
+  H5Gclose(zone_dir);
+
   
   H5Fclose (file_id);
   delete[] tmp_array; 
