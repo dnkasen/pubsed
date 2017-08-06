@@ -318,6 +318,7 @@ void grid_1D_sphere::write_plotfile(int iw, double tt)
 
   write_integrated_quantities(iw,tt);
 
+  H5Fclose (file_id);
 }
 
 
