@@ -14,14 +14,12 @@ void nlte_gas::get_user_defined_opacity
 {
 	int n_freq_pts = nu_grid.size();
 
-
-
 	// calculate if is the first time
 	if (user_opacity_array_.size() == 0)
 	{
 		double numax = nu_grid.maxval();
 		double numin = nu_grid.minval();
-		double nu_space = (numax - numin)/5e3;
+		double nu_space = (numax - numin)/2e3;
 		double beta = line_velocity_width_/pc::c;
 		double nu_line = numin;
 		int bin = 0;
@@ -32,8 +30,9 @@ void nlte_gas::get_user_defined_opacity
 
 		while (nu_line < numax)
 		{
-			while (nu_grid.right(bin) < nu_line)
+			while ((nu_grid.right(bin) < nu_line)&&(bin < n_freq_pts))
 				bin++;
+			if (bin >= n_freq_pts) break;
 
 			if (use_user_opacity_ == 2)
 			{
@@ -66,7 +65,7 @@ void nlte_gas::get_user_defined_opacity
 
 	// set values
 
-	double tau = 1*dens/1e-13;
+	double tau = 100*dens/1e-13;
 	double etau = 1 - exp(-tau);
 	double beta = line_velocity_width_/pc::c;
 	double Ac  = tau/(beta*pc::c*time);
