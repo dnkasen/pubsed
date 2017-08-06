@@ -49,6 +49,7 @@ class nlte_gas
   int use_user_opacity_;
   double line_velocity_width_;
 
+  std::vector <double> user_opacity_array_;
   
   // flags for nlte
   int use_nlte_;
