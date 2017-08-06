@@ -42,6 +42,15 @@ public:
     else        return 0.5*(x[i-1] + x[i]);
   }
 
+  // left side of bin i
+  double left(const int i) const{ 
+    if (i == 0) return min;
+    else return x[i-1];}
+
+  // right side of bin i
+  double right(const int i) const{
+    return x[i];  }
+
   // width of the bin left of nu_i
   double delta(const int i) const{
     if (i == 0) return x[0] - min;
