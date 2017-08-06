@@ -16,9 +16,6 @@ void transport::set_opacity()
   vector<OpacityType> scat(nu_grid.size());
   emis.assign(emis.size(),0.0);
 
-  // tmp vector to hold line stuff
-  vector<double> lopac(n_lines_);
-
   // always do LTE on first step
   int nlte = gas.use_nlte_;
   if (first_step_) gas.use_nlte_ = 0;
@@ -96,10 +93,6 @@ void transport::set_opacity()
     }
     emissivity_[i].normalize();
 
-    // set line opacities
-    if (use_detailed_lines_)
-      gas.get_line_opacities(line_opacity_[i]);
-    
     //------------------------------------------------------
     // gamma-ray opacity (compton + photo-electric)
     //------------------------------------------------------

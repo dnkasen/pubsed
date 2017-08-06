@@ -6,19 +6,6 @@
 #include "locate_array.h"
 #include "sedona.h"
 
-// structure to hold a list of line data
-struct nlteGlobalLine 
-{
-  double nu;                 // line center fequency
-  double f_osc;              // oscillator strength
-  double g1_over_g2;         // ratio of statistical weights
-  int    ion_weight;         // mean atomic mass of the ion
-  int    iLowerLevel;        // global index of lower level
-  int    iUpperLevel;        // global index of upper level
-  int    iAtom;
-  int    iIndex;
-};
-
 class nlte_gas
 {
  
@@ -38,9 +25,6 @@ class nlte_gas
 
 
  public:
-
-  // global list of all lines of all atoms
-  std::vector <nlteGlobalLine> globalLineList_;
 
   std::vector<double>     mass_frac;  // vector of mass fractions
   std::vector<int>           elem_Z;  // vector of element atomic numbers
@@ -119,21 +103,6 @@ class nlte_gas
   //-----------------------------------------------------------------
   void set_mass_fractions(std::vector<double>);
   
-  //-----------------------------------------------------------------
-  // get the data for the global line data
-  // input: vectors that will be resized and set to line data
-  //   std::vector<double> nu         frequncy of lines
-  //   std::vector<double> f_osc,     oscillator strength of lines
-  //   std::vector<double> g1_over_g2 ratio of statisical weights
-  //   std::vector<int> lowerLevel    global index of lower level
-  //   std::vector<int> upperLevel)   global index of upper level
-  //-----------------------------------------------------------------
-  void get_global_line_data(std::vector<double> nu,
-			    std::vector<double> f_osc,
-			    std::vector<double> g1_over_g2,
-			    std::vector<int> iLowerLevel,
-			    std::vector<int> iUpperLevel);
-
   
   //***********************************************************
   // BASIC FUNCTIONALITY
@@ -205,39 +174,6 @@ class nlte_gas
   //-----------------------------------------------------------
   double get_level_fraction(int i, int j);
   double get_level_departure(int i, int j);
-
-
-  //-----------------------------------------------------------
-  // return the number of total global lines (from all ions)
-  //-----------------------------------------------------------
-  int get_number_of_lines()
-  {
-    return globalLineList_.size();
-  }
-
-  //-----------------------------------------------------------
-  // return a vector listing all of the ordered line nu's
-  //-----------------------------------------------------------
-  std::vector<double> get_line_frequency_list()
-  {
-    std::vector<double> nu;
-    for (size_t i=0;i<globalLineList_.size();i++)
-      nu.push_back(globalLineList_[i].nu);
-    return nu;
-  }
-
-
-  //-----------------------------------------------------------
-  // return a vector listing all of the line ion masses
-  //-----------------------------------------------------------
-  std::vector<double> get_line_ion_mass_list()
-  {
-    std::vector<double> m;
-    for (size_t i=0;i<globalLineList_.size();i++)
-      m.push_back(elem_A[globalLineList_[i].iAtom]);
-    return m;
-  }
-
 
 
   //***********************************************************

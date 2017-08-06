@@ -28,6 +28,9 @@ using std::vector;
 /* }; */
   
 
+
+
+
 class transport
 {
 
@@ -57,9 +60,9 @@ class transport
   int    radiative_eq;
   int    first_step_;
   int    verbose;
-  int    use_detailed_lines_;
   int    omit_scattering_;
   int    store_Jnu_; 
+  int    core_fix_luminosity_;
   double maximum_opacity_;
 
   // current time in simulation
@@ -110,18 +113,8 @@ class transport
 
   // the radiation quantities in the zone
   vector <real> e_rad;
-
-  // -----------------------------------------
-  // number of lines
-  int n_lines_;
-  // order list of the frequencies of each line
-  vector<real> line_nu_;
-  // the sqrt of ion mass for each line (needed for doppler width)
-  vector<real> line_sqrt_Mion_;
   // line mean intensity
   vector< vector<real> > line_J_;
-  // line extinction; multiply by 
-  vector< vector<real> > line_opacity_;
   double line_velocity_width_;
 
 

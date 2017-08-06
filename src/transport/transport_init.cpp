@@ -138,35 +138,23 @@ void transport::init(ParameterReader* par, grid_general *g)
   boundary_out_reflect_ = params_->getScalar<int>("transport_boundary_out_reflect");
 
   // parameters for treatment of detailed lines
-  use_detailed_lines_  = params_->getScalar<double>("opacity_lines");
   line_velocity_width_ = params_->getScalar<double>("line_velocity_width");
   gas.line_velocity_width_ = line_velocity_width_;
 
-  // get line frequencies and ion masses
-  line_nu_ = gas.get_line_frequency_list();
-  line_sqrt_Mion_ = gas.get_line_ion_mass_list();
-  for (size_t i=0;i<line_sqrt_Mion_.size();i++)
-    line_sqrt_Mion_[i] = sqrt(line_sqrt_Mion_[i]);
-
   // parameters for storing opacities
-  n_lines_ = gas.get_number_of_lines();
   omit_scattering_ = params_->getScalar<int>("opacity_no_scattering");
   store_Jnu_ = params_->getScalar<int>("transport_store_Jnu");
   // sanity check
   if ((!store_Jnu_)&&(use_nlte)) 
     std::cout << "WARNING: not storing Jnu while using NLTE; Bad idea!\n";
 
-  line_opacity_.resize(grid->n_zones);
   abs_opacity_.resize(grid->n_zones);
   if (!omit_scattering_) scat_opacity_.resize(grid->n_zones);
   emissivity_.resize(grid->n_zones);
   J_nu_.resize(grid->n_zones);
 
   for (int i=0; i<grid->n_zones;  i++)
-  {
-    if (use_detailed_lines_)
-      line_opacity_[i].resize(n_lines_);
-   
+  {   
     // allocate absorptive opacity
     try {
       abs_opacity_[i].resize(nu_grid.size()); }
@@ -233,6 +221,7 @@ void transport::setup_core_emission()
   core_frequency_ = params_->getScalar<double>("core_photon_frequency");
   L_core_         = params_->getFunction("core_luminosity", 0);
   time_core_      = params_->getScalar<double>("core_timescale");
+  core_fix_luminosity_ = params_->getScalar<int>("core_fix_luminosity");
 
   // set blackbody from L and R if appropriate
   if ((L_core_ !=0)&&(r_core_ != 0)&&(T_core_ == 0))

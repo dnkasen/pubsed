@@ -63,109 +63,15 @@ void nlte_gas::initialize
   int level_id = 0;
   for (size_t i=0;i<atoms.size();++i) 
   {
+    if (verbose) std::cout << "init atom " << elem_Z[i] << "\n";
     int error = atoms[i].initialize(atomfile_, elem_Z[i],ng,level_id,use_nlte_); 
     if ((error)&&(verbose))
       std::cout << "# ERROR: incomplete data for atom Z=" << elem_Z[i] <<
 	" in file " << atomfile_ << "\n";
   }
+ }
   
-  // set up global list of levels (i.e., levels of all atoms)
-  level_id = 0;
-  for (size_t i=0;i<atoms.size();++i) 
-  {
-    for (int j=0;j<atoms[i].n_levels;j++)
-    {
-      globalLevelList_atom_.push_back(i);
-      globalLevelList_index_.push_back(j);
-    }
-  }
-  
-  // set up global line list (lines from all atoms)
-  for (size_t i=0;i<atoms.size();++i) 
-  {
-    for (int j=0;j<atoms[i].n_lines;j++)
-    {
-      nlteGlobalLine line;
-      line.f_osc   = atoms[i].lines[j].f_lu;
-      line.nu      = atoms[i].lines[j].nu;
-      line.ion_weight = elem_A[i];
-      line.iAtom   = i;
-      line.iIndex  = j;
-
-      int ll = atoms[i].lines[j].ll;
-      int lu = atoms[i].lines[j].lu;
-      //int global_ll = atoms[i].levels[ll].globalID;
-      //int global_lu = atoms[i].levels[lu].globalID;
-      line.iLowerLevel = ll; //global_ll;
-      line.iUpperLevel = lu; //global_lu;
-      
-      // statstical weights
-      int g1 = atoms[i].levels[ll].g;
-      int g2 = atoms[i].levels[lu].g;
-      line.g1_over_g2 = (1.0*g1)/(1.0*g2);
-      
-      globalLineList_.push_back(line);
-    }
-  }
-    
-  // now sort the global line list
-  bool compareLineNu(const nlteGlobalLine &a, const nlteGlobalLine &b);
-  std::sort(globalLineList_.begin(), globalLineList_.end(), compareLineNu);
-
-  // sanity check
- // std::vector <nlteGlobalLine>::iterator iLine;
- //  std::cout << "nlines = " << globalLineList_.size() << "\n";
- //  int i = 0;
- //  for (iLine = globalLineList_.begin();iLine < globalLineList_.end();iLine++)
- //  {
- //    std::cout << i << " ";
- //    i++;
- //    std::cout << iLine->nu << "\t" << iLine->iIndex << " ";
- //    std::cout << iLine->iLowerLevel << "\t" << iLine->iUpperLevel << "\n";
- //  }
-}
-
-
-//----------------------------------------------------------------
-// this is a simple comparison function used to sort the 
-// global linelist in the initialize() function.
-//----------------------------------------------------------------
-bool compareLineNu(const nlteGlobalLine &a, const nlteGlobalLine &b)
-{
-  return a.nu < b.nu;
-}
-
-//-----------------------------------------------------------------
-// get the data for the global line data
-// input: vectors that will be resized to get lien data
-//   std::vector<double> nu         frequncy of lines
-//   std::vector<double> f_osc,     oscillator strength of lines
-//   std::vector<int> lowerLevel    global index of lower level
-//   std::vector<int> upperLevel)   global index of upper level
-//-----------------------------------------------------------------
-void nlte_gas::get_global_line_data(std::vector<double> nu,
-				    std::vector<double> f_osc,
-				    std::vector<double> g1_over_g2,
-				    std::vector<int> iLowerLevel,
-				    std::vector<int> iUpperLevel)
-{
-  int n_lines =  globalLineList_.size();
-  nu.resize(n_lines);
-  f_osc.resize(n_lines);
-  iLowerLevel.resize(n_lines);
-  iUpperLevel.resize(n_lines);
-
-  for (int i=0;i<n_lines;++i)
-  {
-    nu[i]          = globalLineList_[i].nu;
-    f_osc[i]       = globalLineList_[i].f_osc;
-    g1_over_g2[i]  = globalLineList_[i].g1_over_g2;
-    iLowerLevel[i] = globalLineList_[i].iLowerLevel;
-    iUpperLevel[i] = globalLineList_[i].iUpperLevel;
-  }
-}
-
-
+ 
 //-----------------------------------------------------------------
 // Set mass fractions of each element in the gas
 // this function will enforce that the mass fractions are

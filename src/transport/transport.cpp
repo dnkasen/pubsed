@@ -59,12 +59,28 @@ void transport::step(double dt)
   }
 
   // calculate percent particles escaped, and rescale if wanted
-  double per_esc = (1.0*n_escape)/(1.0*n_active);
-  if ((verbose)&&(steady_state)) 
+  if (steady_state)
   {
-    cout << "# Percent particles escaped = " << 100.0*per_esc << "\n";
-  //  optical_spectrum.rescale(1.0/per_esc); 
-  }
+    double per_esc = (1.0*n_escape)/(1.0*n_active);
+    if (core_fix_luminosity_)
+    {
+      if (verbose)
+        cout << "# Percent particles escaped = " << 100.0*per_esc << " (rescaling)\n";
+
+      double fac = 1.0/per_esc;
+      optical_spectrum.rescale(fac); 
+      for (int i=0;i<grid->n_zones;++i) 
+      {
+        grid->z[i].e_rad *= fac;
+        if (store_Jnu_)
+         for (size_t j=0;j<nu_grid.size();++j)
+            J_nu_[i][j] *= fac;
+      }
+    } 
+    else {
+      if (verbose)
+        cout << "# Percent particles escaped = " << 100.0*per_esc << " (not rescaling)\n";}
+  } 
 
   tend = MPI_Wtime();
   if (verbose) cout << "# Propagated particles          (" << (tend-tstr) << " secs) \n";
