@@ -46,6 +46,7 @@ class nlte_gas
   int use_free_free_opacity;
   int use_bound_free_opacity;
   int use_bound_bound_opacity;   
+  int use_user_opacity_;
   double line_velocity_width_;
 
   
@@ -190,6 +191,9 @@ class nlte_gas
   void fuzz_expansion_opacity(std::vector<double>&);
   void get_line_opacities(std::vector<double>&);
  
+  void get_user_defined_opacity
+  (std::vector<double>&, std::vector<double>&,std::vector<double>&);
+
   void set_minimum_extinction(double d)
   {
     for (size_t i=0;i<atoms.size();++i) atoms[i].minimum_extinction_ = d;

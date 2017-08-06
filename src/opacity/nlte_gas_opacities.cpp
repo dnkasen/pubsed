@@ -12,6 +12,9 @@ void nlte_gas::computeOpacity(std::vector<OpacityType>& abs,
 			      std::vector<OpacityType>& scat, 
 			      std::vector<OpacityType>& tot_emis)
 {
+ 
+
+
   int ns = nu_grid.size();
   std::vector<double> opac, emis;
   opac.resize(ns);
@@ -113,6 +116,19 @@ void nlte_gas::computeOpacity(std::vector<OpacityType>& abs,
        double ezeta = exp(1.0*pc::h*nu/pc::k/temp);
        double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(ezeta-1);
        tot_emis[i] += bb*abs[i];
+      }
+    }
+
+    if (use_user_opacity_)
+    {
+      std::vector<double> eps;
+      eps.resize(ns);
+      get_user_defined_opacity(opac, eps, emis);
+      for (int i=0;i<ns;i++) 
+      {
+        abs[i]  += opac[i]*eps[i];
+        scat[i] += opac[i]*(1 - eps[i]);
+        tot_emis[i] += emis[i];
       }
     }
   }

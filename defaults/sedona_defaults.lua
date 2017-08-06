@@ -66,6 +66,7 @@ limits_temp_min = 1000
 
 -- opacity calculation defaults
 opacity_grey_opacity        = 0
+opacity_user_defined        = 0
 opacity_epsilon             = 1.0
 opacity_electron_scattering = 0
 opacity_line_expansion      = 0
@@ -73,7 +74,6 @@ opacity_fuzz_expansion      = 0
 opacity_bound_free          = 0
 opacity_bound_bound         = 0
 opacity_free_free           = 0
-opacity_lines               = 0
 opacity_use_nlte            = 0
 opacity_minimum_extinction  = 0
 opacity_maximum_opacity     = 1e40

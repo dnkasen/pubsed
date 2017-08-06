@@ -125,6 +125,8 @@ void transport::init(ParameterReader* par, grid_general *g)
     = params_->getScalar<int>("opacity_bound_bound");
   gas.use_free_free_opacity  
     = params_->getScalar<int>("opacity_free_free");
+  gas.use_user_opacity_  
+    = params_->getScalar<int>("opacity_user_defined");
   double min_ext = params_->getScalar<double>("opacity_minimum_extinction");
   maximum_opacity_ = params_->getScalar<double>("opacity_maximum_opacity");
 
