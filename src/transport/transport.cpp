@@ -86,7 +86,10 @@ void transport::step(double dt)
   if (verbose) cout << "# Propagated particles          (" << (tend-tstr) << " secs) \n";
 
   // normalize and MPI combine radiation tallies
+  tstr = MPI_Wtime();
   reduce_radiation(dt);
+  tend = MPI_Wtime();
+  if (verbose) cout << "# Reduced radiation (" << (tend-tstr) << " secs) \n";
 
   // solve for T_gas structure if radiative eq. applied
   if (radiative_eq) 
