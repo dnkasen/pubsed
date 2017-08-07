@@ -19,7 +19,7 @@ void nlte_gas::get_user_defined_opacity
 	{
 		double numax = nu_grid.maxval();
 		double numin = nu_grid.minval();
-		double nu_space = (numax - numin)/2e3;
+		double nu_space = (numax - numin)/1e4;
 		double beta = line_velocity_width_/pc::c;
 		double nu_line = numin;
 		int bin = 0;
@@ -45,7 +45,7 @@ void nlte_gas::get_user_defined_opacity
 				int i1 = bin - di;
 				int i2 = bin + di;
 				if (i1 < 0) i1 = 0;
-				if (i2 > n_freq_pts-1) i1 = n_freq_pts - 1;
+				if (i2 > n_freq_pts-1) i2 = n_freq_pts - 1;
 
 				for (int i=i1;i<i2;++i) 
 				{
