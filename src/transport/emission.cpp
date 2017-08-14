@@ -12,11 +12,11 @@ using std::cout;
 //------------------------------------------------------------
 void transport::emit_particles(double dt)
 {
- 
   emit_radioactive(dt);
   emit_thermal(dt);
   //emit_heating_source(dt);
   emit_inner_source(dt);
+  emit_from_pointsoures(dt);
 }
 
 //------------------------------------------------------------
@@ -345,7 +345,9 @@ void transport::emit_inner_source(double dt)
   if (total_n_emit == 0) return;
   int n_emit = total_n_emit/(1.0*MPI_nprocs);
 
-  L_core_ = params_->getFunction("core_luminosity", t_now_);
+  // get current luminosity, if time dependent
+  double L_current = params_->getFunction("core_luminosity", t_now_);
+  if (L_current != 0) L_core_ = L_current;
   double Ep  = L_core_*dt/n_emit;
   
   if ((int)particles.size() + n_emit > this->max_total_particles)
@@ -440,3 +442,67 @@ void transport::emit_inner_source(double dt)
 }
 
 
+//------------------------------------------------------------
+// inject particles from point source
+//------------------------------------------------------------
+void transport::emit_from_pointsoures(double dt)
+{
+  if (!use_pointsources_) return;
+
+  // get the emisison properties from lua file
+  // this could be set to be a function if we want
+  int total_n_emit    = params_->getScalar<int>("particles_n_emit_pointsources");
+  if (total_n_emit == 0) return;
+  int n_emit = total_n_emit/(1.0*MPI_nprocs);
+  
+  if ((int)particles.size() + n_emit > this->max_total_particles)
+    {cout << "# Not enough particle space\n"; return; }
+
+  double Ep  = pointsources_L_tot_*dt/n_emit;
+
+  // inject particles from the source
+  for (int i=0;i<n_emit;i++)
+  {
+    particle p;
+  
+    // pick your pointsource to emit from
+    int ind = pointsource_emission_cdf_.sample(gsl_rng_uniform(rangen));
+
+    p.x[0] = pointsource_x_[ind];
+    p.x[1] = pointsource_y_[ind];
+    p.x[2] = pointsource_z_[ind];
+   
+    // emit isotropically in comoving frame
+    double mu  = 1 - 2.0*gsl_rng_uniform(rangen);
+    double phi = 2.0*pc::pi*gsl_rng_uniform(rangen);
+    double smu = sqrt(1 - mu*mu);
+    p.D[0] = smu*cos(phi);
+    p.D[1] = smu*sin(phi);
+    p.D[2] = mu;
+
+    // set energy of packet
+    p.e = Ep;
+
+    // sample frequency 
+    int inu = pointsource_emission_spectrum_.sample(gsl_rng_uniform(rangen));
+    p.nu = nu_grid.sample(inu,gsl_rng_uniform(rangen));
+
+    // get index of current zone
+    p.ind = grid->get_zone(p.x);
+
+    // lorentz transform from the comoving to lab frame
+    transform_comoving_to_lab(&p);
+
+    // set time to current
+    p.t  = t_now_ + gsl_rng_uniform(rangen)*dt;
+    
+    // set type to photon
+    p.type = photon;
+  
+    // add to particle vector
+    particles.push_back(p);
+  }
+
+  if (verbose) 
+    printf("# pointsource = %e; emitted %d particles (%d per proc)\n",pointsources_L_tot_,total_n_emit,n_emit);
+}

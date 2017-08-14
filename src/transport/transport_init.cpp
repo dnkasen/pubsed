@@ -204,6 +204,9 @@ void transport::init(ParameterReader* par, grid_general *g)
   // read pamaeters for core emission and setup
   setup_core_emission();
 
+  // read parameters for pointsource emission and setup
+  setup_pointsource_emission();
+
   // initialize time
   t_now_ = g->t_now;
 
@@ -212,7 +215,10 @@ void transport::init(ParameterReader* par, grid_general *g)
   initialize_particles(n_parts);
 }
 
-
+// -----------------------------------------------------------
+// Read parameters for a spherical emitting core and
+// setup the emission 
+// -----------------------------------------------------------
 void transport::setup_core_emission()
 {
 
@@ -305,4 +311,74 @@ void transport::setup_core_emission()
   // -----------------------------------------------------------
 
 }
+
+
+// -----------------------------------------------------------
+// Read parameters for multiple emitting point sources
+// and etup the emission 
+// -----------------------------------------------------------
+void transport::setup_pointsource_emission()
+{
+  std::string ps_filename = params_->getScalar<string>("particles_pointsource_file");  
+  use_pointsources_ = 0;
+  if (ps_filename == "") return;
+
+  std::ifstream ps_file;
+  ps_file.open(ps_filename.c_str());
+  if (!ps_file.is_open()) 
+  {
+    if (verbose) std::cout << "Can't open point source file " << ps_filename << "\n";
+    return;
+  }
+
+  while (!ps_file.eof( ))   
+  {
+    use_pointsources_ = 1;
+
+    double xr[3], L, T;
+    ps_file >> xr[0];
+    ps_file >> xr[1];
+    ps_file >> xr[2];
+    ps_file >> L;
+    ps_file >> T;
+    if (ps_file.eof()) break;
+    pointsource_x_.push_back(xr[0]);
+    pointsource_y_.push_back(xr[1]);
+    pointsource_z_.push_back(xr[2]);
+    pointsource_L_.push_back(L);
+    pointsource_T_.push_back(T);
+  }
+
+  pointsources_L_tot_ = 0;
+  int n_sources = (int)pointsource_T_.size();
+  pointsource_emission_cdf_.resize(n_sources);
+  for (int i=0;i<n_sources;i++)
+  {
+    pointsources_L_tot_ += pointsource_L_[i];
+    pointsource_emission_cdf_.set_value(i,pointsource_L_[i]);
+  } 
+  pointsource_emission_cdf_.normalize();
+
+  // setup emission spectrum
+  pointsource_emission_spectrum_.resize(nu_grid.size());
+  for (int j=0;j<nu_grid.size();j++)
+  { 
+    double nu  = nu_grid.center(j);
+    double dnu = nu_grid.delta(j);
+    double bb = blackbody_nu(T_core_,nu);
+    pointsource_emission_spectrum_.set_value(j,bb*dnu*emissivity_weight_[j]);
+  }
+  pointsource_emission_spectrum_.normalize();
+
+  if (verbose) 
+  {
+    std::cout << "# From pointsource file: " << ps_filename << "\n";
+    std::cout << "#   Read " << n_sources << " pointsources; L_tot = " << pointsources_L_tot_ << "\n";
+  }
+}
+
+
+  
+
+
 

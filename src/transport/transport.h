@@ -74,6 +74,16 @@ class transport
   cdf_array<double> core_emission_spectrum_;
   // emission distribution across zones
   cdf_array<double> zone_emission_cdf_;
+ 
+  // emission point sources
+  int use_pointsources_;
+  vector<double> pointsource_x_, pointsource_y_, pointsource_z_;
+  vector<double> pointsource_L_, pointsource_T_;
+  cdf_array<double> pointsource_emission_cdf_;
+  cdf_array<double> pointsource_emission_spectrum_;
+  double pointsources_L_tot_;
+
+
 
   // minimum and maximum temperatures
   double temp_max_value_, temp_min_value_;
@@ -120,6 +130,8 @@ class transport
 
   // setup functions
   void setup_core_emission();
+  void setup_pointsource_emission();
+  void read_pointsource_params(ParameterReader* par);
 
   // opacity functions
   int   get_opacity(particle&, double, double&, double&);
@@ -134,7 +146,8 @@ class transport
   void   emit_radioactive(double dt);
   void   emit_thermal(double dt);
   void   emit_heating_source(double dt);
-
+  void   emit_from_pointsoures(double dt);
+  
   void   create_isotropic_particle(int,PType,double,double);
   void   initialize_particles(int);
   void sample_photon_frequency(particle*);
