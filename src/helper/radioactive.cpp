@@ -102,6 +102,8 @@ double radioactive::decay
     int el_A = elem_A[k];
     double val = decay_energy_rate(el_Z,el_A,t,&gf);
     val = val*X[k]/(el_A*pc::m_p);;
+    // debug
+    if (el_Z > 58) val = val/X[k];
     total  += val;
     gtotal += val*gf;
   }
