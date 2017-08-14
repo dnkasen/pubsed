@@ -39,12 +39,15 @@ core_temperature      = 0
 core_photon_frequency = 0
 core_timescale        = 0
 core_spectrum_file    = ""
+core_fix_luminosity   = 0
 
 -- default particle params
 particles_max_total = 1e7
 particles_n_emit_radioactive   = 0
 particles_n_emit_thermal       = 0
 particles_n_initialize         = 0
+particles_n_emit_pointsources  = 0
+particles_pointsource_file     = ""
 
 -- time stepping
 tstep_max_steps  = 1000
