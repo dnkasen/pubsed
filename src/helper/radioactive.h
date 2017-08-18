@@ -30,6 +30,8 @@ class radioactive
  
 public:
 
+	double rprocess_heating_rate(double t, double *gfrac);
+
 	void decay_composition
 	(std::vector<int> elem_Z, std::vector<int> elem_A, std::vector<double>& X, double t);
 

@@ -6,6 +6,7 @@
 #include "physical_constants.h"
 #include "sedona.h"
 
+
 namespace pc = physical_constants;
 
 
@@ -81,10 +82,39 @@ void radioactive::decay_composition
       X[i] += X_ni*fe_f + X_co*(1 - eco);
     
   }
-    
-
-
 }
+
+
+double radioactive::rprocess_heating_rate(double t, double *gfrac)
+{
+  // formula from Rosswog et al 2014 MNRAS 439
+  //double eps = 0.5-1.0/pc::pi*atan((t - 1.3)/0.11);; //2.0e18*(0.5 - 1.0/pc::pi*atan((t - 1.3)/0.11));
+
+  double td = t/3600.0/24.0;
+
+  // Fit from Lippuner and Roberts 2015 ApJ 815
+  // for Ye = 0.13, s = 32, tau = 0.84 ms for
+  double A1 = 8.4939E+09;
+  double alpha = 1.3642E+00;
+  double B1 = 8.3425E+09;
+  double beta1 = 3.6280E+00;
+  double B2 = 8.8616E+08;
+  double beta2 = 1.0847E+01;
+  double eps = A1*pow(td,-1.0*alpha) + B1*exp(-1.0*td/beta1) + B2*exp(-1.0*td/beta2);
+
+  // thermalization efficiency from Barnes et al 2016
+  double af = 0.56;
+  double bf = 0.17;
+  double df = 0.74;
+  double x = 2*bf*pow(td,df);
+  double f = 0.36*(exp(-af*td) + log(1 + x)/x);
+
+  *gfrac = 0;
+  return eps*f;
+}
+
+
+
 
 //--------------------------------------------------------------
 // returns the energy from radioactive decay, per time 
@@ -93,17 +123,27 @@ void radioactive::decay_composition
 double radioactive::decay
 (std::vector<int> elem_Z, std::vector<int> elem_A, std::vector<double> X, double t, double *gfrac)
 {
+  int rprocess_heat = 0;
+
+  // see if this is an r-process composition (simplistic)
+  for (unsigned int k=0;k<elem_Z.size();k++)
+    if ((elem_Z[k] > 57)&&(elem_A[k] > 0)) rprocess_heat = 1;
+
+  if (rprocess_heat)
+  {
+    double total = rprocess_heating_rate(t,gfrac);
+    return total;
+  }
+
   double total  = 0;
   double gtotal = 0;
   double gf;
-  for (int k=0;k<elem_Z.size();k++)
+  for (unsigned int k=0;k<elem_Z.size();k++)
   {
     int el_Z = elem_Z[k];
     int el_A = elem_A[k];
     double val = decay_energy_rate(el_Z,el_A,t,&gf);
     val = val*X[k]/(el_A*pc::m_p);;
-    // debug
-    if (el_Z > 58) val = val/X[k];
     total  += val;
     gtotal += val*gf;
   }
