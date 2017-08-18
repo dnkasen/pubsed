@@ -155,6 +155,12 @@ void transport::emit_radioactive(double dt)
   // number of radioctive particles to emit
   int total_n_emit = params_->getScalar<int>("particles_n_emit_radioactive");
   if (total_n_emit == 0) return;
+  if (last_iteration_)
+  {
+    int pumpup = params_->getScalar<int>("particles_last_iter_pump");
+    if (pumpup != 0) total_n_emit *= pumpup;
+  }
+  
   int my_n_emit = floor(total_n_emit/(1.0*MPI_nprocs));
 
   // randomize remainder

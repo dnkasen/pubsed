@@ -73,6 +73,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   steady_state    = (params_->getScalar<int>("transport_steady_iterate") > 0);
   temp_max_value_ = params_->getScalar<double>("limits_temp_max");
   temp_min_value_ = params_->getScalar<double>("limits_temp_min");
+  last_iteration_ = 0;
 
   // initialize the frequency grid  
   std::vector<double> nu_dims = params_->getVector<double>("transport_nu_grid");

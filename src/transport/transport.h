@@ -64,6 +64,7 @@ class transport
   int    store_Jnu_; 
   int    core_fix_luminosity_;
   double maximum_opacity_;
+  int    last_iteration_;
 
   // current time in simulation
   double t_now_;
@@ -181,6 +182,9 @@ class transport
 
  public:
   
+
+  void set_last_iteration_flag()
+    {last_iteration_ = 1;}
 
   //--------------------------------
   // constructor and defaults
