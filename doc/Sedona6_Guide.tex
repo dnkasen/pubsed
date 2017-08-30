@@ -34,6 +34,15 @@
 \subsection{Building the Code}
 
 
+\noindent {\bf Python (optional)}: Use python for plotting and testing scripts. Not needed for Sedona itself. Need
+
+Python 2.7 is standard. On linux to get the necessary packages try:
+
+sudo apt-get install python-numpy python-scipy python-matplotlib python h5py
+
+Can also install the M
+
+
 \subsection{Running the Code}
 
 
@@ -61,7 +70,7 @@ Defaults for all parameters are given in a defaults.lua file.
   tstep\_max\_dt        & maximum size of a timestep (in seconds)  \\ \hline
  tstep\_min\_dt          & minimum size of a timestep (in seconds)\\ \hline
  tstep\_max\_delta   &  maximum fractional size of a timestep (multiply this by 
- the current time to get the maximum timestep). \\ \hline
+ the current time to get the limit on the timestep). \\ \hline
 \hline
 \end{tabular}
 \end{table}
