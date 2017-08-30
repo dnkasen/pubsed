@@ -112,7 +112,6 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
       infile >> z[i].v[0];
       infile >> z[i].rho;
       infile >> z[i].T_gas;
-      std::cout << i << " " << r_out[i] << "\n";
     }
     // read composition
     z[i].mu = 0;
