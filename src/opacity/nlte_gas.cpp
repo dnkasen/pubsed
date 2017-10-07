@@ -63,7 +63,6 @@ void nlte_gas::initialize
   int level_id = 0;
   for (size_t i=0;i<atoms.size();++i) 
   {
-    if (verbose) std::cout << "init atom " << elem_Z[i] << "\n";
     int error = atoms[i].initialize(atomfile_, elem_Z[i],ng,level_id,use_nlte_); 
     if ((error)&&(verbose))
       std::cout << "# ERROR: incomplete data for atom Z=" << elem_Z[i] <<
