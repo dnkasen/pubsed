@@ -24,12 +24,13 @@ static void write_mesa_file(std::string);
 static void write_frequency_file(std::string, int);
 static void write_gas_state(std::string);
 static void write_mean_opacities(std::string);
+static int verbose;
 
 int main(int argc, char **argv)
 {
   // initialize MPI 
   MPI_Init( &argc, &argv );
-  const int verbose = 1; 
+  verbose = 1; 
 
   // open up the parameter reader
   std::string param_file = "param.lua";
@@ -123,6 +124,12 @@ int main(int argc, char **argv)
 void write_frequency_file(std::string outfile, int style)
 {
   FILE *fout = fopen(outfile.c_str(),"w");
+  if (fout == NULL)
+  {
+    if (verbose) std::cout << "Can't open opacity output file " << outfile << "\n";
+    return;
+  }
+
   vector<double> temperature_list = params.getArray<double>("temperature");
   vector<double> density_list     = params.getArray<double>("density");
   vector <double>::iterator dens, temp;
@@ -157,6 +164,12 @@ void write_frequency_file(std::string outfile, int style)
 void write_gas_state(std::string statefile)
 {
   FILE *fout = fopen(statefile.c_str(),"w");
+  if (fout == NULL)
+  {
+    if (verbose) std::cout << "Can't open output gas state file " << statefile << "\n";
+    return;
+  }
+
   fprintf(fout,"---------------------------------------\n");
   fprintf(fout,"density (g/cc)          = %12.4e\n",gas.get_density());
   fprintf(fout,"temperature (K)         = %12.4e\n",gas.get_temperature());
@@ -186,6 +199,12 @@ void write_gas_state(std::string statefile)
 void write_mean_opacities(std::string outfile)
 {
   FILE *fout = fopen(outfile.c_str(),"w");
+  if (fout == NULL)
+  {
+    if (verbose) std::cout << "Can't open mean opacity output file " << outfile << "\n";
+    return;
+  }
+
   vector<double> temperature_list = params.getArray<double>("temperature");
   vector<double> density_list     = params.getArray<double>("density");
   int use_logR = params.getScalar<int>("use_logR");
