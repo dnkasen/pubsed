@@ -83,3 +83,26 @@ if (ndims == 2):
     py.clf()
 
 
+##################### 3D cartesian
+if (ndims == 3):
+
+  for thistype in type.split(','):
+
+    data = np.array(fin[thistype])
+
+    title = thistype
+    if (opts.log):
+      data = np.log10(data)
+      title = 'log10 ' + title
+
+    imid = data.shape[2]/2
+    arr = data[:,:,imid]
+    title = title + ' (x-y plane)'
+
+    py.matshow(arr)
+    py.colorbar()
+    py.title(title)
+    py.show()
+    j = raw_input("press any key to continue >")
+    py.clf()
+

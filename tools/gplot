@@ -23,9 +23,9 @@ if (opts.linestyle): line = opts.linestyle
 else: line = ''
 
 if (opts.zone):
-    zname = 'zone_' + str(opts.zone)
+    zname = 'zonedata/' + str(opts.zone)
 else:
-    zname = 'zone_0'
+    zname = 'zonedata/0'
 
 if (opts.type):
     type = opts.type

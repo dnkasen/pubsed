@@ -71,15 +71,18 @@ for i in range(n):
     if (opts.plotbol):
       py.plot(times,bol)
     else:
-      indt = bisect.bisect(times,float(opts.plottime))
       py.xlabel('frequency (Hz)')
       if (not opts.nu):
         Lnu = Lnu*nu**2/2.99e10/1e8
         nu  = 2.99e10/nu*1e8
         py.xlabel('wavelength (angstroms)')
-      py.plot(nu,Lnu[indt,:])
+        
+      for thist in (opts.plottime).split(','):
+        indt = bisect.bisect(times,float(thist))
+        print 'time = ',thist,indt
+        py.plot(nu,Lnu[indt,:])
+        
       py.ylabel('specific luminosity')
-
       py.title('spectrum at time t = ' + str(opts.plottime))
 
 ######################
@@ -97,6 +100,8 @@ if (opts.xrange):
    x1 = float(xx[0])
    x2 = float(xx[1])
    py.xlim((x1,x2))
+
+if (not opts.plotbol): py.xlim(1000,3e4)
 
 if (opts.yrange):
    xx = opts.yrange.split(',')
