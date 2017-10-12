@@ -214,8 +214,10 @@ ParticleFate transport::propagate(particle &p, double dt)
       //std::cout << p.ind << " " << i_nu << " " << p.e << " " << this_E << " " << J_nu_[p.ind][i_nu] << "\n";
     }
       
-    // put back in radiation force tally here
-    // fx_rad =
+     // radiation force
+     zone->fx_rad += this_E*dshift*continuum_opac_cmf*p.D[0] * dshift; // Extra dshift definitely needed here (two total) 
+     zone->fy_rad += this_E*dshift*continuum_opac_cmf*p.D[1] * dshift;
+     zone->fz_rad += this_E*dshift*continuum_opac_cmf*p.D[2] * dshift;
 
     // move particle the distance
     p.x[0] += this_d*p.D[0];
