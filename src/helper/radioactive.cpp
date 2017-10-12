@@ -60,6 +60,7 @@ void radioactive::decay_composition
 {
   int n_el = elems_Z.size();
 
+  // 56nickel decay
   double X_ni = 0;
   double X_co = 0;  
   for (int i=0;i<n_el;i++)
@@ -82,6 +83,33 @@ void radioactive::decay_composition
       X[i] += X_ni*fe_f + X_co*(1 - eco);
     
   }
+
+
+  // Cr48 decay
+  double X_cr = 0;
+  double X_vn = 0;  
+  for (int i=0;i<n_el;i++)
+  {
+    if ((elems_Z[i] == 24)&&(elems_A[i] == 48)) X_cr = X[i];
+    if ((elems_Z[i] == 23)&&(elems_A[i] == 48)) X_vn = X[i];
+  }
+
+  double cr_f = exp(-t/TAU_CR);
+  double vn_f = TAU_VN/(TAU_CR-TAU_VN)*(exp(-t/TAU_CR) - exp(-t/TAU_VN));
+  double ti_f = 1 - cr_f - vn_f;  
+  double evn = exp(-t/TAU_VN);
+  for (int i=0;i<n_el;i++)
+  {
+    if ((elems_Z[i] == 24)&&(elems_A[i] == 48)) 
+      X[i] = X_cr*cr_f;
+    if ((elems_Z[i] == 23)&&(elems_A[i] == 48)) 
+      X[i] = X_cr*vn_f + X_vn*evn;
+    if ((elems_Z[i] == 22)&&(elems_A[i] == 48)) 
+      X[i] += X_cr*ti_f + X_vn*(1 - evn);
+    
+  }
+
+
 }
 
 
@@ -195,7 +223,27 @@ double radioactive::decay_energy_rate(int Z, int A, double t, double *gfrac)
     total  = co_E;
   }
     
-  // // Do 52Fe decay
+
+  // Do 48Cr decay
+  if ((Z == 24)&&(A == 48))
+  {
+    // exponential factors to be used
+    double e_cr = exp(-t/TAU_CR);
+    double e_vn = exp(-t/TAU_VN);
+    // number divided by decay time)
+    double cr48 = (e_cr/TAU_CR);
+    double vn48 = 1.0/(TAU_CR-TAU_VN)*(e_cr - e_vn);
+    // get the energy from decays in ergs/s, using unit conversions
+    double cr_E = cr48*(AVERAGE_CR_ENERGY*pc::Mev_to_ergs);
+    double vn_E = vn48*(AVERAGE_VN_ENERGY*pc::Mev_to_ergs);
+
+    gtotal += cr_E + vn_E;
+    total  += cr_E + vn_E;
+  }
+
+
+
+ // // Do 52Fe decay
   // if (ZONE::radio[i] == 26) 
   //   {
   //     // amount of 52Fe at t=0
@@ -214,27 +262,6 @@ double radioactive::decay_energy_rate(int Z, int A, double t, double *gfrac)
   //     gtotal += fe_E + mn_E;
   //     total  += fe_E + mn_E;
   //   }
-
-  //   // Do 48Cr decay
-  //   if (ZONE::radio[i] == 24) 
-  //   {
-  //     // amount of 48cr at t=0
-  //     double cr48_0 = z.rho*z.R_gas[i]/(48*M_PROTON);
-
-  //     // exponential factors to be used
-  //     double e_cr = exp(-time/TAU_CR);
-  //     double e_vn = exp(-time/TAU_VN);
-  //     // number divided by decay time)
-  //     double cr48 = cr48_0*(e_cr/TAU_CR);
-  //     double vn48 = cr48_0/(TAU_CR-TAU_VN)*(e_cr - e_vn);
-  //     // get the energy from decays in ergs/s, using unit conversions
-  //     double cr_E = cr48*(AVERAGE_CR_ENERGY*MEV_TO_ERGS);
-  //     double vn_E = vn48*(AVERAGE_VN_ENERGY*MEV_TO_ERGS);
-
-  //     gtotal += cr_E + vn_E;
-  //     total  += cr_E + vn_E;
-  //   }
-
 
   //   // R-process decay
     if ((Z >= 58))
