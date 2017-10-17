@@ -16,8 +16,9 @@ void nlte_gas::computeOpacity(std::vector<OpacityType>& abs,
 
 
   int ns = nu_grid.size();
-  std::vector<double> opac, emis;
+  std::vector<double> opac, aopac, emis;
   opac.resize(ns);
+  aopac.resize(ns);
   emis.resize(ns);
 
   // zero out passed opacity arrays
@@ -108,10 +109,10 @@ void nlte_gas::computeOpacity(std::vector<OpacityType>& abs,
     //---
     if (use_fuzz_expansion_opacity) 
     {
-      fuzz_expansion_opacity(opac);
+      fuzz_expansion_opacity(opac, aopac);
       for (int i=0;i<ns;i++) {
-	     abs[i]  += epsilon_*opac[i];
-	     scat[i] += (1-epsilon_)*opac[i];
+	     abs[i]  += aopac[i];
+	     scat[i] += opac[i];
        double nu = nu_grid.center(i);
        double ezeta = exp(1.0*pc::h*nu/pc::k/temp);
        double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(ezeta-1);
@@ -292,13 +293,17 @@ void nlte_gas::line_expansion_opacity(std::vector<double>& opac)
 // UNITS are cm^{-1} 
 // So this is really an extinction coefficient
 //----------------------------------------------------------------
-void nlte_gas::fuzz_expansion_opacity(std::vector<double>& opac)
+void nlte_gas::fuzz_expansion_opacity(std::vector<double>& opac, std::vector<double>& aopac)
 {
   double exp_min = 1e-6;
   double exp_max = 100;
 
-  // zero out opacity array
-  for (size_t i=0;i<opac.size();i++) opac[i] = 0;
+  // zero out opacity arrays
+  for (size_t i=0;i<opac.size();i++) 
+  {
+    opac[i]  = 0;
+    aopac[i] = 0;
+  }
 
   // loop over atoms
   for (size_t i=0;i<atoms.size();i++)
@@ -328,13 +333,23 @@ void nlte_gas::fuzz_expansion_opacity(std::vector<double>& opac)
 
       // add in this line to the sum
       int bin = atoms[i].fuzz_lines.bin[j];
-      opac[bin] += (1 - etau);
+      double this_eps = epsilon_;
+      // debug
+//      if (atoms[i].atomic_number < 22)
+ //       this_eps = 0;
+
+      opac[bin]  += (1-this_eps)*(1 - etau);
+      aopac[bin] += this_eps*(1 - etau);
+
     }
   }
 
   // renormalize opacity array
   for (size_t i=0;i<opac.size();i++) 
-    opac[i] = opac[i]*nu_grid.center(i)/nu_grid.delta(i)/pc::c/time;
+  {
+    opac[i]  = opac[i]*nu_grid.center(i)/nu_grid.delta(i)/pc::c/time;
+    aopac[i] = aopac[i]*nu_grid.center(i)/nu_grid.delta(i)/pc::c/time;
+  }
 }
 
 //---------------
