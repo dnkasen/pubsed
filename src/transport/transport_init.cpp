@@ -112,7 +112,6 @@ void transport::init(ParameterReader* par, grid_general *g)
 		 nl << " lines used\n";
   
   // set gas opacity flags and parameters
-  gas.epsilon_      = params_->getScalar<double>("opacity_epsilon");
   gas.grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
   gas.use_electron_scattering_opacity 
     = params_->getScalar<int>("opacity_electron_scattering");
@@ -130,9 +129,15 @@ void transport::init(ParameterReader* par, grid_general *g)
     = params_->getScalar<int>("opacity_user_defined");
   double min_ext = params_->getScalar<double>("opacity_minimum_extinction");
   maximum_opacity_ = params_->getScalar<double>("opacity_maximum_opacity");
-
   gas.set_minimum_extinction(min_ext);
+
+  gas.atom_zero_epsilon_ = params_->getVector<int>("opacity_atom_zero_epsilon");
+  gas.epsilon_      = params_->getScalar<double>("opacity_epsilon");
+
+
+  // define it as the first step, for NLTE
   first_step_ = 1;
+
 
   if (verbose) gas.print_properties();
 

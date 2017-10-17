@@ -308,6 +308,13 @@ void nlte_gas::fuzz_expansion_opacity(std::vector<double>& opac, std::vector<dou
   // loop over atoms
   for (size_t i=0;i<atoms.size();i++)
   {
+    double this_eps = epsilon_;
+    for (unsigned int k=0;k<atom_zero_epsilon_.size();k++)
+      if (atom_zero_epsilon_[k] == atoms[i].atomic_number)
+        this_eps = 0;
+
+
+    std::cout << atoms[i].atomic_number << "\t" << this_eps << "\n";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
     // loop over lines in atom
     for (int j=0;j<atoms[i].fuzz_lines.n_lines;j++)
     {
@@ -333,11 +340,7 @@ void nlte_gas::fuzz_expansion_opacity(std::vector<double>& opac, std::vector<dou
 
       // add in this line to the sum
       int bin = atoms[i].fuzz_lines.bin[j];
-      double this_eps = epsilon_;
-      // debug
-//      if (atoms[i].atomic_number < 22)
- //       this_eps = 0;
-
+  
       opac[bin]  += (1-this_eps)*(1 - etau);
       aopac[bin] += this_eps*(1 - etau);
 

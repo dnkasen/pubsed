@@ -31,6 +31,8 @@ class nlte_gas
   std::vector<int>           elem_A;  // vector of element atomic weights
   std::vector<nlte_atom>      atoms;  // vector of atoms
 
+
+
   double dens;                   // total mass density (g cm^-3)
   double ne;                     // electron number density (cm^-3)
   double temp;                   // Temperature (K)
@@ -56,7 +58,10 @@ class nlte_gas
 
   double grey_opacity_;
   double epsilon_;
-  
+  std::vector<int> atom_zero_epsilon_;
+
+
+
   //***********************************************************
   // INITIALIZATION
   //***********************************************************

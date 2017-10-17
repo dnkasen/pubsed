@@ -72,6 +72,7 @@ limits_temp_min = 1000
 opacity_grey_opacity        = 0
 opacity_user_defined        = 0
 opacity_epsilon             = 1.0
+opacity_atom_zero_epsilon   = {}
 opacity_electron_scattering = 0
 opacity_line_expansion      = 0
 opacity_fuzz_expansion      = 0
