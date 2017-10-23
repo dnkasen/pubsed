@@ -61,12 +61,17 @@ public:
 //------------------------------------------------------
 void normalize() 
 {
+
+  // check for nan
+  for (int i=0;i<y.size();i++) if (isnan(y[i])) y[i] = 0;
+
   // check for zero array, set to all constant
   if (y.back() == 0) y.assign(y.size(),1.0);
 
   // normalize to end = 1.0
   double N = y.back();
   for (int i=0;i<y.size();i++)   y[i] /= N;
+
 }
 
 
@@ -79,7 +84,8 @@ void normalize()
 int sample(const double yval) const
 {
   if (y.size() == 1) return 0;
-  return upper_bound(y.begin(), y.end(), yval) - y.begin();
+  int v = upper_bound(y.begin(), y.end(), yval) - y.begin();
+  return v;
 }
 
 
