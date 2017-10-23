@@ -51,6 +51,9 @@ void transport::set_opacity()
     gas.dens = z->rho;
     gas.temp = z->T_gas;
     gas.time = t_now_;
+    if (gas.temp < temp_min_value_) gas.temp = temp_min_value_;
+    if (gas.temp > temp_max_value_) gas.temp = temp_max_value_;
+
 
     // radioactive decay the composition
     for (size_t j=0;j<X_now.size();j++) X_now[j] = z->X_gas[j];
