@@ -20,7 +20,7 @@ all:
 	cd $(EXECDIR); make
 
 clean:
-	rm -f $(EXECDIR)/*.o $(EXECDIR)/gomc
+	rm -f $(EXECDIR)/*.o $(EXECDIR)/gomc $(EXECDIR)/*.cpp $(EXECDIR)/*.h
 
 realclean:
 	rm -f $(EXECDIR)/*.o $(EXECDIR)/*.cpp $(EXECDIR)/*.h $(EXECDIR)/gomc $(EXECDIR)/Makefile $(EXECDIR)/make.inc
