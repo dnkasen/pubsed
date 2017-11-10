@@ -1,13 +1,13 @@
 CXX  = CC -g -O0 -std=c++11
 
 # location of gsl 
-GSL_INC=/global/u2/d/dnkasen/include/include
-GSL_LIB=/global/u2/d/dnkasen/include/lib
+GSL_INC=/usr/common/software/gsl/2.1/gnu/include
+GSL_LIB=/usr/common/software/gsl/2.1/gnu/lib
 
 # location of lua
-LUA_INC=/global/u2/d/dnkasen/include/include/
-LUA_LIB=/global/u2/d/dnkasen/include/lib/
+LUA_INC=/global/cscratch1/sd/dgold/lua-5.3.4/install/include
+LUA_LIB=/global/cscratch1/sd/dgold/lua-5.3.4/install/lib
 
 # location of hdf5
-HDF_INC=/usr/local/include
-HDF_LIB=/usr/local/lib
+HDF_INC=/opt/cray/pe/hdf5/1.10.0.3/GNU/5.1/include
+HDF_LIB=/opt/cray/pe/hdf5/1.10.0.3/GNU/5.1/lib 
