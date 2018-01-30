@@ -166,9 +166,13 @@ int main(int argc, char **argv)
       }
       if ((dt_del > 0)&&(t > 0)) if (dt > t*dt_del) dt = t*dt_del;
       if (dt < dt_min) dt =  dt_min;
-
     }
-    else dt = 0;
+    else 
+    {
+      dt = 0;
+      if (it == n_steps) mcarlo.set_last_iteration_flag();
+    }
+
 
     // printout basic time step information
     if (verbose) 

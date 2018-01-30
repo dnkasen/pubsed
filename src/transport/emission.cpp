@@ -166,6 +166,7 @@ void transport::emit_radioactive(double dt)
   {
     int pumpup = params_->getScalar<int>("particles_last_iter_pump");
     if (pumpup != 0) total_n_emit *= pumpup;
+    if (verbose) std::cout << "# last iteration, increasing emission by factor of " << pumpup << "\n";
   }
   
   int my_n_emit = floor(total_n_emit/(1.0*MPI_nprocs)); 
@@ -356,7 +357,15 @@ void transport::emit_inner_source(double dt)
   // this could be set to be a function if we want
   int total_n_emit    = params_->getScalar<int>("core_n_emit");
   if (total_n_emit == 0) return;
+
+  if (last_iteration_)
+  {
+    int pumpup = params_->getScalar<int>("particles_last_iter_pump");
+    if (pumpup != 0) total_n_emit *= pumpup;
+    if (verbose) std::cout << "# last iteration, increasing emission by factor of " << pumpup << "\n";
+  }
   int n_emit = total_n_emit/(1.0*MPI_nprocs);
+
 
   // get current luminosity, if time dependent
   double L_current = params_->getFunction("core_luminosity", t_now_);
