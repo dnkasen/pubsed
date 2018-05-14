@@ -17,21 +17,13 @@ ParticleFate transport::do_scatter(particle *p, double eps)
   // do photon interaction physics
   if (p->type == photon)
   {
-    // debug
-    if (gsl_rng_uniform(rangen) > eps) isotropic_scatter(p,0);
-    else isotropic_scatter(p,1);
-    return moving;
-
     // see if scattered 
     if (gsl_rng_uniform(rangen) > eps) isotropic_scatter(p,0);
     else
     {
       // check for effective scattering
-      double z2;
-      if (radiative_eq) z2 = 2;
-      else z2 = gsl_rng_uniform(rangen);
-      // do an effective scatter
-      if (z2 > zone->eps_imc) isotropic_scatter(p,1);
+      if (radiative_eq) isotropic_scatter(p,1);
+
       // otherwise really absorb (kill) it
       else  fate = absorbed; 
     }
