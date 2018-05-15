@@ -1,4 +1,4 @@
-defaults_file = "../defaults.lua"
+defaults_file = "../../defaults/sedona_defaults.lua"
 model_file    = "constant.mod"       
 --data_atomic_file     = "../../data/H_3lev_plusC_atomdata.hdf5" 
 --data_atomic_file     = "../../data/cmfgen_atomdata.hdf5" 
@@ -24,7 +24,8 @@ transport_nu_grid  = {0.1*nu,5*nu,0.0001,1}
 -- output spectrum
 spectrum_nu_grid   = transport_nu_grid    
 
-output_write_levels = 1
+output_write_radiation = 1
+output_write_atomic_levels = 1
 
 -- opacity information
 opacity_grey_opacity = 0
