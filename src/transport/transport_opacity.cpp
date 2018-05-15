@@ -82,7 +82,7 @@ void transport::set_opacity()
     {
       double ednu = emis[j]*nu_grid.delta(j);
       emissivity_[i].set_value(j,ednu);
-      grid->z[i].L_thermal += 4*pc::pi*emis[j]*ednu;
+      grid->z[i].L_thermal += 4*pc::pi * ednu;
       if (!omit_scattering_) scat_opacity_[i][j] = scat[j];
      
       // check for maximum opacity
