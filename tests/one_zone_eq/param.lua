@@ -25,7 +25,7 @@ particles_n_initialize  = 0
 
 -- output spectrum
 spectrum_nu_grid    = transport_nu_grid
-output_write_levels = 1
+output_write_atomic_levels = 1
 output_write_radiation = 1
 
 -- opacity information
