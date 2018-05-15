@@ -1,0 +1,55 @@
+Hydrogen:
+    Z: 1
+    species: [1]
+
+Helium:
+    Z: 2
+    species: [1, 2]
+
+Carbon:
+    Z: 6
+    species: [1, 2, 3, 4]
+
+Nitrogen:
+    Z: 7
+    species: [1, 2]
+
+Oxygen:
+    Z: 8
+    species: [1, 2, 3, 4, 5]
+
+Sodium:
+    Z: 11
+    species: [1]
+
+Magnesium:
+    Z: 12
+    species: [2]
+
+Silicon:
+    Z: 14
+    species: [2, 3, 4]
+
+Sulphur:
+    Z: 16
+    species: [2, 3, 4]
+
+Calcium:
+    Z: 20
+    species: [2]
+
+Titanium:
+    Z: 22
+    species: [2, 3]
+
+Iron:
+   Z: 26
+   species: [2, 3, 4, 5, 6, 7]
+
+Cobalt:
+    Z: 27
+    species: [2, 3, 4, 5, 6, 7]
+
+Nickel:
+   Z: 28
+   species: [5, 6, 7]
