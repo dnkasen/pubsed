@@ -26,6 +26,19 @@ void transport::wipe_radiation()
   }
 }
 
+void transport::set_eps_imc()
+{
+  for (int i=0;i<grid->n_zones;i++) 
+  {
+
+    if (radiative_eq)
+      grid->z[i].eps_imc = 0.;
+    else
+      grid->z[i].eps_imc  = 1.; // later, will want to start computing this, with an alpha set in params to toggle implicit MC on or off
+
+  }
+}
+
 //------------------------------------------------------------
 // Combine the opacity calculations in all zones
 // from all processors using MPI 

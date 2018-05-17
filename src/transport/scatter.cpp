@@ -22,10 +22,10 @@ ParticleFate transport::do_scatter(particle *p, double eps)
     else
     {
       // check for effective scattering
-      if (radiative_eq) isotropic_scatter(p,1);
-
-      // otherwise really absorb (kill) it
-      else  fate = absorbed; 
+      double z2 = gsl_rng_uniform(rangen);
+      // enforced radiative equilibrium always effective scatters
+      if (z2 > zone->eps_imc) isotropic_scatter(p,1);
+      else fate = absorbed;
     }
   }
     

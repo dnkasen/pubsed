@@ -42,6 +42,8 @@ void transport::step(double dt)
   // clear the tallies of the radiation quantities in each zone
   wipe_radiation();
 
+  set_eps_imc();
+
   // emit new particles
   tstr = MPI_Wtime();
   emit_particles(dt);

@@ -171,6 +171,7 @@ class transport
 
   // radiation quantities functions
   void wipe_radiation();
+  void set_eps_imc();
   void reduce_radiation(double);
   void reduce_Tgas();
 
