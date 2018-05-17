@@ -1,4 +1,4 @@
-defaults_file = "../defaults.lua"
+defaults_file = "../../defaults/sedona_defaults.lua"
 
 grid_type    = "grid_1D_sphere"        -- grid geometry; match input model
 model_file   = "models/lucy_1D.mod"    -- input model file
@@ -24,6 +24,6 @@ gamma_name    = "gamma_spectrum"
 opacity_grey_opacity = 0.1
 
 transport_steady_iterate = 0
-transport_radiative_eq   = 1
+transport_radiative_equilibrium   = 1
 
 
