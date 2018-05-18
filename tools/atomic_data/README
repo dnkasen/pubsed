@@ -1,0 +1,13 @@
+This directory contains Python scripts for processing the CMFGEN data files into
+an hdf5 format usable by Sedona. User should only need to edit and run two files.
+
+First, run the "convert_database.py" script to convert the cmfgen data
+into an hdf5 format. The cmfgen database can be obtained here:
+
+     http://kookaburra.phyast.pitt.edu/hillier/web/CMFGEN.htm
+
+Second, run "create_model.py" to build a model-specific hdf5 file that contains
+only the data for a subset of the species available in the database.
+
+Both of the scripts have various options that can be toggled; please consult their
+docstrings for details.

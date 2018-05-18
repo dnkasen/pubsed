@@ -1,0 +1,6 @@
+This tests that the NLTE solution for opacities reduces to the LTE solution when the gas temperature is held fixed and the gas emits and absorbs photons. We hope to find that, after several photon absorption times (for the frequencies we care about), the coefficients measuring the departure of the gas state from LTE are close to 1, and that the radiation field is a blackbody. Remember that if electron scattering is turned on, the photon absorption time might be signficantly longer than the time it takes the photon to interact by scattering.
+
+We don't initialize any photons in advance, but let the thermal emission function create all the initial photons during the first transport step. When these photons are absorbed, they are actually removed from the calculation, rather than effectively scattered.
+
+Another version of the test can use the radiative equilibrium mode of the code. In this case, set transport_radiative_equilibrium = 1, set particles_n_emit_thermla to zero, and set particles_n_initialize to a sufficiently large value, depending on your desired signal to noise. Now the gas temperature might change, but it should stay close to the initial value in the model file.
+

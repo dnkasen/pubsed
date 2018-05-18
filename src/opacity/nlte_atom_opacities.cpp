@@ -25,6 +25,7 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
   for (int j=0;j<n_levels;++j)
   {
     int ic = levels[j].ic;
+    if (ic == -1) continue;
     double nc = n_dens*levels[ic].n;
     double gl_o_gc = (1.0*levels[j].g)/(1.0*levels[ic].g);
     double E_t = levels[j].E_ion;
