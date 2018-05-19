@@ -161,7 +161,7 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
 //************************************************************
 // Write out the file
 //************************************************************
-void grid_2D_cyln::write_plotfile(int iw, double tt)
+void grid_2D_cyln::write_plotfile(int iw, double tt, int write_mass_fractions)
 {
   // get file name
   char zonefile[1000];

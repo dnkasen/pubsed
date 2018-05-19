@@ -31,7 +31,7 @@ public:
 
   // required functions
   void    read_model_file(ParameterReader*);
-  void    write_plotfile(int,double);
+  void    write_plotfile(int,double,int);
   int     get_zone(const double *) const;
   double  zone_volume(const int) const;
   double  zone_min_length(const int) const;

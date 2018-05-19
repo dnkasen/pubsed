@@ -262,19 +262,28 @@ int grid_1D_sphere::get_next_zone(const double *x, const double *D, int i, doubl
 //************************************************************
 // Write out the file
 //************************************************************
-void grid_1D_sphere::write_plotfile(int iw, double tt)
+void grid_1D_sphere::write_plotfile(int iw, double tt, int write_mass_fracs)
 {
   // write ascii version, for convenience
   char zonefile[1000];
   sprintf(zonefile,"plt_%05d.dat",iw);
 
-  std::ofstream outf;
-  outf.open(zonefile);
-  outf << std::setprecision(4);
-  outf << std::scientific;
+  FILE *outfile;
+  outfile = fopen(zonefile,"w");
 
-  outf << "# t = " << tt << "  ; rmin = " << r_out.min << "\n";
-  outf << "#   r              rho              v              T_gas          T_rad         L_dep_nuc       L_emit_nuc\n";
+  fprintf(outfile,"# t = %8.4e ; rmin = %8.4e\n",tt, r_out.min); 
+  fprintf(outfile, "#  %-12.12s %-15.15s %-15.15s %-15.15s %-15.15s %-15.15s %-15.15s","r", "rho","v", "T_gas", "T_rad", "L_dep_nuc","L_emit_nuc");
+  if (write_mass_fracs) // output mass fractions
+    {
+      for (int j =0; j < n_elems; j++)
+	{
+	  char elem_id[10];
+	  sprintf(elem_id,"%d.%d",elems_Z[j],elems_A[j]);
+	  fprintf(outfile,"  %-15.15s",elem_id);
+	}
+      
+    }
+  fprintf(outfile,"\n");
 
   for (int i=0;i<n_zones;i++)
   {
@@ -282,17 +291,17 @@ void grid_1D_sphere::write_plotfile(int iw, double tt)
     if (i > 0) rin = r_out[i-1];
     double T_rad = pow(z[i].e_rad/pc::a,0.25);
 
-    outf << std::setprecision(8);
-    outf << r_out[i] << "\t";
-    outf << z[i].rho << "\t";
-    outf << z[i].v[0] << "\t";
-    outf << z[i].T_gas << "\t";
-    outf << T_rad << "\t";
-    outf << z[i].L_radio_dep << "\t";
-    outf << z[i].L_radio_emit << "\t";
-    outf << endl;
+    fprintf(outfile, "%12.8e  %12.8e  %12.8e  %12.8e  %12.8e  %12.8e  %12.8e", r_out[i], z[i].rho, z[i].v[0], z[i].T_gas, T_rad, z[i].L_radio_dep, z[i].L_radio_emit);
+    if (write_mass_fracs) // output mass fractions
+      {
+	for (int j =0; j < n_elems; j++)
+	  fprintf(outfile,"  %12.8e", z[i].X_gas[j]);
+      }
+    fprintf(outfile,"\n");
   }
-
+  
+  fclose(outfile);
+  
   // write hdf5 file
   sprintf(zonefile,"plt_%05d.h5",iw);
 

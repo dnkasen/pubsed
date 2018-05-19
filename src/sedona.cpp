@@ -138,6 +138,7 @@ int main(int argc, char **argv)
   // parameters for writing data to file
   int write_levels     = params.getScalar<int>("output_write_atomic_levels");
   int write_radiation  = params.getScalar<int>("output_write_radiation");
+  int write_mass_fractions  = params.getScalar<int>("output_write_mass_fractions");
  
   double write_out_step = params.getScalar<double>("output_write_plt_file_time");
   double write_out_log  = params.getScalar<double>("output_write_plt_log_space");
@@ -148,7 +149,7 @@ int main(int argc, char **argv)
   if (verbose)
   {
     printf("# writing intial plot file\n");
-    grid->write_plotfile(0,grid->t_now);
+    grid->write_plotfile(0,grid->t_now,write_mass_fractions);
   }
 
   // loop over time/iterations
@@ -201,7 +202,7 @@ int main(int argc, char **argv)
 
       // write out what we want
       printf("# writing plot file %d at time %e\n",i_write+1, t_write);
-      grid->write_plotfile(i_write+1,t_write);
+      grid->write_plotfile(i_write+1,t_write,write_mass_fractions);
       if ((use_transport)&&(write_radiation))
         mcarlo.write_radiation_file(i_write+1, write_levels);
 

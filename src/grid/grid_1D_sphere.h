@@ -44,7 +44,7 @@ public:
   double  zone_volume(const int)   const;
   void    sample_in_zone(int, std::vector<double>, double[3]);
   void    get_velocity(int i, double[3], double[3], double[3], double*);
-  void    write_plotfile(int,double);
+  void    write_plotfile(int,double,int);
   void    expand(double);
 
   int get_next_zone(const double *x, const double *D, int, double, double *dist) const;

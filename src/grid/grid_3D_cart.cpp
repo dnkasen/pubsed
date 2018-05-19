@@ -183,7 +183,7 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
 //************************************************************
 // Write out the file
 //************************************************************
-void grid_3D_cart::write_plotfile(int iw, double tt)
+void grid_3D_cart::write_plotfile(int iw, double tt, int write_mass_fractions)
 {
 	// get file name
 	char plotfilename[1000];
