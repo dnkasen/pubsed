@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-import os
+import os, sys
 import matplotlib
 matplotlib.use('Agg')
 from matplotlib.backends.backend_pdf import PdfPages
-import importlib
 import time
 import optparse
 
@@ -51,8 +50,10 @@ def run_one(direc,efile):
     print "\n\n"
     os.system("cp " + exec_dir + efile + " " + direc)
     os.chdir(direc)
-    runtest = importlib.import_module(direc + ".run_test") 
-    runtest.run(pdf,plotup,runcommand)
+    sys.path.append(os.getcwd())
+    import run_test  
+    run_test.run(pdf,plotup,runcommand)
+    sys.path.remove(os.getcwd())
     os.chdir("../")
 #############################################
 

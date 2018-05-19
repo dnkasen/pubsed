@@ -3,17 +3,4 @@
 
 
 ## sedona main codes tests 
-core_emit_into_vacuum  
-spherical_diffusion
-advected_pulse
-adiabatic_expansion
-lucy_sn         
-silicon_atmosphere
-single_line_homologous
-2level_nlte
-3level_nlte
-stromgren
-
-## sedona modules tests 
-#test_opacity        
-
+spherical_lightbulb/1D
