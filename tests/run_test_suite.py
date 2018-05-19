@@ -43,6 +43,7 @@ print "TESTING EXECUTABLE: " + executable
 #############################################
 def run_one(direc,efile):
 
+    homedir = os.getcwd()
 
     print "------------------------------------"
     print "----- RUNNING: " + direc 
@@ -54,15 +55,18 @@ def run_one(direc,efile):
     import run_test  
     run_test.run(pdf,plotup,runcommand)
     sys.path.remove(os.getcwd())
-    os.chdir("../")
+    os.chdir(homedir)
 #############################################
 
 
-fin = open("test_list","r")
+# loop over tests in suite_test_list file and run them
+fin = open("suite_test_list","r")
 for line in fin:
     line = line.rstrip('\n')
     line = line.rstrip(' ')
-    if (os.path.isdir(line)):  run_one(line,executable)
+    if (os.path.isdir(line)): 
+        run_one(line,executable)
+    
 
 pdf.close()
 
