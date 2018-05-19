@@ -62,6 +62,7 @@ tstep_max_delta  = 0.1
 -- output parameters
 output_write_atomic_levels        = 0
 output_write_radiation            = 0
+output_write_mass_fractions       = 0
 output_write_plt_file_time        = 1
 output_write_plt_log_space        = 0  -- use logarithimic spacing of write times
 
