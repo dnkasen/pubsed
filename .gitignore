@@ -1,3 +1,4 @@
+src/Makefile
 EXEC/
 grid*h5
 ray*dat
