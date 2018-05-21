@@ -20,11 +20,11 @@ def compare(pdf):
     
     # compare spectrum 
     py.clf()
-    fin = h5py.File('grid_00001.h5','r')
+    fin = h5py.File('plt_00001.h5','r')
     nu = py.array(fin['nu'])
-    Jnu = py.array(fin['zone_0/Jnu'])
-    opac = py.array(fin['zone_0/opacity'])
-    emis = py.array(fin['zone_0/emissivity'])
+    Jnu = py.array(fin['zonedata/0/Jnu'])
+    opac = py.array(fin['zonedata/0/opacity'])
+    emis = py.array(fin['zonedata/0/emissivity'])
     Snu = py.nan_to_num(emis/opac)
     fin.close()
     py.plot(nu,Jnu,'o')
