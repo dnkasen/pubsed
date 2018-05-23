@@ -5,6 +5,9 @@ matplotlib.use('Agg')
 from matplotlib.backends.backend_pdf import PdfPages
 import time
 import optparse
+from importlib import import_module
+
+
 
 ########################################
 # runs a series of tests of sedona
@@ -28,45 +31,53 @@ outfile = 'test_results_' + time.strftime("%m-%d-%y") + '.pdf'
 pdf = PdfPages(outfile)
 print 'OUTPUT WRITTEN TO: ' + outfile
 print 'run command: ' + runcommand
-## plot to screen
-plotup = False
 
 
 ########################################
 
-print "TESTING EXECUTABLE: " + executable
-
-
-
-#############################################
-# Script to run a test in directory: direc
-#############################################
-def run_one(direc,efile):
-
-    homedir = os.getcwd()
-
-    print "------------------------------------"
-    print "----- RUNNING: " + direc 
-    print "------------------------------------"
-    print "\n\n"
-    os.system("cp " + exec_dir + efile + " " + direc)
-    os.chdir(direc)
-    sys.path.append(os.getcwd())
-    import run_test  
-    run_test.run(pdf,plotup,runcommand)
-    sys.path.remove(os.getcwd())
-    os.chdir(homedir)
-#############################################
-
-
-# loop over tests in suite_test_list file and run them
+# get list of tests in suite_test_list file 
 fin = open("suite_test_list","r")
+
+testlist = []
 for line in fin:
     line = line.rstrip('\n')
     line = line.rstrip(' ')
     if (os.path.isdir(line)): 
-        run_one(line,executable)
-    
+        testlist.append(line)
+
+
+print "TESTING EXECUTABLE: " + executable
+print "Will run " + str(len(testlist)) + " tests"
+print "------------------------------------------"
+i = 0
+for this_test in testlist:
+    print str(i) +') ' + this_test
+    i = i + 1
+print "\n"
+
+
+for this_test in testlist:
+    homedir = os.getcwd()
+
+    print "------------------------------------"
+    print "----- RUNNING: " + this_test 
+    print "------------------------------------"
+    print "\n"
+
+    os.system("cp " + exec_dir + executable + " " + this_test)
+    os.chdir(this_test)
+
+    # immport and run script
+    sys.path.append(os.getcwd())
+    import run_test
+    sys.path.remove(os.getcwd())
+    run_test.run_test(pdf,runcommand)
+    del sys.modules['run_test']
+
+    # return home
+    os.chdir(homedir)
+
+
 
 pdf.close()
 
