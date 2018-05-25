@@ -1,0 +1,1 @@
+Make sure evolution to radiative equilibrium works just when using a grey opacity. This is similar to the vesrion of the test Roth & Kasen 2015 that uses implicit Monte Carlo. The time step can now be much larger than the cooling time, although the cooling will be artificially slow for the first few times steps.
