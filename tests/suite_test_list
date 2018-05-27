@@ -1,6 +1,5 @@
 ### This is the list of tests you would like to run
 ### comment out ones with a hash
-
-
-## sedona main codes tests 
+###
 spherical_lightbulb/1D
+lucy_supernova/1D
