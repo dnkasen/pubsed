@@ -6,7 +6,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 import time
 import optparse
 from importlib import import_module
-
+import timeit
 
 
 ########################################
@@ -25,12 +25,14 @@ if (opts.nproc): nproc = opts.nproc
 ## executable directory and file
 exec_dir   = "../src/EXEC/"
 executable = "gomc"
-runcommand = "mpirun -np " + str(nproc) + " ./gomc"
 
-outfile = 'test_results_' + time.strftime("%m-%d-%y") + '.pdf'
-pdf = PdfPages(outfile)
-print 'OUTPUT WRITTEN TO: ' + outfile
-print 'run command: ' + runcommand
+homedir = os.getcwd()
+date = time.strftime("%m-%d-%y")
+outfile = homedir + '/test_results_' + date + '.txt'
+pdffile = homedir + '/test_results_' + date + '.pdf'
+pdf = PdfPages(pdffile)
+runcommand = "mpirun -np " + str(nproc) + " ./gomc >> " + outfile
+
 
 
 ########################################
@@ -46,23 +48,33 @@ for line in fin:
         testlist.append(line)
 
 
-print "TESTING EXECUTABLE: " + executable
+line = "echo \"Testing SEDONA code on " + date + "\"  > " + outfile
+print "Testing SEDONA code on " + date + "\n"
+os.system(line)
 print "Will run " + str(len(testlist)) + " tests"
 print "------------------------------------------"
 i = 0
 for this_test in testlist:
     print str(i) +') ' + this_test
     i = i + 1
+print "------------------------------------------"
 print "\n"
 
 
+total_status = 0
+cnt = 0
 for this_test in testlist:
-    homedir = os.getcwd()
 
-    print "------------------------------------"
-    print "----- RUNNING: " + this_test 
-    print "------------------------------------"
-    print "\n"
+    starttime = timeit.default_timer()
+
+    hdr = "\n\n------------------------------------\n"
+    hdr = hdr + "-- RUNNING: " + this_test + "\n"
+    hdr = hdr + "------------------------------------\n"
+    cmd = "echo \"" + hdr + "\"" +  " >> " + outfile
+    os.system(cmd)
+
+    print "------------------------------------------"
+    print "- test " + str(cnt) + ") " + this_test
 
     os.system("cp " + exec_dir + executable + " " + this_test)
     os.chdir(this_test)
@@ -71,13 +83,22 @@ for this_test in testlist:
     sys.path.append(os.getcwd())
     import run_test
     sys.path.remove(os.getcwd())
-    run_test.run_test(pdf,runcommand)
+    status = run_test.run_test(pdf,runcommand)
     del sys.modules['run_test']
+
+    stoptime = timeit.default_timer()
+    print 'time = {:.1f} seconds'.format(stoptime - starttime)
+
+    if (status == 0): 
+        print "PASSED"
+    else:
+        print "FAILED"
+    print "------------------------------------------\n"
+    total_status += status
 
     # return home
     os.chdir(homedir)
-
+    cnt += 1
 
 
 pdf.close()
-
