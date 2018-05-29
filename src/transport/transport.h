@@ -174,6 +174,7 @@ class transport
   void set_eps_imc();
   void reduce_radiation(double);
   void reduce_Tgas();
+  void reduce_Lthermal();
 
   // solve equilibrium temperature
   void solve_eq_temperature();

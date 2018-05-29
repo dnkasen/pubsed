@@ -36,6 +36,7 @@ void transport::step(double dt)
   // mpi combine the opacities calculated
   tstr = MPI_Wtime();
   reduce_opacities();
+  reduce_Lthermal();
   tend = MPI_Wtime();
   if (verbose) cout << "# Communicated opacities (" << (tend-tstr) << " secs) \n";
 

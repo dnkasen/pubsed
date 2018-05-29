@@ -214,6 +214,27 @@ void transport::reduce_opacities()
   for (int i=0;i<nz;i++) grid->z[i].T_gas = dst_MPI_zones[i];
  }
 
+ void transport::reduce_Lthermal()
+ {
+  if (MPI_nprocs == 1) return;
+  if (params_->getScalar<int>("particles_n_emit_thermal") == 0) return;
+
+  //=************************************************
+  // do zone scalar
+  //=************************************************
+  int nz = grid->n_zones;
+  for (int i=0;i<nz;i++)
+  {
+    src_MPI_zones[i] = 0;
+    dst_MPI_zones[i] = 0.0;
+  }
+  for (int i=my_zone_start_;i<my_zone_stop_;i++)
+    src_MPI_zones[i] = grid->z[i].L_thermal;
+
+  MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  for (int i=0;i<nz;i++) grid->z[i].L_thermal = dst_MPI_zones[i];
+ }
+
 //------------------------------------------------------------
 // Combine the radiation tallies in all zones
 // from all processors using MPI 
