@@ -17,11 +17,10 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
   for (size_t i=0;i<opac.size();++i) {opac[i] = 0; emis[i] = 0;}
 
   int ng = nu_grid.size();
-  double kt = pc::k_ev*gas_temp_;
+  double kt_ev = pc::k_ev*gas_temp_;
   double lam_t   = sqrt(pc::h*pc::h/(2*pc::pi*pc::m_e* pc::k * gas_temp_));
-  //  double lam_fac = 1./(lam_t*lam_t*lam_t);
 
-  std::vector<double> nc_phi(n_levels);
+  std::vector<double> nc_phifac(n_levels);
   for (int j=0;j<n_levels;++j)
   {
     int ic = levels[j].ic;
@@ -29,8 +28,7 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
     double nc = n_dens*levels[ic].n;
     double gl_o_gc = (1.0*levels[j].g)/(1.0*levels[ic].g);
     double E_t = levels[j].E_ion; 
-    double zeta  = E_t/kt;
-    nc_phi[j] = nc*gl_o_gc/2. * lam_t * lam_t * lam_t * exp(zeta);
+    nc_phifac[j] = nc*gl_o_gc/2. * lam_t * lam_t * lam_t;
   }
 
   for (int i=0;i<ng;++i)
@@ -40,23 +38,20 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
     double E     = pc::h*nu*pc::ergs_to_ev;
     double emis_fac   = 2. * pc::h*nu*nu*nu / pc::c / pc::c;
 
-    // correction for stim emis  debug
-    double zeta = E/kt;
-    //    if (zeta > 50.) zeta = 50.;
-    //    double ezeta = exp(zeta);
-
     for (int j=0;j<n_levels;++j)
     {
       // check if above threshold
       if (E < levels[j].E_ion) continue;
-      // check if their is an ionization stage above
+      // check if there is an ionization stage above
       int ic = levels[j].ic;
       if (ic == -1) continue;
 
       // get extinction coefficient and emissivity
+      double zeta_net = (levels[j].E_ion - E)/kt_ev;
+      double ezeta_net = exp(zeta_net);
       double sigma = levels[j].s_photo.value_at_with_zero_edges(E);
-      opac[i]  += sigma * (n_dens * levels[j].n  - nc_phi[j] * ne * exp(-1. * zeta));
-      emis[i]  += emis_fac *sigma* nc_phi[j] * exp(-1. * zeta); // ne gets multiplied at the end outside this funciton
+      opac[i]  += sigma * (n_dens * levels[j].n  - nc_phifac[j] * ne * ezeta_net);
+      emis[i]  += emis_fac *sigma* nc_phifac[j] * ezeta_net; // ne gets multiplied at the end outside this funciton
     }
 
   }
