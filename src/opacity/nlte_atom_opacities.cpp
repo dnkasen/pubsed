@@ -11,25 +11,26 @@ namespace pc = physical_constants;
 // calculate the bound-free extinction coefficient
 // (units cm^{-1}) for all levels
 //---------------------------------------------------------
-void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double>& emis)
+void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double>& emis, double ne)
 {
   // zero out arrays
   for (size_t i=0;i<opac.size();++i) {opac[i] = 0; emis[i] = 0;}
 
   int ng = nu_grid.size();
-  double lam_t   = sqrt(pc::h*pc::h/(2*pc::pi*pc::m_e*pc::k*gas_temp_));
-  double lam_fac = 2*pc::h/pc::c/pc::c*lam_t*lam_t*lam_t/2.0;
   double kt = pc::k_ev*gas_temp_;
+  double lam_t   = sqrt(pc::h*pc::h/(2*pc::pi*pc::m_e* pc::k * gas_temp_));
+  //  double lam_fac = 1./(lam_t*lam_t*lam_t);
 
-  std::vector<double> lev_fac(n_levels);
+  std::vector<double> nc_phi(n_levels);
   for (int j=0;j<n_levels;++j)
   {
     int ic = levels[j].ic;
     if (ic == -1) continue;
     double nc = n_dens*levels[ic].n;
     double gl_o_gc = (1.0*levels[j].g)/(1.0*levels[ic].g);
-    double E_t = levels[j].E_ion;
-    lev_fac[j] = nc*gl_o_gc*exp(E_t/kt);
+    double E_t = levels[j].E_ion; 
+    double zeta  = E_t/kt;
+    nc_phi[j] = nc*gl_o_gc/2. * lam_t * lam_t * lam_t * exp(zeta);
   }
 
   for (int i=0;i<ng;++i)
@@ -37,12 +38,12 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
     opac[i] = 0;
     double nu    = nu_grid[i];
     double E     = pc::h*nu*pc::ergs_to_ev;
-    double fac   = lam_fac*nu*nu*nu;
+    double emis_fac   = 2. * pc::h*nu*nu*nu / pc::c / pc::c;
 
     // correction for stim emis  debug
-    double ezeta = exp(E/kt);
-    double se = (1 + 1.0/(ezeta - 1));
-    fac = fac/ezeta*se;
+    double zeta = E/kt;
+    //    if (zeta > 50.) zeta = 50.;
+    //    double ezeta = exp(zeta);
 
     for (int j=0;j<n_levels;++j)
     {
@@ -54,8 +55,8 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
 
       // get extinction coefficient and emissivity
       double sigma = levels[j].s_photo.value_at_with_zero_edges(E);
-      opac[i]  += n_dens*sigma*levels[j].n;
-      emis[i]  += lev_fac[j]*sigma*fac;
+      opac[i]  += sigma * (n_dens * levels[j].n  - nc_phi[j] * ne * exp(-1. * zeta));
+      emis[i]  += emis_fac *sigma* nc_phi[j] * exp(-1. * zeta); // ne gets multiplied at the end outside this funciton
     }
 
   }

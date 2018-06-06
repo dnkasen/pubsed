@@ -1,1 +1,4 @@
-Try with H, He, O, Fe
+For debugging level departure coefficients from NLTE solver.
+
+Like the optically thin H case, but now try with more elements like He, O, Fe
+

@@ -134,7 +134,7 @@ public:
   void   compute_sobolev_taus(double time);
 
   // opacities
-  void   bound_free_opacity (std::vector<double>&, std::vector<double>&);
+  void   bound_free_opacity (std::vector<double>&, std::vector<double>&, double);
   void   bound_bound_opacity(std::vector<double>&, std::vector<double>&);
 
 

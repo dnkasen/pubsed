@@ -200,7 +200,7 @@ void nlte_gas::bound_free_opacity(std::vector<double>& opac, std::vector<double>
   // sum up the bound-free opacity from every atom
   for (int i=0;i<na;i++)
   {
-    atoms[i].bound_free_opacity(atom_opac, atom_emis);
+    atoms[i].bound_free_opacity(atom_opac, atom_emis,ne);
     for (int j=0;j<ng;j++) 
     {
       opac[j] += atom_opac[j];

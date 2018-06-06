@@ -1,1 +1,3 @@
-By default, effective scatter. But could also try emit/absorb
+For debugging level departure coefficients from NLTE solver.
+
+Like the optically thin version, but now see what happens when photons interact many times. We'll have to set the density to an appropriate level to ensure many interactions while maintaining a reasonable run time. We can try initializing a blackbody and making sure it is maintained, or initializing some other spectrum and making sure it transitions to a blackbody.
