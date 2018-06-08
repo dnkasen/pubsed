@@ -1,3 +1,5 @@
 For debugging level departure coefficients from NLTE solver.
 
-For this optically thin version, photons essentially just move around without interacting. For the very few photons that do interact, effectively scatter them. The point is not to worry about the interactions, focus on NLTE solver, and keep it fast. Initialize with BB at Tgas. 
+For this optically thin version, photons essentially just move around without interacting. For the very few photons that do interact, effectively scatter them. The point is not to worry about the interactions, focus on NLTE solver, and keep it fast. Initialize with BB at Tgas.
+
+This also tests the reflecting boundary conditions. The box size and time step are designed so that the particles will hit the edges several times per time step.
