@@ -175,7 +175,7 @@ void nlte_gas::free_free_opacity(std::vector<double>& opac, std::vector<double>&
   // multiply by frequency dependence
   for (int i=0;i<npts;i++)
   {
-    double nu = nu_grid[i];
+    double nu = nu_grid.center(i);
     double ezeta = exp(-1.0*pc::h*nu/pc::k/temp);
     double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(1.0/ezeta-1);
     opac[i] = fac/nu/nu/nu*(1 - ezeta);

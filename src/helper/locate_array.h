@@ -108,6 +108,8 @@ template<typename T>
 T value_at_extrapolate(const double xval, const std::vector<T>& y) const{
 
   int ind = locate(xval);
+  return y[ind];
+  /*
   int i1, i2;
 
   if (x.size() == 1) return y[0];
@@ -127,6 +129,7 @@ T value_at_extrapolate(const double xval, const std::vector<T>& y) const{
 
   if(do_log_interpolate) return log_interpolate_between(xval, i1, i2, y);
   else                   return     interpolate_between(xval, i1, i2, y);
+  */
 }
 
 
@@ -149,7 +152,8 @@ T value_at(const double xval, const std::vector<T>& y) const
 template<typename T>
 T value_at(const double xval, const std::vector<T>& y,int ind) const
 {
-
+  return y[ind];
+  /*
   int i1, i2;
 
   if (x.size() == 1) return y[0];
@@ -167,6 +171,7 @@ T value_at(const double xval, const std::vector<T>& y,int ind) const
 
   if(do_log_interpolate) return log_interpolate_between(xval, i1, i2, y);
   else                   return     interpolate_between(xval, i1, i2, y);
+  */
 }
 
 };

@@ -34,7 +34,7 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
   for (int i=0;i<ng;++i)
   {
     opac[i] = 0;
-    double nu    = nu_grid[i];
+    double nu    = nu_grid.center(i);
     double E     = pc::h*nu*pc::ergs_to_ev;
     double emis_fac   = 2. * pc::h*nu*nu*nu / pc::c / pc::c;
 
