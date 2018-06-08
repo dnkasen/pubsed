@@ -15,7 +15,8 @@ def run_test(pdf="",runcommand=""):
     if (runcommand != ""): 
     	os.system("rm spectrum_* plt_* integrated_quantities")
     	os.system(runcommand)
-     
+
+    fail_flag = 0
     ###########################################
     # compare the output
     ###########################################
@@ -85,8 +86,9 @@ def run_test(pdf="",runcommand=""):
     
 
     for i in range(len(b)):
-        if (b[i] > 1.2 or b[i] < 0.8):
+        if (b[i] > 1.1 or b[i] < 0.9):
             plt.plot([i,i],[-1,10],color='red')
+            fail_flag = 1
 
     #    plt.ylim(0.5,1.5)
     plt.xlim(0,35)
@@ -99,7 +101,7 @@ def run_test(pdf="",runcommand=""):
         j = raw_input()
 
     # this should return !=0 if failed
-    return 0
+    return fail_flag
 
 
 
