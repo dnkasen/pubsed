@@ -684,9 +684,10 @@ if __name__ == '__main__':
     decay_const_ni56 = np.log(2) / THALF_56NI / DAY2SEC
     decay_const_co56 = np.log(2) / THALF_56CO / DAY2SEC
     
-    t1 = np.exp(-decay_const_ni56 * tend_sec)
-    t2 = np.exp(-decay_const_co56 * tend_sec)
-    t3 = decay_const_ni56 * (t2-t1) / (decay_const_ni56 - decay_const_co56)
+    # hack for sedona format -- 56Ni/56Co/56Fe iron defined at t=0
+    t1 = 1.0 #np.exp(-decay_const_ni56 * tend_sec)
+    t2 = 0.0 #np.exp(-decay_const_co56 * tend_sec)
+    t3 = 0.0 #decay_const_ni56 * (t2-t1) / (decay_const_ni56 - decay_const_co56)
 
     xni56_old = xni56.copy()
     xni56 = xni56_old * t1
