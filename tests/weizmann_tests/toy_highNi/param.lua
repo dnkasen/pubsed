@@ -1,6 +1,6 @@
 
 grid_type    = "grid_1D_sphere"   
-model_file   = "snia_toy_m1e1nip1.mod"
+model_file   = "snia_toy_m1e1nip6.mod"
 hydro_module = "homologous"
 
 sedona_home        = os.getenv('SEDONA_HOME')
@@ -11,6 +11,7 @@ data_fuzzline_file = sedona_home.."/data/kurucz_cd23_fuzz.hdf5"
 -- helper variable
 days = 3600.0*24
 
+particles_n_initialize       = 1e4
 particles_n_emit_radioactive = 1e4
 tstep_time_start             = 2*days
 tstep_time_stop              = 50*days
