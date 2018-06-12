@@ -846,7 +846,7 @@ if __name__ == '__main__':
         f.write('\n')
         for i in range(nd):
             f.write('{:.4e} {:.4e} {:.4e}'.format(vel_out_cgs[i], dens[i], temp[i])) 
-            f.write(' {:.4e} {:.4e} {:.4e} {:.4e} {:.4e}'.format(xni56[i], xni[i], xco[i], xfe[i], xti[i]))
+            f.write(' {:.4e} {:.4e} {:.4e} {:.4e} {:.4e}'.format(xni56[i], xni[i] - xni[56], xco[i], xfe[i], xti[i]))
             for ime in imes:
                 f.write(' {:.4e}'.format(ximeindiv[ime][i]))
             f.write(' {:.4e} {:.4e}'.format(xo[i], xc[i]))
