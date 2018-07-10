@@ -65,6 +65,7 @@ output_write_radiation            = 0
 output_write_mass_fractions       = 0
 output_write_plt_file_time        = 1
 output_write_plt_log_space        = 0  -- use logarithimic spacing of write times
+output_write_mass_fractions       = 0
 
 -- limiting values for calculation
 limits_temp_max = 1e8
