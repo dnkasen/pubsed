@@ -279,7 +279,7 @@ void grid_1D_sphere::write_plotfile(int iw, double tt, int write_mass_fracs)
 	{
 	  char elem_id[10];
 	  sprintf(elem_id,"%d.%d",elems_Z[j],elems_A[j]);
-	  fprintf(outfile,"  %-15.15s",elem_id);
+	  fprintf(outfile," %-15.15s",elem_id);
 	}
       
     }
@@ -295,7 +295,7 @@ void grid_1D_sphere::write_plotfile(int iw, double tt, int write_mass_fracs)
     if (write_mass_fracs) // output mass fractions
       {
 	for (int j =0; j < n_elems; j++)
-	  fprintf(outfile," %12.8e", z[i].X_gas[j]);
+	  fprintf(outfile,"  %12.8e", z[i].X_gas[j]);
       }
     fprintf(outfile,"\n");
   }
