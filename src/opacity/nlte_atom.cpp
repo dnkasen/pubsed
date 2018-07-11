@@ -121,6 +121,8 @@ int nlte_atom::solve_lte(double ne)
 //-------------------------------------------------------
 int nlte_atom::solve_nlte(double ne)
 {
+  std::cout << "solving in NTLE " << atomic_number << "\n";
+
   // initialize with LTE populations
   solve_lte(ne);
 

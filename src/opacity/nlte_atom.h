@@ -97,7 +97,6 @@ public:
 
   
   int atomic_number;   // Atomic number of atom 
-  bool use_nlte_;       // treat this atom in nlte or not
 
   int n_ions;          // Number of ionic stages considered 
   int n_levels;        // number of energy levels
@@ -110,6 +109,7 @@ public:
   double line_beta_dop_;       // doppler width of lines = v/c
   int use_betas;               // include escape probabilites in nlte
   int no_ground_recomb;        // suppress recombinations to ground
+  bool use_nlte_;       // treat this atom in nlte or not
 
   // classes
   nlte_level *levels;       // array of level data
@@ -120,13 +120,14 @@ public:
   
   // Constructor and Init
   nlte_atom();
-  int initialize(std::string, int, locate_array, int&, int);
+  int initialize(std::string, int, locate_array, int&);
+  int set_use_nlte();
   int read_fuzzfile(std::string);
 
   // solve state
   void calculate_radiative_rates(std::vector<real> J_nu);
-  int solve_state(double ne);
-  int solve_lte (double ne);
+  int  solve_state(double ne);
+  int  solve_lte (double ne);
   int  solve_nlte(double ne); 
   void print();
 

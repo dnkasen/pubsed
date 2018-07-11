@@ -30,7 +30,7 @@ nlte_gas::nlte_gas()
 // locate_array ng:  locate_array giving the freq. array
 //---------------------------------------------------------------
 void nlte_gas::initialize
-(std::string af, std::vector<int> e, std::vector<int> A, locate_array ng, int usenlte)
+(std::string af, std::vector<int> e, std::vector<int> A, locate_array ng)
 {
   // verbosity
   int my_rank;
@@ -46,7 +46,6 @@ void nlte_gas::initialize
 
   // set passed variables
   atomfile_ = af;
-  use_nlte_ = usenlte;
 
   // check if atomfile is there
   std::ifstream afile(atomfile_);
@@ -63,13 +62,32 @@ void nlte_gas::initialize
   int level_id = 0;
   for (size_t i=0;i<atoms.size();++i) 
   {
-    int error = atoms[i].initialize(atomfile_, elem_Z[i],ng,level_id,use_nlte_); 
+    int error = atoms[i].initialize(atomfile_, elem_Z[i],ng,level_id); 
     if ((error)&&(verbose))
       std::cout << "# ERROR: incomplete data for atom Z=" << elem_Z[i] <<
 	" in file " << atomfile_ << "\n";
   }
  }
-  
+
+//-----------------------------------------------------------------
+// Choose the atoms to be solve in nlte
+//-----------------------------------------------------------------
+
+void nlte_gas::set_atoms_in_nlte
+(std::vector<int> useatoms)
+{
+  if (useatoms.size() == 0)
+    use_nlte_ = 0;
+  else
+    use_nlte_ = 1;
+
+  for (int i=0;i<useatoms.size();++i)
+  {
+    for (int j=0;j<atoms.size();++j)
+      if (elem_Z[j] == useatoms[i])
+        atoms[j].set_use_nlte(); 
+  }
+}  
  
 //-----------------------------------------------------------------
 // Set mass fractions of each element in the gas
@@ -187,10 +205,10 @@ double nlte_gas::charge_conservation(double ne,std::vector<real> J_nu)
   {
     // Solve the state of the atome with this value of electron density ne
     if (use_nlte_)
-      atoms[i].solve_nlte(ne);
+      atoms[i].solve_state(ne);
     else
       atoms[i].solve_lte(ne);
-    
+
     // total electron donation from this atomic species
     f += dens*mass_frac[i]/(elem_A[i]*pc::m_p)*atoms[i].get_ion_frac();
   }
@@ -339,7 +357,6 @@ void nlte_gas::print_properties()
   if (grey_opacity_ != 0) std::cout << "# grey opacity = " << grey_opacity_ << "\n";
   else
   {
-    std::cout << "# use_nlte          = " << use_nlte_ << "\n";
     std::cout << "# use_e_scattering  = " << use_electron_scattering_opacity << "\n";
     std::cout << "# use_free_free     = " << use_free_free_opacity << "\n";
     std::cout << "# use_bound_free    = " << use_bound_free_opacity << "\n";
@@ -347,9 +364,23 @@ void nlte_gas::print_properties()
     std::cout << "# use_line_exp      = " << use_line_expansion_opacity << "\n";
     std::cout << "# use_fuzz_exp      = " << use_fuzz_expansion_opacity << "\n";
 
+    std::cout << "# use_nlte          = " << use_nlte_ << "\n";
+    if (use_nlte_)
+    {
+      int n_in_nlte = 0;
+      std::cout << "# These atoms to be treated in non-LTE: ";
+      for (int i=0;i<atoms.size();i++)
+        if (atoms[i].use_nlte_)
+        {
+          n_in_nlte += 1;
+          std::cout << elem_Z[i] << " ";
+        }
+      if (n_in_nlte == 0)
+        std::cout << "None";
+     std::cout << "\n";
+    }
   }
   std::cout << "#---------------------------------------\n";
-
 }
 
 //-----------------------------------------------------------
