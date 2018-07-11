@@ -21,6 +21,7 @@ def run_test(pdf="",runcommand=""):
     # compare the output
     ###########################################
     plt.clf()
+    plt.ion()
 
 
     h   = 6.6260755e-27    # planck's constant (ergs-s)
@@ -63,7 +64,7 @@ def run_test(pdf="",runcommand=""):
     if (pdf != ''): pdf.savefig()
     else:
         plt.show()
-        j = raw_input()
+        j = raw_input("Press return to continue>")
 
 
 
@@ -91,14 +92,14 @@ def run_test(pdf="",runcommand=""):
             fail_flag = 1
 
     #    plt.ylim(0.5,1.5)
-    plt.xlim(0,35)
+    plt.xlim(-0.5,35)
 
 
 
     if (pdf != ''): pdf.savefig()
     else:
         plt.show()
-        j = raw_input()
+        j = raw_input("Press return to continue>")
 
     # this should return !=0 if failed
     return fail_flag
