@@ -114,15 +114,24 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
       infile >> z[i].T_gas;
     }
     // read composition
-    z[i].mu = 0;
+
+    double norm = 0.;
     for (int k=0;k<n_elems;k++)
     {
       double x;
       infile >> x;
       z[i].X_gas.push_back(x);
-      z[i].mu += x*elems_A[k];
+      norm += x;
     }
 
+    // Make sure initial compositions are normalized, and compute mu
+    z[i].mu = 0;
+    for (int k = 0; k < n_elems; k++)
+      {
+	z[i].X_gas[k] /= norm;
+	z[i].mu += z[i].X_gas[k]*elems_A[k];
+      }
+	
     // assume LTE radiation field to start
     z[i].e_rad = pc::a*pow(z[i].T_gas,4);
       
