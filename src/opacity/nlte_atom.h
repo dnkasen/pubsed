@@ -105,6 +105,7 @@ public:
   double e_gamma;      // radioactive energy deposited (ergs/sec/cm^3)
   double gas_temp_;        // temperature of gas
 
+  double min_level_pop_;       // the minimum level population allowed
   double minimum_extinction_;  // minimum alpha = 1/mfp to calculate 
   double line_beta_dop_;       // doppler width of lines = v/c
   int use_betas;               // include escape probabilites in nlte

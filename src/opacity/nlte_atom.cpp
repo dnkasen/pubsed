@@ -38,6 +38,9 @@ nlte_atom::nlte_atom()
   use_betas = 0;
   minimum_extinction_ = 0;
   use_nlte_ = 0;
+
+  // debug -- I hard coded this for now...
+  min_level_pop_ = 1e-30;
 }
 
 
@@ -121,10 +124,12 @@ int nlte_atom::solve_lte(double ne)
 //-------------------------------------------------------
 int nlte_atom::solve_nlte(double ne)
 {
-  std::cout << "solving in NTLE " << atomic_number << "\n";
-
   // initialize with LTE populations
   solve_lte(ne);
+
+  // make sure our lte levels aren't too small
+  for (int i=0;i<n_levels;++i) 
+    if (levels[i].n_lte < min_level_pop_) levels[i].n_lte = min_level_pop_;
 
   // Calculate all of the transition rates
   set_rates(ne);
@@ -173,6 +178,10 @@ int nlte_atom::solve_nlte(double ne)
   {
     double b = gsl_vector_get(x_nlte,i);
     double n_nlte = b*levels[i].n_lte;
+    
+    // make sure our solved for nlte levels aren't too small
+    if (n_nlte < min_level_pop_) n_nlte = min_level_pop_;
+
     levels[i].n = n_nlte;
     levels[i].b = b;
   }
@@ -334,7 +343,8 @@ void nlte_atom::set_rates(double ne)
     if (ll != 0) R_lu = 0;
 
     // add into rates
-    rates[ll][lu] += R_lu;
+    // debug -- turning off non-thermal rates for now
+    //rates[ll][lu] += R_lu;
 
     // printf("GR %d %d %e %e %e\n",ll,lu,R_lu,e_gamma,dE);
   }
@@ -424,7 +434,7 @@ void nlte_atom::set_rates(double ne)
   for (int i=0;i<n_levels;++i)
     for (int j=0;j<n_levels;++j)
       if (isnan(rates[i][j]))
-      printf("%5d %5d %14.5e\n",i,j,rates[i][j]);
+       printf("%5d %5d %14.5e\n",i,j,rates[i][j]);
    //printf("\n");
    //for (int i=0;i<n_levels;++i)
    // for (int j=0;j<n_levels;++j)   {
