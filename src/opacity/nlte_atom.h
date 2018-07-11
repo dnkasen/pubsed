@@ -97,6 +97,7 @@ public:
 
   
   int atomic_number;   // Atomic number of atom 
+  bool use_nlte_;       // treat this atom in nlte or not
 
   int n_ions;          // Number of ionic stages considered 
   int n_levels;        // number of energy levels
@@ -124,8 +125,9 @@ public:
 
   // solve state
   void calculate_radiative_rates(std::vector<real> J_nu);
-  void solve_lte (double ne);
-  int  solve_nlte(double ne, double time);
+  int solve_state(double ne);
+  int solve_lte (double ne);
+  int  solve_nlte(double ne); 
   void print();
 
   // sobolev

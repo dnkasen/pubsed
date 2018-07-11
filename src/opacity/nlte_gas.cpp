@@ -185,10 +185,12 @@ double nlte_gas::charge_conservation(double ne,std::vector<real> J_nu)
   // loop over all atoms
   for (size_t i=0;i<atoms.size();++i) 
   {
-    // Solve the LTE or NLTE with this value of Ne
-    if (use_nlte_) atoms[i].solve_nlte(ne,time);
-    else atoms[i].solve_lte (ne);   
-
+    // Solve the state of the atome with this value of electron density ne
+    if (use_nlte_)
+      atoms[i].solve_nlte(ne);
+    else
+      atoms[i].solve_lte(ne);
+    
     // total electron donation from this atomic species
     f += dens*mass_frac[i]/(elem_A[i]*pc::m_p)*atoms[i].get_ion_frac();
   }

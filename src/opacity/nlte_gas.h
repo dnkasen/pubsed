@@ -55,6 +55,7 @@ class nlte_gas
   
   // flags for nlte
   int use_nlte_;
+  std::vector<int> atoms_in_nlte_;
 
   double grey_opacity_;
   double epsilon_;

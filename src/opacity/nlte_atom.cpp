@@ -37,14 +37,33 @@ nlte_atom::nlte_atom()
   no_ground_recomb = 0;
   use_betas = 0;
   minimum_extinction_ = 0;
+  use_nlte_ = 0;
 }
 
 
 //-------------------------------------------------------
+// solve for the state of the atom
+// determining ionization and level populations
+// will use non-lte if use_nlte_ = True
+// otherwise will use lte
+// passed the electron density ne
+//-------------------------------------------------------
+int nlte_atom::solve_state(double ne)
+{
+  double status = 0;
+  if (use_nlte_)
+    status = solve_nlte(ne);
+  else
+    status = solve_lte(ne);
+  return status;
+}
+
+//-------------------------------------------------------
 // solve for LTE level populations and
 // ionization state
+// passed the electron density ne
 //-------------------------------------------------------
-void nlte_atom::solve_lte(double ne)
+int nlte_atom::solve_lte(double ne)
 {
 
   // calculate partition functions
@@ -90,7 +109,82 @@ void nlte_atom::solve_lte(double ne)
     levels[i].b = 1;
   }
 
+  // this should return != 0 if failure really
+  return 0;
+
 }
+
+//-------------------------------------------------------
+// solve for non-LTE level populations and
+// ionization state
+// passed the electron density ne
+//-------------------------------------------------------
+int nlte_atom::solve_nlte(double ne)
+{
+  // initialize with LTE populations
+  solve_lte(ne);
+
+  // Calculate all of the transition rates
+  set_rates(ne);
+
+  // zero out matrix and vectors
+  gsl_matrix_set_zero(M_nlte);
+  gsl_vector_set_zero(b_nlte);
+  gsl_vector_set_zero(x_nlte);
+  gsl_permutation_init(p_nlte);
+
+  // set up diagonal elements of rate matrix
+  for (int i=0;i<n_levels;++i) 
+  { 
+    double Rout = 0.0;
+    // don't worry i = j rate should be zero
+    for (int j=0;j<n_levels;++j) 
+      Rout += rates[i][j];
+    Rout = -1*Rout;
+    gsl_matrix_set(M_nlte,i,i,Rout);
+  }
+    
+  // set off diagonal elements of rate matrix
+  for (int i=0;i<n_levels;++i) 
+    for (int j=0;j<n_levels;++j)
+      if (i != j) gsl_matrix_set(M_nlte,i,j,rates[j][i]);
+    
+  // last row expresses number conservation
+  for (int i=0;i<n_levels;++i) 
+    gsl_matrix_set(M_nlte,n_levels-1,i,levels[i].n_lte);
+  gsl_vector_set(b_nlte,n_levels-1,1.0);
+
+    //printf("----\n");
+    //for (int i=0;i<n_levels;++i) 
+    //  for (int j=0;j<n_levels;++j)
+    //   printf("%5d %5d %14.3e\n",i,j,gsl_matrix_get(M_nlte,i,j));
+    // printf("----\n");
+    
+  // solve rate matrix
+  int status;
+  gsl_linalg_LU_decomp(M_nlte, p_nlte, &status);
+  gsl_linalg_LU_solve(M_nlte, p_nlte, b_nlte, x_nlte);
+
+  // the x vector should now have the solved level 
+  // depature coefficients
+  for (int i=0;i<n_levels;++i) 
+  {
+    double b = gsl_vector_get(x_nlte,i);
+    double n_nlte = b*levels[i].n_lte;
+    levels[i].n = n_nlte;
+    levels[i].b = b;
+  }
+
+  // set the ionization fraction
+  for (int i=0;i<n_ions;++i) 
+    ions[i].frac = 0;
+  for (int i=0;i<n_levels;++i)
+    ions[levels[i].ion].frac += levels[i].n;
+
+  // this should return != 0 if failure really
+  return 0;
+}
+
 
 //-------------------------------------------------------
 // integrate up the radiation field over  lines
@@ -336,95 +430,6 @@ void nlte_atom::set_rates(double ne)
    //     if (isinf(rates[i][j])) std::cout << "INF RATE: " << i << " - " << j << "\n"; }
 }
 
-int nlte_atom::solve_nlte(double ne,double time)
-{
-  // initialize with LTE populations
-  // this will also calculate line taus and betas
-  solve_lte(ne);
-
-  int max_iter = 100;
-
-  // iterate betas
-  for (int iter = 0; iter < max_iter; iter++)
-  {    
-    // Set rates
-    set_rates(ne);
-
-    // zero out matrix and vectors
-    gsl_matrix_set_zero(M_nlte);
-    gsl_vector_set_zero(b_nlte);
-    gsl_vector_set_zero(x_nlte);
-    gsl_permutation_init(p_nlte);
-
-    // set up diagonal elements of rate matrix
-    for (int i=0;i<n_levels;++i) 
-    {
-      double Rout = 0.0;
-      // don't worry i = j rate should be zero
-      for (int j=0;j<n_levels;++j) Rout += rates[i][j];
-      Rout = -1*Rout;
-      gsl_matrix_set(M_nlte,i,i,Rout);
-    }
-    
-    // set off diagonal elements of rate matrix
-    for (int i=0;i<n_levels;++i) 
-      for (int j=0;j<n_levels;++j)
-	       if (i != j) gsl_matrix_set(M_nlte,i,j,rates[j][i]);
-    
-    // last row expresses number conservation
-    for (int i=0;i<n_levels;++i) 
-      gsl_matrix_set(M_nlte,n_levels-1,i,levels[i].n_lte);
-    gsl_vector_set(b_nlte,n_levels-1,1.0);
-
-    //printf("----\n");
-    //for (int i=0;i<n_levels;++i) 
-    //  for (int j=0;j<n_levels;++j)
-    //   printf("%5d %5d %14.3e\n",i,j,gsl_matrix_get(M_nlte,i,j));
-    // printf("----\n");
-    
-    // solve matrix
-    int status;
-    gsl_linalg_LU_decomp(M_nlte, p_nlte, &status);
-    gsl_linalg_LU_solve(M_nlte, p_nlte, b_nlte, x_nlte);
-
-    // the x vector should now have the solved level 
-    // depature coefficients
-    for (int i=0;i<n_levels;++i) 
-    {
-      double b = gsl_vector_get(x_nlte,i);
-      double n_nlte = b*levels[i].n_lte;
-      levels[i].n = n_nlte;
-      levels[i].b = b;
-      //printf("%d %e %e\n",i,levels[i].b,levels[i].n/levels[i].n_lte);
-    }
-
-    // set the ionization fraction
-    for (int i=0;i<n_ions;++i) ions[i].frac = 0;
-    for (int i=0;i<n_levels;++i)
-      ions[levels[i].ion].frac += levels[i].n;
-
-    if (!this->use_betas) return 1;
-
-    // see if the betas have converged
-    int converged   = 1;
-    double beta_tol = 0.1;
-    for (int i=0; i<n_lines; ++i)
-    { 
-      double old_beta = lines[i].beta;
-      compute_sobolev_tau(i,time);
-      double new_beta = lines[i].beta;
-      
-      if (fabs(old_beta - new_beta)/new_beta > beta_tol) 
-	converged = 0;
-    }
-    if (converged) {return 1; }
-    //printf("-----\n");
-  }
-
-  printf("# NLTE not converging\n");
-  return 0;
-
-}
 
 double nlte_atom::get_ion_frac()
 {
