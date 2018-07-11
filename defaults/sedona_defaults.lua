@@ -83,6 +83,7 @@ opacity_bound_free          = 0
 opacity_bound_bound         = 0
 opacity_free_free           = 0
 opacity_use_nlte            = 0
+opacity_atoms_in_nlte       = {}
 opacity_minimum_extinction  = 0
 opacity_maximum_opacity     = 1e40
 opacity_no_scattering       = 0
