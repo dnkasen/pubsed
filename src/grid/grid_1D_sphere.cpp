@@ -295,7 +295,7 @@ void grid_1D_sphere::write_plotfile(int iw, double tt, int write_mass_fracs)
     if (write_mass_fracs) // output mass fractions
       {
 	for (int j =0; j < n_elems; j++)
-	  fprintf(outfile,"  %12.8e", z[i].X_gas[j]);
+	  fprintf(outfile," %12.8e", z[i].X_gas[j]);
       }
     fprintf(outfile,"\n");
   }
