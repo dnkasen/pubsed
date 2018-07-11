@@ -32,6 +32,7 @@ output_write_radiation = 1
 opacity_grey_opacity  = 0
 
 opacity_use_nlte      = 1
+opacity_atoms_in_nlte = {1}
 opacity_bound_bound   = 1
 opacity_bound_free    = 1
 opacity_free_free     = 1
