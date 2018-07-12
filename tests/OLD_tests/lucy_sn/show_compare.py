@@ -1,3 +1,0 @@
-import compare
-
-compare.compare('')
