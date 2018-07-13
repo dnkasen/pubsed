@@ -1,0 +1,3 @@
+This runs for 40 iterations. Usually a high level of convergence is reached pretty quickly, so the spectra from many of the later iterations can be averaged together (I'll often use the last 20 or last 30 iterations).
+
+This calculation sets the free electron temperature equal to the radiation temperature. We'll want to update this to use the actual gas cooling properties. I've found that this does make an important difference. For example, H alpha is visible above the continuum when using this temperature shortcut, but I think it will disappear when the real cooling is used.
