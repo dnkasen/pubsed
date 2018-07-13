@@ -226,7 +226,7 @@ int main(int argc, char **argv)
   }
 
   // print out final spectrum
-  if ((use_transport)&&(!steady_iterate))  mcarlo.output_spectrum();
+  if ((use_transport)&&(!steady_iterate))  mcarlo.output_spectrum(-1);
 
   //---------------------------------------------------------------------
   // CALCULATION DONE; WRITE OUT AND FINISH
