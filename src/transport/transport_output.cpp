@@ -17,11 +17,9 @@ namespace pc = physical_constants;
 void transport::output_spectrum(int it)
 {
   std::stringstream ss;
-  if (it < 0)  ss << "_0" << it;
+  if (it < 0)  ss << "_final"; 
   else ss << "_" << it;
   string base = ss.str();
-  //if (!this->steady_state) base = "";
-
   
   string specname = params_->getScalar<string>("spectrum_name");
   if (specname != "") 
