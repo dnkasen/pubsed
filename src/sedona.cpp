@@ -195,16 +195,23 @@ int main(int argc, char **argv)
     }
 
     // writeout output files when appropriate 
-    if ((verbose)&&((t >= next_write_out)||(steady_iterate)))
+    if ((t >= next_write_out)||(steady_iterate))
     {
       double t_write = t + dt;
       if (steady_iterate) t_write = t;
 
       // write out what we want
-      printf("# writing plot file %d at time %e\n",i_write+1, t_write);
-      grid->write_plotfile(i_write+1,t_write,write_mass_fractions);
-      if ((use_transport)&&(write_radiation))
-        mcarlo.write_radiation_file(i_write+1, write_levels);
+      if (verbose)
+      {
+        printf("# writing plot file %d at time %e\n",i_write+1, t_write);
+        grid->write_plotfile(i_write+1,t_write,write_mass_fractions);
+        if ((use_transport)&&(write_radiation))
+          mcarlo.write_radiation_file(i_write+1, write_levels);
+      }
+
+      //write spectrum
+      if (use_transport)
+        mcarlo.output_spectrum(i_write+1);
 
       // determine next write out
       if ((write_out_log > 0)&&(i_write > 0))
