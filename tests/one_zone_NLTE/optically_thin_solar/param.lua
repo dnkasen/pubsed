@@ -17,11 +17,11 @@ tstel_max_delta    = 1.0
 
 
 -- inner source emission
-particles_max_total  = 1e7
+particles_max_total  = 1e8
 core_n_emit          = 0
 core_radius          = 1.0e14
 particles_n_emit_thermal  = 0
-particles_n_initialize  = 1e7
+particles_n_initialize  = 1e8
 
 -- output spectrum
 spectrum_nu_grid    = transport_nu_grid
