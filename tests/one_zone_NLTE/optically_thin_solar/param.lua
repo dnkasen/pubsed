@@ -11,8 +11,8 @@ transport_boundary_out_reflect   = 1
 
 tstep_max_steps    = 3
 tstep_time_stop    = 300.
-tstep_max_dt       = 100.
-tstep_min_dt       = 100.
+tstep_max_dt       = 0.01
+tstep_min_dt       = 0.01
 tstel_max_delta    = 1.0
 
 
@@ -24,9 +24,10 @@ particles_n_emit_thermal  = 0
 particles_n_initialize  = 1e8
 
 -- output spectrum
-spectrum_nu_grid    = transport_nu_grid
-output_write_atomic_levels = 1
-output_write_radiation = 1
+spectrum_nu_grid   		    = transport_nu_grid
+output_write_atomic_levels	= 1
+output_write_radiation		= 1
+output_write_plt_file_time  = 0.01
 
 -- opacity information
 opacity_grey_opacity  = 0

@@ -20,6 +20,7 @@ def run_test(pdf="",runcommand=""):
     # compare the output
     ###########################################
     plt.clf()
+    plt.ion()
 
 
     h   = 6.6260755e-27    # planck's constant (ergs-s)
@@ -54,7 +55,7 @@ def run_test(pdf="",runcommand=""):
     plt.xlabel('frequency (Hz)')
     plt.ylabel('Flux')
     plt.yscale('log')
-    #py.xscale('log')
+    plt.xscale('log')
     plt.xlim(0,2.5e16)
     plt.ylim(1.e-8,1.e-1)
 
