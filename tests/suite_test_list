@@ -5,4 +5,5 @@ spherical_lightbulb/1D
 one_zone_NLTE/optically_thin_H
 one_zone_NLTE/optically_thick_H
 one_zone_NLTE/optically_thin_solar
+one_zone_NLTE/optically_thick_solar
 lucy_supernova/1D
