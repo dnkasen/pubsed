@@ -51,7 +51,7 @@ def run_test(pdf="",runcommand=""):
     plt.plot(nu,f,color='red',linewidth=2)
 
     plt.legend(['sedona','analytic blackbody'])
-    plt.title('one zone NLTE test for optically solar elements: radiation field')
+    plt.title('one zone NLTE test for optically thin solar elements: radiation field')
     plt.xlabel('frequency (Hz)')
     plt.ylabel('Flux')
     plt.yscale('log')

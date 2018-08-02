@@ -90,7 +90,7 @@ def run_test(pdf="",runcommand=""):
     ncol = 1
     fig, axs = plt.subplots(nrows=nrow, ncols=ncol)
 
-    fig.suptitle("Departure coefficients, optically thin solar\n\n", fontsize=10)
+    fig.suptitle("Departure coefficients, optically thick solar\n\n", fontsize=10)
 
     counter = 0
     for ax in axs.reshape(-1):
