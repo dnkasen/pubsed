@@ -28,7 +28,6 @@ void transport::output_spectrum(int it)
     optical_spectrum.MPI_average();
     if (verbose) optical_spectrum.print();
   }
-  if (steady_state) optical_spectrum.wipe();
 
   string gamname = params_->getScalar<string>("gamma_name");
   if (gamname != "") 
