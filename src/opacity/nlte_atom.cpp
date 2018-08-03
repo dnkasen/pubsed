@@ -326,9 +326,6 @@ void nlte_atom::set_rates(double ne)
    // printf("RR %d %d %e\n",lu,ll,R_ul);
   }
 
-  // ------------------------------------------------
-  // non-thermal (radioactive) bound-bound transitions
-  // ------------------------------------------------
   double norm = 0;
   for (int l=0;l<n_lines;l++) norm   += lines[l].f_lu;
 
@@ -336,6 +333,10 @@ void nlte_atom::set_rates(double ne)
   {
     int lu  = lines[l].lu;
     int ll  = lines[l].ll;
+
+    // ------------------------------------------------
+    // non-thermal (radioactive) bound-bound transitions
+    // ------------------------------------------------
 
     double dE = (levels[lu].E - levels[ll].E)*pc::ev_to_ergs;
     double R_lu = e_gamma/n_dens/dE; //*(lines[l].f_lu/norm);
@@ -347,44 +348,20 @@ void nlte_atom::set_rates(double ne)
     //rates[ll][lu] += R_lu;
 
     // printf("GR %d %d %e %e %e\n",ll,lu,R_lu,e_gamma,dE);
+
+    // ------------------------------------------------
+    // collisional bound-bound transitions
+    // ------------------------------------------------
+
+    double zeta = dE/pc::k/gas_temp_; // note dE is in ergs
+    double ezeta = exp(zeta);
+    double C = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) / ezeta * ne * lines[l].f_lu;
+
+    rates[ll][lu] += C;
+    rates[lu][ll] += C * levels[ll].g/levels[lu].g * ezeta;
+
   }
 
-
-  // ------------------------------------------------
-  // collisional bound-bound transitions
-  // ------------------------------------------------
-  for (int i=0;i<n_levels;++i)
-    for (int j=0;j<n_levels;++j)
-    {
-      // skip transitions to same level
-      if (i == j) continue;
-      // skip if to another ionization state (not bound-bound)
-      if (levels[i].ion != levels[j].ion) continue;
-
-      // level energy difference (in eV)
-      double dE = levels[i].E - levels[j].E;
-      double zeta = dE/pc::k_ev/gas_temp_;
-      // make sure zeta is positive
-      if (zeta < 0) zeta = -1*zeta;
-
-      // rate for downward transition: u --> l
-      double C = 2.16*pow(zeta,-1.68)*pow(gas_temp_,-1.5); // f_ul 
-      if (zeta == 0) C = 0;
-
-      // rate if it is a upward transition: l --> u
-      if (dE < 0)
-      {
-      	 // use condition that collision rates give LTE
-	       double gl = levels[i].g;
-	       double gu = levels[j].g;
-         C = C*gu/gl*exp(-zeta);      
-      }
-
-      // add into rates
-      rates[i][j] += C;
-
-      //printf("CR: %d %d %e\n",i,j,C);
-    }
 
   // ------------------------------------------------
   // bound-free transitions
@@ -400,6 +377,7 @@ void nlte_atom::set_rates(double ne)
     double zeta = chi/pc::k_ev/gas_temp_;
 
     // collisional ionization rate
+    // needs to be multiplied by number of electrons in outer shell
     double C_ion = 2.7/zeta/zeta*pow(gas_temp_,-1.5)*exp(-zeta)*ne;
     rates[i][ic] += C_ion;
 
