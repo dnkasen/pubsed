@@ -38,7 +38,7 @@ opacity_bound_bound   = 1
 opacity_bound_free    = 1
 opacity_free_free     = 1
 opacity_electron_scattering = 1
-line_velocity_width   = 3e8
+line_velocity_width   = 5e7
 
 
 
