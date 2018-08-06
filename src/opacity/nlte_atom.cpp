@@ -355,10 +355,13 @@ void nlte_atom::set_rates(double ne)
 
     double zeta = dE/pc::k/gas_temp_; // note dE is in ergs
     double ezeta = exp(zeta);
-    double C = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) / ezeta * ne * lines[l].f_lu;
+    double C_up = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) / ezeta * ne * lines[l].f_lu;
+    if (zeta > 700) C_up = 0.; // be careful about overflow
 
-    rates[ll][lu] += C;
-    rates[lu][ll] += C * levels[ll].g/levels[lu].g * ezeta;
+    double C_down = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) * ne * lines[l].f_lu * levels[ll].g/levels[lu].g;
+
+    rates[ll][lu] += C_up;
+    rates[lu][ll] += C_down;
 
   }
 
