@@ -149,13 +149,13 @@ double radioactive::rprocess_heating_rate(double t, double *gfrac)
 // integrated over all species
 //--------------------------------------------------------------
 double radioactive::decay
-(std::vector<int> elem_Z, std::vector<int> elem_A, std::vector<double> X, double t, double *gfrac)
+(std::vector<int> elem_Z, std::vector<int> elem_A, std::vector<double> X, double t, double *gfrac, int force_rproc)
 {
   int rprocess_heat = 0;
 
   // see if this is an r-process composition (simplistic)
   for (unsigned int k=0;k<elem_Z.size();k++)
-    if ((elem_Z[k] > 57)&&(elem_A[k] > 0)) rprocess_heat = 1;
+    if ((elem_Z[k] > 57)&&(elem_A[k] > 0) || force_rproc) rprocess_heat = 1;
 
   if (rprocess_heat)
   {

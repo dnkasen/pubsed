@@ -50,6 +50,7 @@ particles_n_emit_pointsources  = 0
 particles_pointsource_file     = ""
 particles_last_iter_pump        = 1
 multiply_particles_n_emit_by_dt_over_dtmax = 0
+force_rprocess_heating         = 0
 
 -- time stepping
 tstep_max_steps  = 1000

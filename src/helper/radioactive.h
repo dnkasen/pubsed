@@ -36,7 +36,7 @@ public:
 	(std::vector<int> elem_Z, std::vector<int> elem_A, std::vector<double>& X, double t);
 
 	double decay(std::vector<int> elem_Z, std::vector<int> elem_A, 
-	       std::vector<double> X, double t, double *gfrac);
+	       std::vector<double> X, double t, double *gfrac, int force_rproc);
 
 	double decay_energy_rate(int, int, double, double*);		
   //  double sample_particle_energy(int, int, double);
