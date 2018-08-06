@@ -51,13 +51,13 @@ def run_test(pdf="",runcommand=""):
     plt.plot(nu,f,color='red',linewidth=2)
 
     plt.legend(['sedona','analytic blackbody'])
-    plt.title('one zone NLTE test for optically thin solar elements: radiation field')
+    plt.title('one zone NLTE test for optically thick solar elements: radiation field')
     plt.xlabel('frequency (Hz)')
     plt.ylabel('Flux')
     plt.yscale('log')
     plt.xscale('log')
-    plt.xlim(0,2.5e16)
-    plt.ylim(1.e-8,1.e-1)
+    plt.xlim(2.5e13,2.5e17)
+    plt.ylim(1.e-10,1.e-1)
 
 
     if (pdf != ''): pdf.savefig()
@@ -90,7 +90,7 @@ def run_test(pdf="",runcommand=""):
     ncol = 1
     fig, axs = plt.subplots(nrows=nrow, ncols=ncol)
 
-    fig.suptitle("Departure coefficients, optically thin solar\n\n", fontsize=10)
+    fig.suptitle("Departure coefficients, optically thick solar\n\n", fontsize=10)
 
     counter = 0
     for ax in axs.reshape(-1):
