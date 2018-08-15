@@ -3,6 +3,7 @@ import h5py
 
 #######################################################
 nx     = 100         # number of radial zones
+n_3d   =  60         # number zones per side for 3D model
 mass   = 1.0         # mass in solar masses
 KE     = 1.0e51      # kinetic energy in ergs
 texp   = 2.0         # time since explosion in days
@@ -143,6 +144,7 @@ vx    = np.arange(-1.0*vmax + dv,vmax+0.1,dv)
 vy    = np.arange(-1.0*vmax + dv,vmax+0.1,dv)
 vz    = np.arange(-1.0*vmax + dv,vmax+0.1,dv)
 
+nx = n_3d
 ny = nx
 nz = nx
 rho  = np.zeros((nx,ny,nz))
