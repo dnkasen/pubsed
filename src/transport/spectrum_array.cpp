@@ -154,6 +154,8 @@ void spectrum_array::print()
 
   fprintf(out,"# %d %d %d %d\n",n_times,n_wave,n_mu,n_phi);
 
+  double *darray = new double[n_elements];
+
   // unitize and printout
   for (int k=0;k<n_mu;k++)
     for (int m=0;m<n_phi;m++)
@@ -171,9 +173,9 @@ void spectrum_array::print()
 	       if (n_times > 1) norm *= time_grid.delta(i);
 	  
          // normalize it
-         flux[id] = flux[id]/norm;
+         darray[id] = flux[id]/norm;
 
-    	   fprintf(out,"%12.5e %10d\n", flux[id],click[id]);
+    	   fprintf(out,"%12.5e %10d\n", darray[id],click[id]);
     	 }
   fclose(out);
 
@@ -206,8 +208,6 @@ void spectrum_array::print()
   delete[] tmp_array;
 
   // write fluxes array
-  double *darray = new double[n_elements];
-  for (int i=0;i<n_elements;i++) darray[i] = flux[i];
   if (n_mu == 1)
   { 
     const int RANKF = 2;
@@ -247,7 +247,10 @@ void spectrum_array::MPI_average()
   {
     vector<double> receive;
     receive.resize(n_elements);
-    MPI_Reduce(&flux.front(), &receive.front(), n_elements, MPI_DOUBLE, MPI_SUM, receiving_ID, MPI_COMM_WORLD);
+    for (int i=0;i<n_elements;++i) receive[i] = 0.0;
+
+//    MPI_Reduce(&flux.front(), &receive.front(), n_elements, MPI_DOUBLE, MPI_SUM, receiving_ID, MPI_COMM_WORLD);
+    MPI_Allreduce(&flux.front(), &receive.front(), n_elements, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     flux.swap(receive);
   }
 
@@ -255,19 +258,22 @@ void spectrum_array::MPI_average()
   {
     vector<int> receive;
     receive.resize(n_elements);
-    MPI_Reduce(&click.front(), &receive.front(), n_elements, MPI_INT, MPI_SUM, receiving_ID, MPI_COMM_WORLD);
+    for (int i=0;i<n_elements;++i) receive[i] = 0.0;
+    MPI_Allreduce(&click.front(), &receive.front(), n_elements, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
     click.swap(receive);
+
   }
   
   // only have the receiving ID do the division
   MPI_Comm_size( MPI_COMM_WORLD, &mpi_procs );
   MPI_Comm_rank( MPI_COMM_WORLD, &myID      );
-  if(myID == receiving_ID){
+  //if(myID == receiving_ID){
  //   #pragma omp parallel for
     for (int i=0;i<n_elements;i++)
     {
       flux[i]  /= mpi_procs;
       click[i] /= mpi_procs;
     }
-  }
+  //}
 }

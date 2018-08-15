@@ -17,11 +17,9 @@ namespace pc = physical_constants;
 void transport::output_spectrum(int it)
 {
   std::stringstream ss;
-  if (it < 0)  ss << "_0" << it;
+  if (it < 0)  ss << "_final"; 
   else ss << "_" << it;
   string base = ss.str();
-  if (!this->steady_state) base = "";
-
   
   string specname = params_->getScalar<string>("spectrum_name");
   if (specname != "") 
@@ -30,7 +28,6 @@ void transport::output_spectrum(int it)
     optical_spectrum.MPI_average();
     if (verbose) optical_spectrum.print();
   }
-  optical_spectrum.wipe();
 
   string gamname = params_->getScalar<string>("gamma_name");
   if (gamname != "") 
@@ -39,7 +36,7 @@ void transport::output_spectrum(int it)
     gamma_spectrum.MPI_average();
     if (verbose) gamma_spectrum.print();
   }
-  gamma_spectrum.wipe();
+  if (steady_state) gamma_spectrum.wipe();
 
 }
 

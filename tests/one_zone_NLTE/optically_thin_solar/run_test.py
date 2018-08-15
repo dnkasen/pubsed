@@ -20,6 +20,7 @@ def run_test(pdf="",runcommand=""):
     # compare the output
     ###########################################
     plt.clf()
+    plt.ion()
 
 
     h   = 6.6260755e-27    # planck's constant (ergs-s)
@@ -50,11 +51,11 @@ def run_test(pdf="",runcommand=""):
     plt.plot(nu,f,color='red',linewidth=2)
 
     plt.legend(['sedona','analytic blackbody'])
-    plt.title('one zone NLTE test for optically solar elements: radiation field')
+    plt.title('one zone NLTE test for optically thin solar elements: radiation field')
     plt.xlabel('frequency (Hz)')
     plt.ylabel('Flux')
     plt.yscale('log')
-    #py.xscale('log')
+    plt.xscale('log')
     plt.xlim(0,2.5e16)
     plt.ylim(1.e-8,1.e-1)
 

@@ -11,22 +11,23 @@ transport_boundary_out_reflect   = 1
 
 tstep_max_steps    = 3
 tstep_time_stop    = 300.
-tstep_max_dt       = 100.
-tstep_min_dt       = 100.
+tstep_max_dt       = 0.01
+tstep_min_dt       = 0.01
 tstel_max_delta    = 1.0
 
 
 -- inner source emission
-particles_max_total  = 1e7
+particles_max_total  = 1e8
 core_n_emit          = 0
 core_radius          = 1.0e14
 particles_n_emit_thermal  = 0
-particles_n_initialize  = 1e7
+particles_n_initialize  = 1e8
 
 -- output spectrum
-spectrum_nu_grid    = transport_nu_grid
-output_write_atomic_levels = 1
-output_write_radiation = 1
+spectrum_nu_grid   		    = transport_nu_grid
+output_write_atomic_levels	= 1
+output_write_radiation		= 1
+output_write_plt_file_time  = 0.01
 
 -- opacity information
 opacity_grey_opacity  = 0
@@ -37,7 +38,7 @@ opacity_bound_bound   = 1
 opacity_bound_free    = 1
 opacity_free_free     = 1
 opacity_electron_scattering = 1
-line_velocity_width   = 3e8
+line_velocity_width   = 5e7
 
 
 

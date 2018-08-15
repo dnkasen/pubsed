@@ -159,9 +159,12 @@ void transport::emit_radioactive(double dt)
   {
     total_n_emit *= dt / params_->getScalar<double>("tstep_max_dt");
   }
-      
 
   if (total_n_emit == 0) return;
+  
+  // whether or not to use r-process heating, regardless of composition
+  int force_rproc = params_->getScalar<int>("force_rprocess_heating");
+
   if (last_iteration_)
   {
     int pumpup = params_->getScalar<int>("particles_last_iter_pump");
@@ -185,7 +188,7 @@ void transport::emit_radioactive(double dt)
   {
     double vol  = grid->zone_volume(i);
     double L_decay = 
-      radio.decay(grid->elems_Z,grid->elems_A,grid->z[i].X_gas,t_now_,&gfrac);
+      radio.decay(grid->elems_Z,grid->elems_A,grid->z[i].X_gas,t_now_,&gfrac, force_rproc);
     L_decay = grid->z[i].rho*L_decay*vol;
     grid->z[i].L_radio_emit = L_decay;
     gamma_frac[i] = gfrac;

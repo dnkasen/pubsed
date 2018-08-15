@@ -1,0 +1,5 @@
+Please also refer to the notes for the L1e45 calculation.
+
+This calculation is simliar to the L1e45 calculation, but for a lower source luminosity and lower source temperature. I have found that this calculation often leads to singular matrix errors after a few iterations.
+
+The .mod file has not been changed from the L1e45 version. Therefore, the initial temperature profile in the .mod file is higher than the converged solution will be. This is intentional, because if we were to start with the lower temperature profile, the opacity during the first LTE step would be intolerably high.
