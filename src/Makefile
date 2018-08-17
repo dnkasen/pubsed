@@ -3,7 +3,7 @@
 #######
 
 # put your make.inc here
-MAKE_INC = make.inc.tagore
+MAKE_INC = make.inc
 
 # executable directory where compiliation takes place
 EXECDIR = ./EXEC
@@ -18,6 +18,7 @@ all:
 	cp -p $(MAKE_INC) $(EXECDIR)/make.inc
 	cp make.exec $(EXECDIR)/Makefile
 	cd $(EXECDIR); make
+	cp $(EXECDIR)/gomc ./sedona6
 
 clean:
 	rm -f $(EXECDIR)/*.o $(EXECDIR)/gomc $(EXECDIR)/*.cpp $(EXECDIR)/*.h
