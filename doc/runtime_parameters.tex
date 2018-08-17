@@ -1,0 +1,39 @@
+
+
+\chapter{Runtime Parameters}
+
+
+Defaults for all parameters are given in a {\tt defaults/sedona\_defaults.lua} file
+
+\section{Time-stepping Parameters}
+
+\begin {table}[h]
+\begin{tabular}{| >{\bf}l | p{12cm} |  }
+\rowcolor{tableShade}
+\hline
+\hline
+  tstep\_max\_steps    &  integer number of time steps to take before exiting before stopping \\ \hline
+     tstep\_time\_start    & start time (in seconds) \\ \hline
+   tstep\_time\_stop    & stop time (in seconds) \\ \hline
+  tstep\_max\_dt        & maximum size of a timestep (in seconds)  \\ \hline
+ tstep\_min\_dt          & minimum size of a timestep (in seconds)\\ \hline
+ tstep\_max\_delta   &  maximum fractional size of a timestep (multiply this by 
+ the current time to get the limit on the timestep). \\ \hline
+\hline
+\end{tabular}
+\end{table}
+
+
+\section{Transport Parameters}
+
+
+\begin {table}[h]
+\begin{tabular}{| >{\bf}l | p{10cm} |  }
+\hline
+\hline
+transport\_nu\_grid  & frequency grid to calculate opacities/emissivites. In the format of {nu\_start, nu\_stop, nu\_delta} \\ \hline
+transport\_radiative\_equilibrium  & = 0 or 1. If 1, determine gas temperature after each time step from radiative equilibrium, i.e., heating equals radiative cooling \\ \hline
+transport\_steady\_iterate    & = integer. Do not step in time, rather iterate the radiation transport (in steady state) the number of times given. \\ \hline
+\hline
+\end{tabular}
+\end{table}

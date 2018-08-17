@@ -1,162 +1,179 @@
-\documentclass[11pt,letterpaper]{article}
+\documentclass[11pt,letterpaper]{book}
 
-\usepackage{color}
+
+%\usepackage{seqsplit}
+%\usepackage{fullpage}
+%\usepackage{dirtree}
+%\usepackage[normalem]{ulem}
+%\usepackage{array}
+
+% for \begin{center}, etc.
+\usepackage[margin=1.0in]{geometry}
+
+\usepackage{seqsplit}
+
+% all kinds of math macros
 \usepackage{amsmath}
 \usepackage{amssymb}
+
+% eps figures
+\usepackage{epsfig}
+
+% chapter title styles
+\usepackage[Sonny]{fncychap}
+\ChNameVar{\LARGE}
+\ChTitleVar{\LARGE\sl}
+
+% index
+\usepackage{makeidx}
+\makeindex
+
+
+% part page style see
+% http://tex.stackexchange.com/questions/6609/problems-with-part-labels-using-titlesec
+\usepackage{titlesec}
+
+\titleformat{\part}[display]
+   {\Huge\filcenter}
+   {{\partname{}} \thepart}
+   {0em}
+   {\hrule}
+
+
+
+% hyperlinks -- load after fncychap
 \usepackage{hyperref}
-\usepackage{seqsplit}
-\usepackage{fullpage}
-\usepackage{dirtree}
-\usepackage[normalem]{ulem}
-\usepackage{array}
+
+% color package
+\usepackage[usenames]{color}
+
+% longtable package used to split tables across pages
+\usepackage{longtable}
+
+% PDF-aware landscape package, used for rotating tables (including the
+% longtable)
+\usepackage{pdflscape}
+
+% table coloring
+\usepackage{colortbl}
+\definecolor{tableShade}{rgb}{0.945,0.961,0.980}
 
 
-\newcommand{\bhead}[1]{\medskip \noindent {\bf #1}}
-\newcommand{\test}[2]{\medskip \noindent   {\bf Test  \#\textsf{\arabic{#1}}} \addtocounter{#1}{1}- {\it {#2}}:}
-
- 
-% make the MarginPars look pretty
+   % make the MarginPars look pretty
 \setlength{\marginparwidth}{0.75in}
 \newcommand{\MarginPar}[1]{\marginpar{\vskip-\baselineskip\raggedright\tiny\sffamily
 \hrule\smallskip{\color{red}#1}\par\smallskip\hrule}}
 
+% to increase the likelihood that floats will occur "here" when you
+% want them to
+\renewcommand{\floatpagefraction}{1.0}
+\renewcommand{\topfraction}{1.0}
+\renewcommand{\bottomfraction}{1.0}
+\renewcommand{\textfraction}{0.0}
+
+% number subsubsections and put them in the TOC
+\setcounter{tocdepth}{3}
+\setcounter{secnumdepth}{3}
+
+% custom hrule for title page
+\newcommand{\HRule}{\rule{\linewidth}{0.125mm}}
+
+% control sequences in verbatim
+\usepackage{fancyvrb}
+
+% short table of contents
+\usepackage{shorttoc}
+
+% spacing in the table of contents
+\usepackage[titles]{tocloft}
+
+\setlength{\cftbeforechapskip}{2ex}
+\setlength{\cftbeforesecskip}{0.25ex}
+
+% For splitting up lists into multitple columns
+\usepackage{multicol}
+
+% don't put a header on blank pages, see
+% http://www.latex-community.org/forum/viewtopic.php?f=4&p=51559
+% change ``plain'' to ``empty'' to eliminate the page number
+\makeatletter
+\renewcommand*\cleardoublepage{\clearpage\if@twoside
+\ifodd\c@page\else
+\hbox{}
+\thispagestyle{empty}
+\newpage
+\if@twocolumn\hbox{}\newpage\fi\fi\fi}
+\makeatother
+
+
+% don't make the chapter/section headings uppercase.  See the fancyhdr
+% documentation (section 9)
+\usepackage{fancyhdr}
+\renewcommand{\chaptermark}[1]{%
+ \markboth{\chaptername
+\ \thechapter.\ #1}{}}
+
+\renewcommand{\sectionmark}[1]{\markright{\thesection---#1}}
+
+\graphicspath{{Verification/}{Software/}{ConvertCheckpoint/}{Scaling/}{Visualization/}{Particles/}{Rotation/}}
+
+% skip a bit of space between paragraphs, to enhance readability
+\usepackage{parskip}
+
+ 
+ 
+% other commands
+   
+\newcommand{\bhead}[1]{\medskip \noindent {\bf #1}}
+\newcommand{\test}[2]{\medskip \noindent   {\bf Test  \#\textsf{\arabic{#1}}} \addtocounter{#1}{1}- {\it {#2}}:}
+
+
+% define names
+\newcommand{\sedona}{\textsf{Sedona}}
+\newcommand{\executable}{{\tt sedona6}}
+
+
+
 \begin{document}
 
-\title{Sedona6 User's Guide}
-\maketitle
-
-\section{Introduction}
-
-\section{Getting Started}
-
-\subsection{Getting the Code}
-
-\subsection{Building the Code}
-
-
-\noindent {\bf Python (optional)}: Use python for plotting and testing scripts. Not needed for Sedona itself. Need
-
-Python 2.7 is standard. On linux to get the necessary packages try:
-
-sudo apt-get install python-numpy python-scipy python-matplotlib python h5py
-
-Can also install the M
-
-
-\subsection{Running the Code}
 
 
 
-
-\section{Input Data}
-
-Atomic data format
-
-\section{Model Parameters}
-
-Parameters are in the param.lua file. This is lua script, where you can specify variables and even functions inside the param file.
-
-Defaults for all parameters are given in a defaults.lua file. 
-
-\subsection{Time-stepping Parameters}
-
-\begin {table}[h]
-\begin{tabular}{| >{\bf}l | p{12cm} |  }
-\hline
-\hline
-  tstep\_max\_steps    &  integer number of time steps to take before exiting before stopping \\ \hline
-     tstep\_time\_start    & start time (in seconds) \\ \hline
-   tstep\_time\_stop    & stop time (in seconds) \\ \hline
-  tstep\_max\_dt        & maximum size of a timestep (in seconds)  \\ \hline
- tstep\_min\_dt          & minimum size of a timestep (in seconds)\\ \hline
- tstep\_max\_delta   &  maximum fractional size of a timestep (multiply this by 
- the current time to get the limit on the timestep). \\ \hline
-\hline
-\end{tabular}
-\end{table}
-
-Note that if
-\subsection{Transport Parameters}
-
-
-\begin {table}[h]
-\begin{tabular}{| >{\bf}l | p{10cm} |  }
-\hline
-\hline
-transport\_nu\_grid  & frequency grid to calculate opacities/emissivites. In the format of {nu\_start, nu\_stop, nu\_delta} \\ \hline
-transport\_radiative\_equilibrium  & = 0 or 1. If 1, determine gas temperature after each time step from radiative equilibrium, i.e., heating equals radiative cooling \\ \hline
-transport\_steady\_iterate    & = integer. Do not step in time, rather iterate the radiation transport (in steady state) the number of times given. \\ \hline
-\hline
-\end{tabular}
-\end{table}
-
-
-\newpage
-
-
-\section{Output}
-
-\bhead{Spectrum files:}
-
-\bhead{Ray files:}
-
-\bhead{Grid files:} 
-
-
-\bhead{Level.hdf5 Files:}
-These files continue detailed information about the ionization and excitation state for all species.
+\frontmatter
 
 
 
+\begin{titlepage}
+\begin{center}
+\ \\[3in]
+{\sf \Huge Sedona}
 
-\section{Test Problems}
+\begin{minipage}{5.5in}
+\HRule\\[2mm]
+\centering
+{\Large \em A general purpose astrophysical radiation transport code}
 
-\subsection{Core Into Vacuum}
+\HRule
+\end{minipage}
 
-\bhead{Setup:} A spherical inner boundary emits blackbody radiation into an extremely low density
-medium, with optical depth so low it is essentially vacuum.
+\ \\[1 in]
+{\sf \huge User's Guide}
 
-\newcounter{tc}
-\setcounter{tc}{1}
-\test{tc}{Emergent Spectrum} This should be a blackbody at the input inner core temperature. Tests general sampling of 
+\vfill
 
-\test{tc}{Radiation Temperature Structure}. The radiation field outside a spherical emitter should be given by the dilution factor
-\begin{equation}
-J = \frac{1}{2} \left[ 1 - \sqrt{ 1 - R_0^2/r^2} \right]
-\end{equation}
+{\large \today}
+\end{center}
 
-\test{tc}{Non-LTE level populations}
+\end{titlepage}
 
 
-\section{Physics}
-
-\subsection{Bound-Bound}
-
-The extinction coefficient, corrected for stimulated emission, is calculated as (Rutten eq 2.62)
-\begin{equation}
-\alpha_{\rm bb}(\nu) = \frac{h \nu}{4 \pi} n_l B_{\rm lu}  \phi(\nu) \left[ 1 - \frac{n_u g_l}{n_l g_u} \right]
-\end{equation}
-which assumes the absorption profile is the same as the emission (complete redistribution).
-Here $B_{\rm lu}$ can't be a constant, so we take
-\begin{equation}
-B_{\rm lu} = \frac{g_u}{g_l} \frac{c^2}{2 h \nu^3} A_{\rm ul}
-\end{equation}
-So the extinction becomes
-\begin{equation}
-\alpha_{\rm bb}(\nu) =  \frac{1}{8 \pi}  \frac{g_u}{g_l} \frac{c^2}{\nu^2} n_l A_{\rm ul}  \phi(\nu) \left[ 1 - \frac{n_u g_l}{n_l g_u} \right]
-\end{equation}
-The emissivity is (Rutten eq. 2.69)
-\begin{equation}
-j_{\rm \nu, bb}(\nu) = \frac{h \nu}{4 \pi} n_u A_{\rm ul} \phi(\nu)
-\end{equation}
-There is still an issue here, the source function is then
-\begin{equation}
-S_\nu = j_\nu/\alpha_\nu = \frac{2 h \nu^3}{c^2} (e^{h \nu_0/kT} - 1)^{-1}
-\end{equation}
-which is not a blackbody because of the $\nu_0$, not $\nu$ in the exponential.  The resolution here is subtle, if I recall...
+\mainmatter
 
 
 
+\input{getting_started}
+\input{runtime_parameters}
+\input{test_problems}
 
 
 
