@@ -14,16 +14,19 @@ namespace pc = physical_constants;
 void transport::solve_eq_temperature()
 {
   // solve radiative equilibrium temperature
-  for (int i=my_zone_start_;i<my_zone_stop_;i++)
-  {
-    if (radiative_eq == 1)
+  if (radiative_eq !=3)
+    {
+      for (int i=my_zone_start_;i<my_zone_stop_;i++)
+	{
+	  if (radiative_eq == 1)
       grid->z[i].T_gas = temp_brent_method(i);
-    else if (radiative_eq == 2)
-      grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
-  }
-       
-  // mpi reduce the results
-  reduce_Tgas();
+	  else if (radiative_eq == 2)
+	    grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
+	}
+      
+      // mpi reduce the results
+      reduce_Tgas();
+    }
 }
   
 
