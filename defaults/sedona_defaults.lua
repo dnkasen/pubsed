@@ -63,7 +63,6 @@ tstep_max_delta  = 0.1
 -- output parameters
 output_write_atomic_levels        = 0
 output_write_radiation            = 0
-output_write_mass_fractions       = 0
 output_write_plt_file_time        = 1
 output_write_plt_log_space        = 0  -- use logarithimic spacing of write times
 output_write_mass_fractions       = 0
@@ -88,6 +87,8 @@ opacity_atoms_in_nlte       = {}
 opacity_minimum_extinction  = 0
 opacity_maximum_opacity     = 1e40
 opacity_no_scattering       = 0
+
+opacity_compton_scatter_photons = 0;
 
 -- line treatment parameters
 line_velocity_width         = 0
