@@ -220,7 +220,31 @@ void transport::init(ParameterReader* par, grid_general *g)
   // initialize particles
   int n_parts = params_->getScalar<int>("particles_n_initialize");
   initialize_particles(n_parts);
+
+  compton_scatter_photons_ = params_->getScalar<int>("opacity_compton_scatter_photons");
+  if (compton_scatter_photons_) 
+    setup_MB_cdf(0.,5.,512); // in non-dimensional velocity units
+
 }
+
+
+void transport::setup_MB_cdf(double min_v, double max_v, int num_v)
+{
+  mb_cdf_.resize(num_v);
+  mb_dv = (max_v - min_v)/( (double) num_v);
+
+  //setup the cdf
+  double v = 0;
+  for (int j = 0; j < num_v; j++)
+    {
+      v += mb_dv;
+      mb_cdf_.set_value(j,4./(sqrt(pc::pi)) * pow(v,2.) * exp(-pow(v,2.)));
+    }
+  mb_cdf_.normalize();
+
+
+}
+
 
 // -----------------------------------------------------------
 // Read parameters for a spherical emitting core and

@@ -65,6 +65,7 @@ class transport
   int    core_fix_luminosity_;
   double maximum_opacity_;
   int    last_iteration_;
+  int    compton_scatter_photons_;
 
   // current time in simulation
   double t_now_;
@@ -85,6 +86,9 @@ class transport
   double pointsources_L_tot_;
 
 
+  // For sampling Maxwell-Boltzmann distribution for Compton scatterirng
+  cdf_array<double> mb_cdf_;
+  double mb_dv;
 
   // minimum and maximum temperatures
   double temp_max_value_, temp_min_value_;
@@ -150,6 +154,7 @@ class transport
   void   emit_from_pointsoures(double dt);
   
   void   create_isotropic_particle(int,PType,double,double);
+
   void   initialize_particles(int);
   void sample_photon_frequency(particle*);
   
@@ -161,12 +166,17 @@ class transport
   double dshift_lab_to_comoving(particle*);
   double do_dshift(particle*, int);
 
+  // sampling Maxwell-Boltzmann distribution for Compton scatterirng  
+  void setup_MB_cdf(double, double, int);
+  void sample_MB_vector(double, double*, double*);
+
   //propagation of particles functions
   ParticleFate propagate(particle &p, double tstop);
 
   // scattering functions
   ParticleFate do_scatter(particle*, double);
   void compton_scatter(particle*);
+  void compton_scatter_photon(particle*);
   void isotropic_scatter(particle*, int);
 
   // radiation quantities functions

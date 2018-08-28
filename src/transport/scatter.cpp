@@ -18,7 +18,13 @@ ParticleFate transport::do_scatter(particle *p, double eps)
   if (p->type == photon)
   {
     // see if scattered 
-    if (gsl_rng_uniform(rangen) > eps) isotropic_scatter(p,0);
+    if (gsl_rng_uniform(rangen) > eps)
+      {
+	if (compton_scatter_photons_)
+	  compton_scatter_photon(p);
+	else
+	  isotropic_scatter(p,0);
+      }
     else
     {
       // check for effective scattering
@@ -59,7 +65,7 @@ ParticleFate transport::do_scatter(particle *p, double eps)
       
 
 //------------------------------------------------------------
-// physics of compton scattering
+// physics of compton scattering for gamma-rays
 //------------------------------------------------------------
 void transport::compton_scatter(particle *p)
 {
@@ -120,6 +126,127 @@ void transport::compton_scatter(particle *p)
   p->D[0] = D_new[0];
   p->D[1] = D_new[1];
   p->D[2] = D_new[2];
+
+  // lorentz transform back to lab frame
+  transform_comoving_to_lab(p);
+}
+
+
+void transport::sample_MB_vector(double T, double* v_e, double* p_d)
+{
+
+  while (true)
+    {
+
+      // if you prefer, you could also rejection sample to get v_tot. 
+      
+      double v_tot = sqrt(2. * pc::k * T /pc::m_e) * mb_dv * (mb_cdf_.sample(gsl_rng_uniform(rangen)) + gsl_rng_uniform(rangen) );
+      
+      double mu  = 1. - 2.0*gsl_rng_uniform(rangen);
+      double phi = 2.0*pc::pi*gsl_rng_uniform(rangen);
+      double smu = sqrt(1 - mu*mu);
+      double ed0 = smu*cos(phi);
+      double ed1 = smu*sin(phi);
+      double ed2 = mu;
+
+
+      double omega = ed0 * p_d[0] + ed1 * p_d[1] + ed2 * p_d[2];
+
+      // could tighten this bound if you think you know how small v_tot/C will be
+      if (gsl_rng_uniform(rangen) < 0.5 * (1. - omega * v_tot/pc::c)) // this is crucial. For the more relativistic case, the formula gets more complicated. See the discussion at the top of pdf page 135 (journal page 323) of the Pozdnyakov 1983 paper, which references a formula for sigma-hat four pages earlier
+	{
+
+	  v_e[0] = v_tot * ed0;
+	  v_e[1] = v_tot * ed1;
+	  v_e[2] = v_tot * ed2;
+	  return;
+	}
+    }
+}
+
+
+
+//------------------------------------------------------------
+// physics of compton scattering for photons of arbitrary energies
+// samples from thermal velocity distribution of non-relativistic electrons
+//------------------------------------------------------------
+void transport::compton_scatter_photon(particle *p)
+{
+
+  assert(p->ind >= 0);
+
+  transform_lab_to_comoving(p);
+
+  zone *zone = &(grid->z[p->ind]);
+
+  // Find random thermal electron velocity
+  double v_sc[3];
+  sample_MB_vector(zone->T_gas,v_sc,p->D);
+
+  //Transform into rest frame of electon
+  double v_tot = sqrt(v_sc[0] * v_sc[0] + v_sc[1] * v_sc[1] + v_sc[2] * v_sc[2]);
+  double beta   = v_tot/pc::c;
+  double gamma  = 1.0/sqrt(1 - beta*beta);
+  double vdd = (v_sc[0] * p->D[0] + v_sc[1] * p->D[1] + v_sc[2] * p->D[2] );
+  
+  double dshift_into_scatterer = gamma * (1. - vdd/pc::c); // this is simplified since we defined beta and gamma based on the parallel velocity component
+
+    // transform the 0th component (energy and frequency)
+  p->e  *= dshift_into_scatterer; 
+  p->nu *= dshift_into_scatterer;
+
+  // transform the 1-3 components (direction)
+  // See Mihalas & Mihalas eq 89.8
+  p->D[0] = 1.0/dshift_into_scatterer * (p->D[0] - gamma*v_sc[0]/pc::c * (1. - gamma*vdd/pc::c/(gamma+1)) );
+  p->D[1] = 1.0/dshift_into_scatterer * (p->D[1] - gamma*v_sc[1]/pc::c * (1. - gamma*vdd/pc::c/(gamma+1)) );
+  p->D[2] = 1.0/dshift_into_scatterer * (p->D[2] - gamma*v_sc[2]/pc::c * (1. - gamma*vdd/pc::c/(gamma+1)) );
+
+  
+  // sample new direction by rejection method
+  double E_ratio;
+  double D_new[3];
+      
+  while (true)
+  {
+    // isotropic new direction
+    double mu  = 1. - 2.0*gsl_rng_uniform(rangen);
+    double phi = 2.0*pc::pi*gsl_rng_uniform(rangen);
+    double smu = sqrt(1. - mu*mu);
+    D_new[0] = smu*cos(phi);
+    D_new[1] = smu*sin(phi);
+    D_new[2] = mu;
+    
+    // angle between old and new directions
+    double cost = p->D[0]*D_new[0] + p->D[1]*D_new[1] + p->D[2]*D_new[2];
+    // new energy ratio (E_new/E_old) at this angle (assuming lambda in MeV)
+    E_ratio = 1./(1. + pc::h * p->nu / (pc::m_e_MeV * pc:: Mev_to_ergs)*(1. - cost));
+    // klein-nishina differential cross-section
+    double diff_cs = 0.5*(E_ratio*E_ratio*(1./E_ratio + E_ratio - 1. + cost*cost));
+    // see if this scatter angle OK
+    if (gsl_rng_uniform(rangen) < diff_cs) break;
+  }
+
+  // new frequency
+  p->nu = p->nu * E_ratio;
+  p->e = p->e * E_ratio;
+
+  
+  //Transform out of rest frame of electon into comoving frame
+    // shift back to comoving frame
+  for (int i=0;i<3;i++) v_sc[i] = -1.*v_sc[i];
+  vdd = (v_sc[0] * D_new[0] + v_sc[1] * D_new[1] + v_sc[2] * D_new[2] );
+  
+  double dshift_out_scatterer = gamma * (1. - vdd/pc::c);
+
+    // transform the 0th component (energy and frequency)
+  p->e  *= dshift_out_scatterer; 
+  p->nu *= dshift_out_scatterer;
+
+  // transform the 1-3 components (direction)
+  // See Mihalas & Mihalas eq 89.8
+  p->D[0] = 1.0/dshift_out_scatterer * (D_new[0] - gamma*v_sc[0]/pc::c * (1. - gamma*vdd/pc::c/(gamma+1)) );
+  p->D[1] = 1.0/dshift_out_scatterer * (D_new[1] - gamma*v_sc[1]/pc::c * (1. - gamma*vdd/pc::c/(gamma+1)) );
+  p->D[2] = 1.0/dshift_out_scatterer * (D_new[2] - gamma*v_sc[2]/pc::c * (1. - gamma*vdd/pc::c/(gamma+1)) );
 
   // lorentz transform back to lab frame
   transform_comoving_to_lab(p);
