@@ -71,13 +71,8 @@ void transport::compton_scatter(particle *p)
 {
   assert(p->ind >= 0);
 
-  // get doppler shift from lab to comoving frame
-  double dshift_in = dshift_lab_to_comoving(p);
-  
-  // transform energy, frequency into comoving frame
-  p->e  *= dshift_in;
-  p->nu *= dshift_in;
-  
+  transform_lab_to_comoving(p);
+
   // sample new direction by rejection method
   double E_ratio;
   double D_new[3];
