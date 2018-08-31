@@ -104,12 +104,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   // initialize nlte_gas class
   std::string atomdata = params_->getScalar<string>("data_atomic_file");  
 
-  // getting fuzz line data
-  std::string fuzzfile = params_->getScalar<string>("data_fuzzline_file");  
-  int nl = gas.read_fuzzfile(fuzzfile);
-  if (verbose) std::cout << "# From fuzzfile \"" << fuzzfile << "\" " << 
-		 nl << " lines used\n";
-  
+
   // set gas opacity flags and parameters
   gas.grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
   gas.use_electron_scattering_opacity 
@@ -137,6 +132,12 @@ void transport::init(ParameterReader* par, grid_general *g)
   gas.initialize(atomdata,grid->elems_Z,grid->elems_A,nu_grid);
   gas.set_atoms_in_nlte(params_->getVector<int>("opacity_atoms_in_nlte"));
 
+  // getting fuzz line data
+  std::string fuzzfile = params_->getScalar<string>("data_fuzzline_file");  
+  int nl = gas.read_fuzzfile(fuzzfile);
+  if (verbose) std::cout << "# From fuzzfile \"" << fuzzfile << "\" " << 
+     nl << " lines used\n";
+  
   // define it as the first step, for NLTE
   first_step_ = 1;
 
