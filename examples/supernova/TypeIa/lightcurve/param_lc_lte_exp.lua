@@ -13,8 +13,12 @@ data_atomic_file   = sedona_home.."/data/cmfgen_levelcap100.hdf5"
 -- helper variable
 days = 3600.0*24
 
+-- total number of particles used initially
 particles_n_initialize       = 2e4
+-- number of particles emitted per time step from radioactivity
 particles_n_emit_radioactive = 2e4
+
+-- time start/stop and stepping
 tstep_time_start             = 2*days
 tstep_time_stop              = 60*days
 tstep_max_dt                 = 1.0*days
