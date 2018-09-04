@@ -57,7 +57,9 @@ void transport::set_opacity()
 
     // radioactive decay the composition
     for (size_t j=0;j<X_now.size();j++) X_now[j] = z->X_gas[j];
-    radio.decay_composition(grid->elems_Z,grid->elems_A,X_now,t_now_);
+    if (!omit_composition_decay_) {
+      radio.decay_composition(grid->elems_Z,grid->elems_A,X_now,t_now_);
+    }
     gas.set_mass_fractions(X_now);
    
     // solve for the state 

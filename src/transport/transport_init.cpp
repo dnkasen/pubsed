@@ -100,10 +100,9 @@ void transport::init(ParameterReader* par, grid_general *g)
   optical_spectrum.init(stg,sng,nmu,nphi);
   std::vector<double>gng = params_->getVector<double>("gamma_nu_grid");  
   gamma_spectrum.init(stg,sng,nmu,nphi);
-  
+
   // initialize nlte_gas class
   std::string atomdata = params_->getScalar<string>("data_atomic_file");  
-
 
   // set gas opacity flags and parameters
   gas.grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
@@ -150,6 +149,8 @@ void transport::init(ParameterReader* par, grid_general *g)
   // parameters for treatment of detailed lines
   line_velocity_width_ = params_->getScalar<double>("line_velocity_width");
   gas.line_velocity_width_ = line_velocity_width_;
+
+  omit_composition_decay_ = params_->getScalar<int>("dont_decay_composition");
 
   // parameters for storing opacities
   omit_scattering_ = params_->getScalar<int>("opacity_no_scattering");

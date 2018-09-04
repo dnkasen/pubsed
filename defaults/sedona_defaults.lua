@@ -87,6 +87,7 @@ opacity_atoms_in_nlte       = {}
 opacity_minimum_extinction  = 0
 opacity_maximum_opacity     = 1e40
 opacity_no_scattering       = 0
+dont_decay_composition      = 0
 
 opacity_compton_scatter_photons = 0;
 

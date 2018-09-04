@@ -65,6 +65,7 @@ class transport
   int    core_fix_luminosity_;
   double maximum_opacity_;
   int    last_iteration_;
+  int    omit_composition_decay_;
   int    compton_scatter_photons_;
 
   // current time in simulation
