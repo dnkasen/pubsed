@@ -186,6 +186,8 @@ int main(int argc, char **argv)
     // do hydro step
     if (use_hydro) hydro->step(dt);
 
+    if (steady_iterate)	mcarlo.wipe_spectra();
+
     // do transport step
     if (use_transport) 
     {
