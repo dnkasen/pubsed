@@ -192,7 +192,6 @@ class transport
   double rad_eq_function(int,double);
   double temp_brent_method(int);
 
-
  public:
   
 
@@ -224,7 +223,8 @@ class transport
   void output_spectrum(int);
 
   // print out functions
-  void write_radiation_file(int, int);  
+  void write_radiation_file(int, int);
+  void wipe_spectra();
 
 };
 
