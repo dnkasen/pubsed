@@ -1,1 +1,2 @@
-CXX  = mpicxx -O3  -DMPICH_IGNORE_CXX_SEEK -std=c++0x
+CXX  = mpicxx
+CXXFLAGS = -O3  -DMPICH_IGNORE_CXX_SEEK -std=c++0x

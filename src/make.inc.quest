@@ -1,1 +1,2 @@
-CXX   = /usr/bin/mpicxx -O3 -pedantic -Wall -std=c++11 
+CXX   = /usr/bin/mpicxx
+CXXFLAGS = -O3 -pedantic -Wall -std=c++11 

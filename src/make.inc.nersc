@@ -1,2 +1,3 @@
-CXX  = CC -g -O0 -std=c++11
+CXX  = CC
+CXXFLAGS = -g -O0 -std=c++11
 

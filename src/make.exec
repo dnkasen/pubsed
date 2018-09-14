@@ -29,13 +29,13 @@ all: $(OBJECTS)
 	make gomc snopac
 	
 gomc: $(OBJECTS) sedona.cpp
-	$(CXX) -o gomc $(OBJECTS) sedona.cpp $(CLOPT)
+	$(CXX) $(CXXFLAGS) -o gomc $(OBJECTS) sedona.cpp $(CLOPT)
 
 snopac: $(OBJECTS) snopac.cpp
-	$(CXX) -o snopac $(OBJECTS) snopac.cpp $(CLOPT)
+	$(CXX) $(CXXFLAGS) -o snopac $(OBJECTS) snopac.cpp $(CLOPT)
 
 .cpp.o: 
-	$(CXX) $(CCOPT) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(CCOPT) -c -o $@ $<
 
 clean:
 	rm -f $(OBJECTS) gomc snopac
