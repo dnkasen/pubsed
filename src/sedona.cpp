@@ -97,10 +97,18 @@ int main(int argc, char **argv)
   if (use_hydro) hydro->init(&params, grid);
 
   // evolve to start time if homologous
+  // expand rho and T assuming adiabatic and radiation pressure dominated
   if (hydro_type == "homologous")
   {
     double t_start = params.getScalar<double>("tstep_time_start");
     if (t_start > 0) {
+      if (verbose) {
+        cout << "# t_start = " << t_start << ", t_now = " << grid->t_now;
+        cout << "\n# Adiabatically expanding rho and T from input ";
+        cout << "values assuming radiation pressure dominated\n";
+        cout << "# Also assuming radioactive decay energy unimportant\n";
+        cout << "#\n";
+      }
       hydro->step(t_start - grid->t_now);
       grid->t_now = t_start; }
   }

@@ -21,8 +21,10 @@ void hydro_homologous::step(double dt)
 {
   double e = (t_now+dt)/t_now;
 
-  for (int i=0;i<grid->n_zones;i++) 
+  for (int i=0;i<grid->n_zones;i++) {
     grid->z[i].rho = grid->z[i].rho/e/e/e;
+    grid->z[i].T_gas = grid->z[i].T_gas/e; // Assumes radiation pressure dominated
+  }
   grid->expand(e);
   
   t_now += dt;
