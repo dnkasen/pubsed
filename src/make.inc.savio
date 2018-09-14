@@ -1,13 +1,1 @@
 CXX  = mpicxx -O3  -DMPICH_IGNORE_CXX_SEEK -std=c++0x
-
-# location of gsl 
-GSL_INC   = /global/software/centos-5.x86_64/modules/gsl/1.9-intel/gsl-1.9/include
-GSL_LIB   = /global/software/centos-5.x86_64/modules/gsl/1.9-intel/gsl-1.9/lib
-
-# location of lua
-LUA_INC   = /global/home/users/kasen/local/include
-LUA_LIB   = /global/home/users/kasen/local/lib
-
-# location of hdf5
-HDF_INC=/usr/local/include
-HDF_LIB=/usr/local/lib

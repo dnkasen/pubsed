@@ -1,0 +1,15 @@
+CXX  = CC -g -O0 -std=c++11
+
+# location of gsl 
+GSL_INC=$(GSL_DIR)/include
+GSL_LIB=$(GSL_DIR)/lib
+
+# location of lua
+LUA_INC=$(LUA_DIR)/src
+LUA_LIB=$(LUA_DIR)/src
+#LUA_INC=/global/cscratch1/sd/dgold/lua-5.3.4/install/include
+#LUA_LIB=/global/cscratch1/sd/dgold/lua-5.3.4/install/lib
+
+# location of hdf5
+HDF_INC=$(HDF5_DIR)/include
+HDF_LIB=$(HDF5_DIR)/lib 
