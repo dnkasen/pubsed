@@ -1,0 +1,29 @@
+You can edit the documentation files (.rst files) 
+
+For basics of using the reStructuredTex (.rst) markup see:
+http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html
+
+To compile the documentation into html or latex you must install Sphinx from
+http://www.sphinx-doc.org/en/master/usage/installation.html
+
+e.g., on mac you can try:  
+brew install sphinx-doc
+
+Once installed, make the webpage version using
+
+make html
+
+The resulting webpage files appear in rhe _build/html/ directory
+You can view using:
+
+open _build/html/index.html
+
+To make a latex file use
+
+make latex
+
+which makes the latex file in _build/latex/ 
+You can then build a pdf using your own latex compiler
+
+
+
