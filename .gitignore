@@ -7,3 +7,4 @@ spectrum*dat
 spectrum*h5
 *~
 *.pyc
+doc/sphinx_doc/_build/
