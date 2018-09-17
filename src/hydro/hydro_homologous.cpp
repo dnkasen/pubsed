@@ -7,6 +7,7 @@ void hydro_homologous::init(ParameterReader *params, grid_general *g)
 {
   this->grid = g;
   this->t_now = g->t_now;
+  this->t_start = params->getScalar<double>("tstep_time_start");
 }
 
 
@@ -23,7 +24,9 @@ void hydro_homologous::step(double dt)
 
   for (int i=0;i<grid->n_zones;i++) {
     grid->z[i].rho = grid->z[i].rho/e/e/e;
-    grid->z[i].T_gas = grid->z[i].T_gas/e; // Assumes radiation pressure dominated
+    // If t_now < t_start, adiabatically expand T as well
+    // assuming radiation pressure dominated
+    if (t_now < t_start) grid->z[i].T_gas = grid->z[i].T_gas/e;
   }
   grid->expand(e);
   

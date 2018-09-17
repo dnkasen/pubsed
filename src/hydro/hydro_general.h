@@ -19,6 +19,7 @@ class hydro_general
 
   grid_general *grid;
   double t_now;
+  double t_start;
 
   double gamfac_;
   double cfl_;
