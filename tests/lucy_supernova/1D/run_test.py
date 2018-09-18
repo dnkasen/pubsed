@@ -19,7 +19,7 @@ def run_test(pdf="",runcommand=""):
     ###########################################
     plt.clf()
 
-    x,y,c = np.loadtxt('optical_spectrum.dat',unpack=1,skiprows=1)
+    x,y,c = np.loadtxt('optical_spectrum_final.dat',unpack=1,skiprows=1)
     x = x/3600.0/24.0
     plt.plot(x,y,'o',color='black',markersize=8,markeredgewidth=2,markerfacecolor='none')
 
