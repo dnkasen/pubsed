@@ -3,8 +3,6 @@
 #######
 .PHONY: all clean realclean gomc snopac
 
-include ./make.inc
-
 # location of gsl 
 GSL_INC=$(GSL_DIR)/include
 GSL_LIB=$(GSL_DIR)/lib
