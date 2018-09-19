@@ -1,2 +1,0 @@
-CXX   = /usr/bin/mpicxx
-CXXFLAGS = -O3 -pedantic -Wall -std=c++11 
