@@ -7,6 +7,6 @@ example, for me it's set to $SEDONA_HOME/src/external/lua-5.2.1.
 
 The rest of the instructions are on the wiki Documentation Outline
 
-Compilation will take place in the EXEC directory, producing the
+Compilation will take place in the build directory, producing the
 executable gomc
 
