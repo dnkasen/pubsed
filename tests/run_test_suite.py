@@ -92,7 +92,7 @@ for this_test in testlist:
     if (status == 0): 
         print "PASSED"
     else:
-        print "FAILED"
+        print "FAILED: error code = ", status
     print "------------------------------------------\n"
     total_status += status
 
