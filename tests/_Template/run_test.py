@@ -23,7 +23,7 @@ def run_test(pdf="",runcommand=""):
     """
     #-------------------------------------------
 
-
+    testname = "my_test"
 
     #-------------------------------------------
     # clean up any old results and run the code
@@ -44,7 +44,7 @@ def run_test(pdf="",runcommand=""):
 #    for example...
 #    plt.plot(x,y)
 #    plt.legend(['sedona','analytic'])
-#    plt.title('test....')
+#    plt.title(testname)
 #    plt.xlabel('x')
 #    plt.ylabel('y')
 #    plt.yscale('log')
