@@ -18,57 +18,97 @@ def run_test(pdf="",runcommand=""):
     # compare the output
     ###########################################
     plt.clf()
+    failure = 0
 
-    x,y,c = np.loadtxt('optical_spectrum_final.dat',unpack=1,skiprows=1)
-    x = x/3600.0/24.0
-    plt.plot(x,y,'o',color='black',markersize=8,markeredgewidth=2,markerfacecolor='none')
-
-    # gamma-ray deposition
-    tdep = []
-    gdep = []
-    for j in range(1,150):
-        ray = 'plt_00'
-        if (j< 100): ray = ray + '0' 
-        if (j < 10): ray = ray + '0' 
-        ray = ray + str(j) + '.dat'
-        fin = open(ray,'r')
-        line = fin.readline()
-        tdep.append(float(line.split()[3])/3600.0/24.0)
-        sum = 0
-        r0 = 0 
-        line = fin.readline()
-        for line in fin:
-            data = line.split()
-            r1 = float(data[0])
-            vol = 4.0*3.14159/3.0*(r1**3 - r0**3)
-            sum += float(data[5])*vol
-            r0 = r1
-        gdep.append(sum)
-        
-    plt.plot(tdep,gdep,'o')
+    # sedona results
+    ts1,Ls1,c = np.loadtxt('optical_spectrum_final.dat',unpack=1,skiprows=1)
+    ts1 = ts1/3600.0/24.0
+    plt.plot(ts1,Ls1,'o',markeredgecolor='red',markersize=8,markeredgewidth=2,markerfacecolor='none')
+    ts2,erad,Ls2,Lnuc = np.loadtxt('integrated_quantities.dat',unpack=1,skiprows=1)
+    ts2 = ts2/3600.0/24.0
+    plt.plot(ts2,Ls2,'o',markeredgecolor='blue',markersize=8,markeredgewidth=2,markerfacecolor='none')
         
     # benchmark results
-    x,y = np.loadtxt('../comparefiles/lucy_lc.dat',unpack=1)
-    plt.plot(x,y,color='red',linewidth=2)
-    x,y = np.loadtxt('../comparefiles/lucy_gr.dat',unpack=1)
-    plt.plot(x,y,color='blue',linewidth=2)
+    tl1,Ll1 = np.loadtxt('../comparefiles/lucy_lc.dat',unpack=1)
+    plt.plot(tl1,Ll1,color='red',linewidth=3)
+    tl2,Ll2 = np.loadtxt('../comparefiles/lucy_gr.dat',unpack=1)
+    plt.plot(tl2,Ll2,color='blue',linewidth=3)
     plt.ylim(1e40,0.4e44)
 
+    # calculate error
+    use = ((ts1 > 3)*(ts1 < 55))
+    max_err,mean_err = get_error(Ls1,Ll1,x=ts1,x_comp=tl1,use = use)
+    if (max_err > 0.25): failure = 1
+    if (mean_err > 0.1): failure = 1
+
+    use = ((ts2 > 3)*(ts2 < 55))
+    max_err,mean_err = get_error(Ls2,Ll2,x=ts2,x_comp=tl2,use = use)
+    if (max_err > 0.25): failure = 2
+    if (mean_err > 0.1): failure = 2
+
+    ## make plot
     plt.title
     plt.legend(['sedona LC','sedona GR','lucy LC','lucy GR'])
-    plt.xlim(0,60)
-
+    plt.xlim(0,55)
+    plt.xlabel('luminosity (erg/s)',size=13)
+    plt.ylabel('days since explosion',size=13)
     if (pdf != ''): pdf.savefig()
     else:
         plt.ion()
-        pltx.show()
+        plt.show()
         j = raw_input()
 
-    # this should return !=0 if failed
-    return 0
-        
+    return failure
 
 
+#-------------------------------------------
+# error calculator helper function
+#-------------------------------------------
+
+def get_error(a,b,x=[],x_comp=[],use=[]):
+
+    """ Function to calculate the error between two arrays
+
+        Args:
+        a: numpy array of result 
+        b: numpy array of comparison 
+        use: an array of 0's and 1's telling which element
+             in the arrays to include
+        x: optional array of x values to go along with a
+        x_comp: optional array of x values to go along with b
+        (if x and x_comp are set, will interpolate b values to x spacing)
+
+        Returns:
+            returns max_error, mean_error in percentages
+
+        Example:
+            say you have an array y that is a function of x
+            you wnat to see how much it deviates from a reference array y_comp
+            but only for values where x > 0.5. Use
+
+            max_error, mean_error = get_error(y,y_comp,use=(x > 0.5))
+
+    """
+
+    # result array
+    y = a
+    # compare array
+    y_comp = b
+
+    # interpolate comparison if wanted
+    if (len(x) != 0 and len(x_comp !=0)):
+        y_comp = np.interp(x,x_comp,y_comp)
+
+    # cut the array length if wanted
+    if (len(use) > 0): 
+        y = y[use]
+        y_comp = y_comp[use]
+    err = abs(y - y_comp)
+
+    max_err = max(err/y_comp)
+    mean_err = np.mean(err)/np.mean(y_comp)
+
+    return max_err,mean_err
 
 if __name__=='__main__': run_test('')
 
