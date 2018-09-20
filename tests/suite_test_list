@@ -2,6 +2,7 @@
 ### comment out ones with a hash
 ###
 spherical_lightbulb/1D
+spherical_lightbulb/2D
 one_zone_NLTE/optically_thin_H
 one_zone_NLTE/optically_thick_H
 one_zone_NLTE/optically_thin_solar

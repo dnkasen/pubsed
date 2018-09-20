@@ -21,6 +21,7 @@ def run_test(pdf="",runcommand=""):
     ###########################################
     plt.clf()
     plt.ion()
+    failure = 0
     testname = "2D spherical lightbulb"
 
     # physics constants
@@ -74,7 +75,7 @@ def run_test(pdf="",runcommand=""):
         use = []
         if (j == 100): use = (p > 5e14)
         max_err,mean_err = get_error(thisT,TW,use=use)
-        if (max_err > 0.5 or mean_err > 0.01): 
+        if (max_err > 0.05 or mean_err > 0.01): 
             failure = 1
 
     plt.legend(['sedona Trad','analytic solution'])
