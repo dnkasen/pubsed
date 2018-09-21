@@ -23,8 +23,8 @@ nproc = 1
 if (opts.nproc): nproc = opts.nproc
 
 ## executable directory and file
-exec_dir   = "../src/build/"
-executable = "gomc"
+exec_dir   = "../src/"
+executable = "sedona6.ex"
 
 homedir = os.getcwd()
 date = time.strftime("%m-%d-%y")

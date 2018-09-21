@@ -38,5 +38,5 @@ else
   cp -p $MAKEDIR/Makefile.$TARGET $EXECDIR/Makefile
 	cd $EXECDIR; make
   cd ..
-  cp $EXECDIR/gomc sedona6
+  cp $EXECDIR/gomc sedona6.ex
 fi
