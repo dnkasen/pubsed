@@ -1,0 +1,4 @@
+CXX  = CC
+CXXFLAGS = -O3 -std=c++11
+
+include make.exec

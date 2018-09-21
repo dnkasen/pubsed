@@ -1,10 +1,12 @@
 To make:
 
-Create your own Make.inc file that gives location of necessary
-libraries and options (example is make.inc.tagore)
+Set the environment variables GSL_DIR, LUA_DIR, and HDF5_DIR. GSL_DIR and 
+HDF5_DIR should be set automatically if you're on a supercomputer and load
+GSL and HDF5 modules. LUA_DIR should be set to the root lua directory. For
+example, for me it's set to $SEDONA_HOME/src/external/lua-5.2.1.
 
-Edit Makefile so that it points to your Make.inc
+The rest of the instructions are on the wiki Documentation Outline
 
-Compilation will take place in the EXEC directory, producing the
+Compilation will take place in the build directory, producing the
 executable gomc
 

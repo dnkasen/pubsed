@@ -23,7 +23,7 @@ nproc = 1
 if (opts.nproc): nproc = opts.nproc
 
 ## executable directory and file
-exec_dir   = "../src/EXEC/"
+exec_dir   = "../src/build/"
 executable = "gomc"
 
 homedir = os.getcwd()
