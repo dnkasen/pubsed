@@ -40,15 +40,21 @@ def run_test(pdf="",runcommand=""):
     fin = h5py.File('plt_00001.h5','r')
     dr   = np.array(fin['dr'])
     z    = np.array(fin['z'])
-    p    = np.array(fin['r'])
+    p    = np.array(fin['r']) 
     Trad = np.array(fin['T_rad'])
 
+    # shift to cell centered
+    p = p + dr[0]/2.0
+    z = z + dr[1]/2.0
 
     #------------------------------------------
     # plot temperature image
     #------------------------------------------
-    plt.matshow(Trad)    
-    plt.title(testname + ': radiation field')
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.matshow(Trad)    
+
+    ax.set_title(testname + ': radiation field')
     
     if (pdf != ''): pdf.savefig()
     else:
@@ -56,8 +62,7 @@ def run_test(pdf="",runcommand=""):
         j = raw_input()
     plt.clf()
 
-
-    
+  
     #------------------------------------------
     # compare 1D slices of temperature
     #------------------------------------------
@@ -73,7 +78,7 @@ def run_test(pdf="",runcommand=""):
         plt.plot(p,TW,color='k',linewidth=3)
 
         use = []
-        if (j == 100): use = (p > 5e14)
+        if (j == 100): use = (p > 5.1e14)
         max_err,mean_err = get_error(thisT,TW,use=use)
         if (max_err > 0.05 or mean_err > 0.01): 
             failure = 1
@@ -88,12 +93,12 @@ def run_test(pdf="",runcommand=""):
         plt.show()
         j = raw_input()
     fin.close()
+    plt.clf()
 
     #------------------------------------------
     # compare output spectrum
     #------------------------------------------
         
-    plt.clf()
     fin = h5py.File('spectrum_1.h5','r')
     nu  = np.array(fin['nu'])
     Lnu = np.array(fin['Lnu'])
