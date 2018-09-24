@@ -31,7 +31,7 @@ date = time.strftime("%m-%d-%y")
 outfile = homedir + '/test_results_' + date + '.txt'
 pdffile = homedir + '/test_results_' + date + '.pdf'
 pdf = PdfPages(pdffile)
-runcommand = "mpirun -np " + str(nproc) + " ./gomc >> " + outfile
+runcommand = "mpirun -np " + str(nproc) + " ./" >> + executable + " >> " + outfile
 
 
 
