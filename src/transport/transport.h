@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <list>
-#include <mpi.h>
+
 
 #include "particle.h"
 #include "grid_general.h"
@@ -15,6 +15,11 @@
 #include "ParameterReader.h"
 #include "VoigtProfile.h"
 #include "sedona.h"
+
+#ifdef MPI_PARALLEL
+#include <mpi.h>
+#endif
+
 
 using std::vector;
 
@@ -49,11 +54,13 @@ class transport
   // MPI stuff
   int MPI_nprocs;
   int MPI_myID;
-  MPI_Datatype MPI_real;
   int my_zone_start_, my_zone_stop_;
   double *src_MPI_block, *dst_MPI_block;
   double *src_MPI_zones, *dst_MPI_zones;
-
+#ifdef MPI_PARALLEL
+  MPI_Datatype MPI_real;
+#endif
+  
   // simulation parameters
   double step_size_;
   int    steady_state;

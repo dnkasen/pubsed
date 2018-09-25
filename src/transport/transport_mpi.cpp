@@ -1,3 +1,9 @@
+//------------------------------------------------------------
+// transport_mpi.cpp
+// This file contains functions related to the communication
+// of data among MPI tasks
+//------------------------------------------------------------
+
 #include <math.h>
 #include <cassert>
 #include "transport.h"
@@ -26,6 +32,9 @@ void transport::wipe_radiation()
   }
 }
 
+//------------------------------------------------------------
+// Calcuate eps_imc...
+//------------------------------------------------------------
 void transport::set_eps_imc()
 {
   for (int i=0;i<grid->n_zones;i++) 
@@ -45,10 +54,16 @@ void transport::set_eps_imc()
 //------------------------------------------------------------
 void transport::reduce_opacities()
 {
-  //=************************************************
+ 
+#ifndef MPI_PARALLEL
+  return;
+#else  
+  if (MPI_nprocs == 1) return;
+
+
+   //=************************************************
   // do zone vectors
   //=************************************************
-  if (MPI_nprocs == 1) return;
 
   // dimensions
   int nw = nu_grid.size();
@@ -188,6 +203,9 @@ void transport::reduce_opacities()
   }
   MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
   for (int i=0;i<nz;i++) photoion_opac[i] = dst_MPI_zones[i];
+
+#endif
+
 }
 
 //------------------------------------------------------------
@@ -196,6 +214,11 @@ void transport::reduce_opacities()
 //------------------------------------------------------------
  void transport::reduce_Tgas()
  {
+
+#ifndef MPI_PARALLEL
+  return;
+#else 
+
   if (MPI_nprocs == 1) return;
 
   //=************************************************
@@ -212,10 +235,17 @@ void transport::reduce_opacities()
 
   MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
   for (int i=0;i<nz;i++) grid->z[i].T_gas = dst_MPI_zones[i];
+
+#endif
  }
 
  void transport::reduce_Lthermal()
  {
+
+#ifndef MPI_PARALLEL
+  return;
+#else 
+
   if (MPI_nprocs == 1) return;
   if (params_->getScalar<int>("particles_n_emit_thermal") == 0) return;
 
@@ -233,6 +263,8 @@ void transport::reduce_opacities()
 
   MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
   for (int i=0;i<nz;i++) grid->z[i].L_thermal = dst_MPI_zones[i];
+#endif
+
  }
 
 //------------------------------------------------------------
@@ -241,6 +273,10 @@ void transport::reduce_opacities()
 //------------------------------------------------------------
  void transport::reduce_radiation(double dt)
 {
+
+#ifndef MPI_PARALLEL
+  return;
+#else 
   if (MPI_nprocs > 1)
   {
   // eventually do a smarter reduction
@@ -290,9 +326,11 @@ void transport::reduce_opacities()
     MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
     for (int i=0;i<nz;i++) grid->z[i].L_radio_dep = dst_MPI_zones[i]/MPI_nprocs;
   }
+#endif
 
   //=************************************************
   // properly normalize the radiative quantities
+  // this should really be a separate call
   //=************************************************
   for (int i=0;i<grid->n_zones;i++) 
   {
