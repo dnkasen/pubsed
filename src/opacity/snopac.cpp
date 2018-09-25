@@ -7,8 +7,6 @@
 #include "ParameterReader.h"
 #include "sedona.h"
 
-#include <mpi.h>
-
 using namespace std;
 namespace pc = physical_constants;
 
@@ -28,8 +26,7 @@ static int verbose;
 
 int main(int argc, char **argv)
 {
-  // initialize MPI 
-  MPI_Init( &argc, &argv );
+
   verbose = 1; 
 
   // open up the parameter reader

@@ -1,4 +1,3 @@
-#include <mpi.h>
 #include <stdio.h>
 #include <iostream>
 #include <math.h>
@@ -9,6 +8,10 @@
 
 #include "spectrum_array.h"
 #include "physical_constants.h"
+
+#ifdef MPI_PARALLEL
+#include <mpi.h>
+#endif
 
 using std::vector;
 namespace pc = physical_constants;
@@ -240,6 +243,8 @@ void  spectrum_array::rescale(double r)
 // only process 0 gets the reduced spectrum to print
 void spectrum_array::MPI_average()
 {
+#ifdef MPI_PARALLEL
+
   int receiving_ID = 0;
   int mpi_procs, myID;
 
@@ -276,4 +281,5 @@ void spectrum_array::MPI_average()
       click[i] /= mpi_procs;
     }
   //}
+#endif
 }

@@ -4,8 +4,10 @@
 #include "nlte_gas.h"
 #include <iostream>
 #include <fstream>
-#include <mpi.h>
 
+#ifdef MPI_PARALLEL
+#include "mpi.h"
+#endif
 
 namespace pc = physical_constants;
 
@@ -32,11 +34,15 @@ nlte_gas::nlte_gas()
 void nlte_gas::initialize
 (std::string af, std::vector<int> e, std::vector<int> A, locate_array ng)
 {
-  // verbosity
+  // verbocity
+#ifdef MPI_PARALLEL
   int my_rank;
   MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
-  verbose = (my_rank == 0);
-  
+  const int verbose = (my_rank == 0);
+#else
+  const int verbose = 1;
+#endif
+
   for (size_t i=0;i<e.size();++i) elem_Z.push_back(e[i]);
   for (size_t i=0;i<e.size();++i) elem_A.push_back(A[i]);
   mass_frac.resize(e.size());
@@ -49,20 +55,20 @@ void nlte_gas::initialize
 
   // check if atomfile is there
   std::ifstream afile(atomfile_);
-  if (!afile) 
+  if (!afile)
   {
-    if (verbose) 
-      std::cout << "Can't open atom datafile " << atomfile_ << "; exiting\n"; 
-    exit(1); 
+    if (verbose)
+      std::cout << "Can't open atom datafile " << atomfile_ << "; exiting\n";
+    exit(1);
   }
   afile.close();
 
   // read in the atom data
   atoms.resize(elem_Z.size());
   int level_id = 0;
-  for (size_t i=0;i<atoms.size();++i) 
+  for (size_t i=0;i<atoms.size();++i)
   {
-    int error = atoms[i].initialize(atomfile_, elem_Z[i],ng,level_id); 
+    int error = atoms[i].initialize(atomfile_, elem_Z[i],ng,level_id);
     if ((error)&&(verbose))
       std::cout << "# ERROR: incomplete data for atom Z=" << elem_Z[i] <<
 	" in file " << atomfile_ << "\n";
@@ -85,34 +91,34 @@ void nlte_gas::set_atoms_in_nlte
   {
     for (int j=0;j<atoms.size();++j)
       if (elem_Z[j] == useatoms[i])
-        atoms[j].set_use_nlte(); 
+        atoms[j].set_use_nlte();
   }
-}  
- 
+}
+
 //-----------------------------------------------------------------
 // Set mass fractions of each element in the gas
 // this function will enforce that the mass fractions are
 // normalize (i.e., add up to 1)
 //
-// input: 
+// input:
 // std::vector<double> x: vector of mass fractions of each element
 //-----------------------------------------------------------------
 void nlte_gas::set_mass_fractions(std::vector<double> x)
-{ 
+{
   double norm = 0.0;
-  for (size_t i=0;i<mass_frac.size();++i) 
+  for (size_t i=0;i<mass_frac.size();++i)
   {
-    mass_frac[i] = x[i]; 
+    mass_frac[i] = x[i];
     norm += x[i];
   }
-    
+
   // make sure it is normalized
   for (size_t i=0;i<mass_frac.size();++i) mass_frac[i] /= norm;
-  
+
   // find mean weight of gas
   this->A_mu = 0;
-  for (size_t i=0;i<mass_frac.size();++i) 
-    A_mu += mass_frac[i]*elem_A[i]; 
+  for (size_t i=0;i<mass_frac.size();++i)
+    A_mu += mass_frac[i]*elem_A[i];
 }
 
 
@@ -124,12 +130,14 @@ void nlte_gas::set_mass_fractions(std::vector<double> x)
 int nlte_gas::read_fuzzfile(std::string fuzzfile)
 {
   int n_tot = 0;
- 
+
   // check if fuzzfile exists
   FILE *fin = fopen(fuzzfile.c_str(),"r");
+  if (fin == NULL) std::cout << "CAN't open\n";
   if (fin == NULL) return 0;
-    
-  for (size_t i=0;i<atoms.size();++i) n_tot += atoms[i].read_fuzzfile(fuzzfile);
+
+  for (size_t i=0;i<atoms.size();++i)
+    n_tot += atoms[i].read_fuzzfile(fuzzfile);
   return n_tot;
 }
 
@@ -160,7 +168,7 @@ int nlte_gas::solve_state()
 // Solve for the gas state (excitation/ionization)
 // the level populations will be stored internally for
 // further calculations
-// Returns: any error 
+// Returns: any error
 //-----------------------------------------------------------
 int nlte_gas::solve_state(std::vector<real> J_nu)
 {
@@ -201,7 +209,7 @@ double nlte_gas::charge_conservation(double ne,std::vector<real> J_nu)
   // start with charge conservation function f set to zero
   double f  = 0;
   // loop over all atoms
-  for (size_t i=0;i<atoms.size();++i) 
+  for (size_t i=0;i<atoms.size();++i)
   {
     // Solve the state of the atome with this value of electron density ne
     if (use_nlte_)
@@ -226,7 +234,7 @@ double nlte_gas::charge_conservation(double ne,std::vector<real> J_nu)
 //-----------------------------------------------------------
 #define SIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
 double nlte_gas::ne_brent_method(double x1,double x2,double tol,std::vector<real> J_nu)
-{  
+{
   int ITMAX = 100;
   double EPS = 3.0e-8;
   int iter;
@@ -234,7 +242,7 @@ double nlte_gas::ne_brent_method(double x1,double x2,double tol,std::vector<real
   double fa=charge_conservation(a,J_nu);
   double fb=charge_conservation(b,J_nu);
   double fc,p,q,r,s,tol1,xm;
-  
+
   if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0))
     solve_error_ = 1;
   fc=fb;
@@ -297,7 +305,7 @@ double nlte_gas::ne_brent_method(double x1,double x2,double tol,std::vector<real
 
 //-----------------------------------------------------------
 // return the fraction of atoms of index i that are in
-// ionization state j.  
+// ionization state j.
 //-----------------------------------------------------------
 double nlte_gas::get_ionization_fraction(int i, int j)
 {
@@ -310,7 +318,7 @@ double nlte_gas::get_ionization_fraction(int i, int j)
 
 //-----------------------------------------------------------
 // return the fraction of atoms of index i that are in
-// ionization state j.  
+// ionization state j.
 //-----------------------------------------------------------
 double nlte_gas::get_level_fraction(int i, int j)
 {
@@ -321,7 +329,7 @@ double nlte_gas::get_level_fraction(int i, int j)
 
 //-----------------------------------------------------------
 // return the fraction of atoms of index i that are in
-// ionization state j.  
+// ionization state j.
 //-----------------------------------------------------------
 double nlte_gas::get_level_departure(int i, int j)
 {
@@ -396,4 +404,3 @@ void nlte_gas::print()
   //for (size_t i=0;i<elem_Z.size();++i)
   //  atoms[i].print();
 }
- 
