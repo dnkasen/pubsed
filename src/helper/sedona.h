@@ -6,6 +6,8 @@
 typedef double real;
 typedef double  OpacityType;
 
+#define MPI_PARALLEL 1
+
 #define Max_MPI_Blocksize 1000000
 #define TIME_PLOTFILE_NAME "integrated_quantities.dat"
 #endif
