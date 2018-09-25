@@ -1,7 +1,12 @@
+
+#ifdef MPI_PARALLEL
 #include <mpi.h>
+#endif
+
 #include <time.h>
 #include <iostream>
 #include <vector>
+#include <ctime>
 
 #include "physical_constants.h"
 #include "ParameterReader.h"
@@ -27,13 +32,19 @@ int main(int argc, char **argv)
 {
  // initialize MPI parallelism
   int my_rank,n_procs;
+
+#ifdef MPI_PARALLEL
   MPI_Init( &argc, &argv );
   MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
   MPI_Comm_size( MPI_COMM_WORLD, &n_procs);
+#else
+  my_rank = 0;
+  n_procs = 1;
+#endif
 
   // verbocity
   const int verbose = (my_rank == 0);
-  if (verbose) 
+  if (verbose)
   {
     cout << "##################################\n";
     cout << "############  sedona  ############\n";
@@ -41,14 +52,18 @@ int main(int argc, char **argv)
     cout << "#\n# MPI tasks = " << n_procs << endl << "#" << endl;
 
   }
-  
-  // start timer 
+
+// start timer
+#ifdef MPI_PARALLEL
   double proc_time_start = MPI_Wtime();
- 
+#else
+  clock_t time_start = clock();
+#endif
+
   //---------------------------------------------------------------------
-  // BEGIN SETTING UP 
+  // BEGIN SETTING UP
   //---------------------------------------------------------------------
-  
+
   // open up the parameter reader
   std::string param_file = "param.lua";
   if( argc > 1 ) param_file = std::string( argv[ 1 ] );
@@ -56,7 +71,7 @@ int main(int argc, char **argv)
 
 
   //---------------------------------------------------------------------
-  // SET UP THE GRID 
+  // SET UP THE GRID
   //---------------------------------------------------------------------
   grid_general *grid;
 
@@ -70,7 +85,7 @@ int main(int argc, char **argv)
   else  {
     if(verbose) cout << "# ERROR: the grid type is not implemented\n";
     exit(3);   }
-  
+
   // initialize the grid (including reading the model file)
   grid->init(&params);
 
@@ -81,17 +96,17 @@ int main(int argc, char **argv)
   //---------------------------------------------------------------------
   hydro_general *hydro = NULL;
   string hydro_type = params.getScalar<string>("hydro_module");
-  
+
   // create a hydro module of the appropriate type
-  if (hydro_type == "homologous") 
+  if (hydro_type == "homologous")
     hydro = new hydro_homologous;
-  else if (hydro_type == "none") 
+  else if (hydro_type == "none")
     hydro = NULL;
   else if (hydro_type == "1D_lagrangian")
     hydro = new hydro_1D_lagrangian;
   else {
     if (verbose) cout << "# ERROR: the hydro type is not implemented\n";
-    exit(3); 
+    exit(3);
   }
   int use_hydro = (hydro != NULL);
   if (use_hydro) hydro->init(&params, grid);
@@ -125,7 +140,7 @@ int main(int argc, char **argv)
   //---------------------------------------------------------------------
   // DO TIME/ITERATION LOOP
   //---------------------------------------------------------------------
-  
+
   // read in time stepping parameters
   int steady_iterate  = params.getScalar<int>("transport_steady_iterate");
   if (steady_iterate) use_hydro = 0;
@@ -136,18 +151,18 @@ int main(int argc, char **argv)
   // check for steady state iterative calculation
   // or a time dependent calculation
   int n_steps   = steady_iterate;
-  double t_stop = 0; 
-  if (!steady_iterate)  
+  double t_stop = 0;
+  if (!steady_iterate)
   {
     n_steps  = params.getScalar<int>("tstep_max_steps");
-    t_stop   = params.getScalar<double>("tstep_time_stop");   
+    t_stop   = params.getScalar<double>("tstep_time_stop");
   }
 
   // parameters for writing data to file
   int write_levels     = params.getScalar<int>("output_write_atomic_levels");
   int write_radiation  = params.getScalar<int>("output_write_radiation");
   int write_mass_fractions  = params.getScalar<int>("output_write_mass_fractions");
- 
+
   double write_out_step = params.getScalar<double>("output_write_plt_file_time");
   double write_out_log  = params.getScalar<double>("output_write_plt_log_space");
   int    i_write = 0;
@@ -166,9 +181,9 @@ int main(int argc, char **argv)
   {
     // get this time step
     if (!steady_iterate)
-    {    
+    {
       dt = dt_max;
-      if (use_hydro) 
+      if (use_hydro)
       {
         double dt_hydro = hydro->get_time_step();
         if (dt_hydro < dt) dt = dt_hydro;
@@ -176,7 +191,7 @@ int main(int argc, char **argv)
       if ((dt_del > 0)&&(t > 0)) if (dt > t*dt_del) dt = t*dt_del;
       if (dt < dt_min) dt =  dt_min;
     }
-    else 
+    else
     {
       dt = 0;
       if (it == n_steps) mcarlo.set_last_iteration_flag();
@@ -184,7 +199,7 @@ int main(int argc, char **argv)
 
 
     // printout basic time step information
-    if (verbose) 
+    if (verbose)
     {
       if (steady_iterate) cout << "# ITERATION: " << it << ";  t = " << t << "\t";
       else cout << "# TSTEP #" << it << " ; t = " << t << " sec (" << t/3600/24.0 << " days); dt = " << dt;
@@ -197,14 +212,14 @@ int main(int argc, char **argv)
     if (steady_iterate)	mcarlo.wipe_spectra();
 
     // do transport step
-    if (use_transport) 
+    if (use_transport)
     {
       mcarlo.step(dt);
       // print out spectrum if an iterative calc
       if (steady_iterate) mcarlo.output_spectrum(it);
     }
 
-    // writeout output files when appropriate 
+    // writeout output files when appropriate
     if ((t >= next_write_out)||(steady_iterate))
     {
       double t_write = t + dt;
@@ -241,17 +256,25 @@ int main(int argc, char **argv)
   //---------------------------------------------------------------------
   // CALCULATION DONE; WRITE OUT AND FINISH
   //---------------------------------------------------------------------
-  
-  // calculate the elapsed time 
+
+  // stop timer
+double time_wasted;
+#ifdef MPI_PARALLEL
   double proc_time_end = MPI_Wtime();
-  double time_wasted = proc_time_end - proc_time_start;
-  
+  time_wasted = proc_time_end - proc_time_start;
+#else
+  clock_t time_stop = clock();
+  time_wasted = double(time_stop - time_start) / CLOCKS_PER_SEC;
+#endif
+
   if (verbose)
     printf("#\n# CALCULATION took %.3e seconds or %.3f mins or %.3f hours\n",
 	   time_wasted,time_wasted/60.0,time_wasted/60.0/60.0);
-  
+
+#ifdef MPI_PARALLEL
   // finish up mpi
   MPI_Finalize();
-  
+#endif
+
   return 0;
 }
