@@ -1,5 +1,4 @@
 #include <cstdlib>
-#include <mpi.h>
 #include <math.h>
 
 #include "grid_general.h"
@@ -31,21 +30,21 @@ void grid_general::write_hdf5_plotfile_zones
   	float time_a[1];
   	time_a[0] = tt;
   	H5LTmake_dataset(file_id,"time",1,dims_t,H5T_NATIVE_FLOAT,time_a);
-	
+
 	// print out zone arrays
   	float *arr = new float[n_zones];
 
 	// print out rho
-	for (int i=0;i<n_zones;++i) arr[i] = z[i].rho; 
+	for (int i=0;i<n_zones;++i) arr[i] = z[i].rho;
 	H5LTmake_dataset(file_id,"rho",ndims,dims_g,H5T_NATIVE_FLOAT,arr);
- 
+
  	// print out vel
-	for (int i=0;i<n_zones;++i) arr[i] = z[i].v[0]; 
+	for (int i=0;i<n_zones;++i) arr[i] = z[i].v[0];
 	H5LTmake_dataset(file_id,"velr",ndims,dims_g,H5T_NATIVE_FLOAT,arr);
-	
+
 	if (ndims > 1)
 	{
-		for (int i=0;i<n_zones;++i) arr[i] = z[i].v[2]; 
+		for (int i=0;i<n_zones;++i) arr[i] = z[i].v[2];
 		H5LTmake_dataset(file_id,"velz",ndims,dims_g,H5T_NATIVE_FLOAT,arr);
 	}
 
@@ -77,7 +76,7 @@ void grid_general::write_integrated_quantities(int iw, double tt)
   	if (fout == NULL) return;
 
   	// write header
-  	if (iw == 0) 
+  	if (iw == 0)
    	 fprintf(fout,"#    time(sec)     E_radiation      L_nuc_dep      L_nuc_emit\n");
 
 	// integrated qunaitites

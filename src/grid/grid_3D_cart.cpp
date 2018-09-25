@@ -4,13 +4,16 @@
 #include <iostream>
 #include <iomanip>
 #include <cassert>
-#include "mpi.h"
 #include "Lua.h"
 #include "grid_3D_cart.h"
 #include "physical_constants.h"
 
 #include "hdf5.h"
 #include "hdf5_hl.h"
+
+#ifdef MPI_PARALLEL
+#include "mpi.h"
+#endif
 
 namespace pc = physical_constants;
 
@@ -23,11 +26,15 @@ using std::endl;
 //------------------------------------------------------------
 void grid_3D_cart::read_model_file(ParameterReader* params)
 {
-
   // verbocity
+#ifdef MPI_PARALLEL
   int my_rank;
   MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
   const int verbose = (my_rank == 0);
+#else
+  const int verbose = 1;
+#endif
+
   
   // open up the model file, complaining if it fails to open
   string model_file = params->getScalar<string>("model_file");
