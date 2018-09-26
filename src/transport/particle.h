@@ -2,6 +2,7 @@
 #define _PARTICLE_H
 
 #include <math.h>
+#include <stdio.h>
 
 // particle properties
 enum PType         {photon, gammaray, positron, neutrino};
