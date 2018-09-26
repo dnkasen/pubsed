@@ -9,12 +9,14 @@
 #include "hdf5.h"
 #include "hdf5_hl.h"
 
+#include "grid_2D_cyln.h"
+#include "physical_constants.h"
+
 #ifdef MPI_PARALLEL
 #include "mpi.h"
 #endif
 
-#include "grid_2D_cyln.h"
-#include "physical_constants.h"
+
 
 namespace pc = physical_constants;
 
