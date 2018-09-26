@@ -26,7 +26,8 @@ class hydro_general
   virtual void init(ParameterReader*, grid_general*) = 0;
   virtual double get_time_step() = 0;
   virtual void step(double)      = 0;
-
+  virtual void evolve_to_start(double, int)      = 0;
+  
 
 };
 

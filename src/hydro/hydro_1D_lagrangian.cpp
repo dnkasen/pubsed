@@ -294,3 +294,6 @@ double hydro_1D_lagrangian::compute_artificial_viscosity(int i)
 
 
 
+void hydro_1D_lagrangian::evolve_to_start(double t_start, int force_rproc)
+{
+}
