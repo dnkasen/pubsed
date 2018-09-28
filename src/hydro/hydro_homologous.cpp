@@ -42,8 +42,7 @@ void hydro_homologous::evolve_to_start(double t_start, int force_rproc)
   radioactive radio;
   double gfrac;
   double e;
-  double dt = 0.1*grid->t_now; // Timestep should be << relevant timescales
-  double dt_max = 100.0;  
+  double dt;
   double eps_nuc;
   double u_old;
   double time_tol = 1.0e-4;
@@ -51,23 +50,37 @@ void hydro_homologous::evolve_to_start(double t_start, int force_rproc)
   // Just forward Euler for now
   for ( ; ; )
   {
-    e = (grid->t_now + dt)/grid->t_now;
 
+    // Set dt to change lnT by at most 0.1 over all zones
+    dt = 1e99;
     for (int i=0;i<grid->n_zones;i++)
     {
       eps_nuc = 
         radio.decay(grid->elems_Z,grid->elems_A,grid->z[i].X_gas,grid->t_now,&gfrac,force_rproc);
       u_old = pc::a*pow(grid->z[i].T_gas,4)/grid->z[i].rho;
+
+      dt = std::min(dt, fabs( 0.1/(eps_nuc/(4.0*u_old) - 1.0/grid->t_now)) );
+    }
+
+    // If t_now is within dt of t_start, adjust
+    if (grid->t_now + dt > t_start) dt = t_start - grid->t_now;
+
+    e = (grid->t_now + dt)/grid->t_now;
+
+    // Find new T and rho
+    for (int i=0; i<grid->n_zones; i++)
+    {
+      eps_nuc =
+        radio.decay(grid->elems_Z,grid->elems_A,grid->z[i].X_gas,grid->t_now,&gfrac,force_rproc);
+      u_old = pc::a*pow(grid->z[i].T_gas,4)/grid->z[i].rho;
       grid->z[i].T_gas +=
         grid->z[i].T_gas*dt*(eps_nuc/(4.0*u_old) - 1.0/grid->t_now);
-
       grid->z[i].rho = grid->z[i].rho/e/e/e;
     }
 
-    grid->expand(e);
-
-    // Update time
+    // Update grid and time
     grid->t_now += dt;
+    grid->expand(e);
 
     // If we made it to t_start, exit
     if ( fabs(grid->t_now-t_start)/t_start < time_tol ) 
@@ -76,11 +89,6 @@ void hydro_homologous::evolve_to_start(double t_start, int force_rproc)
       break;
     }
 
-    // Adjust dt; don't let it go above some set value (currently = 100s)
-    dt = std::min(0.1*grid->t_now, dt_max);
-
-    // If t_now is within dt of t_start, adjust dt
-    if (grid->t_now + dt > t_start) dt = t_start - grid->t_now;
   }
 
   // Set T_rad to T_gas
