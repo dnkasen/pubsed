@@ -7,7 +7,7 @@ Getting Started
 Installing the Code
 -------------------
 
-* Set the environment variable  ``SEDONA_HOME`` to point to the base directory of sedona. In bash, for example, you can add to your .bash profile the line:: 
+* Set the environment variable  ``SEDONA_HOME`` to point to the base directory of sedona. In bash, for example, you can add to your ``.bash_profile`` or ``.bashrc`` the line:: 
 
 	export SEDONA_HOME=/Users/kasen/sedona6/
 
@@ -18,16 +18,16 @@ Installing the Code
 
 * Download and install hdf5 from https://support.hdfgroup.org/downloads/index.html
 
-* Set the environment variables ``GSL_DIR``, ``LUA_DIR``, and ``HDF5_DIR``. ``GSL_DIR`` and ``HDF5_DIR`` should be set automatically if you're on a supercomputer and load GSL and HDF5 modules. `LUA_DIR` should be set to the root lua directory. For example, for me it's set to ``$SEDONA_HOME/src/external/lua-5.2.1``.
-* Makefiles are in the ``makefiles`` directory. If your machine doesn't have a `Makefile.machine` file, use `Makefile.general` as a template. You'll need to set `CXX` to the C++ compiler you want to use, and `CXXFLAGS` to the compiler flags.
-* Run `chmod +x ./install.sh` to make `install.sh` into something runnable.
-* Compile the code by running the command `./install.sh MACHINE` where MACHINE corresponds to the `Makefile.MACHINE` you want to use.
-* Other options for `./install.sh` are:
-  * `help`: prints usage statement
-  * `clean`: deletes source, object, and binary files in `build`
-  * `realclean`: deletes entire `build` directory
+* Set the environment variables ``GSL_DIR``, ``LUA_DIR``, and ``HDF5_DIR``. ``GSL_DIR`` and ``HDF5_DIR`` should be set automatically if you're on a supercomputer and load GSL and HDF5 modules. `LUA_DIR` needs to be set manually and should point to the root lua directory. For example, for me it's set to ``$SEDONA_HOME/src/external/lua-5.2.1``.
+* Makefiles are in the ``makefiles`` directory. If your machine doesn't have a ``Makefile.machine`` file, use ``Makefile.general`` as a template. You'll need to set ``CXX`` to the C++ compiler you want to use, and ``CXXFLAGS`` to the compiler flags.
+* Run ``chmod +x ./install.sh`` to make ``install.sh`` into something runnable.
+* Compile the code by running the command ``./install.sh MACHINE`` where ``MACHINE`` corresponds to the ``Makefile.MACHINE`` you want to use. This will copy all source files into ``build`` and compile.
+* Other options for ``./install.sh`` are:
+  * ``help``: prints usage statement
+  * ``clean``: deletes source, object, and binary files in ``build``
+  * ``realclean``: deletes entire ``build`` directory
 
-* If compilation is successful, the executable file |sedona6.ex| will appear in the src/ directory. Copy this to the directory where you would like to run the code.
+* If compilation is successful, the executable file ``sedona6.ex`` will appear in the ``src/`` directory. Copy this to the directory where you would like to run the code.
 
 
 
