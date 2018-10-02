@@ -96,7 +96,7 @@ void hydro_homologous::evolve_to_start(double t_start, int force_rproc)
 
   if (incr > incr_max)
   {
-    cerr << "More than 9999 iterations evolving to t_start\n";
+    cerr << "More than " << incr_max << "iterations evolving to t_start\n";
     exit(1);
   }
 
