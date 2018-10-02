@@ -18,7 +18,6 @@ class hydro_1D_lagrangian : public hydro_general
   void   init(ParameterReader*, grid_general*);
   double get_time_step();
   void   step(double dt);
-  void   evolve_to_start(double t_start, int force_rproc);
   
   // zone properties
   int nz_;                     // number of zones

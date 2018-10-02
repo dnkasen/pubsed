@@ -59,7 +59,6 @@ void hydro_homologous::evolve_to_start(double t_start, int force_rproc)
       exit(1);
     }
 
-
     // Set dt to change lnT by at most 0.1 over all zones
     dt = 1e99;
     for (int i=0;i<grid->n_zones;i++)

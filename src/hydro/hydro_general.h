@@ -13,7 +13,7 @@ class hydro_general
 
   hydro_general() 
   {
-  	gamfac_ = 1.33333;
+    gamfac_ = 1.33333;
     cfl_    = 0.1;
   }
 
@@ -26,8 +26,9 @@ class hydro_general
   virtual void init(ParameterReader*, grid_general*) = 0;
   virtual double get_time_step() = 0;
   virtual void step(double)      = 0;
-  virtual void evolve_to_start(double, int)      = 0;
-  
+  virtual void evolve_to_start(double, int)
+  {
+  };
 
 };
 
