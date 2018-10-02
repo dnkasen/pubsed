@@ -8,7 +8,7 @@
 
 namespace pc = physical_constants;
 
-using std::cout;
+using std::cerr;
 
 
 void hydro_homologous::init(ParameterReader *params, grid_general *g)
@@ -48,17 +48,11 @@ void hydro_homologous::evolve_to_start(double t_start, int force_rproc)
   double eps_nuc;
   double u_old;
   double time_tol = 1.0e-4;
-  int incr = 0;
+  int incr_max = 9999;
 
   // Just forward Euler for now
-  for ( ; ; )
+  for (int incr=0; incr <= incr_max; incr++)
   {
-    incr += 1;
-    if (incr > 9999)
-    {
-      cout << "More than 9999 iterations evolving to t_start\n";
-      exit(1);
-    }
 
     // Set dt to change lnT by at most 0.1 over all zones
     dt = 1e99;
@@ -98,6 +92,12 @@ void hydro_homologous::evolve_to_start(double t_start, int force_rproc)
       break;
     }
 
+  }
+
+  if (incr > incr_max)
+  {
+    cerr << "More than 9999 iterations evolving to t_start\n";
+    exit(1);
   }
 
   // Set T_rad to T_gas
