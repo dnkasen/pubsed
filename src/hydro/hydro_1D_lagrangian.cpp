@@ -291,6 +291,3 @@ double hydro_1D_lagrangian::compute_artificial_viscosity(int i)
   //  q += L_q*grid->z[i].rho*grid->z[i].cs*dv;
   return q;
 }
-
-
-
