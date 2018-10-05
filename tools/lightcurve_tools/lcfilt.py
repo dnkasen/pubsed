@@ -168,7 +168,7 @@ def main(argv):
             print('List of Available Filters:')
             print('-----------------------------')
             for b in bands:
-		        print(b)
+                print(b)
             print('-----------------------------')
             print('See file FILTER_LIST for details/references')
             print('-----------------------------')
