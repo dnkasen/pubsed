@@ -111,7 +111,7 @@ class LightCurve:
 
    # returns the bolometric light curve (abs. magnitude) 
     def get_bolometric_mag(self):
-        mags = -2.5*np.log10(self.get_bolometric_lum()/(4e33))
+        mags = -2.5*np.log10(self.get_bolometric_lum())+88.697425
         mags[np.where(np.isinf(mags))]=0.
         mags[np.where(mags>0)] = 0. #set minimum mag to 0
         return mags
@@ -124,7 +124,7 @@ class LightCurve:
             sample_points = np.array(self.spec[i])/self.nu*(self.filter.transFunc_nu(band)(self.nu))
             lum[i] = integrate.trapz(sample_points,x=self.nu)
         lum = lum/self.filter.getNormalization(band,self.nu) #gets Lnu(band)
-        flx = lum/(4.*np.pi*(10.*3e18)**2) #convert to flux at 10pc
+        flx = lum/(4.*np.pi*(10.*3.0857e18)**2) #convert to flux at 10pc
         flx[np.where(flx==0.)] = 1e-99 #some small number so not taking log(0)
         mag = -2.5*np.log10(flx)-48.6 #get the AB magnitude
         mag[np.where(mag>0)] = 0. #set minimum mag to 0
