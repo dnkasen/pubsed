@@ -6,11 +6,11 @@
 #
 # Instructions:
 # --------------
-#   To run, use the command "python lcfilt.py -s <input file> -h <band1,band2,...>
+#   To run, use the command "python lcfilt.py -s <input file> -b <band1,band2,...>
 #   where <input file> is the path to the spectrum.h5 file
 #   and <band1,band2,...> is a list of comma-separated filters
 #   
-#   Example Usage: python lcfilt.py -s /Users/dkhatami/data/spectrum.h5 -h U,B,V
+#   Example Usage: python lcfilt.py -s /Users/dkhatami/data/spectrum.h5 -b U,B,V
 #       ...generates U,B,V AB magnitude light curves from the spectrum file
 #   
 #   For a list of filters, use "python lcfilt.py --bands"
