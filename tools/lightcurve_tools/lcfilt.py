@@ -17,7 +17,8 @@
 # -------------   
 #   Return: File called "lightcurve.out" in the format of
 #   	Columns: 1. Time (Days) 2. Bolometric Luminosity (erg/s) 3. Bol. Mag. [4,5,...] Filter magnitudes
-# 	 	Invalid elements are assigned a value of "99"
+# 	 	Invalid elements are assigned a value of "0"
+#		Floors the magnitudes to 0 if <0
 # -------------
 # 
 # Provided filter data taken from Charlie Conroy's Flexible Stellar Population Synthesis (FSPS) Code
@@ -105,12 +106,14 @@ class LightCurve:
         dnu = np.ediff1d(self.nu,to_end=0)
         for i in range(self.time.size):
             lum[i] = np.sum(self.spec[i]*dnu)
+        lum[np.where(lum==0)] = 1e-10
         return lum
 
    # returns the bolometric light curve (abs. magnitude) 
     def get_bolometric_mag(self):
         mags = -2.5*np.log10(self.get_bolometric_lum()/(4e33))
-        mags[np.where(np.isinf(mags))]=99
+        mags[np.where(np.isinf(mags))]=0.
+        mags[np.where(mags>0)] = 0. #set minimum mag to 0
         return mags
    
    # returns the AB magnitude light curve, for a given band 
@@ -122,7 +125,9 @@ class LightCurve:
             lum[i] = integrate.trapz(sample_points,x=self.nu)
         lum = lum/self.filter.getNormalization(band,self.nu) #gets Lnu(band)
         flx = lum/(4.*np.pi*(10.*3e18)**2) #convert to flux at 10pc
+        flx[np.where(flx==0.)] = 1e-99 #some small number so not taking log(0)
         mag = -2.5*np.log10(flx)-48.6 #get the AB magnitude
+        mag[np.where(mag>0)] = 0. #set minimum mag to 0
         return mag
    
    # takes two bands and returns the color 
@@ -135,7 +140,8 @@ class LightCurve:
         mag_array = np.zeros((len(bands),self.time.size))
         for i in range(len(bands)):
             mag_array[i] = self.get_ABMag(bands[i])
-        mag_array[np.where(np.isinf(mag_array))] = 99.
+        mag_array[np.where(np.isinf(mag_array))] = 0.
+        mag_array[np.where(mag_array>0)] = 0.
         return mag_array
    
    # writes out the file to "lightcurve.out" 
@@ -148,29 +154,34 @@ class LightCurve:
     
     
 def main(argv):
-	specfile = ''
-	bands = ''
-	try:
-	   opts, args = getopt.getopt(argv,"s:b:",["bands"])
-	except getopt.GetoptError:
-	   print('lcfilt.py -s <spectrum.h5> -b <band1,band2,...>')
-	for opt,arg in opts:
-		if opt == "--bands":
-		   filt = Filter()
-		   bands = tuple(filt.Bands)
-		   print('-----------------------------')
-		   print('List of Available Filters:')
-		   print('-----------------------------')
-		   for b in bands:
-		     print(b)
-		elif opt == "-s":
-		   specfile = arg
-		elif opt == "-b":
-		  bands = arg
-	print("Filename: {}".format(specfile))
-	print("Bands: {}".format(bands))
-	lc = LightCurve(specfile)
-	lc.write_bands(bands.split(','))
+    specfile = ''
+    bands = ''
+    try:
+        opts, args = getopt.getopt(argv,"s:b:",["bands"])
+    except getopt.GetoptError:
+        print('lcfilt.py -s <spectrum.h5> -b <band1,band2,...>')
+    for opt,arg in opts:
+        if opt == "--bands":
+            filt = Filter()
+            bands = tuple(filt.Bands)
+            print('-----------------------------')
+            print('List of Available Filters:')
+            print('-----------------------------')
+            for b in bands:
+		        print(b)
+            print('-----------------------------')
+            print('See file FILTER_LIST for details/references')
+            print('-----------------------------')
+            sys.exit(0)
+        elif opt == "-s":
+            specfile = arg
+        elif opt == "-b":
+             bands = arg
+    print("Filename: {}".format(specfile))
+    print("Bands: {}".format(bands))
+    lc = LightCurve(specfile)
+    lc.write_bands(bands.split(','))
+    print("Output written to {}".format("lightcurve.out"))
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
