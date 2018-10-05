@@ -149,8 +149,8 @@ class LightCurve:
         dat_arr = np.c_[self.time/(24.*3600),self.get_bolometric_lum(),self.get_bolometric_mag(),
                                  self.get_lcs(bands).T]
         filename = "lightcurve.out"
-        header_arr = "Time (Days) \t Lbol (erg/s) \t Mbol \t  {}".format('\t'.join(map(str,tuple(bands))))
-        np.savetxt(filename,dat_arr,header=header_arr,fmt='%.2e')
+        header_arr = "Time (Days) \t Lbol (erg/s) \t Mbol \t  {} \n All magnitudes are given in the AB Magnitude System".format('\t'.join(map(str,tuple(bands))))
+        np.savetxt(filename,dat_arr,header=header_arr,fmt='%.6e')
     
     
 def main(argv):
