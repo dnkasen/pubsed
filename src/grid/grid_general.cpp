@@ -77,7 +77,7 @@ void grid_general::write_integrated_quantities(int iw, double tt)
 
   	// write header
   	if (iw == 0)
-   	 fprintf(fout,"#    time(sec)     E_radiation      L_nuc_dep      L_nuc_emit\n");
+      fprintf(fout,"#    time(sec)     E_radiation      L_nuc_dep      L_nuc_emit      Mass\n");
 
 	// integrated qunaitites
   	double L_dep = 0, L_emit = 0, E_rad = 0, mass = 0;
@@ -89,6 +89,6 @@ void grid_general::write_integrated_quantities(int iw, double tt)
     	E_rad  += z[i].e_rad*vol;
     	mass   += z[i].rho*vol;
  	 }
-  	fprintf(fout,"%15.6e %15.6e %15.6e %15.6e\n",tt,E_rad,L_dep,L_emit);
+    fprintf(fout,"%15.6e %15.6e %15.6e %15.6e %15.6e\n",tt,E_rad,L_dep,L_emit,mass);
  	fclose(fout);
 }
