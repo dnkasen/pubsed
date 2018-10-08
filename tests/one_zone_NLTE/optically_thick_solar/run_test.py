@@ -8,14 +8,14 @@ import sys
 
 
 def run_test(pdf="",runcommand=""):
- 
+
     ###########################################
     # clean up old results and run the code
     ###########################################
-    if (runcommand != ""): 
-    	os.system("rm spectrum_* plt_* integrated_quantities")
+    if (runcommand != ""):
+    	os.system("rm spectrum_* plt_* integrated_quantities.dat")
     	os.system(runcommand)
-     
+
     ###########################################
     # compare the output
     ###########################################
@@ -26,7 +26,7 @@ def run_test(pdf="",runcommand=""):
     h   = 6.6260755e-27    # planck's constant (ergs-s)
     c   = 2.99792458e10    # speed of light (cm/s)
     k   = 1.380658e-16     # boltzmann constant (ergs/K)
-    sb  = 5.6704e-5        # stefan boltzman constant (ergs cm^-2 s^-1 K^-4) 
+    sb  = 5.6704e-5        # stefan boltzman constant (ergs cm^-2 s^-1 K^-4)
     pi  = 3.14159          # just pi
     #    plt.ion()
 
@@ -38,7 +38,7 @@ def run_test(pdf="",runcommand=""):
     #------------------------------------------
 
     plt.clf()
-    # compare spectrum 
+    # compare spectrum
 
     fin = h5py.File('plt_00003.h5','r')
     nu = np.array(fin['nu'])
@@ -94,7 +94,7 @@ def run_test(pdf="",runcommand=""):
 
     counter = 0
     for ax in axs.reshape(-1):
-        this_Z = str(Z_elem[counter]) 
+        this_Z = str(Z_elem[counter])
         b = np.array(fin['zonedata/0/Z_' + this_Z + '/level_departure'])
         ax.plot([-1 * len(b)/10,len(b) + len(b)/10],[1,1],color='black')
         ax.plot(b,'o',color='green')
@@ -123,4 +123,3 @@ def run_test(pdf="",runcommand=""):
 
 
 if __name__=='__main__': run_test('')
-
