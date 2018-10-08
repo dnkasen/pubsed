@@ -24,7 +24,7 @@ def run_test(pdf="",runcommand=""):
     ts1,Ls1,c = np.loadtxt('optical_spectrum_final.dat',unpack=1,skiprows=1)
     ts1 = ts1/3600.0/24.0
     plt.plot(ts1,Ls1,'o',markeredgecolor='red',markersize=8,markeredgewidth=2,markerfacecolor='none')
-    ts2,erad,Ls2,Lnuc = np.loadtxt('integrated_quantities.dat',unpack=1,skiprows=1)
+    ts2,erad,Ls2,Lnuc = np.loadtxt('integrated_quantities.dat',usecols=[0,1,2,3],unpack=1,skiprows=1)
     ts2 = ts2/3600.0/24.0
     plt.plot(ts2,Ls2,'o',markeredgecolor='blue',markersize=8,markeredgewidth=2,markerfacecolor='none')
         
