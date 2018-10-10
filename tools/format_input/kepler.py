@@ -14,6 +14,7 @@ Sed2Kep = {'1.1':'h1', '2.4': 'he4', '6.12':'c12', '7.14': 'n14', '8.16':'o16', 
 Kep2Sed = {}
 for key in Sed2Kep.keys():
     Kep2Sed[Sed2Kep[key]] = key
+print(list(Kep2Sed.keys()))
 # These species are in Kepler but not in Sedona (or for some other reason 
 # it is desired to lump them in with another element).
 # In the conversion process they will be lumped with other elements
@@ -45,17 +46,20 @@ def read_original(rfn, verbose=False):
     for line in all_lines:
         cols = line.split()
 
-        if len(cols) == 0: 
+        if len(cols) < 2: 
             continue
 
         if cols[0] == 'zone': 
             i_block_start.append(n)
         elif cols[0] == 'total':
             continue
-
-        if len(i_block_start)==0: main_header += line
+        elif cols[0] == 'parameter':
+            break
 
         mat.append(cols)
+
+        if len(i_block_start)==0: 
+            main_header += line
 
         n+=1
 
@@ -114,11 +118,52 @@ def read_original(rfn, verbose=False):
     Table = {}
     for j in range(all_hdrs.size):
         Table[all_hdrs[j]] = tab[:,j]
+
     return Table, main_header, species
 
 
+def read_stripped(rfn, time, verbose=False):
+    """
+    Reads a stripped version (no strings) of a  Kepler table into a dictionary.
+    INPUTS
+    rfn : path to the Kepler model file
+    time : simulation time (seconds)
+    """
+    blk1 = ['mass', 'vmass', 'radius', 'density', 'temp', 'energy', 'sdot', 'snuc', 'sburn','abar', 'lumin', 'velocity']
+    blk2 = ['entropy', 'mixtime', 'eta', 'pressure', 'stress', 'opacity', 'ye', 'yeburn', 'limnuc(cyczb)', 'dtburn']
+    blk3 = [ 'nt1', 'h1', 'pn1', 'he3', 'he4', 'c12', 'n14', 'o16', 'ne20', 'mg24'] 
+    blk4 = ['si28', 's32', 'ar36', 'ca40', 'ti44', 'cr48', 'fe52', 'fe54', 'ni56', '1-tot']
+               
+
+    zones = np.loadtxt(rfn, usecols=[0], dtype=int)
+    N_zones = np.unique(zones).size
+
+    with open(rfn,'r') as rf:
+        all_lines = rf.read().split('\n')
+
+    Table = {}
+
+    Table['vmass'   ] = np.array( [ float(line.split()[ 2])    for line in all_lines[:N_zones] ] )
+    Table['radius'  ] = np.array( [ float(line.split()[ 3])    for line in all_lines[:N_zones] ] )
+    Table['density' ] = np.array( [ float(line.split()[ 4])    for line in all_lines[:N_zones] ] )
+    Table['temp'    ] = np.array( [ float(line.split()[ 5])    for line in all_lines[:N_zones] ] )
+    Table['velocity'] = np.array( [ float(line.split()[-1])    for line in all_lines[:N_zones] ] )
+
+    species = blk3 + blk4[:-1]
+
+    x  = np.zeros((N_zones,19))
+    for i in range(N_zones):
+        x[i,:10] = [ float(col) for col in all_lines[  N_zones+i].split()[2:  ] ]
+        x[i,10:] = [ float(col) for col in all_lines[2*N_zones+i].split()[2:-1] ]
+
+    for j, spec in enumerate(species):
+        Table[spec] = x[:,j]
+    
+    return Table, '', species
+
+
 def convert(Table, header, species, 
-            verbose=False):
+            time=0, verbose=False):
     """
     This function takes the information from the Kepler table and generates
     the table that Sedona needs.
@@ -147,18 +192,18 @@ def convert(Table, header, species,
     if verbose:
         print('Converting data to Sedona version')
 
-    time = float(header.split()[10])
+    print(time)
+    time = float(header.split()[10]) if time==0 else time
     n_zones = len(Table[list(Table.keys())[0]])
 
-    # properties needed by sedona, in order
-    needed = ('velocity', 'density', 'temp')
-
+    # number of gas properties needed by Sedona
+    N_needed = 3
     # initialize the matrix that will be ouptut as the model
-    mat = np.zeros((n_zones, len(needed)+len(species)))
+    mat = np.zeros((n_zones, N_needed+len(species)))
 
-    for i, col_name in enumerate(needed):
-        mat[:,i] = Table[col_name]
-
+    mat[:,0] = Table['radius']/time
+    mat[:,1] = Table['density']
+    mat[:,2] = Table['temp']
 
     for i, s in enumerate(species):
         # If the species list is coming from Kepler, some 
@@ -166,19 +211,21 @@ def convert(Table, header, species,
         if s=='':
             continue
         elif s=='1.1':
-            # for some reason the conversion script I got from Stan 
-            # has 'nt1' being divided by 10 before being stored
-            x = Table['h1'] + Table['nt1']/10 + Table['pn1']
+            x = Table['h1'] + Table['nt1'] + Table['pn1']
         elif s=='2.4':
             x = Table['he3'] + Table['he4']
-        elif s=='27.54':
+        elif s=='27.54' or s=='27.56':
             x = 1e-10*np.ones(n_zones)
-        elif s=='26.52':
+            print('Setting Co-54 to 1e-10')
+        elif s=='26.52' or s=='26.56':
             x = Table['fe52'] + Table['fe54']
         else:
-            x = Table[Sed2Kep[s]]
+            try:
+                x = Table[Sed2Kep[s]]
+            except KeyError:
+                print(s, Se)
 
-        mat[:, i+len(needed)] = x
+        mat[:, i+N_needed] = x
 
     return mat, time
 
@@ -237,10 +284,13 @@ def write_new(wfn, time, species, sim_data, rfn='',
 
 def main(args):
     # Read in the Kepler file
-    Table, header, species = read_original(args.rfn, verbose=args.verbose)
+    if not args.stripped_file:
+        Table, header, species = read_original(args.rfn, verbose=args.verbose)
+    else:
+        Table, header, species = read_stripped(args.rfn, args.time, verbose=args.verbose)
     # Turn it into a data matrix for Sedona
     spec2use = args.specs if len(args.specs)>0 else [ Kep2Sed[s] for s in species ]
-    mat, time = convert(Table, header, spec2use, verbose=args.verbose)
+    mat, time = convert(Table, header, spec2use, time=args.time, verbose=args.verbose)
     # Write to new file
     write_new(args.wfn, time, spec2use, mat, 
               rfn=args.rfn, grid_type=args.grid, hydro_type=args.hydro, overwrite=args.overwrite)
@@ -254,7 +304,10 @@ if __name__=='__main__':
     # Make arguments for this converter
     parser.add_argument('rfn', type=str, help='path to file')
 
-    #parser.add_argument('time', type=float, help='time of the simulation in seconds')
+    parser.add_argument('--time', type=float, default=0.0, help='time of the simulation in seconds')
+
+    parser.add_argument('-sf', '--stripped_file', action='store_true', 
+                        help='whether the file represents raw Kepler output or stripped-down version')
 
     parser.add_argument('--wfn', type=str, default='', help='path for desired output file')
 
