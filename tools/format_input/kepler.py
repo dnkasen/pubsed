@@ -14,7 +14,6 @@ Sed2Kep = {'1.1':'h1', '2.4': 'he4', '6.12':'c12', '7.14': 'n14', '8.16':'o16', 
 Kep2Sed = {}
 for key in Sed2Kep.keys():
     Kep2Sed[Sed2Kep[key]] = key
-print(list(Kep2Sed.keys()))
 # These species are in Kepler but not in Sedona (or for some other reason 
 # it is desired to lump them in with another element).
 # In the conversion process they will be lumped with other elements
@@ -43,21 +42,33 @@ def read_original(rfn, verbose=False):
     i_block_start = []
     n = 0
     main_header = ''
+    current_cols = ''
     for line in all_lines:
         cols = line.split()
 
+        # Skip empty or "1:" lines
         if len(cols) < 2: 
             continue
 
         if cols[0] == 'zone': 
-            i_block_start.append(n)
+            # sometimes the blocks are divided up and they get a new
+            # column labeling line each time
+            if line != current_cols:
+                i_block_start.append(n)
+                current_cols = line
+            else:
+                continue
+        # skip summation lines
         elif cols[0] == 'total':
             continue
+        # stop if we've reached the end of the useful info
         elif cols[0] == 'parameter':
             break
 
+        # add columns to the matrix -- keep the hader in, so that
+        # the line number of the block starting can be used 
         mat.append(cols)
-
+        # if we haven't started the blocks yet, we're still in the header
         if len(i_block_start)==0: 
             main_header += line
 
@@ -78,9 +89,11 @@ def read_original(rfn, verbose=False):
     headers[1] = headers[1][:9]
 
     # Check that the blocks are OK in shape
-    for block in blocks[1:]:
+    print(len(blocks))
+    for i_block, block in enumerate(blocks[1:]):
         if block.shape[0] - blocks[0].shape[0] != 0: 
-            print('It seems that the script is not identifying blocks correctly.')
+            print('FATAL ERROR: It seems that the script is not identifying blocks correctly.')
+            print('  ... got size {} instead of {} in Block {}'.format(block.shape[0], blocks[0].shape[0], i_block+2))
             return -1
 
     # Merge the blocks into one table, same with the column headers
@@ -192,7 +205,6 @@ def convert(Table, header, species,
     if verbose:
         print('Converting data to Sedona version')
 
-    print(time)
     time = float(header.split()[10]) if time==0 else time
     n_zones = len(Table[list(Table.keys())[0]])
 
@@ -285,9 +297,13 @@ def write_new(wfn, time, species, sim_data, rfn='',
 def main(args):
     # Read in the Kepler file
     if not args.stripped_file:
-        Table, header, species = read_original(args.rfn, verbose=args.verbose)
+        readout = read_original(args.rfn, verbose=args.verbose)
     else:
-        Table, header, species = read_stripped(args.rfn, args.time, verbose=args.verbose)
+        readout = read_stripped(args.rfn, args.time, verbose=args.verbose)
+    if type(readout)==int: 
+        return 0
+
+    Table, header, species = readout
     # Turn it into a data matrix for Sedona
     spec2use = args.specs if len(args.specs)>0 else [ Kep2Sed[s] for s in species ]
     mat, time = convert(Table, header, spec2use, time=args.time, verbose=args.verbose)
