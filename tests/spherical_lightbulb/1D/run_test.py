@@ -6,14 +6,14 @@ import sys
 
 
 def run_test(pdf="",runcommand=""):
- 
+
     ###########################################
     # clean up old results and run the code
     ###########################################
-    if (runcommand != ""): 
+    if (runcommand != ""):
     	os.system("rm spectrum_* plt_* integrated_quantities.dat")
     	os.system(runcommand)
-     
+
     ###########################################
     # compare the output
     ###########################################
@@ -23,7 +23,7 @@ def run_test(pdf="",runcommand=""):
     h   = 6.6260755e-27    # planck's constant (ergs-s)
     c   = 2.99792458e10    # speed of light (cm/s)
     k   = 1.380658e-16     # boltzmann constant (ergs/K)
-    sb  = 5.6704e-5        # stefan boltzman constant (ergs cm^-2 s^-1 K^-4) 
+    sb  = 5.6704e-5        # stefan boltzman constant (ergs cm^-2 s^-1 K^-4)
     pi  = 3.14159          # just pi
     plt.ion()
 
@@ -37,17 +37,15 @@ def run_test(pdf="",runcommand=""):
     tgas = data[:,3]
     trad = data[:,4]
 
-    # dillution factor W
-    rr = np.arange(r0,max(r),0.05*r0)
+    # Analytic temperature from dillution factor W
+    rr = np.arange(r0*1.01,max(r),0.05*r0)
     w    = 0.5*(1 - (1 - r0**2/rr**2)**0.5)
     TW = (L*w/(4.0*pi*r0**2)/sb)**0.25
-    w    = 0.5*(1 - (1 - r0**2/r**2)**0.5)
-    tan = (L*w/(4.0*pi*r0**2)/sb)**0.25
 
     # do numerical comparisons
-    max_err,mean_err = get_error(tgas,tan,use = (r> 5e14))
+    max_err,mean_err = get_error(tgas,TW,x=r,x_comp=rr,use = (r> 5e14))
     if (max_err > 0.01): failure = 1
-    max_err,mean_err = get_error(trad,tan,use = (r> 5e14))
+    max_err,mean_err = get_error(trad,TW,x=r,x_comp=rr,use = (r> 5e14))
     if (max_err > 0.01): failure = 2
 
     plt.plot(r,trad,'o',color='black')
@@ -62,8 +60,8 @@ def run_test(pdf="",runcommand=""):
     if (pdf != ''): pdf.savefig()
     else:
         plt.show()
-        j = raw_input()
-        
+        j = get_input('Press any key to continue>')
+
 
     #------------------------------------------
     #compare output spectrum
@@ -94,7 +92,7 @@ def run_test(pdf="",runcommand=""):
     if (pdf != ''): pdf.savefig()
     else:
         plt.show()
-        j = raw_input()
+        j = get_input('Press any key to continue>')
 
     #------------------------------------------
     # compare spectrum at zone 50
@@ -116,7 +114,7 @@ def run_test(pdf="",runcommand=""):
     W = 0.5*(1 - (1 - (r0/rz[50])**2)**0.5)
     f = W*f
     plt.plot(nu,f,color='red',linewidth=2)
-    
+
     # do numerical comparisons
     max_err,mean_err = get_error(Jnu,f)
     if (mean_err > 0.1): failure = 4
@@ -129,15 +127,15 @@ def run_test(pdf="",runcommand=""):
     plt.xlim(0,3e15)
     plt.ylim(5e-8,5e-4)
 
-    
+
     if (pdf != ''): pdf.savefig()
     else:
         plt.show()
-        j = raw_input()
+        j = get_input('Press any key to continue>')
 
     # this should return !=0 if failed
     return failure
-        
+
 #-------------------------------------------
 # error calculator helper function
 #-------------------------------------------
@@ -147,8 +145,8 @@ def get_error(a,b,x=[],x_comp=[],use=[]):
     """ Function to calculate the error between two arrays
 
         Args:
-        a: numpy array of result 
-        b: numpy array of comparison 
+        a: numpy array of result
+        b: numpy array of comparison
         use: an array of 0's and 1's telling which element
              in the arrays to include
         x: optional array of x values to go along with a
@@ -177,7 +175,7 @@ def get_error(a,b,x=[],x_comp=[],use=[]):
         y_comp = np.interp(x,x_comp,y_comp)
 
     # cut the array length if wanted
-    if (len(use) > 0): 
+    if (len(use) > 0):
         y = y[use]
         y_comp = y_comp[use]
     err = abs(y - y_comp)
@@ -187,7 +185,25 @@ def get_error(a,b,x=[],x_comp=[],use=[]):
 
     return max_err,mean_err
 
-if __name__=='__main__': run_test('')
 
+#-----------------------------------------
+# little function to just plot up and
+# compare results. Assumes code has
+# already been run and output files
+# are present
+#----------------------------------------
+if __name__=='__main__':
 
+    # Support Python 2 and 3 input
+    # Default to Python 3's input()
+    get_input = input
 
+    # If this is Python 2, use raw_input()
+    if sys.version_info[:2] <= (2, 7):
+        get_input = raw_input
+
+    status = run_test('')
+    if (status == 0):
+        print ('SUCCESS')
+    else:
+        print ('FAILURE, code = ' + str(status))
