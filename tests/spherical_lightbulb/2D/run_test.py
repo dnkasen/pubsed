@@ -8,14 +8,14 @@ import sys
 
 
 def run_test(pdf="",runcommand=""):
- 
+
     ###########################################
     # clean up old results and run the code
     ###########################################
-    if (runcommand != ""): 
+    if (runcommand != ""):
     	os.system("rm spectrum_* plt_* integrated_quantities.dat")
     	os.system(runcommand)
-     
+
     ###########################################
     # compare the output
     ###########################################
@@ -28,7 +28,7 @@ def run_test(pdf="",runcommand=""):
     h   = 6.6260755e-27    # planck's constant (ergs-s)
     c   = 2.99792458e10    # speed of light (cm/s)
     k   = 1.380658e-16     # boltzmann constant (ergs/K)
-    sb  = 5.6704e-5        # stefan boltzman constant (ergs cm^-2 s^-1 K^-4) 
+    sb  = 5.6704e-5        # stefan boltzman constant (ergs cm^-2 s^-1 K^-4)
     pi  = 3.14159          # just pi
 
     # parameters of the model
@@ -40,7 +40,7 @@ def run_test(pdf="",runcommand=""):
     fin = h5py.File('plt_00001.h5','r')
     dr   = np.array(fin['dr'])
     z    = np.array(fin['z'])
-    p    = np.array(fin['r']) 
+    p    = np.array(fin['r'])
     Trad = np.array(fin['T_rad'])
 
     # shift to cell centered
@@ -52,17 +52,17 @@ def run_test(pdf="",runcommand=""):
     #------------------------------------------
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.matshow(Trad)    
+    ax.matshow(Trad)
 
     ax.set_title(testname + ': radiation field')
-    
+
     if (pdf != ''): pdf.savefig()
     else:
         plt.show()
-        j = raw_input()
+        j = get_input('Press any key to continue >')
     plt.clf()
 
-  
+
     #------------------------------------------
     # compare 1D slices of temperature
     #------------------------------------------
@@ -71,8 +71,10 @@ def run_test(pdf="",runcommand=""):
         thisT = Trad[:,j]
         plt.plot(p,thisT,'o')
 
-        # dillution factor W
+        # Get analytic temeprature from dillution factor W
         rr = (p*p + z[j]*z[j])**0.5
+        # Make rr < r0 a zero temperature (i.e., rr --> infinty)
+        rr[rr < r0] = r0*1e10
         w    = 0.5*(1 - (1 - r0**2/rr**2)**0.5)
         TW = (L*w/(4.0*pi*r0**2)/sb)**0.25
         plt.plot(p,TW,color='k',linewidth=3)
@@ -80,7 +82,7 @@ def run_test(pdf="",runcommand=""):
         use = []
         if (j == 100): use = (p > 5.1e14)
         max_err,mean_err = get_error(thisT,TW,use=use)
-        if (max_err > 0.05 or mean_err > 0.01): 
+        if (max_err > 0.05 or mean_err > 0.01):
             failure = 1
 
     plt.legend(['sedona Trad','analytic solution'])
@@ -91,14 +93,14 @@ def run_test(pdf="",runcommand=""):
     if (pdf != ''): pdf.savefig()
     else:
         plt.show()
-        j = raw_input()
+        j = get_input('Press any key to continue >')
     fin.close()
     plt.clf()
 
     #------------------------------------------
     # compare output spectrum
     #------------------------------------------
-        
+
     fin = h5py.File('spectrum_1.h5','r')
     nu  = np.array(fin['nu'])
     Lnu = np.array(fin['Lnu'])
@@ -129,12 +131,12 @@ def run_test(pdf="",runcommand=""):
     if (pdf != ''): pdf.savefig()
     else:
         plt.show()
-        j = raw_input()
+        j = get_input('Press any key to continue >')
 
 
     # this should return !=0 if failed
     return failure
-        
+
 
 
 
@@ -150,8 +152,8 @@ def get_error(a,b,x=[],x_comp=[],use=[]):
     """ Function to calculate the error between two arrays
 
         Args:
-        a: numpy array of result 
-        b: numpy array of comparison 
+        a: numpy array of result
+        b: numpy array of comparison
         use: an array of 0's and 1's telling which element
              in the arrays to include
         x: optional array of x values to go along with a
@@ -181,7 +183,7 @@ def get_error(a,b,x=[],x_comp=[],use=[]):
         y_comp = np.interp(x,x_comp,y_comp)
 
     # cut the array length if wanted
-    if (len(use) > 0): 
+    if (len(use) > 0):
         y = y[use]
         y_comp = y_comp[use]
     err = abs(y - y_comp)
@@ -191,7 +193,22 @@ def get_error(a,b,x=[],x_comp=[],use=[]):
 
     return max_err,mean_err
 
-if __name__=='__main__': run_test('')
+#-----------------------------------------
+# little function to just plot up and
+# compare results. Assumes code has
+# already been run and output files
+# are present
+#----------------------------------------
+if __name__=='__main__':
 
+    # Default to Python 3's input()
+    get_input = input
+    # If this is Python 2, use raw_input()
+    if sys.version_info[:2] <= (2, 7):
+        get_input = raw_input
 
-
+    status = run_test('')
+    if (status == 0):
+        print ('SUCCESS')
+    else:
+        print ('FAILURE, code = ' + str(status))

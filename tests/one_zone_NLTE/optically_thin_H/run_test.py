@@ -8,12 +8,12 @@ import sys
 
 
 def run_test(pdf="",runcommand=""):
- 
+
     ###########################################
     # clean up old results and run the code
     ###########################################
-    if (runcommand != ""): 
-    	os.system("rm spectrum_* plt_* integrated_quantities")
+    if (runcommand != ""):
+    	os.system("rm spectrum_* plt_* integrated_quantities.dat")
     	os.system(runcommand)
 
     fail_flag = 0
@@ -26,7 +26,7 @@ def run_test(pdf="",runcommand=""):
     h   = 6.6260755e-27    # planck's constant (ergs-s)
     c   = 2.99792458e10    # speed of light (cm/s)
     k   = 1.380658e-16     # boltzmann constant (ergs/K)
-    sb  = 5.6704e-5        # stefan boltzman constant (ergs cm^-2 s^-1 K^-4) 
+    sb  = 5.6704e-5        # stefan boltzman constant (ergs cm^-2 s^-1 K^-4)
     pi  = 3.14159          # just pi
     #    plt.ion()
 
@@ -39,7 +39,7 @@ def run_test(pdf="",runcommand=""):
 
     plt.ion()
     plt.clf()
-    # compare spectrum 
+    # compare spectrum
 
     fin = h5py.File('plt_00003.h5','r')
     nu = np.array(fin['nu'])
@@ -73,7 +73,7 @@ def run_test(pdf="",runcommand=""):
     #------------------------------------------
     plt.clf()
 
-    
+
     plt.title('one zone NLTE test for optically thin H: LTE departure coefficients')
     plt.xlabel('level #',size=15)
     plt.ylabel('departure coefficient',size=15)
@@ -84,7 +84,7 @@ def run_test(pdf="",runcommand=""):
     b = np.array(fin['zonedata/0/Z_1/level_departure'])
     fin.close()
     plt.plot(b,'o',color='black')
-    
+
 
     for i in range(len(b)):
         if (b[i] > 1.1 or b[i] < 0.9):
@@ -107,4 +107,3 @@ def run_test(pdf="",runcommand=""):
 
 
 if __name__=='__main__': run_test('')
-
