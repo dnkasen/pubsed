@@ -112,11 +112,27 @@ int main(int argc, char **argv)
   if (use_hydro) hydro->init(&params, grid);
 
   // Evolve to start time if homologous
-  // Expand rho and T assuming adiabatic and radiation pressure dominated
+  // Expand or compress rho and T assuming adiabatic
+  // and radiation pressure dominated
   if (hydro_type == "homologous")
   {
     double t_start = params.getScalar<double>("tstep_time_start");
-    if (t_start > grid->t_now)
+
+    if (t_start < grid->t_now)
+    {
+      if (verbose) {
+        cout << "# t_start = " << t_start << ", t_now = " << grid->t_now;
+        cout << "\n# Adiabatically compressing rho and T from input ";
+        cout << "values assuming radiation pressure dominated\n";
+        cout << "# No radioactive decay energy taken into account\n";
+        cout << "#\n";
+      }
+      int force_rproc  = params.getScalar<int>("force_rprocess_heating");
+      hydro->evolve_to_start(t_start, force_rproc);
+      grid->t_now = t_start;
+    }
+
+    else if (t_start > grid->t_now)
     {
       if (verbose) {
         cout << "# t_start = " << t_start << ", t_now = " << grid->t_now;
@@ -129,6 +145,8 @@ int main(int argc, char **argv)
       hydro->evolve_to_start(t_start, force_rproc);
       grid->t_now = t_start;
     }
+
+
   }
 
   //---------------------------------------------------------------------
