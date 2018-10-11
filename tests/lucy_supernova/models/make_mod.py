@@ -5,7 +5,7 @@ import h5py
 m_sun  = 1.99e33
 pi     = 3.14159
 n_1d   = 100
-n_2d   = 60
+n_2d   = 70
 n_3d   = 50
 mass   = 1.4*1.99e33
 vmax   = 1.0e9
@@ -59,11 +59,11 @@ fout.close()
 ##################################
 # Make sedona 2D hdf5 model
 #################################
+nx = n_2d
+nz = n_2d*2
 dv    = vmax/(1.0*nx)
 vx  = np.arange(dv,vmax+0.1,dv)
 vz  = np.arange(-1.0*vmax + dv,vmax+0.1,dv)
-nx = n_2d
-nz = n_2d*2
 rho  = np.zeros((nx,nz))
 temp = np.zeros((nx,nz))
 comp = np.zeros((nx,nz,len(Z)))
