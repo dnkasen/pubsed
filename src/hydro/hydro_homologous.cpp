@@ -37,8 +37,8 @@ void hydro_homologous::step(double dt)
 
 
 
-// Adiabatically expands temperature from input time to start time
-// Accounts for radioactive energy deposition
+// Adiabatically expands or compresses temperature from t_now to t_start
+// Accounts for radioactive energy deposition if t_start > t_now
 void hydro_homologous::evolve_to_start(double t_start, int force_rproc)
 {
   radioactive radio;
@@ -50,6 +50,28 @@ void hydro_homologous::evolve_to_start(double t_start, int force_rproc)
   double time_tol = 1.0e-4;
   int incr_max = 9999;
 
+  // Compress and return if t_start < current time
+  if (t_start < grid->t_now)
+  {
+    e = t_start/grid->t_now;
+
+    // Compress rho and T_gas
+    // Set T_rad to T_gas
+    for (int i=0; i<grid->n_zones; i++)
+    {
+      grid->z[i].rho = grid->z[i].rho/e/e/e;
+      grid->z[i].T_gas = grid->z[i].T_gas/e;
+      grid->z[i].e_rad = pc::a*pow(grid->z[i].T_gas,4);
+    }
+
+    // Update grid and time
+    grid->t_now = t_start;
+    grid->expand(e);
+
+    return;
+  }
+
+  // If we get to here, t_start > current time, so we expand
   // Just forward Euler for now
   for (int incr=0; incr <= incr_max; incr++)
   {
@@ -90,7 +112,7 @@ void hydro_homologous::evolve_to_start(double t_start, int force_rproc)
     grid->t_now += dt;
     grid->expand(e);
 
-    // If we made it to t_start, exit
+    // If we made it to t_start, exit the loop
     if ( fabs(grid->t_now-t_start)/t_start < time_tol ) 
     {
       grid->t_now = t_start; // Make it exact
