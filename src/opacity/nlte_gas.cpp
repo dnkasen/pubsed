@@ -133,7 +133,9 @@ int nlte_gas::read_fuzzfile(std::string fuzzfile)
 
   // check if fuzzfile exists
   FILE *fin = fopen(fuzzfile.c_str(),"r");
-  if (fin == NULL) std::cout << "CAN't open\n";
+  if ((fin == NULL)&&(verbose))
+    std::cout << "# Warning: Can't open atomic data fuzzfile: "
+    << fuzzfile << std::endl;
   if (fin == NULL) return 0;
 
   for (size_t i=0;i<atoms.size();++i)
