@@ -5,7 +5,7 @@ temp  = 1e4;
 
 
 dpulse = 0.02
-delta =  1
+delta =  2
 r0   = 1e5
 r1   = r0 - delta
 r2   = r0 + delta
@@ -28,4 +28,3 @@ for i  in range(nx):
 	fout.write(line)
 
 fout.close()
-

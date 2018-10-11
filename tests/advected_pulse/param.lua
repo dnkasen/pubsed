@@ -1,43 +1,23 @@
-defaults_file = "../defaults.lua"
-grid_type  = "grid_1D_sphere"    -- grid geometry; must match input model
-model_file   = "constant.mod"        -- input model file
+sedona_home   = os.getenv('SEDONA_HOME')
 
+defaults_file    = sedona_home.."/defaults/sedona_defaults.lua"
+data_atomic_file = sedona_home.."/data/2level_atomdata.hdf5"
 
+grid_type    = "grid_1D_sphere"    -- grid geometry; must match input model
+model_file   = "constant.mod"      -- input model file
 
 -- time stepping
-days = 3600.0*24
-tstep_max_steps    = 200
+tstep_max_steps    = 1000
 tstep_time_stop    = 2e-10
 tstep_max_dt       = 2e-12
 tstep_min_dt       = 2e-12
 tstel_max_delta    = 1.0
 
-output_write_times  = 1e-11
-
-
-transport_nu_grid  = {1,1,1}
-
 -- inner source
-particles_n_initialize  = 200000
-core_n_emit        =   0
-core_radius        =   0
-core_luminosity    =   0
+particles_n_initialize  = 1e6
 
--- output spectrum
-spectrum_name  = "out";
-spectrum_time_grid = {1e-10,1e-8,1e-10}
-spectrum_nu_grid   = nu_grid
-spectrum_n_mu      = 1
-spectrum_n_phi     = 1
+-- opacity
+opacity_grey_opacity             = 1.0
+opacity_epsilon                  = 0.0
 
-
-
--- opacity infor
-opacity_grey_opacity             = 1
-opacity_epsilon                  = 0
-
-transport_steady_iterate         = 0
-transport_radiative_equilibrium  = 0
-
-
-
+output_write_plt_file_time        = 1e-11
