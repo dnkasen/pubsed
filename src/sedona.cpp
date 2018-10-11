@@ -112,41 +112,27 @@ int main(int argc, char **argv)
   if (use_hydro) hydro->init(&params, grid);
 
   // Evolve to start time if homologous
-  // Expand or compress rho and T assuming adiabatic
-  // and radiation pressure dominated
-  if (hydro_type == "homologous")
+  // by adiabatically expanding or compress rho and T
+  double t_start = params.getScalar<double>("tstep_time_start");
+  if ((hydro_type == "homologous")&&(t_start > 0))
   {
-    double t_start = params.getScalar<double>("tstep_time_start");
-
-    if (t_start < grid->t_now)
+    if (verbose)
     {
-      if (verbose) {
-        cout << "# t_start = " << t_start << ", t_now = " << grid->t_now;
-        cout << "\n# Adiabatically compressing rho and T from input ";
-        cout << "values assuming radiation pressure dominated\n";
-        cout << "# No radioactive decay energy taken into account\n";
-        cout << "#\n";
+      cout << "# t_start = " << t_start << ", t_now = " << grid->t_now;
+      if (t_start < grid->t_now)
+      {
+        cout << "\n# Adiabatically compressing rho and T from input model\n";
+        cout << "# Assumes rad pressure dominated; no radioactive heating\n";
       }
-      int force_rproc  = params.getScalar<int>("force_rprocess_heating");
-      hydro->evolve_to_start(t_start, force_rproc);
-      grid->t_now = t_start;
-    }
-
-    else if (t_start > grid->t_now)
-    {
-      if (verbose) {
-        cout << "# t_start = " << t_start << ", t_now = " << grid->t_now;
-        cout << "\n# Adiabatically expanding rho and T from input ";
-        cout << "values assuming radiation pressure dominated\n";
-        cout << "# Includes radioactive decay energy\n";
-        cout << "#\n";
+      else
+      {
+        cout << "\n# Adiabatically expanding rho and T from input model\n";
+        cout << "# Assumes rad pressure dominated; includes radioactive heating\n";
       }
-      int force_rproc  = params.getScalar<int>("force_rprocess_heating");
-      hydro->evolve_to_start(t_start, force_rproc);
-      grid->t_now = t_start;
     }
-
-
+    int force_rproc  = params.getScalar<int>("force_rprocess_heating");
+    hydro->evolve_to_start(t_start, force_rproc);
+    grid->t_now = t_start;
   }
 
   //---------------------------------------------------------------------
