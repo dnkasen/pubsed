@@ -1,13 +1,9 @@
-
-#ifdef MPI_PARALLEL
-#include <mpi.h>
-#endif
-
 #include <time.h>
 #include <iostream>
 #include <vector>
 #include <ctime>
 
+#include "sedona.h"
 #include "physical_constants.h"
 #include "ParameterReader.h"
 #include "grid_general.h"
@@ -19,10 +15,15 @@
 #include "hydro_1D_lagrangian.h"
 #include "transport.h"
 
+#ifdef MPI_PARALLEL
+#include <mpi.h>
+#endif
+
 namespace pc = physical_constants;
 using std::string;
 using std::cout;
 using std::endl;
+
 
 
 //--------------------------------------------------------
