@@ -38,9 +38,9 @@ void nlte_gas::initialize
 #ifdef MPI_PARALLEL
   int my_rank;
   MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
-  const int verbose = (my_rank == 0);
+  verbose = (my_rank == 0);
 #else
-  const int verbose = 1;
+  verbose = 1;
 #endif
 
   for (size_t i=0;i<e.size();++i) elem_Z.push_back(e[i]);
