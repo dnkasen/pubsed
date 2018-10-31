@@ -4,7 +4,9 @@ import h5py
 ####################################
 m_sun  = 1.99e33
 pi     = 3.14159
-nx     = 100
+n_1d   = 100
+n_2d   = 70
+n_3d   = 50
 mass   = 1.4*1.99e33
 vmax   = 1.0e9
 texp   = 1.0*(3600.0*24.0)
@@ -23,6 +25,7 @@ n_elems = len(Z)
 ##################################
 # Make 1D ascii model
 ##################################
+nx = n_1d
 dv      = vmax/(1.0*nx)
 fout = open("lucy_1D.mod","w")
 fout.write("1D_sphere SNR\n")
@@ -56,11 +59,11 @@ fout.close()
 ##################################
 # Make sedona 2D hdf5 model
 #################################
+nx = n_2d
+nz = n_2d*2
 dv    = vmax/(1.0*nx)
 vx  = np.arange(dv,vmax+0.1,dv)
 vz  = np.arange(-1.0*vmax + dv,vmax+0.1,dv)
-nx = nx
-nz = nx*2
 rho  = np.zeros((nx,nz))
 temp = np.zeros((nx,nz))
 comp = np.zeros((nx,nz,len(Z)))
@@ -71,7 +74,7 @@ vxx  = np.zeros((nx,nz))
 for i in range(nx):
 	for j in range(nz):
 		vr = (vx[i]**2 + vz[j]**2)**0.5
-		if (vr < vmax): 
+		if (vr < vmax):
 			rho[i,j] = rho0
 			temp[i,j] = T0
 		else:
@@ -93,7 +96,7 @@ for i in range(nx):
 		comp[i][j][3] = ni_frac;
 
 
-fout = h5py.File('lucy_2d.h5','w')
+fout = h5py.File('lucy_2D.h5','w')
 fout.create_dataset('Z',data=Z,dtype='i')
 fout.create_dataset('A',data=A,dtype='i')
 fout.create_dataset('rho',data=rho,dtype='d')
@@ -104,4 +107,3 @@ fout.create_dataset('erad',data=temp,dtype='d')
 fout.create_dataset('comp',data=comp,shape=comp.shape,dtype='f')
 fout.create_dataset('dr',data=[dv*texp,dv*texp],dtype='d')
 fout.create_dataset('time',data=[texp],dtype='d')
-

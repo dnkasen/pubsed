@@ -23,37 +23,37 @@ nproc = 1
 if (opts.nproc): nproc = opts.nproc
 
 ## executable directory and file
-exec_dir   = "../src/EXEC/"
-executable = "gomc"
+exec_dir   = "../src/"
+executable = "sedona6.ex"
 
 homedir = os.getcwd()
 date = time.strftime("%m-%d-%y")
 outfile = homedir + '/test_results_' + date + '.txt'
 pdffile = homedir + '/test_results_' + date + '.pdf'
 pdf = PdfPages(pdffile)
-runcommand = "mpirun -np " + str(nproc) + " ./gomc >> " + outfile
+runcommand = "mpirun -np " + str(nproc) + " ./" + executable + " >> " + outfile
 
 
 
 ########################################
 
-# get list of tests in suite_test_list file 
+# get list of tests in suite_test_list file
 fin = open("suite_test_list","r")
 
 testlist = []
 for line in fin:
     line = line.rstrip('\n')
     line = line.rstrip(' ')
-    if (os.path.isdir(line)): 
+    if (os.path.isdir(line)):
         testlist.append(line)
 
 
 line = "echo \"Testing SEDONA code on " + date + "\"  > " + outfile
 print "Testing SEDONA code on " + date + "\n"
 os.system(line)
-print "Will run " + str(len(testlist)) + " tests"
+print "Will run " + str(len(testlist)) + " tests on " +str(nproc)  + " cores\n"
 print "------------------------------------------"
-i = 0
+i = 1
 for this_test in testlist:
     print str(i) +') ' + this_test
     i = i + 1
@@ -62,7 +62,7 @@ print "\n"
 
 
 total_status = 0
-cnt = 0
+cnt = 1
 for this_test in testlist:
 
     starttime = timeit.default_timer()
@@ -89,10 +89,10 @@ for this_test in testlist:
     stoptime = timeit.default_timer()
     print 'time = {:.1f} seconds'.format(stoptime - starttime)
 
-    if (status == 0): 
+    if (status == 0):
         print "PASSED"
     else:
-        print "FAILED"
+        print "FAILED: error code = ", status
     print "------------------------------------------\n"
     total_status += status
 

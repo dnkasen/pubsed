@@ -69,10 +69,10 @@ void radioactive::decay_composition
     if ((elems_Z[i] == 27)&&(elems_A[i] == 56)) X_co = X[i];
   }
 
-  double ni_f = exp(-t/TAU_NI);
-  double co_f = TAU_CO/(TAU_NI-TAU_CO)*(exp(-t/TAU_NI) - exp(-t/TAU_CO));
+  double ni_f = exp(-t/TAU_56NI);
+  double co_f = TAU_56CO/(TAU_56NI-TAU_56CO)*(exp(-t/TAU_56NI) - exp(-t/TAU_56CO));
   double fe_f = 1 - ni_f - co_f;  
-  double eco = exp(-t/TAU_CO);
+  double eco = exp(-t/TAU_56CO);
   for (int i=0;i<n_el;i++)
   {
     if ((elems_Z[i] == 28)&&(elems_A[i] == 56)) 
@@ -94,10 +94,10 @@ void radioactive::decay_composition
     if ((elems_Z[i] == 23)&&(elems_A[i] == 48)) X_vn = X[i];
   }
 
-  double cr_f = exp(-t/TAU_CR);
-  double vn_f = TAU_VN/(TAU_CR-TAU_VN)*(exp(-t/TAU_CR) - exp(-t/TAU_VN));
+  double cr_f = exp(-t/TAU_48CR);
+  double vn_f = TAU_48V/(TAU_48CR-TAU_48V)*(exp(-t/TAU_48CR) - exp(-t/TAU_48V));
   double ti_f = 1 - cr_f - vn_f;  
-  double evn = exp(-t/TAU_VN);
+  double evn = exp(-t/TAU_48V);
   for (int i=0;i<n_el;i++)
   {
     if ((elems_Z[i] == 24)&&(elems_A[i] == 48)) 
@@ -196,14 +196,14 @@ double radioactive::decay_energy_rate(int Z, int A, double t, double *gfrac)
   if ((Z == 28)&&(A == 56))
   {
     // exponential factors to be used
-    double e_ni = exp(-t/TAU_NI);
-    double e_co = exp(-t/TAU_CO);
+    double e_ni = exp(-t/TAU_56NI);
+    double e_co = exp(-t/TAU_56CO);
     // number divided by decay time)
-    double ni56 = (e_ni/TAU_NI);
-    double co56 = 1.0/(TAU_NI-TAU_CO)*(e_ni - e_co);
+    double ni56 = (e_ni/TAU_56NI);
+    double co56 = 1.0/(TAU_56NI-TAU_56CO)*(e_ni - e_co);
     // get the energy from decays in ergs/s, using unit conversions
-    double ni_E = ni56*(AVERAGE_NI_ENERGY*pc::Mev_to_ergs);
-    double co_E = co56*(AVERAGE_CO_ENERGY*pc::Mev_to_ergs);
+    double ni_E = ni56*(AVERAGE_56NI_ENERGY*pc::Mev_to_ergs);
+    double co_E = co56*(AVERAGE_56CO_ENERGY*pc::Mev_to_ergs);
 
     gtotal = ni_E + (1 - CO_POSITRON_FRACTION)*co_E;
     total  = ni_E + co_E;
@@ -213,11 +213,11 @@ double radioactive::decay_energy_rate(int Z, int A, double t, double *gfrac)
   if ((Z == 27)&&(A == 56))
   {
     // exponential factors to be used
-    double e_co = exp(-t/TAU_CO);
+    double e_co = exp(-t/TAU_56CO);
     // number divided by decay time)
-    double co56 = 1.0/(TAU_CO)*e_co;
+    double co56 = 1.0/(TAU_56CO)*e_co;
     // get the energy from decays in ergs/s, using unit conversions
-    double co_E = co56*(AVERAGE_CO_ENERGY*pc::Mev_to_ergs);
+    double co_E = co56*(AVERAGE_56CO_ENERGY*pc::Mev_to_ergs);
 
     gtotal = (1 - CO_POSITRON_FRACTION)*co_E;
     total  = co_E;
@@ -228,14 +228,14 @@ double radioactive::decay_energy_rate(int Z, int A, double t, double *gfrac)
   if ((Z == 24)&&(A == 48))
   {
     // exponential factors to be used
-    double e_cr = exp(-t/TAU_CR);
-    double e_vn = exp(-t/TAU_VN);
+    double e_cr = exp(-t/TAU_48CR);
+    double e_vn = exp(-t/TAU_48V);
     // number divided by decay time)
-    double cr48 = (e_cr/TAU_CR);
-    double vn48 = 1.0/(TAU_CR-TAU_VN)*(e_cr - e_vn);
+    double cr48 = (e_cr/TAU_48CR);
+    double vn48 = 1.0/(TAU_48CR-TAU_48V)*(e_cr - e_vn);
     // get the energy from decays in ergs/s, using unit conversions
-    double cr_E = cr48*(AVERAGE_CR_ENERGY*pc::Mev_to_ergs);
-    double vn_E = vn48*(AVERAGE_VN_ENERGY*pc::Mev_to_ergs);
+    double cr_E = cr48*(AVERAGE_48CR_ENERGY*pc::Mev_to_ergs);
+    double vn_E = vn48*(AVERAGE_48V_ENERGY*pc::Mev_to_ergs);
 
     gtotal += cr_E + vn_E;
     total  += cr_E + vn_E;
@@ -250,14 +250,14 @@ double radioactive::decay_energy_rate(int Z, int A, double t, double *gfrac)
   //     double fe52_0 = z.rho*z.R_gas[i]/(52*M_PROTON);
 
   //     // exponential factors to be used
-  //     double e_fe = exp(-time/TAU_FE);
-  //     double e_mn = exp(-time/TAU_MN);
+  //     double e_fe = exp(-time/TAU_52FE);
+  //     double e_mn = exp(-time/TAU_52MN);
   //     // number divided by decay time)
-  //     double fe52 = fe52_0*(e_fe/TAU_FE);
-  //     double mn52 = fe52_0/(TAU_FE-TAU_MN)*(e_fe - e_mn);
+  //     double fe52 = fe52_0*(e_fe/TAU_52FE);
+  //     double mn52 = fe52_0/(TAU_52FE-TAU_52MN)*(e_fe - e_mn);
   //     // get the energy from decays in ergs/s, using unit conversions
-  //     double fe_E = fe52*(AVERAGE_FE_ENERGY*MEV_TO_ERGS);
-  //     double mn_E = mn52*(AVERAGE_MN_ENERGY*MEV_TO_ERGS);
+  //     double fe_E = fe52*(AVERAGE_52FE_ENERGY*MEV_TO_ERGS);
+  //     double mn_E = mn52*(AVERAGE_52MN_ENERGY*MEV_TO_ERGS);
 
   //     gtotal += fe_E + mn_E;
   //     total  += fe_E + mn_E;
@@ -294,22 +294,22 @@ double radioactive::decay_energy_rate(int Z, int A, double t, double *gfrac)
 // {
 //   if (i == 28) 
 //   {
-//     x[0] = exp(-t/TAU_NI);
-//     x[1] = TAU_CO/(TAU_NI-TAU_CO)*(exp(-t/TAU_NI) - exp(-t/TAU_CO));
+//     x[0] = exp(-t/TAU_56NI);
+//     x[1] = TAU_56CO/(TAU_56NI-TAU_56CO)*(exp(-t/TAU_56NI) - exp(-t/TAU_56CO));
 //     x[2] = 1 - x[0] - x[1];
 //   }
 
 //   if (i == 26) 
 //   {
-//     x[0] = exp(-t/TAU_FE);
-//     x[1] = TAU_MN/(TAU_FE-TAU_MN)*(exp(-t/TAU_FE) - exp(-t/TAU_MN));
+//     x[0] = exp(-t/TAU_52FE);
+//     x[1] = TAU_52MN/(TAU_52FE-TAU_52MN)*(exp(-t/TAU_52FE) - exp(-t/TAU_52MN));
 //     x[2] = 1 - x[0] - x[1];
 //   }
 
 //   if (i == 24) 
 //   {
-//     x[0] = exp(-t/TAU_CR);
-//     x[1] = TAU_VN/(TAU_CR-TAU_VN)*(exp(-t/TAU_CR) - exp(-t/TAU_VN));
+//     x[0] = exp(-t/TAU_48CR);
+//     x[1] = TAU_48V/(TAU_48CR-TAU_48V)*(exp(-t/TAU_48CR) - exp(-t/TAU_48V));
 //     x[2] = 1 - x[0] - x[1];
 //   }
 // }
@@ -324,10 +324,10 @@ double radioactive::decay_energy_rate(int Z, int A, double t, double *gfrac)
   // {
   
   //   // The Ratio Of Energy Coming Out In Nickel
-  //   double E_Ni = exp(-t/TAU_NI);
-  //   double E_Co = exp(-t/TAU_CO);
-  //   double Ni_E = AVERAGE_NI_ENERGY*(E_Ni/TAU_NI);
-  //   double Co_E = AVERAGE_CO_ENERGY/(TAU_NI - TAU_CO)*(E_Ni - E_Co);
+  //   double E_Ni = exp(-t/TAU_56NI);
+  //   double E_Co = exp(-t/TAU_56CO);
+  //   double Ni_E = AVERAGE_56NI_ENERGY*(E_Ni/TAU_56NI);
+  //   double Co_E = AVERAGE_56CO_ENERGY/(TAU_56NI - TAU_56CO)*(E_Ni - E_Co);
   //   double nico_ratio = Ni_E/(Ni_E + Co_E);
   
   //   // pick emission wavelength

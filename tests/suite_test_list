@@ -2,8 +2,12 @@
 ### comment out ones with a hash
 ###
 spherical_lightbulb/1D
+spherical_lightbulb/2D
+toy_type1a_supernova/1D_spectrum
+advected_pulse
 one_zone_NLTE/optically_thin_H
 one_zone_NLTE/optically_thick_H
 one_zone_NLTE/optically_thin_solar
 one_zone_NLTE/optically_thick_solar
 lucy_supernova/1D
+lucy_supernova/2D

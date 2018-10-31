@@ -1,8 +1,7 @@
 #include <cstdlib>
-#include <mpi.h>
 #include <fstream>
 #include <iostream>
-#include <iomanip>   
+#include <iomanip>
 #include <math.h>
 #include <cassert>
 #include <limits>
@@ -12,6 +11,12 @@
 
 #include "grid_2D_cyln.h"
 #include "physical_constants.h"
+
+#ifdef MPI_PARALLEL
+#include "mpi.h"
+#endif
+
+
 
 namespace pc = physical_constants;
 
@@ -25,14 +30,19 @@ using std::endl;
 void grid_2D_cyln::read_model_file(ParameterReader* params)
 {
   // verbocity
+#ifdef MPI_PARALLEL
   int my_rank;
   MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
   const int verbose = (my_rank == 0);
-  
+#else
+  const int verbose = 1;
+#endif
+
+
   // open up the model file, complaining if it fails to open
   string model_file = params->getScalar<string>("model_file");
 
-  // open hdf5 file 
+  // open hdf5 file
   hid_t file_id = H5Fopen (model_file.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   herr_t status;
 
@@ -135,7 +145,7 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
       cnt++;
     }
 
-  //--------------------------------------------------- 
+  //---------------------------------------------------
   // Printout model properties
   //---------------------------------------------------
   if (verbose)
@@ -148,14 +158,14 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
     printf("# mass = %.4e (%.4e Msun)\n",totmass,totmass/pc::m_sun);
     for (int k=0;k<n_elems;k++) {
       cout << "# " << elems_Z[k] << "." << elems_A[k] <<  "\t";
-      cout << elem_mass[k] << " (" << elem_mass[k]/pc::m_sun << " Msun)\n"; 
+      cout << elem_mass[k] << " (" << elem_mass[k]/pc::m_sun << " Msun)\n";
     }
     printf("# kinetic energy   = %.4e\n",totke);
     printf("# radiation energy = %.4e\n",totrad);
     cout << "##############################\n#\n";
-  } 
+  }
 }
-    
+
 
 
 //************************************************************
@@ -204,14 +214,14 @@ void grid_2D_cyln::write_plotfile(int iw, double tt, int write_mass_fractions)
 //************************************************************
 // expand the grid
 //************************************************************
-void grid_2D_cyln::expand(double e) 
+void grid_2D_cyln::expand(double e)
 {
   dx_ *= e;
   dz_ *= e;
   zcen_ = dz_*nz_/2.0;
 
   // recalculate shell volume
-  for (int i=0;i<n_zones;i++) 
+  for (int i=0;i<n_zones;i++)
   {
     vol_[i] = vol_[i]*e*e*e;
   }
@@ -285,7 +295,7 @@ int grid_2D_cyln::get_next_zone
   double pt,c,lp_out,lp_in,det;
   double a = D[0]*D[0] + D[1]*D[1];
   double b = 2*(x[0]*D[0] + x[1]*D[1]);
-  
+
   if (a == 0) lp = std::numeric_limits<double>::infinity();
   else
   {
@@ -296,17 +306,17 @@ int grid_2D_cyln::get_next_zone
     if (det < 0) lp_out =  std::numeric_limits<double>::infinity();
     else lp_out = (-1.0*b + sqrt(det))/(2*a);
     if (lp_out < 0) lp_out =  std::numeric_limits<double>::infinity();
- 
+
     // inner interface
     pt = dx_*(ix) - dx_*tiny;
-    c = p*p - pt*pt; 
+    c = p*p - pt*pt;
     det = b*b - 4*a*c;
     if (det < 0) lp_in =  std::numeric_limits<double>::infinity();
     else lp_in = (-1.0*b - sqrt(det))/(2*a);
     if (lp_in < 0) lp_in =  std::numeric_limits<double>::infinity();
     if (ix == 0) lp_in   =  std::numeric_limits<double>::infinity();
 
-    if (lp_in < lp_out) 
+    if (lp_in < lp_out)
     {
      lp  = lp_in;
      d_ip = -1;
@@ -334,19 +344,19 @@ int grid_2D_cyln::get_next_zone
     //std::cout << "step p " << new_ip << " " << d_ip << " " << lp << "\n";
   }
 
-  if (isnan(*l)) 
+  if (isnan(*l))
   {
   //   std::cout << "step p " << new_ip << " " << d_ip << " " << lp << "\n";
    // std::cout << "step z " << new_iz << " " << d_iz << " " << lz << "\n";
 
   }
 
-  // escaped 
+  // escaped
   if ((new_iz < 0)||(new_iz >= nz_)||(new_ip >= nx_)) return -2;
 
   return new_ip*nz_ + new_iz;
 
-; /* 
+; /*
   double rsq   = (x[0]*x[0] + x[1]*x[1] + x[2]*x[2]);
   double xdotD = (D[0]*x[0] + D[1]*x[1] + D[2]*x[2]);
 
@@ -370,7 +380,7 @@ int grid_2D_cyln::get_next_zone
     double rad = xdotD*xdotD + r_i*r_i - rsq;
     if   (rad < 0)  l_in = -1;
     else l_in = -1*xdotD - sqrt(rad);
-  } 
+  }
 
   // find shortest positive distance
   int ind;
@@ -387,7 +397,7 @@ int grid_2D_cyln::get_next_zone
     *l = l_in; //tiny;
   }
 
-  return ind; 
+  return ind;
   */
 }
 
@@ -420,7 +430,7 @@ void grid_2D_cyln::sample_in_zone
 
 
 //************************************************************
-// get the velocity vector 
+// get the velocity vector
 //************************************************************
 void grid_2D_cyln::get_velocity(int i, double x[3], double D[3], double v[3], double *dvds)
 {
@@ -449,7 +459,7 @@ void grid_2D_cyln::get_velocity(int i, double x[3], double D[3], double v[3], do
 
   double vv = v_0 + dv_dr*dr;
 
-  // assuming radial velocity 
+  // assuming radial velocity
   v[0] = x[0]/rr*vv;
   v[1] = x[1]/rr*vv;
   v[2] = x[2]/rr*vv;
@@ -466,6 +476,3 @@ void grid_2D_cyln::get_velocity(int i, double x[3], double D[3], double v[3], do
 */
 
 }
-
-
-

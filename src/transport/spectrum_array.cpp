@@ -1,4 +1,3 @@
-#include <mpi.h>
 #include <stdio.h>
 #include <iostream>
 #include <math.h>
@@ -6,9 +5,14 @@
 #include <vector>
 #include "hdf5.h"
 #include "hdf5_hl.h"
+#include "sedona.h"
 
 #include "spectrum_array.h"
 #include "physical_constants.h"
+
+#ifdef MPI_PARALLEL
+#include <mpi.h>
+#endif
 
 using std::vector;
 namespace pc = physical_constants;
@@ -48,7 +52,7 @@ void spectrum_array::init(std::vector<double> t, std::vector<double> w,
   double w_stop  = w[1];
   double w_del   = w[2];
 
-  // initialize the frequency grid  
+  // initialize the frequency grid
   if (w.size() == 3)
    this->wave_grid.init(w_start,w_stop,w_del);
   if (w.size() == 4)
@@ -74,7 +78,7 @@ void spectrum_array::init(std::vector<double> t, std::vector<double> w,
   this->click.resize(n_elements);
   this->flux.resize(n_elements);
 
-  // clear 
+  // clear
   wipe();
 }
 
@@ -84,7 +88,7 @@ void spectrum_array::init(std::vector<double> t, std::vector<double> w,
 //--------------------------------------------------------------
 void spectrum_array::wipe()
 {
-  for (size_t i=0;i<click.size();i++) 
+  for (size_t i=0;i<click.size();i++)
   {
     flux[i]   = 0;
     click[i]  = 0;
@@ -110,7 +114,7 @@ void spectrum_array::count(double t, double w, double E, double *D)
 {
   double mu  = D[2];
   double phi = atan2(D[1],D[0]);
-  
+
   // locate bin number in all dimensions
   int t_bin = time_grid.locate(t);
   int l_bin = wave_grid.locate(w);
@@ -126,7 +130,7 @@ void spectrum_array::count(double t, double w, double E, double *D)
   if (t_bin >= time_grid.size()) return;
   if (m_bin >= mu_grid.size())   return;
   if (p_bin >= phi_grid.size())  return;
-  
+
   // add to counters
   int ind      = index(t_bin,l_bin,m_bin,p_bin);
 
@@ -160,7 +164,7 @@ void spectrum_array::print()
   for (int k=0;k<n_mu;k++)
     for (int m=0;m<n_phi;m++)
       for (int i=0;i<n_times;i++)
-	     for (int j=0;j<n_wave;j++) 
+	     for (int j=0;j<n_wave;j++)
         {
 	       int id = index(i,j,k,m);
 	       if (n_times > 1)  fprintf(out,"%12.4e ",time_grid.center(i));;
@@ -171,7 +175,7 @@ void spectrum_array::print()
     	   double norm = 1.0/(n_mu*n_phi);
 	       if (n_wave > 1)  norm *= wave_grid.delta(j);
 	       if (n_times > 1) norm *= time_grid.delta(i);
-	  
+
          // normalize it
          darray[id] = flux[id]/norm;
 
@@ -209,13 +213,13 @@ void spectrum_array::print()
 
   // write fluxes array
   if (n_mu == 1)
-  { 
+  {
     const int RANKF = 2;
     hsize_t  dims_flux[RANKF]={(hsize_t)n_t,(hsize_t)n_nu};
     H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
   }
   else
-  { 
+  {
     const int RANKF = 3;
     hsize_t  dims_flux[RANKF]={(hsize_t)n_t,(hsize_t)n_nu,(hsize_t)n_mu};
     H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
@@ -240,6 +244,8 @@ void  spectrum_array::rescale(double r)
 // only process 0 gets the reduced spectrum to print
 void spectrum_array::MPI_average()
 {
+#ifdef MPI_PARALLEL
+
   int receiving_ID = 0;
   int mpi_procs, myID;
 
@@ -260,20 +266,16 @@ void spectrum_array::MPI_average()
     receive.resize(n_elements);
     for (int i=0;i<n_elements;++i) receive[i] = 0.0;
     MPI_Allreduce(&click.front(), &receive.front(), n_elements, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-
     click.swap(receive);
-
   }
-  
+
   // only have the receiving ID do the division
   MPI_Comm_size( MPI_COMM_WORLD, &mpi_procs );
   MPI_Comm_rank( MPI_COMM_WORLD, &myID      );
   //if(myID == receiving_ID){
  //   #pragma omp parallel for
     for (int i=0;i<n_elements;i++)
-    {
       flux[i]  /= mpi_procs;
-      click[i] /= mpi_procs;
-    }
-  //}
+
+#endif
 }

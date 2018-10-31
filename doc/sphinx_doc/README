@@ -22,8 +22,11 @@ To make a latex file use
 
 make latex
 
-which makes the latex file in _build/latex/ 
-You can then build a pdf using your own latex compiler
+which makes the latex file in _build/latex/. To both make the latex file and
+ccompile it into a pdf using pdflatex you can just type
+
+make latexpdf
+
 
 
 

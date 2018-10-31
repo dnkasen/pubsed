@@ -2,10 +2,10 @@
 //*****************************************************************
 //*************************  GRID ********************************
 //*****************************************************************
-// The grid class is a construct whose main purpose is to handle 
+// The grid class is a construct whose main purpose is to handle
 // the geometry of the model.  It does two main things: (1) Reads
-// in the input density,temperature,composition files (that of 
-// course must have a specific geometry). (2) Given a set of 
+// in the input density,temperature,composition files (that of
+// course must have a specific geometry). (2) Given a set of
 // 3-d coordinates, it will give the corosponding zone index (or
 // note that the coords are off the grid).
 //
@@ -21,6 +21,8 @@
 #include <string>
 #include <iostream>
 
+
+#include "sedona.h"
 #include "zone.h"
 #include "ParameterReader.h"
 
@@ -34,9 +36,9 @@ class grid_general
 
   // fill the grid with data from a model file
   virtual void read_model_file(ParameterReader*) = 0;
-  
+
  public:
-  
+
   // set everything up
   void init(ParameterReader* params);
 
@@ -77,13 +79,13 @@ class grid_general
 
   // randomly sample a position within the zone i
   virtual void sample_in_zone(int,std::vector<double>,double[3]) = 0;
-  
+
   // give the velocity vector at this point in zone i
   virtual void get_velocity(int i, double[3], double[3], double[3], double*) = 0;
-  
+
   // get the coordinates at the center of the zone i
   virtual void coordinates(int i,double r[3]) = 0;
-  
+
   // write out the grid state
   virtual void write_plotfile(int,double,int) = 0;
 
@@ -92,11 +94,11 @@ class grid_general
 
   //****** empty functions to overide
   virtual void get_radial_edges
-  (std::vector<double>&, double&, std::vector<double>&, double&) const 
+  (std::vector<double>&, double&, std::vector<double>&, double&) const
   { }
-  
+
   virtual void set_radial_edges
-  (const std::vector<double>, double, const std::vector<double>, double) 
+  (const std::vector<double>, double, const std::vector<double>, double)
   { }
 
 
@@ -104,4 +106,3 @@ class grid_general
 
 
 #endif
-

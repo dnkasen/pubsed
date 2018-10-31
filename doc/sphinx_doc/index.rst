@@ -17,6 +17,8 @@ Sedona6 Users Guide
    sources
    opacity
    hydrodynamics
+   plotting
+   all_parameters
 
 
 Indices and tables
