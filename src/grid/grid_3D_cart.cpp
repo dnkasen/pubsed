@@ -35,11 +35,11 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
   const int verbose = 1;
 #endif
 
-  
+
   // open up the model file, complaining if it fails to open
   string model_file = params->getScalar<string>("model_file");
 
-  // open hdf5 file 
+  // open hdf5 file
   hid_t file_id = H5Fopen (model_file.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   herr_t status;
 
@@ -64,7 +64,7 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
   nz_     = dims[2];
   n_elems = dims[3];
   dx_ = dr[0];
-  dy_ = dr[1];  
+  dy_ = dr[1];
   dz_ = dr[2];
   x0_ = rmin[0];
   y0_ = rmin[1];
@@ -161,7 +161,7 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
         cnt++;
     }
 
-  //--------------------------------------------------- 
+  //---------------------------------------------------
   // Printout model properties
   //---------------------------------------------------
   if (verbose)
@@ -177,12 +177,12 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
     printf("# mass = %.4e (%.4e Msun)\n",totmass,totmass/pc::m_sun);
     for (int k=0;k<n_elems;k++) {
       cout << "# " << elems_Z[k] << "." << elems_A[k] <<  "\t";
-      cout << elem_mass[k] << " (" << elem_mass[k]/pc::m_sun << " Msun)\n"; 
+      cout << elem_mass[k] << " (" << elem_mass[k]/pc::m_sun << " Msun)\n";
     }
     printf("# kinetic energy   = %.4e\n",totke);
     printf("# radiation energy = %.4e\n",totrad);
     cout << "##############################\n#\n";
-  } 
+  }
 
 }
 
@@ -206,7 +206,7 @@ void grid_3D_cart::write_plotfile(int iw, double tt, int write_mass_fractions)
   dr[1] = dy_;
   dr[2] = dz_;
   H5LTmake_dataset(file_id,"dr",1,dims_dr,H5T_NATIVE_FLOAT,dr);
-	
+
 	// print out x array
 	hsize_t  dims_x[1]={(hsize_t)nx_};
 	float *xarr = new float[nx_];
@@ -227,11 +227,11 @@ void grid_3D_cart::write_plotfile(int iw, double tt, int write_mass_fractions)
 	for (int i=0;i<nz_;i++) zarr[i] = i*dz_ + z0_;
 	H5LTmake_dataset(file_id,"z",1,dims_z,H5T_NATIVE_FLOAT,zarr);
   delete [] zarr;
- 
+
   hsize_t  dims_g[3]={(hsize_t) nx_,(hsize_t) ny_,(hsize_t) nz_};
   write_hdf5_plotfile_zones(file_id, dims_g, 3, tt);
   write_integrated_quantities(iw,tt);
-  
+
   // Close the output file
   H5Fclose (file_id);
 
@@ -242,7 +242,7 @@ void grid_3D_cart::write_plotfile(int iw, double tt, int write_mass_fractions)
 //************************************************************
 // expand the grid
 //************************************************************
-void grid_3D_cart::expand(double e) 
+void grid_3D_cart::expand(double e)
 {
   dx_ *= e;
   dy_ *= e;
@@ -268,7 +268,7 @@ int grid_3D_cart::get_zone(const double *x) const
   if ((i < 0)||(i > nx_-1)) return -2;
   if ((j < 0)||(j > ny_-1)) return -2;
   if ((k < 0)||(k > nz_-1)) return -2;
-  
+
   int ind =  i*ny_*nz_ + j*nz_ + k;
   return ind;
 }
@@ -292,17 +292,19 @@ int grid_3D_cart::get_next_zone
     bn = dx_*(index_x_[i] + 1 + tiny) + x0_;
   else
     bn = dx_*(index_x_[i] + tiny) + x0_;
+  //std::cout << bn << " ";
   len[0] = (bn - x[0])/D[0];
-  
+
   //---------------------------------
   // distance to y interfaces
   //---------------------------------
   if (D[1] > 0)
     bn = dy_*(index_y_[i] + 1 + tiny) + y0_;
   else
-    bn = dx_*(index_y_[i] + tiny) + y0_;
+    bn = dy_*(index_y_[i] + tiny) + y0_;
   len[1] = (bn - x[1])/D[1];
-  
+//  std::cout << bn << " ";
+
    //---------------------------------
   // distance to z interfaces
   //---------------------------------
@@ -311,6 +313,7 @@ int grid_3D_cart::get_next_zone
   else
     bn = dz_*(index_z_[i] + tiny) + z0_;
   len[2] = (bn - x[2])/D[2];
+  //std::cout << bn << "\n";
 
   // find shortest distance
   int idx=0,idy=0,idz=0;
@@ -378,7 +381,7 @@ void grid_3D_cart::coordinates(int i,double r[3])
 
 
 //------------------------------------------------------------
-// get the velocity vector 
+// get the velocity vector
 //------------------------------------------------------------
 void grid_3D_cart::get_velocity(int i, double x[3], double D[3], double v[3], double *dvds)
 {
@@ -387,4 +390,3 @@ void grid_3D_cart::get_velocity(int i, double x[3], double D[3], double v[3], do
   v[1] = z[i].v[1];
   v[2] = z[i].v[2];
 }
-
