@@ -389,4 +389,7 @@ void grid_3D_cart::get_velocity(int i, double x[3], double D[3], double v[3], do
   v[0] = z[i].v[0];
   v[1] = z[i].v[1];
   v[2] = z[i].v[2];
+
+  // debug -- need to calculate this
+  *dvds = 0;
 }
