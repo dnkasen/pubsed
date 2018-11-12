@@ -112,7 +112,7 @@ def run_test(pdf="",runcommand=""):
     f = 2.0*nu*h*nu**2.0/c**2/(np.exp(h*nu/k/T) - 1)
     f = f/(sb*T**4/pi)*L
     plt.plot(nu,f,color='black',linewidth=5)
-    plt.plot(nu,f,color='white',linewidth=3)
+    plt.plot(nu,f,color='white',linewidth=2)
 
     # calculate error
     for i in range(nmu):

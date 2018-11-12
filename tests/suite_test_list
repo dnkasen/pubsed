@@ -3,6 +3,7 @@
 ###
 spherical_lightbulb/1D
 spherical_lightbulb/2D
+spherical_lightbulb/3D
 toy_type1a_supernova/1D_spectrum
 advected_pulse
 one_zone_NLTE/optically_thin_H
