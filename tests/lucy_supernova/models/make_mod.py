@@ -132,9 +132,9 @@ vxz  = np.zeros((nx,ny,nz))
 for i in range(nx):
 	for j in range(ny):
 		for k in range(nz):
-			vr = vx[i]**2 + vy[j]**2 + vz[k]**2
+			vr = (vx[i]**2 + vy[j]**2 + vz[k]**2)**0.5
 
-			if (vr < vmax*vmax): 
+			if (vr < vmax): 
 				rho[i,j,k] = rho0
 				temp[i,j,k] = T0
 			else:
