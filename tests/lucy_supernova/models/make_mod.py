@@ -155,7 +155,7 @@ for i in range(nx):
 			comp[i][j][k][2] = 0.0
 			comp[i][j][k][3] = ni_frac;
 
-fout = h5py.File('lucy_3d.h5','w')
+fout = h5py.File('lucy_3D.h5','w')
 fout.create_dataset('time',data=[texp],dtype='d')
 fout.create_dataset('Z',data=Z,dtype='i')
 fout.create_dataset('A',data=A,dtype='i')
