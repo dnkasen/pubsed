@@ -22,6 +22,7 @@
 namespace pc = physical_constants;
 using std::string;
 using std::cout;
+using std::cerr;
 using std::endl;
 
 
@@ -84,7 +85,7 @@ int main(int argc, char **argv)
   else if (grid_type == "grid_2D_cyln"  ) grid = new grid_2D_cyln;
   else if (grid_type == "grid_3D_cart"  ) grid = new grid_3D_cart;
   else  {
-    if(verbose) cout << "# ERROR: the grid type is not implemented\n";
+    if(verbose) cerr << "# ERROR: the grid type is not implemented" << endl;
     exit(3);   }
 
   // initialize the grid (including reading the model file)
@@ -106,7 +107,7 @@ int main(int argc, char **argv)
   else if (hydro_type == "1D_lagrangian")
     hydro = new hydro_1D_lagrangian;
   else {
-    if (verbose) cout << "# ERROR: the hydro type is not implemented\n";
+    if (verbose) cerr << "# ERROR: the hydro type is not implemented" << endl;
     exit(3);
   }
   int use_hydro = (hydro != NULL);

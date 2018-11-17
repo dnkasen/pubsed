@@ -125,8 +125,8 @@ void transport::set_opacity()
   // flag any error
   if (verbose)
   {
-    if (solve_error == 1) std::cout << "# Warning: root not bracketed in n_e solve\n";
-    if (solve_error == 2) std::cout << "# Warning: max iterations hit in n_e solve\n";
+    if (solve_error == 1) std::cerr << "# Warning: root not bracketed in n_e solve\n";
+    if (solve_error == 2) std::cerr << "# Warning: max iterations hit in n_e solve\n";
   }
 }
 

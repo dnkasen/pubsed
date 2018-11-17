@@ -14,6 +14,8 @@
 #include "physical_constants.h"
 
 using std::cout;
+using std::cerr;
+using std::endl;
 namespace pc = physical_constants;
 
 
@@ -82,7 +84,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   // initialize the frequency grid  
   std::vector<double> nu_dims = params_->getVector<double>("transport_nu_grid");
   if ((nu_dims.size() != 4)&&(nu_dims.size() != 3)) {
-    cout << "# improperly defined nu_grid; need {nu_1, nu_2, dnu, (log?)}; exiting\n";
+    cerr << "# improperly defined nu_grid; need {nu_1, nu_2, dnu, (log?)}; exiting" << endl;
     exit(1); }
   if (nu_dims.size() == 3)
     nu_grid.init(nu_dims[0],nu_dims[1],nu_dims[2]);
@@ -161,7 +163,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   store_Jnu_ = params_->getScalar<int>("transport_store_Jnu");
   // sanity check
   if ((!store_Jnu_)&&(use_nlte)) 
-    std::cout << "WARNING: not storing Jnu while using NLTE; Bad idea!\n";
+    std::cerr << "WARNING: not storing Jnu while using NLTE; Bad idea!\n";
 
   abs_opacity_.resize(grid->n_zones);
   if (!omit_scattering_) scat_opacity_.resize(grid->n_zones);
@@ -174,7 +176,7 @@ void transport::init(ParameterReader* par, grid_general *g)
     try {
       abs_opacity_[i].resize(nu_grid.size()); }
     catch (std::bad_alloc const&) {
-      cout << "Memory allocation fail!" << std::endl; }
+      cerr << "Memory allocation fail!" << std::endl; }
    
     // allocate scattering opacity
     if (!omit_scattering_)
@@ -182,7 +184,7 @@ void transport::init(ParameterReader* par, grid_general *g)
       try {
         scat_opacity_[i].resize(nu_grid.size()); }
      catch (std::bad_alloc const&) {
-        cout << "Memory allocation fail!" << std::endl; }
+        cerr << "Memory allocation fail!" << std::endl; }
     }
 
     // allocate emissivity
@@ -287,7 +289,7 @@ void transport::setup_core_emission()
       specfile.open(core_spectrum_filename.c_str());
       if (!specfile.is_open()) 
       {
-        if (verbose) std::cout << "Can't open core_spectrum_file " << core_spectrum_filename << "\n";
+        if (verbose) std::cerr << "Can't open core_spectrum_file " << core_spectrum_filename << endl;
         core_spectrum_filename = "";
       }
       else while (!specfile.eof( ))   
@@ -364,7 +366,7 @@ void transport::setup_pointsource_emission()
   ps_file.open(ps_filename.c_str());
   if (!ps_file.is_open()) 
   {
-    if (verbose) std::cout << "Can't open point source file " << ps_filename << "\n";
+    if (verbose) std::cerr << "Can't open point source file " << ps_filename << endl;
     return;
   }
 

@@ -48,7 +48,7 @@ class ParameterReader
     dfile = params_.scalar_pair<std::string>("defaults_file");
     if (!dfile.second) 
     {
-      std::cout << "Must list a defaults_file in input param file!, exiting\n";
+      std::cerr << "Must list a defaults_file in input param file!, exiting" << std::endl;
       exit(1); 
     }
     defaults_.init(dfile.first);
@@ -68,8 +68,8 @@ class ParameterReader
     // if there, return it
     if (value.second) return value.first;
     // otherwise we have a problem
-    if (verbose_) std::cout << "Can't find parameter \"" << label << 
-		   "\" in either param file or defaults; exiting\n";
+    if (verbose_) std::cerr << "Can't find parameter \"" << label << 
+		   "\" in either param file or defaults; exiting" << std::endl;
     exit(1);
   }
 
@@ -87,8 +87,8 @@ class ParameterReader
     // if there, return it
     if (value.second) return value.first;
     // otherwise we have a problem
-    if (verbose_) std::cout << "Can't find parameter \"" << label << 
-		   "\" in either param file or defaults; exiting\n";
+    if (verbose_) std::cerr << "Can't find parameter \"" << label << 
+		   "\" in either param file or defaults; exiting" << std::endl;
     exit(1);
   }
 
@@ -107,7 +107,7 @@ class ParameterReader
     }
     else if (list.size() == 2)
     {
-      std::cout << "List " << label << " cannot have 2 numbers\n";
+      std::cerr << "List " << label << " cannot have 2 numbers" << std::endl;
       exit(1);
     }
     else 
@@ -138,8 +138,8 @@ class ParameterReader
     // if there, return it
     if (value.second) return value.first;
     // otherwise we have a problem
-    if (verbose_) std::cout << "Can't find parameter \"" << label << 
-       "\" in either param file or defaults; exiting\n";
+    if (verbose_) std::cerr << "Can't find parameter \"" << label << 
+       "\" in either param file or defaults; exiting" << std::endl;
     exit(1);
   }
 

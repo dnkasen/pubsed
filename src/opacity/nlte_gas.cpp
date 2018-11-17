@@ -58,7 +58,7 @@ void nlte_gas::initialize
   if (!afile)
   {
     if (verbose)
-      std::cout << "Can't open atom datafile " << atomfile_ << "; exiting\n";
+      std::cerr << "Can't open atom datafile " << atomfile_ << "; exiting" << std::endl;
     exit(1);
   }
   afile.close();
@@ -70,8 +70,8 @@ void nlte_gas::initialize
   {
     int error = atoms[i].initialize(atomfile_, elem_Z[i],ng,level_id);
     if ((error)&&(verbose))
-      std::cout << "# ERROR: incomplete data for atom Z=" << elem_Z[i] <<
-	" in file " << atomfile_ << "\n";
+      std::cerr << "# ERROR: incomplete data for atom Z=" << elem_Z[i] <<
+	" in file " << atomfile_ << std::endl;
   }
  }
 
@@ -134,7 +134,7 @@ int nlte_gas::read_fuzzfile(std::string fuzzfile)
   // check if fuzzfile exists
   FILE *fin = fopen(fuzzfile.c_str(),"r");
   if ((fin == NULL)&&(verbose))
-    std::cout << "# Warning: Can't open atomic data fuzzfile: "
+    std::cerr << "# Warning: Can't open atomic data fuzzfile: "
     << fuzzfile << std::endl;
   if (fin == NULL) return 0;
 
@@ -390,7 +390,7 @@ void nlte_gas::print_properties()
      std::cout << "\n";
     }
   }
-  std::cout << "#---------------------------------------\n";
+  std::cout << "#---------------------------------------" << std::endl;
 }
 
 //-----------------------------------------------------------

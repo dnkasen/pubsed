@@ -37,7 +37,7 @@ int main(int argc, char **argv)
   // initialize the frequency grid  
   std::vector<double> nu_dims = params.getVector<double>("transport_nu_grid");
   if ((nu_dims.size() != 4)&&(nu_dims.size() != 3)) {
-    cout << "# improperly defined nu_grid; need {nu_1, nu_2, dnu, (log?)}; exiting\n";
+    cerr << "# improperly defined nu_grid; need {nu_1, nu_2, dnu, (log?)}; exiting" << endl;
     exit(1); }
   if (nu_dims.size() == 3)
     nu_grid.init(nu_dims[0],nu_dims[1],nu_dims[2]);
@@ -123,7 +123,7 @@ void write_frequency_file(std::string outfile, int style)
   FILE *fout = fopen(outfile.c_str(),"w");
   if (fout == NULL)
   {
-    if (verbose) std::cout << "Can't open opacity output file " << outfile << "\n";
+    if (verbose) std::cerr << "Can't open opacity output file " << outfile << std::endl;
     return;
   }
 
@@ -163,7 +163,7 @@ void write_gas_state(std::string statefile)
   FILE *fout = fopen(statefile.c_str(),"w");
   if (fout == NULL)
   {
-    if (verbose) std::cout << "Can't open output gas state file " << statefile << "\n";
+    if (verbose) std::cerr << "Can't open output gas state file " << statefile << std::endl;
     return;
   }
 
@@ -198,7 +198,7 @@ void write_mean_opacities(std::string outfile)
   FILE *fout = fopen(outfile.c_str(),"w");
   if (fout == NULL)
   {
-    if (verbose) std::cout << "Can't open mean opacity output file " << outfile << "\n";
+    if (verbose) std::cerr << "Can't open mean opacity output file " << outfile << std::endl;
     return;
   }
 

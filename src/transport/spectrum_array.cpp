@@ -45,7 +45,7 @@ void spectrum_array::init(std::vector<double> t, std::vector<double> w,
 
   // assign frequency grid
   if ((w.size() != 4)&&(w.size() != 3)) {
-    std::cout << "# improperly defined spectrum_nu_grid; need {nu_1, nu_2, dnu, (log?)}; exiting\n";
+    std::cerr << "# improperly defined spectrum_nu_grid; need {nu_1, nu_2, dnu, (log?)}; exiting" << std::endl;
     exit(1); }
 
   double w_start = w[0];

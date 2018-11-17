@@ -72,7 +72,7 @@ void transport::reduce_opacities()
   // maximum size of transfer blocks
   int max_blocksize = Max_MPI_Blocksize;
   if (nw > Max_MPI_Blocksize) {
-    std::cout << "Error, frequency grid is bigger than MPI_Max_Blocksize\n";
+    std::cerr << "Error, frequency grid is bigger than MPI_Max_Blocksize" << std::endl;
     exit(1);
   }
 
@@ -88,7 +88,7 @@ void transport::reduce_opacities()
   // sanity check
   if (blocksize > Max_MPI_Blocksize)
   {
-    std::cout << "Error, Blocksize greater than MPI_Max_Blocksize\n";
+    std::cerr << "Error, Blocksize greater than MPI_Max_Blocksize" << std::endl;
     exit(1);
   }
 

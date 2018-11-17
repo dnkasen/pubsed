@@ -16,6 +16,8 @@
 #include "physical_constants.h"
 
 using std::cout;
+using std::cerr;
+using std::endl;
 namespace pc = physical_constants;
 
 //------------------------------------------------------------
@@ -195,8 +197,8 @@ ParticleFate transport::propagate(particle &p, double dt)
     double d_sc  = tau_r/tot_opac_labframe;
     if (tot_opac_labframe == 0) d_sc = std::numeric_limits<double>::infinity();
     if (d_sc < 0)
-      cout << "ERROR: negative interaction distance! " << d_sc << " " << p.nu << " " << dshift << " " <<
-        tot_opac_labframe  << "\n";
+      cerr << "ERROR: negative interaction distance! " << d_sc << " " << p.nu << " " << dshift << " " <<
+        tot_opac_labframe  << endl;
     //std::cout << "dists: "<< d_sc << "\t" << d_bn << "\t" << tot_opac_labframe << "\n";
 
     // find distance to end of time step
