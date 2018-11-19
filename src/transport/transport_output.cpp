@@ -18,20 +18,20 @@ void transport::output_spectrum(int it)
 {
 
   std::stringstream ss;
-  if (it < 0)  ss << "_final"; 
+  if (it < 0)  ss << "_final";
   else ss << "_" << it;
   string base = ss.str();
-  
+
   string specname = params_->getScalar<string>("spectrum_name");
-  if (specname != "") 
+  if (specname != "")
     {
     optical_spectrum.set_name(specname + base);
     optical_spectrum.MPI_average();
     if (verbose) optical_spectrum.print();
   }
-  
+
   string gamname = params_->getScalar<string>("gamma_name");
-  if (gamname != "") 
+  if (gamname != "")
   {
     gamma_spectrum.set_name(gamname + base);
     gamma_spectrum.MPI_average();
@@ -79,6 +79,15 @@ void transport::write_radiation_file(int iw, int write_levels)
   for (int j=0;j<n_nu;j++) tmp_array[j] = nu_grid.center(j);
   H5LTmake_dataset(file_id,"nu",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
+  // write out mean opacities
+  float* tz_array = new float[grid->n_zones];
+  hsize_t  dims_z[RANK]={(hsize_t)grid->n_zones};
+  for (int j=0;j<grid->n_zones;j++) tz_array[j] = planck_mean_opacity_[j];
+  H5LTmake_dataset(file_id,"planck_mean",RANK,dims_z,H5T_NATIVE_FLOAT,tz_array);
+  for (int j=0;j<grid->n_zones;j++) tz_array[j] = rosseland_mean_opacity_[j];
+  H5LTmake_dataset(file_id,"rosseland_mean",RANK,dims_z,H5T_NATIVE_FLOAT,tz_array);
+  delete[] tz_array;
+
   hid_t zone_dir = H5Gcreate1( file_id, "zonedata", 0 );
 
   // loop over zones for wavelength dependence opacities
@@ -98,10 +107,10 @@ void transport::write_radiation_file(int iw, int write_levels)
     H5LTmake_dataset(zone_id,"opacity",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
     // write absorption fraction
-    for (int j=0;j<n_nu;j++) 
+    for (int j=0;j<n_nu;j++)
     {
       double eps = 1;
-      if (!omit_scattering_) 
+      if (!omit_scattering_)
       {
         double topac = scat_opacity_[i][j] + abs_opacity_[i][j];
         if (topac == 0) eps = 1;
@@ -111,7 +120,7 @@ void transport::write_radiation_file(int iw, int write_levels)
     }
     H5LTmake_dataset(zone_id,"epsilon",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
-    // write emissivity 
+    // write emissivity
     for (int j=0;j<n_nu;j++)  tmp_array[j] = emissivity_[i].get_value(j)/nu_grid.delta(j);
     H5LTmake_dataset(zone_id,"emissivity",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
@@ -119,7 +128,7 @@ void transport::write_radiation_file(int iw, int write_levels)
     for (int j=0;j<n_nu;j++)  {
       if (store_Jnu_) tmp_array[j] = J_nu_[i][j];
       else tmp_array[j] = 0; }
-    H5LTmake_dataset(zone_id,"Jnu",RANK,dims,H5T_NATIVE_FLOAT,tmp_array); 
+    H5LTmake_dataset(zone_id,"Jnu",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
     if (write_levels)
     {
@@ -129,7 +138,7 @@ void transport::write_radiation_file(int iw, int write_levels)
       gas.temp = grid->z[i].T_gas;
       gas.time = grid->t_now;
       gas.set_mass_fractions(grid->z[i].X_gas);
-      // solve for the state 
+      // solve for the state
       if (!gas.grey_opacity_) gas.solve_state(J_nu_[i]);
 
       for (size_t j=0;j<gas.atoms.size();j++)
@@ -167,8 +176,7 @@ void transport::write_radiation_file(int iw, int write_levels)
   }
   H5Gclose(zone_dir);
 
-  
-  H5Fclose (file_id);
-  delete[] tmp_array; 
-}
 
+  H5Fclose (file_id);
+  delete[] tmp_array;
+}
