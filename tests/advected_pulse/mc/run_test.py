@@ -29,7 +29,7 @@ def run_test(pdf="",runcommand=""):
     # clean up any old results and run the code
     #-------------------------------------------
     if (runcommand != ""):
-    	os.system("rm *_spectrum_* plt_* integrated_quantities.dat")
+    	os.system("rm spectrum_* plt_* integrated_quantities.dat")
     	os.system(runcommand)
 
     #-------------------------------------------
@@ -41,7 +41,7 @@ def run_test(pdf="",runcommand=""):
     # write code here to read in output data and
     # plot it compared to standard reference
 	# read initial energy
-    r,v,d,tr,comp = np.loadtxt('constant.mod',unpack=True,skiprows=3)
+    r,v,d,tr,comp = np.loadtxt('../models/constant.mod',unpack=True,skiprows=3)
     vel = v[0]
     rho = d[0]
     n = len(r)
@@ -86,8 +86,8 @@ def run_test(pdf="",runcommand=""):
         if (mean_err > 0.1): failure = 1
 
 
-    plt.title('Advected Pulse')
-    plt.legend(['Sedona','analytic diffusion'])
+    plt.title('Advected Pulse -- Monte Carlo transport')
+    plt.legend(['Sedona MC','analytic diffusion'])
     plt.xlabel('radius (cm)',size=15)
     plt.ylabel('temperature (K)',size=15)
 

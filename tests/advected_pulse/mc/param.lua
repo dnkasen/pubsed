@@ -4,7 +4,7 @@ defaults_file    = sedona_home.."/defaults/sedona_defaults.lua"
 data_atomic_file = sedona_home.."/data/2level_atomdata.hdf5"
 
 grid_type    = "grid_1D_sphere"    -- grid geometry; must match input model
-model_file   = "constant.mod"      -- input model file
+model_file   = "../models/constant.mod"      -- input model file
 
 -- time stepping
 tstep_max_steps    = 1000
