@@ -8,7 +8,7 @@
 
 class nlte_gas
 {
- 
+
  private:
 
   double ne_brent_method(double,double,double,std::vector<real>);
@@ -36,23 +36,28 @@ class nlte_gas
   double dens;                   // total mass density (g cm^-3)
   double ne;                     // electron number density (cm^-3)
   double temp;                   // Temperature (K)
-  double time;                   // Time since Explosion (days) 
+  double time;                   // Time since Explosion (days)
   double e_gamma;                // gamma-ray deposited energy
   double A_mu;                   // mean atomic weight of the gas
   int no_ground_recomb;          // suppress ground recombinations
 
   // flags for what opacities to use
-  int use_electron_scattering_opacity;   
+  int use_electron_scattering_opacity;
   int use_line_expansion_opacity;
   int use_fuzz_expansion_opacity;
   int use_free_free_opacity;
   int use_bound_free_opacity;
-  int use_bound_bound_opacity;   
+  int use_bound_bound_opacity;
   int use_user_opacity_;
   double line_velocity_width_;
 
+  // calculate means
+  double get_planck_mean(std::vector<OpacityType> x);
+  double get_rosseland_mean(std::vector<OpacityType> x);
+
+
   std::vector <double> user_opacity_array_;
-  
+
   // flags for nlte
   int use_nlte_;
 
@@ -70,7 +75,7 @@ class nlte_gas
   // simple constructor
   //----------------------------------------------------------------
   nlte_gas();
-  
+
   //----------------------------------------------------------------
   // initialize the gas by specifying the atoms that will
   // compose it, along with datafile and freq. array
@@ -96,18 +101,18 @@ class nlte_gas
   // std::string fuzzfile: name of hdf5 file with fuzz data
   //-----------------------------------------------------------
   int  read_fuzzfile(std::string fuzzfile);
-  
+
   //-----------------------------------------------------------------
   // Set mass fractions of each element in the gas
   // this function will enforce that the mass fractions are
   // normalized (i.e., add up to 1)
   //
-  // input: 
+  // input:
   // std::vector<double> x: vector of mass fractions of each element
   //-----------------------------------------------------------------
   void set_mass_fractions(std::vector<double>);
-  
-  
+
+
   //***********************************************************
   // BASIC FUNCTIONALITY
   //***********************************************************
@@ -121,7 +126,7 @@ class nlte_gas
   //    == 0 for no error
   //    == 1 root not bracketed in electron density solve
   //    == 2 maximum iterations reached in n_e solve
-  //-----------------------------------------------------------  
+  //-----------------------------------------------------------
   int solve_state(std::vector<real>);
   int solve_state();
 
@@ -131,15 +136,15 @@ class nlte_gas
   //***********************************************************
 
   //-----------------------------------------------------------
-  // get essential parameters 
+  // get essential parameters
   //-----------------------------------------------------------
-  double get_density()             {return dens;} 
+  double get_density()             {return dens;}
   double get_temperature()         {return temp;}
   double get_mean_atomic_weight()  {return A_mu;}
   double get_electron_density()    {return ne;}
 
   //-----------------------------------------------------------
-  // return the the number of atoms, or 
+  // return the the number of atoms, or
   // number of ions in atom i
   //-----------------------------------------------------------
   int get_number_atoms()
@@ -159,13 +164,13 @@ class nlte_gas
 
   //-----------------------------------------------------------
   // return the fraction of atoms of index i that are in
-  // ionization state j.  
+  // ionization state j.
   //-----------------------------------------------------------
   double get_ionization_fraction(int i, int j);
 
   //-----------------------------------------------------------
   // return the fraction of atoms of index i that are in
-  // ionization state j.  
+  // ionization state j.
   //-----------------------------------------------------------
   double get_partition_function(int i, int j)
   {
@@ -174,7 +179,7 @@ class nlte_gas
 
   //-----------------------------------------------------------
   // return the fraction of atoms of index i that are in
-  // level state j.  
+  // level state j.
   //-----------------------------------------------------------
   double get_level_fraction(int i, int j);
   double get_level_departure(int i, int j);
@@ -183,7 +188,7 @@ class nlte_gas
   //***********************************************************
   // OPACITIES AND EMISSIVITIES
   //***********************************************************
-  void computeOpacity(std::vector<OpacityType>&, std::vector<OpacityType>&, 
+  void computeOpacity(std::vector<OpacityType>&, std::vector<OpacityType>&,
 		      std::vector<OpacityType>&);
   double electron_scattering_opacity();
   void free_free_opacity  (std::vector<double>&, std::vector<double>&);
@@ -193,7 +198,7 @@ class nlte_gas
   void line_expansion_opacity(std::vector<double>&);
   void fuzz_expansion_opacity(std::vector<double>&, std::vector<double>&);
   void get_line_opacities(std::vector<double>&);
- 
+
   void get_user_defined_opacity
   (std::vector<double>&, std::vector<double>&,std::vector<double>&);
 
