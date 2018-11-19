@@ -372,6 +372,8 @@ double nlte_gas::get_planck_mean
 		return 0;
 	}
 
+	if (nu_grid.size() == 1) return abs[0] + scat[0];
+
 	double mean = 0;
 	double norm = 0;
 	for (size_t i=0;i<nu_grid.size();i++)
@@ -405,6 +407,8 @@ double nlte_gas::get_planck_mean(std::vector<OpacityType> x)
 			std::cerr << std::endl; }
 		return 0;
 	}
+
+	if (nu_grid.size() == 1) return x[0];
 
 	double mean = 0;
 	double norm = 0;
@@ -441,6 +445,8 @@ double nlte_gas::get_rosseland_mean
 		return 0;
 	}
 
+	if (nu_grid.size() == 1) return abs[0] + scat[0];
+
 	double mean = 0;
 	double norm = 0;
 	for (size_t i=0;i<nu_grid.size();i++)
@@ -474,6 +480,8 @@ double nlte_gas::get_rosseland_mean(std::vector<OpacityType> x)
 			std::cerr << std::endl; }
 		return 0;
 	}
+
+	if (nu_grid.size() == 1) return x[0];
 
 	double mean = 0;
 	double norm = 0;
