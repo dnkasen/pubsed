@@ -54,7 +54,10 @@ class nlte_gas
   // calculate means
   double get_planck_mean(std::vector<OpacityType> x);
   double get_rosseland_mean(std::vector<OpacityType> x);
-
+  double get_planck_mean
+  (std::vector<OpacityType> abs, std::vector<OpacityType> scat);
+  double get_rosseland_mean
+  (std::vector<OpacityType> abs, std::vector<OpacityType> scat);
 
   std::vector <double> user_opacity_array_;
 

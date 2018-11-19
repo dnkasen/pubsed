@@ -354,6 +354,42 @@ void nlte_gas::fuzz_expansion_opacity(std::vector<double>& opac, std::vector<dou
 }
 
 //----------------------------------------------------------------
+// Calculate a total Planck mean of the passed opacities
+// Passed:
+//   abs -- a vector of the absorption Opacity
+//   scat -- a vector of the scattering opacity
+// Returns:
+//   the calculated planck mean
+//----------------------------------------------------------------
+double nlte_gas::get_planck_mean
+(std::vector<OpacityType> abs, std::vector<OpacityType> scat)
+{
+	if ((abs.size() != nu_grid.size())||(scat.size() != nu_grid.size()))
+	{
+		if (verbose) {
+			std::cerr << "# Warning: pacity vector of wrong length in get_planck_mean";
+			std::cerr << std::endl; }
+		return 0;
+	}
+
+	double mean = 0;
+	double norm = 0;
+	for (size_t i=0;i<nu_grid.size();i++)
+ 	{
+		double nu   = nu_grid.center(i);
+		double zeta = pc::h*nu/pc::k/temp;
+		double Bnu  = 2.0*nu*nu*nu*pc::h/pc::c/pc::c/(exp(zeta)-1);
+		if (isnan(Bnu)) Bnu = 0;
+		double W = Bnu*nu_grid.delta(i);
+		mean += W*(abs[i] + scat[i]);
+		norm += W;
+	}
+	mean = mean/norm;
+	return mean;
+}
+
+
+//----------------------------------------------------------------
 // Calculate a Planck mean of the passed array x
 // Passed:
 //   x -- a vector of the same size of the frequency bin
@@ -362,6 +398,14 @@ void nlte_gas::fuzz_expansion_opacity(std::vector<double>& opac, std::vector<dou
 //----------------------------------------------------------------
 double nlte_gas::get_planck_mean(std::vector<OpacityType> x)
 {
+	if (x.size() != nu_grid.size())
+	{
+		if (verbose) {
+			std::cerr << "# Warning: pacity vector of wrong length in get_planck_mean";
+			std::cerr << std::endl; }
+		return 0;
+	}
+
 	double mean = 0;
 	double norm = 0;
 	for (size_t i=0;i<nu_grid.size();i++)
@@ -386,8 +430,51 @@ double nlte_gas::get_planck_mean(std::vector<OpacityType> x)
 // Returns:
 //   the calculated planck mean
 //----------------------------------------------------------------
+double nlte_gas::get_rosseland_mean
+(std::vector<OpacityType> abs, std::vector<OpacityType> scat)
+{
+	if ((abs.size() != nu_grid.size())||(scat.size() != nu_grid.size()))
+	{
+		if (verbose) {
+			std::cerr << "# Warning: pacity vector of wrong length in get_planck_mean";
+			std::cerr << std::endl; }
+		return 0;
+	}
+
+	double mean = 0;
+	double norm = 0;
+	for (size_t i=0;i<nu_grid.size();i++)
+ 	{
+		double nu   = nu_grid.center(i);
+		double zeta = pc::h*nu/pc::k/temp;
+		double ezeta = exp(zeta);
+		double dBdT  = pow(nu,4)*ezeta/(ezeta-1)/(ezeta-1);
+		if (isnan(dBdT)) dBdT = 0;
+		double W = dBdT*nu_grid.delta(i);
+		mean += W/(abs[i] + scat[i]);
+		norm += W;
+	}
+	mean = norm/mean;
+	return mean;
+}
+
+//----------------------------------------------------------------
+// Calculate a Rosseland mean of the passed array x
+// Passed:
+//   x -- a vector of the same size of the frequency bin
+// Returns:
+//   the calculated planck mean
+//----------------------------------------------------------------
 double nlte_gas::get_rosseland_mean(std::vector<OpacityType> x)
 {
+	if (x.size() != nu_grid.size())
+	{
+		if (verbose) {
+			std::cerr << "# Warning: pacity vector of wrong length in get_planck_mean";
+			std::cerr << std::endl; }
+		return 0;
+	}
+
 	double mean = 0;
 	double norm = 0;
 	for (size_t i=0;i<nu_grid.size();i++)
