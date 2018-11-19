@@ -43,6 +43,8 @@ void transport::step(double dt)
   tend = get_system_time();
   if (verbose) cout << "# Communicated opacities (" << (tend-tstr) << " secs) \n";
 
+  if (use_ddmc_) compute_diffusion_probabilities(dt);
+
   // clear the tallies of the radiation quantities in each zone
   wipe_radiation();
 
@@ -58,7 +60,11 @@ void transport::step(double dt)
   std::list<particle>::iterator pIter = particles.begin();
   while (pIter != particles.end())
   {
-    ParticleFate fate = propagate(*pIter,dt);
+    ParticleFate fate;
+    if (planck_mean_opacity_[pIter->ind] > ddmc_tau_)
+      fate = discrete_diffuse(*pIter,dt);
+    else fate = propagate(*pIter,dt);
+
     if (fate == escaped) n_escape++;
     if ((fate == escaped)||(fate == absorbed)) pIter = particles.erase(pIter);
     else pIter++;

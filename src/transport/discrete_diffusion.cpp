@@ -101,9 +101,6 @@ void transport::compute_diffusion_probabilities(double dt)
 {
   int nz = grid->n_zones;
 
-  // debug hard coded for now
-  double grey_opac = 1.0;
-
   for (int i=0;i<nz;i++)
   {
     double dx;
