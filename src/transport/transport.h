@@ -142,6 +142,7 @@ class transport
   vector<real> ddmc_P_abs_;
   vector<real> ddmc_P_stay_;
   int use_ddmc_;
+  double ddmc_tau_;
 
   // the radiation quantities in the zone
   vector <real> e_rad;

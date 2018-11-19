@@ -132,6 +132,8 @@ void transport::init(ParameterReader* par, grid_general *g)
   gas.atom_zero_epsilon_ = params_->getVector<int>("opacity_atom_zero_epsilon");
   gas.epsilon_           = params_->getScalar<double>("opacity_epsilon");
 
+
+
   // set non-lte settings
   int use_nlte = params_->getScalar<int>("opacity_use_nlte");
   gas.initialize(atomdata,grid->elems_Z,grid->elems_A,nu_grid);
@@ -215,6 +217,24 @@ void transport::init(ParameterReader* par, grid_general *g)
   }
   for (int j=0;j<nu_grid.size();j++) emissivity_weight_[j] *= nu_grid.size()/norm;
  // for (int j=0;j<nu_grid.size();j++) std::cout << nu_grid.center(j) << " " << emissivity_weight_[j] << "\n";
+
+
+ // ddmc parameters
+ use_ddmc_ = params_->getScalar<int>("transport_use_ddmc");
+ ddmc_tau_ = params_->getScalar<double>("transport_ddmc_tau_threshold");
+ if (use_ddmc_)
+ {
+   ddmc_P_up_.resize(grid->n_zones);
+   ddmc_P_dn_.resize(grid->n_zones);
+   ddmc_P_adv_.resize(grid->n_zones);
+   ddmc_P_abs_.resize(grid->n_zones);
+   ddmc_P_stay_.resize(grid->n_zones);
+ }
+ if ((use_ddmc_)&&(verbose))
+ {
+  std::cout << "# Using DDMC with threshold tau = ";
+  std::cout << ddmc_tau_ << std::endl;
+}
 
   // allocate space for emission distribution function across zones
   zone_emission_cdf_.resize(grid->n_zones);

@@ -30,6 +30,8 @@ transport_steady_iterate         = 0
 transport_boundary_in_reflect    = 0
 transport_boundary_out_reflect   = 0
 transport_store_Jnu              = 1
+transport_use_ddmc               = 0
+transport_ddmc_tau_threshold     = 100
 
 -- inner source emission = none
 core_n_emit           = 0
@@ -106,6 +108,3 @@ spectrum_n_phi     = 1
 -- output gamma-ray spectrum
 gamma_name     = ""
 gamma_nu_grid  = {1,1,1}
-
-
-
