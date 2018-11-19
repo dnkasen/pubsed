@@ -1,5 +1,6 @@
 #include <time.h>
 #include <iostream>
+#include <iomanip>      // std::setprecision
 #include <vector>
 #include <ctime>
 
@@ -48,11 +49,11 @@ int main(int argc, char **argv)
   const int verbose = (my_rank == 0);
   if (verbose)
   {
-    cout << "##################################\n";
-    cout << "############  sedona  ############\n";
-    cout << "##################################\n";
-    cout << "#\n# MPI tasks = " << n_procs << endl << "#" << endl;
-
+    cout << "##################################" << endl;
+    cout << "############  sedona  ############" << endl;
+    cout << "##################################" << endl;
+    cout << "# " << endl;
+    cout << "# MPI tasks = " << n_procs << endl << "#" << endl;
   }
 
 // start timer
@@ -123,13 +124,15 @@ int main(int argc, char **argv)
       cout << "# t_start = " << t_start << ", t_now = " << grid->t_now;
       if (t_start < grid->t_now)
       {
-        cout << "\n# Adiabatically compressing rho and T from input model\n";
-        cout << "# Assumes rad pressure dominated; no radioactive heating\n";
+        cout << "#" << endl;
+        cout << "# Adiabatically compressing rho and T from input model" << endl;
+        cout << "# Assumes rad pressure dominated; no radioactive heating" << endl;
       }
       else
       {
-        cout << "\n# Adiabatically expanding rho and T from input model\n";
-        cout << "# Assumes rad pressure dominated; includes radioactive heating\n";
+        cout << "#" << endl;
+        cout << "# Adiabatically expanding rho and T from input model" << endl;
+        cout << "# Assumes rad pressure dominated; includes radioactive heating" << endl;
       }
     }
     int force_rproc  = params.getScalar<int>("force_rprocess_heating");
@@ -180,9 +183,12 @@ int main(int argc, char **argv)
   // print out initial state
   if (verbose)
   {
-    printf("# writing intial plot file\n");
+    cout << "# writing intial plot file" << endl;
     grid->write_plotfile(0,grid->t_now,write_mass_fractions);
   }
+
+  std::cout << std::scientific;
+  std::cout << std::setprecision(2);
 
   // loop over time/iterations
   double dt, t = grid->t_now;
@@ -206,13 +212,14 @@ int main(int argc, char **argv)
       if (it == n_steps) mcarlo.set_last_iteration_flag();
     }
 
-
     // printout basic time step information
     if (verbose)
     {
+      std::cout << "#-------------------------------------------" << std::endl;
       if (steady_iterate) cout << "# ITERATION: " << it << ";  t = " << t << "\t";
       else cout << "# TSTEP #" << it << " ; t = " << t << " sec (" << t/3600/24.0 << " days); dt = " << dt;
-      cout << "; particles on grid = " << mcarlo.n_particles() << "\n";
+      cout << std::endl;
+      cout << "# particles on grid = " << mcarlo.n_particles() << std::endl;
     }
 
     // do hydro step
@@ -237,7 +244,8 @@ int main(int argc, char **argv)
       // write out what we want
       if (verbose)
       {
-        printf("# writing plot file %d at time %e\n",i_write+1, t_write);
+        cout << "# writing plot file " << i_write + 1;
+        cout << " at time " << t_write << endl;
         grid->write_plotfile(i_write+1,t_write,write_mass_fractions);
         if ((use_transport)&&(write_radiation))
           mcarlo.write_radiation_file(i_write+1, write_levels);
@@ -277,8 +285,12 @@ double time_wasted;
 #endif
 
   if (verbose)
-    printf("#\n# CALCULATION took %.3e seconds or %.3f mins or %.3f hours\n",
-	   time_wasted,time_wasted/60.0,time_wasted/60.0/60.0);
+  {
+      cout << "#" << endl;
+      cout << "# CALCULATION took " << time_wasted << " seconds ";
+      cout << " = " << time_wasted/60.0 << " minutes";
+      cout << " = " << time_wasted/60.0/60 << " hours" << endl;
+  }
 
 #ifdef MPI_PARALLEL
   // finish up mpi
