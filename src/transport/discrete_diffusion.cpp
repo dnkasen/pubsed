@@ -17,7 +17,7 @@ ParticleFate transport::discrete_diffuse(particle &p, double dt)
 
   double dx;
   grid->get_zone_size(p.ind,&dx);
-  
+
   // set this zone
   while (!stop)
   {
@@ -115,10 +115,12 @@ void transport::compute_diffusion_probabilities(double dt)
     int im = i-1;
     if (im < 0)   im = 0;
 
+    double sigma_p = planck_mean_opacity_[i];
+
     // diffusion probability in zone and adjacent zones
-    double Dj0 = pc::c/(3.0*grey_opac*grid->z[i].rho);
-    double Djp = pc::c/(3.0*grey_opac*grid->z[ip].rho);
-    double Djm = pc::c/(3.0*grey_opac*grid->z[im].rho);
+    double Dj0 = pc::c/(3.0*sigma_p);
+    double Djp = pc::c/(3.0*sigma_p);
+    double Djm = pc::c/(3.0*sigma_p);
 
     double Dh_up = 2*dx*(Dj0*Djp)/(Dj0*dx + Djp*dx);
     double Dh_dn = 2*dx*(Dj0*Djm)/(Dj0*dx + Djm*dx);
