@@ -42,7 +42,7 @@ void transport::set_opacity()
   {
     // pointer to current zone for easy access
     zone* z = &(grid->z[i]);
-      
+
     //------------------------------------------------------
     // optical photon opacities
     //------------------------------------------------------
@@ -61,8 +61,8 @@ void transport::set_opacity()
       radio.decay_composition(grid->elems_Z,grid->elems_A,X_now,t_now_);
     }
     gas.set_mass_fractions(X_now);
-   
-    // solve for the state 
+
+    // solve for the state
     if (!gas.grey_opacity_) solve_error = gas.solve_state(J_nu_[i]);
     //gas.print();
 
@@ -86,7 +86,7 @@ void transport::set_opacity()
       emissivity_[i].set_value(j,ednu);
       grid->z[i].L_thermal += 4*pc::pi * ednu;
       if (!omit_scattering_) scat_opacity_[i][j] = scat[j];
-     
+
       // check for maximum opacity
       if (!omit_scattering_)
       {
@@ -97,6 +97,12 @@ void transport::set_opacity()
         abs_opacity_[i][j]    = max_extinction;
     }
     emissivity_[i].normalize();
+
+    // calculate mean opacities
+    planck_mean_opacity_[i] =
+      gas.get_planck_mean(abs_opacity_[i],scat_opacity_[i]);
+    rosseland_mean_opacity_[i] =
+      gas.get_rosseland_mean(abs_opacity_[i],scat_opacity_[i]);
 
     //------------------------------------------------------
     // gamma-ray opacity (compton + photo-electric)
@@ -143,8 +149,8 @@ int transport::get_opacity(particle &p, double dshift, double &opac, double &eps
   // comoving frame frequency
   double nu = p.nu*dshift;
   int i_nu = 0;
-  
-  // get opacity if it is an optical photon. 
+
+  // get opacity if it is an optical photon.
   if (p.type == photon)
   {
     // interpolate opacity at the local comving frame frequency
@@ -195,8 +201,3 @@ double transport::blackbody_nu(double T, double nu)
   double zeta = pc::h*nu/pc::k/T;
   return 2.0*nu*nu*nu*pc::h/pc::c/pc::c/(exp(zeta)-1);
 }
-
-
-
-
-

@@ -130,6 +130,8 @@ class transport
   vector< cdf_array<OpacityType> >    emissivity_;
   vector< vector<OpacityType> >       abs_opacity_;
   vector< vector<OpacityType> >       scat_opacity_;
+  vector<OpacityType> planck_mean_opacity_;
+  vector<OpacityType> rosseland_mean_opacity_;
   vector< vector<real> > J_nu_;
   vector<real> compton_opac;
   vector<real> photoion_opac;
@@ -189,7 +191,7 @@ class transport
   ParticleFate propagate(particle &p, double tstop);
   ParticleFate discrete_diffuse(particle &p, double tstop);
   void compute_diffusion_probabilities(double dt);
-  
+
   // scattering functions
   ParticleFate do_scatter(particle*, double);
   void compton_scatter(particle*);
