@@ -25,6 +25,8 @@ void transport::set_opacity()
   {
     compton_opac[i]  = 0;
     photoion_opac[i] = 0;
+    rosseland_mean_opacity_[i] = 0;
+    planck_mean_opacity_[i] = 0;
     emissivity_[i].wipe();
     for (int j=0;j<nu_grid.size();j++)
     {
