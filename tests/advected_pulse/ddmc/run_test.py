@@ -79,12 +79,12 @@ def run_test(pdf="",runcommand=""):
 
         # determine error
         use = (T > T*0.1)
-        max_err,mean_err = get_error(T,Tan)
-    #    print('mean error = ' + str(mean_err))
-    #    print('max error  = ' + str(max_err))
+        max_err,mean_err = get_error(Tan,T)
+        #print('mean error = ' + str(mean_err))
+        #print('max error  = ' + str(max_err))
 
         if (mean_err > 0.1): failure = 1
-
+        if (np.isnan(mean_err)): failure = 1
 
     plt.title('Advected Pulse - Discrete Diffusion MC')
     plt.legend(['Sedona DDMC','analytic diffusion'])
