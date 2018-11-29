@@ -17,7 +17,7 @@ namespace pc = physical_constants;
 //------------------------------------------------------------
 void transport::wipe_radiation()
 {
-  for (int i=0;i<grid->n_zones;i++) 
+  for (int i=0;i<grid->n_zones;i++)
   {
     grid->z[i].e_rad  = 0;
     grid->z[i].e_abs  = 0;
@@ -37,7 +37,7 @@ void transport::wipe_radiation()
 //------------------------------------------------------------
 void transport::set_eps_imc()
 {
-  for (int i=0;i<grid->n_zones;i++) 
+  for (int i=0;i<grid->n_zones;i++)
   {
 
     if (radiative_eq)
@@ -50,14 +50,14 @@ void transport::set_eps_imc()
 
 //------------------------------------------------------------
 // Combine the opacity calculations in all zones
-// from all processors using MPI 
+// from all processors using MPI
 //------------------------------------------------------------
 void transport::reduce_opacities()
 {
- 
+
 #ifndef MPI_PARALLEL
   return;
-#else  
+#else
   if (MPI_nprocs == 1) return;
 
 
@@ -110,7 +110,7 @@ void transport::reduce_opacities()
     cnt = 0;
     for (int j=0;j<this_nz;j++)
     {
-      int iz = i*nz_per_block + j; 
+      int iz = i*nz_per_block + j;
       for (int k=0;k<nw;k++)
       {
         src_MPI_block[cnt] = abs_opacity_[iz][k];
@@ -122,7 +122,7 @@ void transport::reduce_opacities()
     cnt = 0;
     for (int j=0;j<this_nz;j++)
     {
-      int iz = i*nz_per_block + j; 
+      int iz = i*nz_per_block + j;
       for (int k=0;k<nw;k++)
       {
         abs_opacity_[iz][k] = (OpacityType)dst_MPI_block[cnt];
@@ -138,7 +138,7 @@ void transport::reduce_opacities()
       cnt = 0;
       for (int j=0;j<this_nz;j++)
       {
-        int iz = i*nz_per_block + j; 
+        int iz = i*nz_per_block + j;
         for (int k=0;k<nw;k++)
         {
           src_MPI_block[cnt] = scat_opacity_[iz][k];
@@ -150,9 +150,9 @@ void transport::reduce_opacities()
       cnt = 0;
       for (int j=0;j<this_nz;j++)
       {
-        int iz = i*nz_per_block + j; 
+        int iz = i*nz_per_block + j;
         for (int k=0;k<nw;k++)
-        {  
+        {
           scat_opacity_[iz][k] = (OpacityType)dst_MPI_block[cnt];
           cnt++;
         }
@@ -164,7 +164,7 @@ void transport::reduce_opacities()
     cnt = 0;
     for (int j=0;j<this_nz;j++)
     {
-      int iz = i*nz_per_block + j; 
+      int iz = i*nz_per_block + j;
       for (int k=0;k<nw;k++)
       {
         src_MPI_block[cnt] = emissivity_[iz].get(k);
@@ -176,7 +176,7 @@ void transport::reduce_opacities()
     cnt = 0;
     for (int j=0;j<this_nz;j++)
     {
-      int iz = i*nz_per_block + j; 
+      int iz = i*nz_per_block + j;
       for (int k=0;k<nw;k++)
       {
         emissivity_[iz].set(k,(OpacityType)dst_MPI_block[cnt]);
@@ -204,20 +204,36 @@ void transport::reduce_opacities()
   MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
   for (int i=0;i<nz;i++) photoion_opac[i] = dst_MPI_zones[i];
 
+  for (int i=0;i<nz;i++)
+  {
+    src_MPI_zones[i] = rosseland_mean_opacity_[i];
+    dst_MPI_zones[i] = 0.0;
+  }
+  MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  for (int i=0;i<nz;i++) rosseland_mean_opacity_[i] = dst_MPI_zones[i];
+
+  for (int i=0;i<nz;i++)
+  {
+    src_MPI_zones[i] = planck_mean_opacity_[i];
+    dst_MPI_zones[i] = 0.0;
+  }
+  MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  for (int i=0;i<nz;i++) planck_mean_opacity_[i] = dst_MPI_zones[i];
+
 #endif
 
 }
 
 //------------------------------------------------------------
 // Combine the solved for temperature in zones
-// from all processors using MPI 
+// from all processors using MPI
 //------------------------------------------------------------
  void transport::reduce_Tgas()
  {
 
 #ifndef MPI_PARALLEL
   return;
-#else 
+#else
 
   if (MPI_nprocs == 1) return;
 
@@ -244,7 +260,7 @@ void transport::reduce_opacities()
 
 #ifndef MPI_PARALLEL
   return;
-#else 
+#else
 
   if (MPI_nprocs == 1) return;
   if (params_->getScalar<int>("particles_n_emit_thermal") == 0) return;
@@ -269,14 +285,14 @@ void transport::reduce_opacities()
 
 //------------------------------------------------------------
 // Combine the radiation tallies in all zones
-// from all processors using MPI 
+// from all processors using MPI
 //------------------------------------------------------------
  void transport::reduce_radiation(double dt)
 {
 
 #ifndef MPI_PARALLEL
   return;
-#else 
+#else
   if (MPI_nprocs > 1)
   {
   // eventually do a smarter reduction
@@ -306,7 +322,7 @@ void transport::reduce_opacities()
       }
       delete[] src;
       delete[] dst;
-    } 
+    }
 
      //=************************************************
     // do zone scalars
@@ -332,14 +348,14 @@ void transport::reduce_opacities()
   // properly normalize the radiative quantities
   // this should really be a separate call
   //=************************************************
-  for (int i=0;i<grid->n_zones;i++) 
+  for (int i=0;i<grid->n_zones;i++)
   {
     double vol = grid->zone_volume(i);
     grid->z[i].e_abs   /= vol*dt;
     grid->z[i].L_radio_dep /= vol*dt;
     grid->z[i].L_radio_emit /= vol;
 
-    //grid->z[i].fx_rad  /= vol*pc::c*dt; 
+    //grid->z[i].fx_rad  /= vol*pc::c*dt;
     //grid->z[i].fy_rad  /= vol*pc::c*dt;
     //grid->z[i].fz_rad  /= vol*pc::c*dt;
 
@@ -347,13 +363,13 @@ void transport::reduce_opacities()
     {
       grid->z[i].e_rad = J_nu_[i][0]/(vol*dt*pc::c);
     }
-    else 
+    else
     {
       double esum = 0;
-      for (int j=0;j<nu_grid.size();j++) 
+      for (int j=0;j<nu_grid.size();j++)
       {
         J_nu_[i][j] /= vol*dt*4*pc::pi*nu_grid.delta(j);
-        esum += J_nu_[i][j]*nu_grid.delta(j)*4*pc::pi/pc::c; 
+        esum += J_nu_[i][j]*nu_grid.delta(j)*4*pc::pi/pc::c;
       }
       grid->z[i].e_rad = esum;
     }

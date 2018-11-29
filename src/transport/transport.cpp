@@ -60,9 +60,16 @@ void transport::step(double dt)
   std::list<particle>::iterator pIter = particles.begin();
   while (pIter != particles.end())
   {
+    int ddmc_zone = 0;
+    if (use_ddmc_)
+    {
+      double dx;
+      grid->get_zone_size(pIter->ind,&dx);
+      double ztau = planck_mean_opacity_[pIter->ind]*dx;
+      if (ztau > ddmc_tau_) ddmc_zone = 1;
+    }
     ParticleFate fate;
-    if (planck_mean_opacity_[pIter->ind] > ddmc_tau_)
-      fate = discrete_diffuse(*pIter,dt);
+    if (ddmc_zone) fate = discrete_diffuse(*pIter,dt);
     else fate = propagate(*pIter,dt);
 
     if (fate == escaped) n_escape++;
