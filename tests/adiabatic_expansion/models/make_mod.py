@@ -3,7 +3,7 @@ vmax = 1e9
 texp = 20*3600.0*24
 temp = 1e4;
 vedge = 0.5e9;
-rho  = 1e-11;
+rho  = 1e-12;
 dv   = vmax/nx
 
 fout = open("constant.mod","w")

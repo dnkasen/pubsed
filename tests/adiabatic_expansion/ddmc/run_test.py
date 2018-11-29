@@ -67,10 +67,11 @@ def run_test(pdf="",runcommand=""):
             plt.plot(r,T_rad,'o',color=colors[cnt])
             cnt += 1
 
-        plt.legend(['sedona','analytic'])
-        plt.title('adiabatic expansion MC - temperature profiles')
+        plt.legend(['sedona DDMC','analytic'])
+        plt.title('adiabatic expansion ddmc - temperature profiles')
         plt.xlabel('radius (cm)')
         plt.ylabel('radiation temperature')
+
 
     # add plot to pdf file (or show on screen)
     if (pdf != ''): pdf.savefig()
@@ -83,10 +84,11 @@ def run_test(pdf="",runcommand=""):
     plt.plot(time/3600/24.,Tmod,'o')
     Tan = temp0*(t0/time)
     plt.plot(time/3600/24.,Tan)
-    plt.legend(['sedona','analytic'])
-    plt.title('adiabatic expansion MC - mean temperature evolution')
+    plt.legend(['sedona DDMC','analytic'])
+    plt.title('adiabatic expansion ddmc - mean temperature evolution')
     plt.xlabel('time (days)')
     plt.ylabel('mean temperature')
+
 
     max_err,mean_err = get_error(Tmod,Tan)
     if (mean_err > 0.1): failure = 1
