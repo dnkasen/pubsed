@@ -89,7 +89,6 @@ def read_original(rfn, verbose=False):
     headers[1] = headers[1][:9]
 
     # Check that the blocks are OK in shape
-    print(len(blocks))
     for i_block, block in enumerate(blocks[1:]):
         if block.shape[0] - blocks[0].shape[0] != 0: 
             print('FATAL ERROR: It seems that the script is not identifying blocks correctly.')
@@ -211,16 +210,20 @@ def convert(Table, header, species,
     # number of gas properties needed by Sedona
     N_needed = 3
     # initialize the matrix that will be ouptut as the model
-    mat = np.zeros((n_zones, N_needed+len(species)))
+    is_unknown = [ s == '' for s in species ] # Some Kepler species are not in Sedona
+    N_unknown = sum(is_unknown)
+    mat = np.zeros((n_zones, N_needed+len(species)-N_unknown))
 
     mat[:,0] = Table['radius']/time
     mat[:,1] = Table['density']
     mat[:,2] = Table['temp']
 
+    N_skipped = 0
     for i, s in enumerate(species):
         # If the species list is coming from Kepler, some 
         # elements will have been unknown
         if s=='':
+            N_skipped += 1
             continue
         elif s=='1.1':
             x = Table['h1'] + Table['nt1'] + Table['pn1']
@@ -237,7 +240,7 @@ def convert(Table, header, species,
             except KeyError:
                 print(s, Se)
 
-        mat[:, i+N_needed] = x
+        mat[:, i + N_needed - N_skipped] = x
 
     return mat, time
 
