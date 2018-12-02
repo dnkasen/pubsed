@@ -11,6 +11,8 @@
 #include "locate_array.h"
 #include "sedona.h"
 #include "VoigtProfile.h"
+
+
 struct fuzz_line_structure
 {
   int n_lines;
@@ -22,7 +24,7 @@ struct fuzz_line_structure
 };
 
 
-struct nlte_ion
+struct AtomicIon
 {
   int stage;          // ionization stage (0 = neutral, 1 = +, etc..)
   int ground;         // index of ground state level
@@ -31,7 +33,7 @@ struct nlte_ion
   double frac;        // fractional abundance
 };
 
-struct nlte_line
+struct AtomicLine
 {
   int lu,ll;           // index of upper/lower level
   double nu;           // rest frequency (Hz)
@@ -46,9 +48,9 @@ struct nlte_line
   int    bin;          // index of the nu grid bin
 };
 
-struct nlte_level
+struct AtomicLevel
 {
-  int   globalID;       // global id 
+  int   globalID;       // global id
   int  ion;             // ionization state (0 = neutral)
   int   ic;             // index of level we ionize to (-1 if none)
   int    g;             // statistical weight
@@ -56,7 +58,7 @@ struct nlte_level
   double E_ion;         // energy to ionize (in eV)
   double n;             // level population fraction
   double n_lte;         // lte level population
-  double b;             // nlte departure coefficient 
+  double b;             // nlte departure coefficient
 
 
   //  ivector photo         // photoionization cross-section vector
@@ -67,7 +69,7 @@ struct nlte_level
   xy_array s_photo;
   // recombination coefficient as a function of temperature
   xy_array a_rec;
-    
+
 };
 
 
@@ -95,30 +97,30 @@ private:
 
 public:
 
-  
-  int atomic_number;   // Atomic number of atom 
 
-  int n_ions;          // Number of ionic stages considered 
+  int atomic_number;   // Atomic number of atom
+
+  int n_ions;          // Number of ionic stages considered
   int n_levels;        // number of energy levels
-  int n_lines;         // number of line transitions   
+  int n_lines;         // number of line transitions
   double n_dens;       // number density of this atom (cm^-3)
   double e_gamma;      // radioactive energy deposited (ergs/sec/cm^3)
   double gas_temp_;        // temperature of gas
 
   double min_level_pop_;       // the minimum level population allowed
-  double minimum_extinction_;  // minimum alpha = 1/mfp to calculate 
+  double minimum_extinction_;  // minimum alpha = 1/mfp to calculate
   double line_beta_dop_;       // doppler width of lines = v/c
   int use_betas;               // include escape probabilites in nlte
   int no_ground_recomb;        // suppress recombinations to ground
   bool use_nlte_;       // treat this atom in nlte or not
 
-  // classes
-  nlte_level *levels;       // array of level data
-  nlte_line  *lines;        // array of line data
-  nlte_ion   *ions;         // array of ion data
+  // atomic data structs
+  AtomicLevel *levels;       // array of level data
+  AtomicLine  *lines;        // array of line data
+  AtomicIon    *ions;        // array of ion data
 
   fuzz_line_structure fuzz_lines; // vector of fuzz lines
-  
+
   // Constructor and Init
   nlte_atom();
   int initialize(std::string, int, locate_array, int&);
@@ -129,7 +131,7 @@ public:
   void calculate_radiative_rates(std::vector<real> J_nu);
   int  solve_state(double ne);
   int  solve_lte (double ne);
-  int  solve_nlte(double ne); 
+  int  solve_nlte(double ne);
   void print();
 
   // sobolev
@@ -148,26 +150,26 @@ public:
     return fuzz_lines.n_lines;
   }
 
-  double partition(int ion) 
+  double partition(int ion)
   {
     for (int i = 0;i < n_ions; i++)
-      if (ion == ions[i].stage) return ions[i].part; 
+      if (ion == ions[i].stage) return ions[i].part;
     return -1;
   }
-  
-  double ionization_fraction(int ion) 
+
+  double ionization_fraction(int ion)
   {
     for (int i=0;i<n_ions; i++)
-      if (ion == ions[i].stage) return ions[i].frac; 
+      if (ion == ions[i].stage) return ions[i].frac;
     return 0;
  }
 
-  double level_fraction(int lev) 
+  double level_fraction(int lev)
   {
     if (lev >= n_levels) return 0;
     return levels[lev].n;
   }
-  double level_depature(int lev) 
+  double level_depature(int lev)
   {
     if (lev >= n_levels) return 0;
     return levels[lev].b;
