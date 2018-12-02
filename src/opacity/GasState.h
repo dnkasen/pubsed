@@ -1,12 +1,12 @@
-#ifndef NLTE_GAS_H
-#define NLTE_GAS_H
+#ifndef GAS_STATE_H
+#define GAS_STATE_H
 #include <string>
 
 #include "nlte_atom.h"
 #include "locate_array.h"
 #include "sedona.h"
 
-class nlte_gas
+class GasState
 {
 
  private:
@@ -77,7 +77,7 @@ class nlte_gas
   //----------------------------------------------------------------
   // simple constructor
   //----------------------------------------------------------------
-  nlte_gas();
+  GasState();
 
   //----------------------------------------------------------------
   // initialize the gas by specifying the atoms that will
@@ -156,7 +156,7 @@ class nlte_gas
   }
   int get_number_ions(int i)
   {
-    return atoms[i].n_ions;
+    return atoms[i].n_ions_;
   }
 
   //-----------------------------------------------------------

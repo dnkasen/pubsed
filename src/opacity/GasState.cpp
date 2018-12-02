@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include "physical_constants.h"
-#include "nlte_gas.h"
+#include "GasState.h"
 #include <iostream>
 #include <fstream>
 
@@ -14,7 +14,7 @@ namespace pc = physical_constants;
 //----------------------------------------------------------------
 // simple constructor
 //----------------------------------------------------------------
-nlte_gas::nlte_gas()
+GasState::GasState()
 {
   use_nlte_ = 0;
   e_gamma = 0;
@@ -31,7 +31,7 @@ nlte_gas::nlte_gas()
 // std::vector<int> A:  vector of atomic weights (in atomic units)
 // locate_array ng:  locate_array giving the freq. array
 //---------------------------------------------------------------
-void nlte_gas::initialize
+void GasState::initialize
 (std::string af, std::vector<int> e, std::vector<int> A, locate_array ng)
 {
   // verbocity
@@ -79,7 +79,7 @@ void nlte_gas::initialize
 // Choose the atoms to be solve in nlte
 //-----------------------------------------------------------------
 
-void nlte_gas::set_atoms_in_nlte
+void GasState::set_atoms_in_nlte
 (std::vector<int> useatoms)
 {
   if (useatoms.size() == 0)
@@ -103,7 +103,7 @@ void nlte_gas::set_atoms_in_nlte
 // input:
 // std::vector<double> x: vector of mass fractions of each element
 //-----------------------------------------------------------------
-void nlte_gas::set_mass_fractions(std::vector<double> x)
+void GasState::set_mass_fractions(std::vector<double> x)
 {
   double norm = 0.0;
   for (size_t i=0;i<mass_frac.size();++i)
@@ -127,7 +127,7 @@ void nlte_gas::set_mass_fractions(std::vector<double> x)
 // input:
 // std::string fuzzfile: name of hdf5 file with fuzz data
 //-----------------------------------------------------------
-int nlte_gas::read_fuzzfile(std::string fuzzfile)
+int GasState::read_fuzzfile(std::string fuzzfile)
 {
   int n_tot = 0;
 
@@ -148,7 +148,7 @@ int nlte_gas::read_fuzzfile(std::string fuzzfile)
 // return the ionization state, i.e., electron density
 // over total ion number density
 //-----------------------------------------------------------
-double nlte_gas::get_ionization_state()
+double GasState::get_ionization_state()
 {
   double ni = dens/(A_mu*pc::m_p);
   return this->ne/ni;
@@ -160,7 +160,7 @@ double nlte_gas::get_ionization_state()
 // Assumes no radiation field given, so in LTE
 // returns: any error
 //-----------------------------------------------------------
-int nlte_gas::solve_state()
+int GasState::solve_state()
 {
   std::vector<real> J_nu;
   return solve_state(J_nu);
@@ -172,7 +172,7 @@ int nlte_gas::solve_state()
 // further calculations
 // Returns: any error
 //-----------------------------------------------------------
-int nlte_gas::solve_state(std::vector<real> J_nu)
+int GasState::solve_state(std::vector<real> J_nu)
 {
   // set key properties of all atoms
   for (size_t i=0;i<atoms.size();++i)
@@ -206,7 +206,7 @@ int nlte_gas::solve_state(std::vector<real> J_nu)
 // for the root, thus determining N_e.  This equation is
 // basically just the one for charge conservation.
 //-----------------------------------------------------------
-double nlte_gas::charge_conservation(double ne,std::vector<real> J_nu)
+double GasState::charge_conservation(double ne,std::vector<real> J_nu)
 {
   // start with charge conservation function f set to zero
   double f  = 0;
@@ -235,7 +235,7 @@ double nlte_gas::charge_conservation(double ne,std::vector<real> J_nu)
 // equation for electron density ne
 //-----------------------------------------------------------
 #define SIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
-double nlte_gas::ne_brent_method(double x1,double x2,double tol,std::vector<real> J_nu)
+double GasState::ne_brent_method(double x1,double x2,double tol,std::vector<real> J_nu)
 {
   int ITMAX = 100;
   double EPS = 3.0e-8;
@@ -309,7 +309,7 @@ double nlte_gas::ne_brent_method(double x1,double x2,double tol,std::vector<real
 // return the fraction of atoms of index i that are in
 // ionization state j.
 //-----------------------------------------------------------
-double nlte_gas::get_ionization_fraction(int i, int j)
+double GasState::get_ionization_fraction(int i, int j)
 {
   if ((i < 0)||(i >= (int)atoms.size())) return -1;
   if ((j < 0)||(j >= atoms[i].n_ions))   return -1;
@@ -322,7 +322,7 @@ double nlte_gas::get_ionization_fraction(int i, int j)
 // return the fraction of atoms of index i that are in
 // ionization state j.
 //-----------------------------------------------------------
-double nlte_gas::get_level_fraction(int i, int j)
+double GasState::get_level_fraction(int i, int j)
 {
   if ((i < 0)||(i >= (int)atoms.size())) return -1;
   if ((j < 0)||(j >= atoms[i].n_levels)) return -1;
@@ -333,7 +333,7 @@ double nlte_gas::get_level_fraction(int i, int j)
 // return the fraction of atoms of index i that are in
 // ionization state j.
 //-----------------------------------------------------------
-double nlte_gas::get_level_departure(int i, int j)
+double GasState::get_level_departure(int i, int j)
 {
   if ((i < 0)||(i >= (int)atoms.size())) return -1;
   if ((j < 0)||(j >= atoms[i].n_levels)) return -1;
@@ -343,7 +343,7 @@ double nlte_gas::get_level_departure(int i, int j)
 //-----------------------------------------------------------
 // print out of the gas properties
 //-----------------------------------------------------------
-void nlte_gas::print_properties()
+void GasState::print_properties()
 {
 
   std::cout << "#-------------------------------------------------\n";
@@ -396,7 +396,7 @@ void nlte_gas::print_properties()
 //-----------------------------------------------------------
 // print out of the gas class
 //-----------------------------------------------------------
-void nlte_gas::print()
+void GasState::print()
 {
   std::cout << "# dens = " << dens << "\n";
   std::cout << "# temp = " << temp << "\n";
