@@ -156,7 +156,7 @@ void transport::write_radiation_file(int iw, int write_levels)
         H5LTmake_dataset(atom_id,"ion_fraction",RANK,dims_ion,H5T_NATIVE_FLOAT,tmp_ion);
 
         // write out level populations for this atom
-        int this_nl = gas_state_.atoms[j].n_levels;
+        int this_nl = gas_state_.atoms[j].n_levels_;
         float* tmp_level = new float[this_nl];
         hsize_t  dims_level[RANK]={(hsize_t)this_nl};
         for (int k=0;k<this_nl;k++)

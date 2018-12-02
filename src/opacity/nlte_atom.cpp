@@ -33,9 +33,9 @@ namespace pc = physical_constants;
 
 nlte_atom::nlte_atom()
 {
-  e_gamma             = 0;
+  e_gamma_            = 0;
   no_ground_recomb_   = 0;
-  use_betas           = 0;
+  use_betas_          = 0;
   minimum_extinction_ = 0;
   use_nlte_           = 0;
 
@@ -135,10 +135,10 @@ int nlte_atom::solve_nlte(double ne)
   set_rates(ne);
 
   // zero out matrix and vectors
-  gsl_matrix_set_zero(M_nlte);
-  gsl_vector_set_zero(b_nlte);
-  gsl_vector_set_zero(x_nlte);
-  gsl_permutation_init(p_nlte);
+  gsl_matrix_set_zero(M_nlte_);
+  gsl_vector_set_zero(b_nlte_);
+  gsl_vector_set_zero(x_nlte_);
+  gsl_permutation_init(p_nlte_);
 
   // set up diagonal elements of rate matrix
   for (int i=0;i<n_levels_;++i)
@@ -146,37 +146,37 @@ int nlte_atom::solve_nlte(double ne)
     double Rout = 0.0;
     // don't worry i = j rate should be zero
     for (int j=0;j<n_levels_;++j)
-      Rout += rates[i][j];
+      Rout += rates_[i][j];
     Rout = -1*Rout;
-    gsl_matrix_set(M_nlte,i,i,Rout);
+    gsl_matrix_set(M_nlte_,i,i,Rout);
   }
 
   // set off diagonal elements of rate matrix
   for (int i=0;i<n_levels_;++i)
     for (int j=0;j<n_levels_;++j)
-      if (i != j) gsl_matrix_set(M_nlte,i,j,rates[j][i]);
+      if (i != j) gsl_matrix_set(M_nlte_,i,j,rates_[j][i]);
 
   // last row expresses number conservation
   for (int i=0;i<n_levels_;++i)
-    gsl_matrix_set(M_nlte,n_levels_-1,i,levels_[i].n_lte);
-  gsl_vector_set(b_nlte,n_levels_-1,1.0);
+    gsl_matrix_set(M_nlte_,n_levels_-1,i,levels_[i].n_lte);
+  gsl_vector_set(b_nlte_,n_levels_-1,1.0);
 
     //printf("----\n");
     //for (int i=0;i<n_levels_;++i)
     //  for (int j=0;j<n_levels_;++j)
-    //   printf("%5d %5d %14.3e\n",i,j,gsl_matrix_get(M_nlte,i,j));
+    //   printf("%5d %5d %14.3e\n",i,j,gsl_matrix_get(M_nlte_,i,j));
     // printf("----\n");
 
   // solve rate matrix
   int status;
-  gsl_linalg_LU_decomp(M_nlte, p_nlte, &status);
-  gsl_linalg_LU_solve(M_nlte, p_nlte, b_nlte, x_nlte);
+  gsl_linalg_LU_decomp(M_nlte_, p_nlte_, &status);
+  gsl_linalg_LU_solve(M_nlte_, p_nlte_, b_nlte_, x_nlte_);
 
   // the x vector should now have the solved level
   // depature coefficients
   for (int i=0;i<n_levels_;++i)
   {
-    double b = gsl_vector_get(x_nlte,i);
+    double b = gsl_vector_get(x_nlte_,i);
     double n_nlte = b*levels_[i].n_lte;
 
     // make sure our solved for nlte levels_ aren't too small
@@ -217,14 +217,14 @@ void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu)
   // recombination is from EQ 3.16 of Rutten, stellar atmospheres
   // recombination rate includes stimulated recombination
   double fac1 = 2/pc::c/pc::c;
-  int ng = nu_grid.size();
+  int ng = nu_grid_.size();
   for (int i=1;i<ng;++i)
   {
-    double nu     = nu_grid.center(i);
+    double nu     = nu_grid_.center(i);
     double E_ergs = pc::h*nu;
     double E_ev   = E_ergs*pc::ergs_to_ev;
     double J      = J_nu[i];
-    double dnu    = nu_grid.delta(i);
+    double dnu    = nu_grid_.delta(i);
     for (int j=0;j<n_levels_;++j)
     {
       int ic = levels_[j].ic;
@@ -281,7 +281,7 @@ void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu)
     {
       double phi = voigt_profile_.getProfile(x,a_voigt);
       double n = nu0 + x*nu_d;
-      double J1 = nu_grid.value_at(n,J_nu)*phi;
+      double J1 = nu_grid_.value_at(n,J_nu)*phi;
       sum += 0.5*(J1 + J0)*dx;
       J0 = J1;
     }
@@ -299,7 +299,7 @@ void nlte_atom::set_rates(double ne)
   // zero out rate matrix
   for (int i=0;i<n_levels_;++i)
     for (int j=0;j<n_levels_;++j)
-      rates[i][j] = 0;
+      rates_[i][j] = 0;
 
   // ------------------------------------------------
   // radiative bound-bound transitions
@@ -319,8 +319,8 @@ void nlte_atom::set_rates(double ne)
       { R_ul = 0; R_lu = 0;}
 
     // add into rates
-    rates[ll][lu] += R_lu;
-    rates[lu][ll] += R_ul;
+    rates_[ll][lu] += R_lu;
+    rates_[lu][ll] += R_ul;
 
    // printf("RR %d %d %e\n",ll,lu,R_lu);
    // printf("RR %d %d %e\n",lu,ll,R_ul);
@@ -339,13 +339,13 @@ void nlte_atom::set_rates(double ne)
     // ------------------------------------------------
 
     double dE = (levels_[lu].E - levels_[ll].E)*pc::ev_to_ergs;
-    double R_lu = e_gamma/n_dens/dE; //*(lines_[l].f_lu/norm);
+    double R_lu = e_gamma_/n_dens_/dE; //*(lines_[l].f_lu/norm);
     if (dE == 0) R_lu = 0;
     if (ll != 0) R_lu = 0;
 
     // add into rates
     // debug -- turning off non-thermal rates for now
-    //rates[ll][lu] += R_lu;
+    //rates_[ll][lu] += R_lu;
 
     // printf("GR %d %d %e %e %e\n",ll,lu,R_lu,e_gamma,dE);
 
@@ -360,8 +360,8 @@ void nlte_atom::set_rates(double ne)
 
     double C_down = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) * ne * lines_[l].f_lu * levels_[ll].g/levels_[lu].g;
 
-    rates[ll][lu] += C_up;
-    rates[lu][ll] += C_down;
+    rates_[ll][lu] += C_up;
+    rates_[lu][ll] += C_down;
 
   }
 
@@ -382,13 +382,13 @@ void nlte_atom::set_rates(double ne)
     // collisional ionization rate
     // needs to be multiplied by number of electrons in outer shell
     double C_ion = 2.7/zeta/zeta*pow(gas_temp_,-1.5)*exp(-zeta)*ne;
-    rates[i][ic] += C_ion;
+    rates_[i][ic] += C_ion;
 
     // collisional recombination rate
     int gi = levels_[i].g;
     int gc = levels_[ic].g;
     double C_rec = 5.59080e-16/zeta/zeta*pow(gas_temp_,-3)*gi/gc*ne*ne;
-    rates[ic][i] += C_rec;
+    rates_[ic][i] += C_rec;
 
     // radiative recombination rate (debug)
     //double R_rec = ne*levels_[i].a_rec.value_at(T);
@@ -396,8 +396,8 @@ void nlte_atom::set_rates(double ne)
     //if (no_ground_recomb) if (levels_[i].E == 0) R_rec = 0;
 
     // photoionization and radiative recombination
-    rates[ic][i] += levels_[i].R_ci*ne;
-    rates[i][ic] += levels_[i].P_ic;
+    rates_[ic][i] += levels_[i].R_ci*ne;
+    rates_[i][ic] += levels_[i].P_ic;
 
     //printf("pc::pi: %d %d %e\n",i,ic,levels_[i].P_ic);
     //printf("CI: %d %d %e %e\n",i,ic,C_rec,C_ion);
@@ -408,19 +408,19 @@ void nlte_atom::set_rates(double ne)
   // (becuase we will solve for depature coeffs)
   for (int i=0;i<n_levels_;++i)
       for (int j=0;j<n_levels_;++j)
-        rates[i][j] *= levels_[i].n_lte;
+        rates_[i][j] *= levels_[i].n_lte;
 
   // print out rates if you so like
   //printf("------- rates ----------\n");
   for (int i=0;i<n_levels_;++i)
     for (int j=0;j<n_levels_;++j)
-      if (isnan(rates[i][j]))
-       printf("%5d %5d %14.5e\n",i,j,rates[i][j]);
+      if (isnan(rates_[i][j]))
+       printf("%5d %5d %14.5e\n",i,j,rates_[i][j]);
    //printf("\n");
    //for (int i=0;i<n_levels_;++i)
    // for (int j=0;j<n_levels_;++j)   {
-   //     if (isnan(rates[i][j])) std::cout << "NAN RATE\n";
-   //     if (isinf(rates[i][j])) std::cout << "INF RATE: " << i << " - " << j << "\n"; }
+   //     if (isnan(rates_[i][j])) std::cout << "NAN RATE\n";
+   //     if (isinf(rates_[i][j])) std::cout << "INF RATE: " << i << " - " << j << "\n"; }
 }
 
 

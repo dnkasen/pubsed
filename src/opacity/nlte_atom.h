@@ -78,14 +78,14 @@ class nlte_atom
 private:
 
   // matrices, vectors to solve NLTE
-  double     **rates;
-  gsl_matrix *M_nlte;
-  gsl_vector *b_nlte;
-  gsl_vector *x_nlte;
-  gsl_permutation *p_nlte;
+  double     **rates_;
+  gsl_matrix *M_nlte_;
+  gsl_vector *b_nlte_;
+  gsl_vector *x_nlte_;
+  gsl_permutation *p_nlte_;
 
   // frequency bin array
-  locate_array nu_grid;
+  locate_array nu_grid_;
 
   // Voigt profile class
   VoigtProfile voigt_profile_;
@@ -99,14 +99,14 @@ public:
 
   int atomic_number;      // Atomic number of atom
 
-  double n_dens;          // number density of this atom (cm^-3)
-  double e_gamma;         // radioactive energy deposited (ergs/sec/cm^3)
+  double n_dens_;          // number density of this atom (cm^-3)
+  double e_gamma_;         // radioactive energy deposited (ergs/sec/cm^3)
   double gas_temp_;        // temperature of gas
 
   double min_level_pop_;        // the minimum level population allowed
   double minimum_extinction_;   // minimum alpha = 1/mfp to calculate
   double line_beta_dop_;        // doppler width of lines = v/c
-  int use_betas;               // include escape probabilites in nlte
+  int use_betas_;               // include escape probabilites in nlte
   int no_ground_recomb_;        // suppress recombinations to ground
   bool use_nlte_;               // treat this atom in nlte or not
 

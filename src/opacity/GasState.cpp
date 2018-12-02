@@ -177,9 +177,9 @@ int GasState::solve_state(std::vector<real> J_nu)
   // set key properties of all atoms
   for (size_t i=0;i<atoms.size();++i)
   {
-    atoms[i].n_dens  = dens*mass_frac[i]/(elem_A[i]*pc::m_p);
-    atoms[i].e_gamma = e_gamma*mass_frac[i];
-    atoms[i].no_ground_recomb = no_ground_recomb;
+    atoms[i].n_dens_  = dens*mass_frac[i]/(elem_A[i]*pc::m_p);
+    atoms[i].e_gamma_ = e_gamma*mass_frac[i];
+    atoms[i].no_ground_recomb_ = no_ground_recomb;
     atoms[i].gas_temp_ = temp;
     // line widths
     double vd = sqrt(2*pc::k*temp/pc::m_p/elem_A[i]);
@@ -312,7 +312,7 @@ double GasState::ne_brent_method(double x1,double x2,double tol,std::vector<real
 double GasState::get_ionization_fraction(int i, int j)
 {
   if ((i < 0)||(i >= (int)atoms.size())) return -1;
-  if ((j < 0)||(j >= atoms[i].n_ions))   return -1;
+  if ((j < 0)||(j >= atoms[i].n_ions_))   return -1;
   return atoms[i].ionization_fraction(j);
 }
 
@@ -325,7 +325,7 @@ double GasState::get_ionization_fraction(int i, int j)
 double GasState::get_level_fraction(int i, int j)
 {
   if ((i < 0)||(i >= (int)atoms.size())) return -1;
-  if ((j < 0)||(j >= atoms[i].n_levels)) return -1;
+  if ((j < 0)||(j >= atoms[i].n_levels_)) return -1;
   return atoms[i].level_fraction(j);
 }
 
@@ -336,7 +336,7 @@ double GasState::get_level_fraction(int i, int j)
 double GasState::get_level_departure(int i, int j)
 {
   if ((i < 0)||(i >= (int)atoms.size())) return -1;
-  if ((j < 0)||(j >= atoms[i].n_levels)) return -1;
+  if ((j < 0)||(j >= atoms[i].n_levels_)) return -1;
   return atoms[i].level_depature(j);
 }
 
@@ -354,7 +354,7 @@ void GasState::print_properties()
   for (size_t i=0;i<atoms.size();++i)
   {
     printf("# %2d.%d ",elem_Z[i],elem_A[i]);
-    printf(" %4d %8d  %8d  %8d",atoms[i].n_ions,atoms[i].n_levels,atoms[i].n_lines,
+    printf(" %4d %8d  %8d  %8d",atoms[i].n_ions_,atoms[i].n_levels_,atoms[i].n_lines_,
         atoms[i].get_n_fuzz_lines());
     printf("\n");
   }

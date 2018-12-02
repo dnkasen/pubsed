@@ -163,7 +163,7 @@ void GasState::free_free_opacity(std::vector<double>& opac, std::vector<double>&
   for (int i=0;i<natoms;i++)
   {
     double Z_eff_sq = 0;
-    for (int j=0;j<atoms[i].n_ions;j++)
+    for (int j=0;j<atoms[i].n_ions_;j++)
       Z_eff_sq += atoms[i].ionization_fraction(j)*j*j;
 
     double n_ion = mass_frac[i]*dens/(elem_A[i]*pc::m_p);
@@ -272,11 +272,11 @@ void GasState::line_expansion_opacity(std::vector<double>& opac)
     atoms[i].compute_sobolev_taus(time);
 
     // loop over all lines
-    for (int j=0;j<atoms[i].n_lines;j++)
+    for (int j=0;j<atoms[i].n_lines_;j++)
     {
       // add in this line to the sum
-      double etau = atoms[i].lines[j].etau;
-      opac[atoms[i].lines[j].bin] += (1 - etau);
+      double etau = atoms[i].lines_[j].etau;
+      opac[atoms[i].lines_[j].bin] += (1 - etau);
     }
   }
 

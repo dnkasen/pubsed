@@ -16,7 +16,7 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
   // zero out arrays
   for (size_t i=0;i<opac.size();++i) {opac[i] = 0; emis[i] = 0;}
 
-  int ng = nu_grid.size();
+  int ng = nu_grid_.size();
   double kt_ev = pc::k_ev*gas_temp_;
   double lam_t   = sqrt(pc::h*pc::h/(2*pc::pi*pc::m_e* pc::k * gas_temp_));
 
@@ -25,7 +25,7 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
   {
     int ic = levels_[j].ic;
     if (ic == -1) continue;
-    double nc = n_dens*levels_[ic].n;
+    double nc = n_dens_*levels_[ic].n;
     double gl_o_gc = (1.0*levels_[j].g)/(1.0*levels_[ic].g);
     double E_t = levels_[j].E_ion;
     nc_phifac[j] = nc*gl_o_gc/2. * lam_t * lam_t * lam_t;
@@ -34,7 +34,7 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
   for (int i=0;i<ng;++i)
   {
     opac[i] = 0;
-    double nu    = nu_grid.center(i);
+    double nu    = nu_grid_.center(i);
     double E     = pc::h*nu*pc::ergs_to_ev;
     double emis_fac   = 2. * pc::h*nu*nu*nu / pc::c / pc::c;
 
@@ -50,7 +50,7 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
       double zeta_net = (levels_[j].E_ion - E)/kt_ev;
       double ezeta_net = exp(zeta_net);
       double sigma = levels_[j].s_photo.value_at_with_zero_edges(E);
-      opac[i]  += sigma * (n_dens * levels_[j].n  - nc_phifac[j] * ne * ezeta_net);
+      opac[i]  += sigma * (n_dens_ * levels_[j].n  - nc_phifac[j] * ne * ezeta_net);
       emis[i]  += emis_fac *sigma* nc_phifac[j] * ezeta_net; // ne gets multiplied at the end outside this funciton
     }
 
@@ -84,7 +84,7 @@ void nlte_atom::bound_bound_opacity(std::vector<double>& opac, std::vector<doubl
 
     // extinction coefficient
     if (nlow == 0) continue;
-    double alpha_0 = nlow*n_dens*gup/glow*lines_[i].A_ul/(8*pc::pi)*pc::c*pc::c;
+    double alpha_0 = nlow*n_dens_*gup/glow*lines_[i].A_ul/(8*pc::pi)*pc::c*pc::c;
     // correction for stimulated emission
     alpha_0 = alpha_0*(1 - nup*glow/(nlow*gup));
 
@@ -100,16 +100,16 @@ void nlte_atom::bound_bound_opacity(std::vector<double>& opac, std::vector<doubl
     // region to add to -- hard code to 20 doppler widths
     double nu_1 = nu_0 - dnu*5; //*30;
     double nu_2 = nu_0 + dnu*5; //*30; //debug
-    int inu1 = nu_grid.locate(nu_1);
-    int inu2 = nu_grid.locate(nu_2);
+    int inu1 = nu_grid_.locate(nu_1);
+    int inu2 = nu_grid_.locate(nu_2);
 
 
     // line emissivity: ergs/sec/cm^3/str
     // multiplied by phi below to get per Hz
-    double line_j = lines_[i].A_ul*nup*n_dens*pc::h/(4.0*pc::pi);
+    double line_j = lines_[i].A_ul*nup*n_dens_*pc::h/(4.0*pc::pi);
     for (int j = inu1;j<inu2;++j)
     {
-      double nu = nu_grid.center(j);
+      double nu = nu_grid_.center(j);
       double x  = (nu_0 - nu)/dnu;
       double phi = voigt_profile_.getProfile(x,a_voigt)/dnu;
       opac[j] += alpha_0/nu/nu*phi;
@@ -151,7 +151,7 @@ double nlte_atom::compute_sobolev_tau(int i, double time)
   }
 
   double lam   = pc::c/lines_[i].nu;
-  double tau   = nl*n_dens*pc::sigma_tot*lines_[i].f_lu*time*lam;
+  double tau   = nl*n_dens_*pc::sigma_tot*lines_[i].f_lu*time*lam;
   // correction for stimulated emission
   tau = tau*(1 - nu*gl/(nl*gu));
 
