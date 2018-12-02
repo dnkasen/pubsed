@@ -1,4 +1,4 @@
-#include "nlte_gas.h"
+#include "GasState.h"
 #include "physical_constants.h"
 #include <iostream>
 
@@ -8,7 +8,7 @@ namespace pc = physical_constants;
 //----------------------------------------------------------------
 // calculate the total absorptive and scattering opacity
 //----------------------------------------------------------------
-void nlte_gas::computeOpacity(std::vector<OpacityType>& abs,
+void GasState::computeOpacity(std::vector<OpacityType>& abs,
 			      std::vector<OpacityType>& scat,
 			      std::vector<OpacityType>& tot_emis)
 {
@@ -140,7 +140,7 @@ void nlte_gas::computeOpacity(std::vector<OpacityType>& abs,
 //----------------------------------------------------------------
 // simple electron scattering opacity
 //----------------------------------------------------------------
-double nlte_gas::electron_scattering_opacity()
+double GasState::electron_scattering_opacity()
 {
   return pc::thomson_cs*ne;
 }
@@ -150,7 +150,7 @@ double nlte_gas::electron_scattering_opacity()
 // free-free opacity (brehmstrahlung)
 // note the gaunt factor is being set to 1 here
 //----------------------------------------------------------------
-void nlte_gas::free_free_opacity(std::vector<double>& opac, std::vector<double>& emis)
+void GasState::free_free_opacity(std::vector<double>& opac, std::vector<double>& emis)
 {
   int npts   = nu_grid.size();
   int natoms = atoms.size();
@@ -188,7 +188,7 @@ void nlte_gas::free_free_opacity(std::vector<double>& opac, std::vector<double>&
 //----------------------------------------------------------------
 // bound-free opacity (photoionization) from all elements
 //----------------------------------------------------------------
-void nlte_gas::bound_free_opacity(std::vector<double>& opac, std::vector<double>& emis)
+void GasState::bound_free_opacity(std::vector<double>& opac, std::vector<double>& emis)
 {
   // zero out opacity/emissivity vector
   int ng = nu_grid.size();
@@ -215,7 +215,7 @@ void nlte_gas::bound_free_opacity(std::vector<double>& opac, std::vector<double>
 // bound-bound opacity (lines)
 // uses Doppler broadening for now
 //----------------------------------------------------------------
-void nlte_gas::bound_bound_opacity(std::vector<double>& opac, std::vector<double>& emis)
+void GasState::bound_bound_opacity(std::vector<double>& opac, std::vector<double>& emis)
 {
   // zero out opacity vector
   int ng = nu_grid.size();
@@ -238,7 +238,7 @@ void nlte_gas::bound_bound_opacity(std::vector<double>& opac, std::vector<double
 //----------------------------------------------------------------
 // bound-bound opacity (line) from single element iatom
 //----------------------------------------------------------------
-void nlte_gas::bound_bound_opacity(int iatom, std::vector<double>& opac, std::vector<double>& emis)
+void GasState::bound_bound_opacity(int iatom, std::vector<double>& opac, std::vector<double>& emis)
 {
   // zero out opacity vector
   int ng = nu_grid.size();
@@ -258,7 +258,7 @@ void nlte_gas::bound_bound_opacity(int iatom, std::vector<double>& opac, std::ve
 // UNITS are cm^{-1}
 // So this is really an extinction coefficient
 //----------------------------------------------------------------
-void nlte_gas::line_expansion_opacity(std::vector<double>& opac)
+void GasState::line_expansion_opacity(std::vector<double>& opac)
 {
   // zero out opacity array
   std::fill(opac.begin(),opac.end(),0);
@@ -293,7 +293,7 @@ void nlte_gas::line_expansion_opacity(std::vector<double>& opac)
 // UNITS are cm^{-1}
 // So this is really an extinction coefficient
 //----------------------------------------------------------------
-void nlte_gas::fuzz_expansion_opacity(std::vector<double>& opac, std::vector<double>& aopac)
+void GasState::fuzz_expansion_opacity(std::vector<double>& opac, std::vector<double>& aopac)
 {
   double exp_min = 1e-6;
   double exp_max = 100;
@@ -361,7 +361,7 @@ void nlte_gas::fuzz_expansion_opacity(std::vector<double>& opac, std::vector<dou
 // Returns:
 //   the calculated planck mean
 //----------------------------------------------------------------
-double nlte_gas::get_planck_mean
+double GasState::get_planck_mean
 (std::vector<OpacityType> abs, std::vector<OpacityType> scat)
 {
 	if ((abs.size() != nu_grid.size())||(scat.size() != nu_grid.size()))
@@ -398,7 +398,7 @@ double nlte_gas::get_planck_mean
 // Returns:
 //   the calculated planck mean
 //----------------------------------------------------------------
-double nlte_gas::get_planck_mean(std::vector<OpacityType> x)
+double GasState::get_planck_mean(std::vector<OpacityType> x)
 {
 	if (x.size() != nu_grid.size())
 	{
@@ -434,7 +434,7 @@ double nlte_gas::get_planck_mean(std::vector<OpacityType> x)
 // Returns:
 //   the calculated planck mean
 //----------------------------------------------------------------
-double nlte_gas::get_rosseland_mean
+double GasState::get_rosseland_mean
 (std::vector<OpacityType> abs, std::vector<OpacityType> scat)
 {
 	if ((abs.size() != nu_grid.size())||(scat.size() != nu_grid.size()))
@@ -471,7 +471,7 @@ double nlte_gas::get_rosseland_mean
 // Returns:
 //   the calculated planck mean
 //----------------------------------------------------------------
-double nlte_gas::get_rosseland_mean(std::vector<OpacityType> x)
+double GasState::get_rosseland_mean(std::vector<OpacityType> x)
 {
 	if (x.size() != nu_grid.size())
 	{

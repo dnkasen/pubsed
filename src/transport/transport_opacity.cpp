@@ -17,8 +17,8 @@ void transport::set_opacity()
   emis.assign(emis.size(),0.0);
 
   // always do LTE on first step
-  int nlte = gas.use_nlte_;
-  if (first_step_) gas.use_nlte_ = 0;
+  int nlte = gas_state_.use_nlte_;
+  if (first_step_) gas_state_.use_nlte_ = 0;
 
   // zero out opacities, etc...
   for (int i=0;i<grid->n_zones;i++)
@@ -26,7 +26,7 @@ void transport::set_opacity()
     compton_opac[i]  = 0;
     photoion_opac[i] = 0;
     rosseland_mean_opacity_[i] = 0;
-    planck_mean_opacity_[i] = 0;
+    planck_mean_opacity_[i]    = 0;
     emissivity_[i].wipe();
     for (int j=0;j<nu_grid.size();j++)
     {
@@ -50,11 +50,11 @@ void transport::set_opacity()
     //------------------------------------------------------
 
     // set up the state of the gas in this zone
-    gas.dens = z->rho;
-    gas.temp = z->T_gas;
-    gas.time = t_now_;
-    if (gas.temp < temp_min_value_) gas.temp = temp_min_value_;
-    if (gas.temp > temp_max_value_) gas.temp = temp_max_value_;
+    gas_state_.dens = z->rho;
+    gas_state_.temp = z->T_gas;
+    gas_state_.time = t_now_;
+    if (gas_state_.temp < temp_min_value_) gas_state_.temp = temp_min_value_;
+    if (gas_state_.temp > temp_max_value_) gas_state_.temp = temp_max_value_;
 
 
     // radioactive decay the composition
@@ -62,14 +62,14 @@ void transport::set_opacity()
     if (!omit_composition_decay_) {
       radio.decay_composition(grid->elems_Z,grid->elems_A,X_now,t_now_);
     }
-    gas.set_mass_fractions(X_now);
+    gas_state_.set_mass_fractions(X_now);
 
     // solve for the state
-    if (!gas.grey_opacity_) solve_error = gas.solve_state(J_nu_[i]);
-    //gas.print();
+    if (!gas_state_.grey_opacity_) solve_error = gas_state_.solve_state(J_nu_[i]);
+    //gas_state_.print();
 
     // calculate the opacities/emissivities
-    gas.computeOpacity(abs_opacity_[i],scat,emis);
+    gas_state_.computeOpacity(abs_opacity_[i],scat,emis);
 
     double max_extinction = maximum_opacity_* z->rho;
 
@@ -102,9 +102,9 @@ void transport::set_opacity()
 
     // calculate mean opacities
     planck_mean_opacity_[i] =
-      gas.get_planck_mean(abs_opacity_[i],scat_opacity_[i]);
+      gas_state_.get_planck_mean(abs_opacity_[i],scat_opacity_[i]);
     rosseland_mean_opacity_[i] =
-      gas.get_rosseland_mean(abs_opacity_[i],scat_opacity_[i]);
+      gas_state_.get_rosseland_mean(abs_opacity_[i],scat_opacity_[i]);
 
     //------------------------------------------------------
     // gamma-ray opacity (compton + photo-electric)
@@ -127,7 +127,7 @@ void transport::set_opacity()
 
   // turn nlte back on after first step, if wanted
   if (first_step_) {
-    gas.use_nlte_ = nlte;
+    gas_state_.use_nlte_ = nlte;
     first_step_ = 0;    }
 
   // flag any error

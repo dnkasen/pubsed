@@ -11,7 +11,7 @@
 #include "locate_array.h"
 #include "thread_RNG.h"
 #include "spectrum_array.h"
-#include "nlte_gas.h"
+#include "GasState.h"
 #include "ParameterReader.h"
 #include "VoigtProfile.h"
 #include "sedona.h"
@@ -46,7 +46,7 @@ class transport
   int max_total_particles;
 
   // gas class for opacities
-  nlte_gas gas;
+  GasState gas_state_;
 
   // pointer to parameter reader
   ParameterReader* params_;

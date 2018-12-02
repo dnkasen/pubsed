@@ -1,4 +1,4 @@
-#include "nlte_gas.h"
+#include "GasState.h"
 #include "physical_constants.h"
 #include <iostream>
 
@@ -9,7 +9,7 @@ namespace pc = physical_constants;
 // As an example, uses
 // kramer's opacity and e-scattering for pure hydrogen
 //----------------------------------------------------------------
-void nlte_gas::get_user_defined_opacity
+void GasState::get_user_defined_opacity
 (std::vector<double>& opacity, std::vector<double>&abs_frac, std::vector<double>& emissivity)
 {
 	int n_freq_pts = nu_grid.size();
@@ -47,9 +47,9 @@ void nlte_gas::get_user_defined_opacity
 				if (i1 < 0) i1 = 0;
 				if (i2 > n_freq_pts-1) i2 = n_freq_pts - 1;
 
-				for (int i=i1;i<i2;++i) 
+				for (int i=i1;i<i2;++i)
 				{
-					double nu = nu_grid[i]; 
+					double nu = nu_grid[i];
 					double x = (nu - nu_line)/dnu;
 					opacity[i] += exp(-1.0*x*x);
 				}
@@ -77,7 +77,7 @@ void nlte_gas::get_user_defined_opacity
 		else opacity[i] = Ac*user_opacity_array_[i];
 
 
-		double nu = nu_grid[i]; 
+		double nu = nu_grid[i];
 		double epsilon   = 1.0;
 		// thermal emissivity = blackbody*alpha
 		double ezeta = exp(1.0*pc::h*nu/pc::k/temp);
