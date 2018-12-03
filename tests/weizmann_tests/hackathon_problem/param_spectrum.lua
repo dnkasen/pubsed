@@ -11,8 +11,9 @@ data_fuzzline_file = sedona_home.."/data/kurucz_cd23_fuzz.hdf5"
 days = 3600.0*24
 
 -- not going to initialize any particles: particles_n_initialize       = 1e5
+t_snapshot = 20*days
 particles_n_emit_radioactive = 1e5
-tstep_time_start             = 20*days
+tstep_time_start             = t_snapshot
 
 -- grid to calculate and store opacities
 nu1 = 1e14
@@ -22,7 +23,7 @@ transport_nu_grid   = {nu1,nu2,0.0003,1}
 -- grid to calculate output spectrum
 nu1_spec = nu1*1.1
 spectrum_nu_grid   = {nu1_spec,nu2,0.005,1}
-spectrum_time_grid = {-5*days,250*days,1.0*days}
+spectrum_time_grid = {t_snapshot, t_snapshot, 1} 
 output_time_write  = 1*days
 output_write_radiation = 1
 output_write_mass_fractions = 0
