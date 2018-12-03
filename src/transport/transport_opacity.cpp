@@ -50,11 +50,11 @@ void transport::set_opacity()
     //------------------------------------------------------
 
     // set up the state of the gas in this zone
-    gas_state_.dens = z->rho;
-    gas_state_.temp = z->T_gas;
-    gas_state_.time = t_now_;
-    if (gas_state_.temp < temp_min_value_) gas_state_.temp = temp_min_value_;
-    if (gas_state_.temp > temp_max_value_) gas_state_.temp = temp_max_value_;
+    gas_state_.dens_ = z->rho;
+    gas_state_.temp_ = z->T_gas;
+    gas_state_.time_ = t_now_;
+    if (gas_state_.temp_ < temp_min_value_) gas_state_.temp_ = temp_min_value_;
+    if (gas_state_.temp_ > temp_max_value_) gas_state_.temp_ = temp_max_value_;
 
 
     // radioactive decay the composition

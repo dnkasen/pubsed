@@ -1,5 +1,5 @@
 #include <limits>
-#include "nlte_atom.h"
+#include "AtomicSpecies.h"
 #include "physical_constants.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -31,7 +31,7 @@ using namespace std;
 
 namespace pc = physical_constants;
 
-nlte_atom::nlte_atom()
+AtomicSpecies::AtomicSpecies()
 {
   e_gamma_            = 0;
   no_ground_recomb_   = 0;
@@ -51,7 +51,7 @@ nlte_atom::nlte_atom()
 // otherwise will use lte
 // passed the electron density ne
 //-------------------------------------------------------
-int nlte_atom::solve_state(double ne)
+int AtomicSpecies::solve_state(double ne)
 {
   double status = 0;
   if (use_nlte_)
@@ -66,7 +66,7 @@ int nlte_atom::solve_state(double ne)
 // ionization state
 // passed the electron density ne
 //-------------------------------------------------------
-int nlte_atom::solve_lte(double ne)
+int AtomicSpecies::solve_lte(double ne)
 {
 
   // calculate partition functions
@@ -122,7 +122,7 @@ int nlte_atom::solve_lte(double ne)
 // ionization state
 // passed the electron density ne
 //-------------------------------------------------------
-int nlte_atom::solve_nlte(double ne)
+int AtomicSpecies::solve_nlte(double ne)
 {
   // initialize with LTE populations
   solve_lte(ne);
@@ -202,7 +202,7 @@ int nlte_atom::solve_nlte(double ne)
 // to get the line J and over bound-free to get the
 // photoionization rates
 //-------------------------------------------------------
-void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu)
+void AtomicSpecies::calculate_radiative_rates(std::vector<real> J_nu)
 {
 
   // zero out recombination/photoionization rates
@@ -294,7 +294,7 @@ void nlte_atom::calculate_radiative_rates(std::vector<real> J_nu)
 //-------------------------------------------------------
 // Set the rates for all possible transitions
 //------------------------------------------------------
-void nlte_atom::set_rates(double ne)
+void AtomicSpecies::set_rates(double ne)
 {
   // zero out rate matrix
   for (int i=0;i<n_levels_;++i)
@@ -424,7 +424,7 @@ void nlte_atom::set_rates(double ne)
 }
 
 
-double nlte_atom::get_ion_frac()
+double AtomicSpecies::get_ion_frac()
 {
   double x = 0;
   for (int i=0;i<n_levels_;++i)
@@ -434,7 +434,7 @@ double nlte_atom::get_ion_frac()
 
 
 
-double nlte_atom::Calculate_Milne(int lev, double temp)
+double AtomicSpecies::Calculate_Milne(int lev, double temp)
 {
   // Maxwell-Bolztmann constants
   double v_MB = sqrt(2*pc::k*temp/pc::m_e);
@@ -483,7 +483,7 @@ double nlte_atom::Calculate_Milne(int lev, double temp)
 }
 
 
-void nlte_atom::print()
+void AtomicSpecies::print()
 {
 
   cout << "--------------------- ions; n = " << n_ions_ << " ---------------------\n";
@@ -537,7 +537,7 @@ void nlte_atom::print()
 //-----------------------------------------------------------------
 // calculate planck function in frequency units
 //-----------------------------------------------------------------
-double nlte_atom::blackbody_nu(double T, double nu)
+double AtomicSpecies::blackbody_nu(double T, double nu)
 {
   double zeta = pc::h*nu/pc::k/T;
   return 2.0*nu*nu*nu*pc::h/pc::c/pc::c/(exp(zeta)-1);

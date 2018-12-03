@@ -2,7 +2,7 @@
 #define GAS_STATE_H
 #include <string>
 
-#include "nlte_atom.h"
+#include "AtomicSpecies.h"
 #include "locate_array.h"
 #include "sedona.h"
 
@@ -14,8 +14,8 @@ class GasState
   double ne_brent_method(double,double,double,std::vector<real>);
   double charge_conservation(double,std::vector<real>);
 
-  locate_array nu_grid;
-  int verbose;
+  locate_array nu_grid_;
+  int verbose_;
   int solve_error_;
   std::string atomfile_;
 
@@ -29,14 +29,14 @@ class GasState
   std::vector<double>     mass_frac;  // vector of mass fractions
   std::vector<int>           elem_Z;  // vector of element atomic numbers
   std::vector<int>           elem_A;  // vector of element atomic weights
-  std::vector<nlte_atom>      atoms;  // vector of atoms
+  std::vector<AtomicSpecies>  atoms;  // vector of atoms
 
 
 
-  double dens;                   // total mass density (g cm^-3)
-  double ne;                     // electron number density (cm^-3)
-  double temp;                   // Temperature (K)
-  double time;                   // Time since Explosion (days)
+  double dens_;                  // total mass density (g cm^-3)
+  double n_elec_;                // electron number density (cm^-3)
+  double temp_;                  // Temperature (K)
+  double time_;                  // Time since Explosion (days)
   double e_gamma;                // gamma-ray deposited energy
   double A_mu;                   // mean atomic weight of the gas
   int no_ground_recomb;          // suppress ground recombinations
@@ -141,10 +141,10 @@ class GasState
   //-----------------------------------------------------------
   // get essential parameters
   //-----------------------------------------------------------
-  double get_density()             {return dens;}
-  double get_temperature()         {return temp;}
+  double get_density()             {return dens_;}
+  double get_temperature()         {return temp_;}
   double get_mean_atomic_weight()  {return A_mu;}
-  double get_electron_density()    {return ne;}
+  double get_electron_density()    {return n_elec_;}
 
   //-----------------------------------------------------------
   // return the the number of atoms, or

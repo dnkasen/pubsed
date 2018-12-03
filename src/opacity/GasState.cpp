@@ -38,9 +38,9 @@ void GasState::initialize
 #ifdef MPI_PARALLEL
   int my_rank;
   MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
-  verbose = (my_rank == 0);
+  verbose_ = (my_rank == 0);
 #else
-  verbose = 1;
+  verbose_ = 1;
 #endif
 
   for (size_t i=0;i<e.size();++i) elem_Z.push_back(e[i]);
@@ -48,7 +48,7 @@ void GasState::initialize
   mass_frac.resize(e.size());
 
   // copy the nugrid
-  nu_grid.copy(ng);
+  nu_grid_.copy(ng);
 
   // set passed variables
   atomfile_ = af;
@@ -57,7 +57,7 @@ void GasState::initialize
   std::ifstream afile(atomfile_);
   if (!afile)
   {
-    if (verbose)
+    if (verbose_)
       std::cerr << "Can't open atom datafile " << atomfile_ << "; exiting" << std::endl;
     exit(1);
   }
@@ -69,7 +69,7 @@ void GasState::initialize
   for (size_t i=0;i<atoms.size();++i)
   {
     int error = atoms[i].initialize(atomfile_, elem_Z[i],ng,level_id);
-    if ((error)&&(verbose))
+    if ((error)&&(verbose_))
       std::cerr << "# ERROR: incomplete data for atom Z=" << elem_Z[i] <<
 	" in file " << atomfile_ << std::endl;
   }
@@ -133,7 +133,7 @@ int GasState::read_fuzzfile(std::string fuzzfile)
 
   // check if fuzzfile exists
   FILE *fin = fopen(fuzzfile.c_str(),"r");
-  if ((fin == NULL)&&(verbose))
+  if ((fin == NULL)&&(verbose_))
     std::cerr << "# Warning: Can't open atomic data fuzzfile: "
     << fuzzfile << std::endl;
   if (fin == NULL) return 0;
@@ -150,8 +150,8 @@ int GasState::read_fuzzfile(std::string fuzzfile)
 //-----------------------------------------------------------
 double GasState::get_ionization_state()
 {
-  double ni = dens/(A_mu*pc::m_p);
-  return this->ne/ni;
+  double ni = dens_/(A_mu*pc::m_p);
+  return n_elec_/ni;
 }
 
 //-----------------------------------------------------------
@@ -177,23 +177,23 @@ int GasState::solve_state(std::vector<real> J_nu)
   // set key properties of all atoms
   for (size_t i=0;i<atoms.size();++i)
   {
-    atoms[i].n_dens_  = dens*mass_frac[i]/(elem_A[i]*pc::m_p);
+    atoms[i].n_dens_  = dens_*mass_frac[i]/(elem_A[i]*pc::m_p);
     atoms[i].e_gamma_ = e_gamma*mass_frac[i];
     atoms[i].no_ground_recomb_ = no_ground_recomb;
-    atoms[i].gas_temp_ = temp;
+    atoms[i].gas_temp_ = temp_;
     // line widths
-    double vd = sqrt(2*pc::k*temp/pc::m_p/elem_A[i]);
+    double vd = sqrt(2*pc::k*temp_/pc::m_p/elem_A[i]);
     if (line_velocity_width_ > 0) vd = line_velocity_width_;
     atoms[i].line_beta_dop_ = vd/pc::c;
     // radiative rates
     if (use_nlte_) atoms[i].calculate_radiative_rates(J_nu);
   }
 
-  double max_ne = 100*dens/(A_mu*pc::m_p);
-  double min_ne = 1e-10*dens/(A_mu*pc::m_p);;
+  double max_ne = 100*dens_/(A_mu*pc::m_p);
+  double min_ne = 1e-10*dens_/(A_mu*pc::m_p);;
   double tol    = 1e-3;
   solve_error_  = 0;
-  ne = ne_brent_method(min_ne,max_ne,tol,J_nu);
+  n_elec_ = ne_brent_method(min_ne,max_ne,tol,J_nu);
 
   return solve_error_;
 
@@ -220,7 +220,7 @@ double GasState::charge_conservation(double ne,std::vector<real> J_nu)
       atoms[i].solve_lte(ne);
 
     // total electron donation from this atomic species
-    f += dens*mass_frac[i]/(elem_A[i]*pc::m_p)*atoms[i].get_ion_frac();
+    f += dens_*mass_frac[i]/(elem_A[i]*pc::m_p)*atoms[i].get_ion_frac();
   }
 
   // total ionization density minus electron density should equal zero
@@ -398,8 +398,8 @@ void GasState::print_properties()
 //-----------------------------------------------------------
 void GasState::print()
 {
-  std::cout << "# dens = " << dens << "\n";
-  std::cout << "# temp = " << temp << "\n";
+  std::cout << "# dens = " << dens_ << "\n";
+  std::cout << "# temp = " << temp_ << "\n";
   std::cout << "# A_mu = " << A_mu << "\n";
   for (size_t i=0;i<elem_Z.size();++i)
     printf("%4d %12.4e %12.4e\n",elem_Z[i],mass_frac[i],atoms[i].get_ion_frac());

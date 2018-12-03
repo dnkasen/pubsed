@@ -1,4 +1,4 @@
-#include "nlte_atom.h"
+#include "AtomicSpecies.h"
 #include "physical_constants.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -20,7 +20,7 @@ namespace pc = physical_constants;
 //----------------------------------------------------------------
 
 
-int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
+int AtomicSpecies::initialize(std::string fname, int z, locate_array ng, int &levID)
 {
   // set atomic number
   this->atomic_number = z;
@@ -251,7 +251,7 @@ int nlte_atom::initialize(std::string fname, int z, locate_array ng, int &levID)
 // setup atom for solving things in non-LTE
 //----------------------------------------------------------------
 
-int nlte_atom::set_use_nlte()
+int AtomicSpecies::set_use_nlte()
 {
   use_nlte_ = true;
 
@@ -280,7 +280,7 @@ int nlte_atom::set_use_nlte()
 }
 
 
-int nlte_atom::read_fuzzfile(std::string fname)
+int AtomicSpecies::read_fuzzfile(std::string fname)
 {
 
   // open hdf5 file

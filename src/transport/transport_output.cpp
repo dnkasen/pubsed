@@ -134,9 +134,9 @@ void transport::write_radiation_file(int iw, int write_levels)
     {
       // just recalculate state for now... I know...
       // set up the state of the gas in this zone
-      gas_state_.dens = grid->z[i].rho;
-      gas_state_.temp = grid->z[i].T_gas;
-      gas_state_.time = grid->t_now;
+      gas_state_.dens_ = grid->z[i].rho;
+      gas_state_.temp_ = grid->z[i].T_gas;
+      gas_state_.time_ = grid->t_now;
       gas_state_.set_mass_fractions(grid->z[i].X_gas);
       // solve for the state
       if (!gas_state_.grey_opacity_) gas_state_.solve_state(J_nu_[i]);

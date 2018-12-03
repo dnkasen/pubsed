@@ -15,7 +15,7 @@ void GasState::computeOpacity(std::vector<OpacityType>& abs,
 
 
 
-  int ns = nu_grid.size();
+  int ns = nu_grid_.size();
   std::vector<double> opac, aopac, emis;
   opac.resize(ns);
   aopac.resize(ns);
@@ -29,13 +29,13 @@ void GasState::computeOpacity(std::vector<OpacityType>& abs,
   //-----------------------------------------
   if (grey_opacity_ != 0)
   {
-    double gopac = dens*grey_opacity_;
+    double gopac = dens_*grey_opacity_;
     for (int i=0;i<ns;i++)
     {
       abs[i]  = gopac*epsilon_;
       scat[i] = gopac*(1-epsilon_);
-      double nu = nu_grid.center(i);
-      double ezeta = exp(1.0*pc::h*nu/pc::k/temp);
+      double nu = nu_grid_.center(i);
+      double ezeta = exp(1.0*pc::h*nu/pc::k/temp_);
       double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(ezeta-1);
       tot_emis[i] += bb*abs[i];
     }
@@ -76,7 +76,7 @@ void GasState::computeOpacity(std::vector<OpacityType>& abs,
       for (int i=0;i<ns;i++)
       {
          abs[i]      += opac[i];
-         tot_emis[i] += emis[i]*ne;
+         tot_emis[i] += emis[i]*n_elec_;
        }
     }
 
@@ -99,8 +99,8 @@ void GasState::computeOpacity(std::vector<OpacityType>& abs,
       for (int i=0;i<ns;i++) {
     	 abs[i]  += epsilon_*opac[i];
     	 scat[i] += (1-epsilon_)*opac[i];
-       double nu = nu_grid.center(i);
-       double ezeta = exp(1.0*pc::h*nu/pc::k/temp);
+       double nu = nu_grid_.center(i);
+       double ezeta = exp(1.0*pc::h*nu/pc::k/temp_);
        double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(ezeta-1);
        tot_emis[i] += bb*abs[i];
       }
@@ -113,8 +113,8 @@ void GasState::computeOpacity(std::vector<OpacityType>& abs,
       for (int i=0;i<ns;i++) {
 	     abs[i]  += aopac[i];
 	     scat[i] += opac[i];
-       double nu = nu_grid.center(i);
-       double ezeta = exp(1.0*pc::h*nu/pc::k/temp);
+       double nu = nu_grid_.center(i);
+       double ezeta = exp(1.0*pc::h*nu/pc::k/temp_);
        double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(ezeta-1);
        tot_emis[i] += bb*abs[i];
       }
@@ -142,7 +142,7 @@ void GasState::computeOpacity(std::vector<OpacityType>& abs,
 //----------------------------------------------------------------
 double GasState::electron_scattering_opacity()
 {
-  return pc::thomson_cs*ne;
+  return pc::thomson_cs*n_elec_;
 }
 
 
@@ -152,7 +152,7 @@ double GasState::electron_scattering_opacity()
 //----------------------------------------------------------------
 void GasState::free_free_opacity(std::vector<double>& opac, std::vector<double>& emis)
 {
-  int npts   = nu_grid.size();
+  int npts   = nu_grid_.size();
   int natoms = atoms.size();
 
   // zero out opacity/emissivity vector
@@ -166,17 +166,17 @@ void GasState::free_free_opacity(std::vector<double>& opac, std::vector<double>&
     for (int j=0;j<atoms[i].n_ions_;j++)
       Z_eff_sq += atoms[i].ionization_fraction(j)*j*j;
 
-    double n_ion = mass_frac[i]*dens/(elem_A[i]*pc::m_p);
+    double n_ion = mass_frac[i]*dens_/(elem_A[i]*pc::m_p);
     fac += n_ion*Z_eff_sq;
   }
   // multiply by overall constants
-  fac *= 3.7e8*pow(temp,-0.5)*ne;
+  fac *= 3.7e8*pow(temp_,-0.5)*n_elec_;
 
   // multiply by frequency dependence
   for (int i=0;i<npts;i++)
   {
-    double nu = nu_grid.center(i);
-    double ezeta = exp(-1.0*pc::h*nu/pc::k/temp);
+    double nu = nu_grid_.center(i);
+    double ezeta = exp(-1.0*pc::h*nu/pc::k/temp_);
     double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(1.0/ezeta-1);
     opac[i] = fac/nu/nu/nu*(1 - ezeta);
     emis[i] = opac[i]*bb;
@@ -191,7 +191,7 @@ void GasState::free_free_opacity(std::vector<double>& opac, std::vector<double>&
 void GasState::bound_free_opacity(std::vector<double>& opac, std::vector<double>& emis)
 {
   // zero out opacity/emissivity vector
-  int ng = nu_grid.size();
+  int ng = nu_grid_.size();
   for (int j=0;j<ng;j++) {opac[j] = 0; emis[j] = 0; }
 
   std::vector<double> atom_opac(ng),atom_emis(ng);
@@ -200,7 +200,7 @@ void GasState::bound_free_opacity(std::vector<double>& opac, std::vector<double>
   // sum up the bound-free opacity from every atom
   for (int i=0;i<na;i++)
   {
-    atoms[i].bound_free_opacity(atom_opac, atom_emis,ne);
+    atoms[i].bound_free_opacity(atom_opac, atom_emis,n_elec_);
     for (int j=0;j<ng;j++)
     {
       opac[j] += atom_opac[j];
@@ -218,7 +218,7 @@ void GasState::bound_free_opacity(std::vector<double>& opac, std::vector<double>
 void GasState::bound_bound_opacity(std::vector<double>& opac, std::vector<double>& emis)
 {
   // zero out opacity vector
-  int ng = nu_grid.size();
+  int ng = nu_grid_.size();
   for (int j=0;j<ng;j++) {opac[j] = 0; emis[j] = 0;}
 
   std::vector<double> atom_opac(ng), atom_emis(ng);
@@ -241,7 +241,7 @@ void GasState::bound_bound_opacity(std::vector<double>& opac, std::vector<double
 void GasState::bound_bound_opacity(int iatom, std::vector<double>& opac, std::vector<double>& emis)
 {
   // zero out opacity vector
-  int ng = nu_grid.size();
+  int ng = nu_grid_.size();
   for (int j=0;j<ng;j++) {opac[j] = 0; emis[j] = 0;}
   atoms[iatom].bound_bound_opacity(opac, emis);
 }
@@ -269,7 +269,7 @@ void GasState::line_expansion_opacity(std::vector<double>& opac)
   for (int i=0;i<na;i++)
   {
     //compute line sobolev taus
-    atoms[i].compute_sobolev_taus(time);
+    atoms[i].compute_sobolev_taus(time_);
 
     // loop over all lines
     for (int j=0;j<atoms[i].n_lines_;j++)
@@ -282,7 +282,7 @@ void GasState::line_expansion_opacity(std::vector<double>& opac)
 
   // renormalize opacity array
   for (size_t i=0;i<opac.size();i++)
-    opac[i] = opac[i]*nu_grid.center(i)/nu_grid.delta(i)/pc::c/time;
+    opac[i] = opac[i]*nu_grid_.center(i)/nu_grid_.delta(i)/pc::c/time_;
 }
 
 //----------------------------------------------------------------
@@ -322,13 +322,13 @@ void GasState::fuzz_expansion_opacity(std::vector<double>& opac, std::vector<dou
       double nu = atoms[i].fuzz_lines.nu[j];
 
       // get sobolev tau
-      double n_dens = mass_frac[i]*dens/(elem_A[i]*pc::m_p);
+      double n_dens = mass_frac[i]*dens_/(elem_A[i]*pc::m_p);
       double nion   = n_dens*atoms[i].ionization_fraction(ion);
 
-      double nl = nion*exp(-1.0*El/pc::k_ev/temp)/atoms[i].partition(ion);
+      double nl = nion*exp(-1.0*El/pc::k_ev/temp_)/atoms[i].partition(ion);
       double lam = pc::c/nu;
-      double stim_cor = (1 - exp(-pc::h*nu/pc::k/temp));
-      double tau = pc::sigma_tot*lam*nl*gf*stim_cor*time;
+      double stim_cor = (1 - exp(-pc::h*nu/pc::k/temp_));
+      double tau = pc::sigma_tot*lam*nl*gf*stim_cor*time_;
 
       // effeciently calculate exponential of tau
       double etau;
@@ -348,8 +348,8 @@ void GasState::fuzz_expansion_opacity(std::vector<double>& opac, std::vector<dou
   // renormalize opacity array
   for (size_t i=0;i<opac.size();i++)
   {
-    opac[i]  = opac[i]*nu_grid.center(i)/nu_grid.delta(i)/pc::c/time;
-    aopac[i] = aopac[i]*nu_grid.center(i)/nu_grid.delta(i)/pc::c/time;
+    opac[i]  = opac[i]*nu_grid_.center(i)/nu_grid_.delta(i)/pc::c/time_;
+    aopac[i] = aopac[i]*nu_grid_.center(i)/nu_grid_.delta(i)/pc::c/time_;
   }
 }
 
@@ -364,25 +364,25 @@ void GasState::fuzz_expansion_opacity(std::vector<double>& opac, std::vector<dou
 double GasState::get_planck_mean
 (std::vector<OpacityType> abs, std::vector<OpacityType> scat)
 {
-	if ((abs.size() != nu_grid.size())||(scat.size() != nu_grid.size()))
+	if ((abs.size() != nu_grid_.size())||(scat.size() != nu_grid_.size()))
 	{
-		if (verbose) {
+		if (verbose_) {
 			std::cerr << "# Warning: pacity vector of wrong length in get_planck_mean";
 			std::cerr << std::endl; }
 		return 0;
 	}
 
-	if (nu_grid.size() == 1) return abs[0] + scat[0];
+	if (nu_grid_.size() == 1) return abs[0] + scat[0];
 
 	double mean = 0;
 	double norm = 0;
-	for (size_t i=0;i<nu_grid.size();i++)
+	for (size_t i=0;i<nu_grid_.size();i++)
  	{
-		double nu   = nu_grid.center(i);
-		double zeta = pc::h*nu/pc::k/temp;
+		double nu   = nu_grid_.center(i);
+		double zeta = pc::h*nu/pc::k/temp_;
 		double Bnu  = 2.0*nu*nu*nu*pc::h/pc::c/pc::c/(exp(zeta)-1);
 		if (isnan(Bnu)) Bnu = 0;
-		double W = Bnu*nu_grid.delta(i);
+		double W = Bnu*nu_grid_.delta(i);
 		mean += W*(abs[i] + scat[i]);
 		norm += W;
 	}
@@ -400,25 +400,25 @@ double GasState::get_planck_mean
 //----------------------------------------------------------------
 double GasState::get_planck_mean(std::vector<OpacityType> x)
 {
-	if (x.size() != nu_grid.size())
+	if (x.size() != nu_grid_.size())
 	{
-		if (verbose) {
+		if (verbose_) {
 			std::cerr << "# Warning: pacity vector of wrong length in get_planck_mean";
 			std::cerr << std::endl; }
 		return 0;
 	}
 
-	if (nu_grid.size() == 1) return x[0];
+	if (nu_grid_.size() == 1) return x[0];
 
 	double mean = 0;
 	double norm = 0;
-	for (size_t i=0;i<nu_grid.size();i++)
+	for (size_t i=0;i<nu_grid_.size();i++)
  	{
-		double nu   = nu_grid.center(i);
-		double zeta = pc::h*nu/pc::k/temp;
+		double nu   = nu_grid_.center(i);
+		double zeta = pc::h*nu/pc::k/temp_;
 		double Bnu  = 2.0*nu*nu*nu*pc::h/pc::c/pc::c/(exp(zeta)-1);
 		if (isnan(Bnu)) Bnu = 0;
-		double W = Bnu*nu_grid.delta(i);
+		double W = Bnu*nu_grid_.delta(i);
 		mean += W*x[i];
 		norm += W;
 	}
@@ -437,26 +437,26 @@ double GasState::get_planck_mean(std::vector<OpacityType> x)
 double GasState::get_rosseland_mean
 (std::vector<OpacityType> abs, std::vector<OpacityType> scat)
 {
-	if ((abs.size() != nu_grid.size())||(scat.size() != nu_grid.size()))
+	if ((abs.size() != nu_grid_.size())||(scat.size() != nu_grid_.size()))
 	{
-		if (verbose) {
+		if (verbose_) {
 			std::cerr << "# Warning: pacity vector of wrong length in get_planck_mean";
 			std::cerr << std::endl; }
 		return 0;
 	}
 
-	if (nu_grid.size() == 1) return abs[0] + scat[0];
+	if (nu_grid_.size() == 1) return abs[0] + scat[0];
 
 	double mean = 0;
 	double norm = 0;
-	for (size_t i=0;i<nu_grid.size();i++)
+	for (size_t i=0;i<nu_grid_.size();i++)
  	{
-		double nu   = nu_grid.center(i);
-		double zeta = pc::h*nu/pc::k/temp;
+		double nu   = nu_grid_.center(i);
+		double zeta = pc::h*nu/pc::k/temp_;
 		double ezeta = exp(zeta);
 		double dBdT  = pow(nu,4)*ezeta/(ezeta-1)/(ezeta-1);
 		if (isnan(dBdT)) dBdT = 0;
-		double W = dBdT*nu_grid.delta(i);
+		double W = dBdT*nu_grid_.delta(i);
 		mean += W/(abs[i] + scat[i]);
 		norm += W;
 	}
@@ -473,26 +473,26 @@ double GasState::get_rosseland_mean
 //----------------------------------------------------------------
 double GasState::get_rosseland_mean(std::vector<OpacityType> x)
 {
-	if (x.size() != nu_grid.size())
+	if (x.size() != nu_grid_.size())
 	{
-		if (verbose) {
+		if (verbose_) {
 			std::cerr << "# Warning: pacity vector of wrong length in get_planck_mean";
 			std::cerr << std::endl; }
 		return 0;
 	}
 
-	if (nu_grid.size() == 1) return x[0];
+	if (nu_grid_.size() == 1) return x[0];
 
 	double mean = 0;
 	double norm = 0;
-	for (size_t i=0;i<nu_grid.size();i++)
+	for (size_t i=0;i<nu_grid_.size();i++)
  	{
-		double nu   = nu_grid.center(i);
-		double zeta = pc::h*nu/pc::k/temp;
+		double nu   = nu_grid_.center(i);
+		double zeta = pc::h*nu/pc::k/temp_;
 		double ezeta = exp(zeta);
 		double dBdT  = pow(nu,4)*ezeta/(ezeta-1)/(ezeta-1);
 		if (isnan(dBdT)) dBdT = 0;
-		double W = dBdT*nu_grid.delta(i);
+		double W = dBdT*nu_grid_.delta(i);
 		mean += W/x[i];
 		norm += W;
 	}

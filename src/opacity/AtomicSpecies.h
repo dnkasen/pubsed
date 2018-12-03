@@ -1,5 +1,5 @@
-#ifndef _NLTE_ATOM_H
-#define _NLTE_ATOM_H 1
+#ifndef _ATOMIC_SPECIES_H
+#define _ATOMiC_SPECIES_H 1
 
 #include <string>
 #include <vector>
@@ -72,7 +72,7 @@ struct AtomicLevel
 };
 
 
-class nlte_atom
+class AtomicSpecies
 {
 
 private:
@@ -121,7 +121,7 @@ public:
   fuzz_line_structure fuzz_lines; // vector of fuzz lines
 
   // Constructor and Init
-  nlte_atom();
+  AtomicSpecies();
   int initialize(std::string, int, locate_array, int&);
   int set_use_nlte();
   int read_fuzzfile(std::string);

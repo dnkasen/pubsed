@@ -1,4 +1,4 @@
-#include "nlte_atom.h"
+#include "AtomicSpecies.h"
 #include "physical_constants.h"
 #include <iostream>
 #include <limits>
@@ -11,7 +11,7 @@ namespace pc = physical_constants;
 // calculate the bound-free extinction coefficient
 // (units cm^{-1}) for all levels
 //---------------------------------------------------------
-void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double>& emis, double ne)
+void AtomicSpecies::bound_free_opacity(std::vector<double>& opac, std::vector<double>& emis, double ne)
 {
   // zero out arrays
   for (size_t i=0;i<opac.size();++i) {opac[i] = 0; emis[i] = 0;}
@@ -61,7 +61,7 @@ void nlte_atom::bound_free_opacity(std::vector<double>& opac, std::vector<double
 // calculate the bound-free extinction coefficient
 // (units cm^{-1}) for all levels
 //---------------------------------------------------------
-void nlte_atom::bound_bound_opacity(std::vector<double>& opac, std::vector<double>& emis)
+void AtomicSpecies::bound_bound_opacity(std::vector<double>& opac, std::vector<double>& emis)
 {
   // zero out arrays
   for (size_t i=0;i<opac.size();++i) {opac[i] = 0; emis[i] = 0;}
@@ -126,12 +126,12 @@ void nlte_atom::bound_bound_opacity(std::vector<double>& opac, std::vector<doubl
 
 
 
-void nlte_atom::compute_sobolev_taus(double time)
+void AtomicSpecies::compute_sobolev_taus(double time)
 {
   for (int i=0;i<n_lines_;++i) compute_sobolev_tau(i,time);
 }
 
-double nlte_atom::compute_sobolev_tau(int i, double time)
+double AtomicSpecies::compute_sobolev_tau(int i, double time)
 {
   int ll = lines_[i].ll;
   int lu = lines_[i].lu;

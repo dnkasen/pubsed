@@ -16,6 +16,7 @@ static ParameterReader params;
 static std::vector<OpacityType> abs_opacity, scat_opacity, tot_opacity, emissivity;
 
 // functions
+/*
 static double rosseland_mean(std::vector<OpacityType> opac);
 static double planck_mean(std::vector<OpacityType> opac);
 static void write_mesa_file(std::string);
@@ -23,10 +24,13 @@ static void write_frequency_file(std::string, int);
 static void write_gas_state(std::string);
 static void write_mean_opacities(std::string);
 static int verbose;
+*/
 
 int main(int argc, char **argv)
 {
+}
 
+/*
   verbose = 1;
 
   // open up the parameter reader
@@ -356,3 +360,4 @@ double planck_mean(std::vector<OpacityType> opac)
   double kappa_P = sum/norm/gas.dens;
   return kappa_P;
 }
+*/
