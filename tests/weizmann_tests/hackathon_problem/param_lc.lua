@@ -1,10 +1,11 @@
 grid_type    = "grid_1D_sphere"   
-model_file   = "snia_toy06.mod"
+model_file   = "snia_toy_m1e1nip6.mod"
 hydro_module = "homologous"
 
-defaults_file      = "/homes/nroth1/sedona6/defaults/sedona_defaults.lua"
-data_atomic_file   = "/homes/nroth1/sedona6/data/atom_data_weizmann_SNIA_complete_lc1000.hdf5"
-data_fuzzline_file = "/homes/nroth1/sedona6/data/kurucz_cd23_fuzz.hdf5"
+sedona_home        = os.getenv('SEDONA_HOME')
+defaults_file      = sedona_home.."/defaults/sedona_defaults.lua"
+data_atomic_file   = sedona_home.."/data/atom_data_weizmann_SNIA_complete_lc1000.hdf5"
+data_fuzzline_file = sedona_home.."/data/kurucz_cd23_fuzz.hdf5"
 
 -- helper variable
 days = 3600.0*24
