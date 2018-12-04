@@ -106,10 +106,10 @@ class transport
   spectrum_array gamma_spectrum;
 
   // random number generator
-  //mutable thread_RNG rangen;
+  mutable thread_RNG rangen;
 
    // random number generator
-  gsl_rng *rangen;
+  //gsl_rng *rangen;
 
   // Voigt profile class
   VoigtProfile voigt_profile_;

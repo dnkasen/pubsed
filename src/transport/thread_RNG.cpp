@@ -15,25 +15,27 @@ void thread_RNG::init(){
   // set up the stuff that creates the random number generators
   const gsl_rng_type* TypeR = gsl_rng_default;
   gsl_rng_env_setup();
-    
-  #pragma omp parallel default(none) shared(my_mpiID,TypeR,gsl_rng_default_seed)
+  int nthreads;
+  
+  #pragma omp parallel
+  #pragma omp single
   {
     #ifdef _OPENMP
-    const int nthreads = omp_get_num_threads();
-    const int my_ompID = omp_get_thread_num();
+    nthreads = omp_get_num_threads();
     #else
-    const int nthreads = 1;
-    const int my_ompID = 0;
+    nthreads = 1;
     #endif
-    if(my_mpiID==0 && my_ompID==0) printf("# Using %d threads on each MPI rank.\n", nthreads);
+  }
+  if(my_mpiID==0) printf("# Using %d threads on each MPI rank.\n", nthreads);
     
-    // assign a unique RNG to each thread
-    #pragma omp single
-    generators.resize(nthreads);
-    for(int i=0; i<nthreads; i++){
-      gsl_rng_default_seed = (unsigned int)time(NULL) + my_mpiID*nthreads + my_ompID;
-      generators[i] = gsl_rng_alloc (TypeR);
-    }
+  // assign a unique RNG to each thread
+  generators.resize(nthreads);
+  for(int i=0; i<nthreads; i++){
+    if(i==0)
+      gsl_rng_default_seed = (unsigned int)time(NULL);
+    else
+      gsl_rng_default_seed = gsl_rng_get(generators[0]);
+    generators[i] = gsl_rng_alloc (TypeR);
   }
 }
 

@@ -18,7 +18,7 @@ ParticleFate transport::do_scatter(particle *p, double eps)
   if (p->type == photon)
   {
     // see if scattered 
-    if (gsl_rng_uniform(rangen) > eps)
+    if (rangen.uniform() > eps)
       {
 	if (compton_scatter_photons_)
 	  compton_scatter_photon(p);
@@ -28,7 +28,7 @@ ParticleFate transport::do_scatter(particle *p, double eps)
     else
     {
       // check for effective scattering
-      double z2 = gsl_rng_uniform(rangen);
+      double z2 = rangen.uniform();
       // enforced radiative equilibrium always effective scatters
       if (z2 > zone->eps_imc) isotropic_scatter(p,1);
       else fate = absorbed;
@@ -39,15 +39,15 @@ ParticleFate transport::do_scatter(particle *p, double eps)
   if (p->type == gammaray)
   {
     // see if scattered 
-    if (gsl_rng_uniform(rangen) > eps) compton_scatter(p);
+    if (rangen.uniform() > eps) compton_scatter(p);
     // or if absorbed, turn it into a photon
     else 
     {
       grid->z[p->ind].L_radio_dep += p->e;
       p->type = photon;
       // isotropic emission in comoving frame
-      double mu  = 1 - 2.0*gsl_rng_uniform(rangen);
-      double phi = 2.0*pc::pi*gsl_rng_uniform(rangen);
+      double mu  = 1 - 2.0*rangen.uniform();
+      double phi = 2.0*pc::pi*rangen.uniform();
       double smu = sqrt(1 - mu*mu);
       p->D[0] = smu*cos(phi);
       p->D[1] = smu*sin(phi);
@@ -79,8 +79,8 @@ void transport::compton_scatter(particle *p)
   while (true)
   {
     // isotropic new direction
-    double mu  = 1 - 2.0*gsl_rng_uniform(rangen);
-    double phi = 2.0*pc::pi*gsl_rng_uniform(rangen);
+    double mu  = 1 - 2.0*rangen.uniform();
+    double phi = 2.0*pc::pi*rangen.uniform();
     double smu = sqrt(1 - mu*mu);
     D_new[0] = smu*cos(phi);
     D_new[1] = smu*sin(phi);
@@ -93,7 +93,7 @@ void transport::compton_scatter(particle *p)
     // klein-nishina differential cross-section
     double diff_cs = 0.5*(E_ratio*E_ratio*(1/E_ratio + E_ratio - 1 + cost*cost));
     // see if this scatter angle OK
-    if (gsl_rng_uniform(rangen) < diff_cs) break;
+    if (rangen.uniform() < diff_cs) break;
   }
   
   // new frequency
@@ -103,13 +103,13 @@ void transport::compton_scatter(particle *p)
   //if (p->type == gammaray) grid->z[p->ind].L_radio_dep += p->e*(1 - E_ratio);
 
   // sample whether we stay alive, if not become a photon
-  if (gsl_rng_uniform(rangen) > E_ratio) 
+  if (rangen.uniform() > E_ratio) 
   {
     grid->z[p->ind].L_radio_dep += p->e;
     p->type = photon;
     // isotropic emission in comoving frame
-    double mu  = 1 - 2.0*gsl_rng_uniform(rangen);
-    double phi = 2.0*pc::pi*gsl_rng_uniform(rangen);
+    double mu  = 1 - 2.0*rangen.uniform();
+    double phi = 2.0*pc::pi*rangen.uniform();
     double smu = sqrt(1 - mu*mu);
     D_new[0] = smu*cos(phi);
     D_new[1] = smu*sin(phi);
@@ -135,10 +135,10 @@ void transport::sample_MB_vector(double T, double* v_e, double* p_d)
 
       // if you prefer, you could also rejection sample to get v_tot. 
       
-      double v_tot = sqrt(2. * pc::k * T /pc::m_e) * mb_dv * (mb_cdf_.sample(gsl_rng_uniform(rangen)) + gsl_rng_uniform(rangen) );
+      double v_tot = sqrt(2. * pc::k * T /pc::m_e) * mb_dv * (mb_cdf_.sample(rangen.uniform()) + rangen.uniform() );
       
-      double mu  = 1. - 2.0*gsl_rng_uniform(rangen);
-      double phi = 2.0*pc::pi*gsl_rng_uniform(rangen);
+      double mu  = 1. - 2.0*rangen.uniform();
+      double phi = 2.0*pc::pi*rangen.uniform();
       double smu = sqrt(1 - mu*mu);
       double ed0 = smu*cos(phi);
       double ed1 = smu*sin(phi);
@@ -148,7 +148,7 @@ void transport::sample_MB_vector(double T, double* v_e, double* p_d)
       double omega = ed0 * p_d[0] + ed1 * p_d[1] + ed2 * p_d[2];
 
       // could tighten this bound if you think you know how small v_tot/C will be
-      if (gsl_rng_uniform(rangen) < 0.5 * (1. - omega * v_tot/pc::c)) // this is crucial. For the more relativistic case, the formula gets more complicated. See the discussion at the top of pdf page 135 (journal page 323) of the Pozdnyakov 1983 paper, which references a formula for sigma-hat four pages earlier
+      if (rangen.uniform() < 0.5 * (1. - omega * v_tot/pc::c)) // this is crucial. For the more relativistic case, the formula gets more complicated. See the discussion at the top of pdf page 135 (journal page 323) of the Pozdnyakov 1983 paper, which references a formula for sigma-hat four pages earlier
 	{
 
 	  v_e[0] = v_tot * ed0;
@@ -204,8 +204,8 @@ void transport::compton_scatter_photon(particle *p)
   while (true)
   {
     // isotropic new direction
-    double mu  = 1. - 2.0*gsl_rng_uniform(rangen);
-    double phi = 2.0*pc::pi*gsl_rng_uniform(rangen);
+    double mu  = 1. - 2.0*rangen.uniform();
+    double phi = 2.0*pc::pi*rangen.uniform();
     double smu = sqrt(1. - mu*mu);
     D_new[0] = smu*cos(phi);
     D_new[1] = smu*sin(phi);
@@ -218,7 +218,7 @@ void transport::compton_scatter_photon(particle *p)
     // klein-nishina differential cross-section
     double diff_cs = 0.5*(E_ratio*E_ratio*(1./E_ratio + E_ratio - 1. + cost*cost));
     // see if this scatter angle OK
-    if (gsl_rng_uniform(rangen) < diff_cs) break;
+    if (rangen.uniform() < diff_cs) break;
   }
 
   // new frequency
@@ -262,8 +262,8 @@ void transport::compton_scatter_photon(particle *p)
 //   p->nu *= dshift_in;
 
 //   // Randomly generate new direction isotropically in comoving frame
-//   double mu  = 1 - 2.0*gsl_rng_uniform(rangen);
-//   double phi = 2.0*pc::pi*gsl_rng_uniform(rangen);
+//   double mu  = 1 - 2.0*rangen.uniform();
+//   double phi = 2.0*pc::pi*rangen.uniform();
 //   double smu = sqrt(1 - mu*mu);
 //   p->D[0] = smu*cos(phi);
 //   p->D[1] = smu*sin(phi);
@@ -273,8 +273,8 @@ void transport::compton_scatter_photon(particle *p)
 //   if (redistribute)
 //   {
 //     // sample frequency from local emissivity
-//     int ilam  = emis[p->ind].sample(gsl_rng_uniform(rangen));
-//     p->nu = nu_grid.sample(ilam,gsl_rng_uniform(rangen));
+//     int ilam  = emis[p->ind].sample(rangen.uniform());
+//     p->nu = nu_grid.sample(ilam,rangen.uniform());
 //   }
   
 //   // lorentz transform back to lab frame
@@ -308,8 +308,8 @@ void transport::isotropic_scatter(particle *p, int redist)
   double D_new[3];
 
   // choose new isotropic direction in comoving frame
-  double mu  = 1 - 2.0*gsl_rng_uniform(rangen);
-  double phi = 2.0*pc::pi*gsl_rng_uniform(rangen);
+  double mu  = 1 - 2.0*rangen.uniform();
+  double phi = 2.0*pc::pi*rangen.uniform();
   double smu = sqrt(1 - mu*mu);
   D_new[0] = smu*cos(phi);
   D_new[1] = smu*sin(phi);
