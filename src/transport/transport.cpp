@@ -58,6 +58,7 @@ void transport::step(double dt)
   int n_active = particles.size();
   int n_escape = 0;
   int n_particles = particles.size();
+  #pragma omp parallel for schedule(guided)
   for(int i=0; i<n_particles; i++)
   {
     int ddmc_zone = 0;
@@ -209,7 +210,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     double tot_opac_labframe = tot_opac_cmf*dshift;
 
     // random optical depth to next interaction
-    double tau_r = -1.0*log(1 - gsl_rng_uniform(rangen));
+    double tau_r = -1.0*log(1 - rangen.uniform());
 
     // step size to next interaction event
     double d_sc  = tau_r/tot_opac_labframe;
@@ -242,15 +243,23 @@ ParticleFate transport::propagate(particle &p, double dt)
     // don't add gamma-rays here (they would be separate)
     if (p.type == photon)
     {
+      #pragma omp atomic
       zone->e_abs  += this_E*dshift*(continuum_opac_cmf)*eps_absorb_cmf*dshift;
-      if (store_Jnu_) J_nu_[p.ind][i_nu] += this_E;
-      else J_nu_[p.ind][0] += this_E;
+      if (store_Jnu_)
+	#pragma omp atomic
+	J_nu_[p.ind][i_nu] += this_E;
+      else
+	#pragma omp atomic
+	J_nu_[p.ind][0] += this_E;
       //std::cout << p.ind << " " << i_nu << " " << p.e << " " << this_E << " " << J_nu_[p.ind][i_nu] << "\n";
     }
 
      // radiation force
+    #pragma omp atomic
      zone->fx_rad += this_E*dshift*continuum_opac_cmf*p.D[0] * dshift; // Extra dshift definitely needed here (two total)
+     #pragma omp atomic
      zone->fy_rad += this_E*dshift*continuum_opac_cmf*p.D[1] * dshift;
+     #pragma omp atomic
      zone->fz_rad += this_E*dshift*continuum_opac_cmf*p.D[2] * dshift;
 
     // move particle the distance
@@ -313,7 +322,7 @@ ParticleFate transport::propagate(particle &p, double dt)
       if (fate == moving)
       {
  //        fate = do_scatter(&p,eps_absorb_cmf);
-   //     if (gsl_rng_uniform(rangen) > 0.38)
+   //     if (rangen.uniform() > 0.38)
     //    fate = absorbed;
         //else fate = do_scatter(&p,0);
          // debug
