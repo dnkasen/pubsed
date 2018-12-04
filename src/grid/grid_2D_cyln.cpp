@@ -22,6 +22,7 @@ namespace pc = physical_constants;
 
 using std::string;
 using std::cout;
+using std::cerr;
 using std::endl;
 
 //------------------------------------------------------------
@@ -49,16 +50,16 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   // get time
   double tt[1];
   status = H5LTread_dataset_double(file_id,"/time",tt);
-  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find time\n";
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find time" << endl;
   t_now = tt[0];
 
   // get grid size and dimensions
   hsize_t     dims[3];
   double dr[2];
   status = H5LTget_dataset_info(file_id,"/comp",dims, NULL, NULL);
-  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find comp\n";
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find comp" << endl;
   status = H5LTread_dataset_double(file_id,"/dr",dr);
-  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find dr\n";
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find dr" << endl;
 
   nx_     = dims[0];
   nz_     = dims[1];
@@ -72,33 +73,33 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
 
   int *etmp = new int[n_elems];
   status = H5LTread_dataset_int(file_id,"/Z",etmp);
-  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find Z\n";
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find Z" << endl;
   for (int k=0;k<n_elems;k++) elems_Z.push_back(etmp[k]);
   status = H5LTread_dataset_int(file_id,"/A",etmp);
-  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find A\n";
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find A" << endl;
   for (int k=0;k<n_elems;k++) elems_A.push_back(etmp[k]);
   delete [] etmp;
 
   double *tmp = new double[n_zones];
   // read density
   status = H5LTread_dataset_double(file_id,"/rho",tmp);
-  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find rho\n";
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find rho" << endl;
   for (int i=0; i < n_zones; i++) z[i].rho = tmp[i];
   // read temperature
   status = H5LTread_dataset_double(file_id,"/temp",tmp);
-  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find temp\n";
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find temp" << endl;
   for (int i=0; i < n_zones; i++) z[i].T_gas = tmp[i];
   // read vx
   status = H5LTread_dataset_double(file_id,"/vx",tmp);
-  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find vx\n";
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find vx" << endl;
   for (int i=0; i < n_zones; i++) z[i].v[0] = tmp[i];
   // read vz
   status = H5LTread_dataset_double(file_id,"/vz",tmp);
-  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find vz\n";
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find vz" << endl;
   for (int i=0; i < n_zones; i++) z[i].v[2] = tmp[i];
   // read erad
   status = H5LTread_dataset_double(file_id,"/erad",tmp);
-  if (status < 0) if (verbose) std::cout << "# Grid Err; can't find erad\n";
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find erad" << endl;
   for (int i=0; i < n_zones; i++) z[i].e_rad = tmp[i];
   delete [] tmp;
 
@@ -162,7 +163,7 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
     }
     printf("# kinetic energy   = %.4e\n",totke);
     printf("# radiation energy = %.4e\n",totrad);
-    cout << "##############################\n#\n";
+    cout << "##############################\n#" << endl;
   }
 }
 

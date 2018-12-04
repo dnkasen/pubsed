@@ -16,6 +16,7 @@ namespace pc = physical_constants;
 
 using std::string;
 using std::cout;
+using std::cerr;
 using std::endl;
 
 //------------------------------------------------------------
@@ -38,7 +39,7 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
   infile.open(model_file.c_str());
   if(infile.fail())
   {
-    if (verbose) cout << "Err: can't read model file: " << model_file << endl;
+    if (verbose) cerr << "Err: can't read model file: " << model_file << endl;
     exit(4);
   }
 
@@ -46,7 +47,7 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
   infile >> grid_type;
   if(grid_type != "1D_sphere") 
   {
-    if (verbose) cout << "Err: grid_type param disagrees with the model file\n";
+    if (verbose) cerr << "Err: grid_type param disagrees with the model file" << endl;
     exit(4);
   }
   if (verbose) {
@@ -69,7 +70,7 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
   else if (system == "standard") 
     read_SNR_file(infile,verbose,0);
   else {
-    if (verbose) std::cout << " Don't recognize model type " << system << "; Exiting\n";
+    if (verbose) cerr << " Don't recognize model type " << system << "; Exiting" << endl;
     exit(1); }
 
   infile.close();
@@ -182,7 +183,7 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
       cout << elem_mass[k] << " (" << elem_mass[k]/pc::m_sun << " Msun)\n"; }
     printf("# kinetic energy   = %.4e\n",ke);
     printf("# radiation energy = %.4e\n",re);
-    cout << "##############################\n#\n";
+    cout << "##############################\n#" << endl;
        
   }
 }

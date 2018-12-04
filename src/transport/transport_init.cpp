@@ -14,6 +14,8 @@
 #include "physical_constants.h"
 
 using std::cout;
+using std::cerr;
+using std::endl;
 namespace pc = physical_constants;
 
 
@@ -23,7 +25,7 @@ namespace pc = physical_constants;
 // and MPI work distribution
 //----------------------------------------------------------------------------
 void transport::init(ParameterReader* par, grid_general *g)
-{ 
+{
   params_  = par;
   grid = g;
 
@@ -49,19 +51,19 @@ void transport::init(ParameterReader* par, grid_general *g)
     int start = i*blocks + rcount;
     int stop  = start + blocks;
     if (rcount < remainder) { stop += 1; rcount += 1;}
-    if (i == MPI_myID) 
+    if (i == MPI_myID)
     {
       my_zone_start_ = start;
       my_zone_stop_  = stop;
     }
   }
-  // arrays for communication 
+  // arrays for communication
   src_MPI_block = new double[Max_MPI_Blocksize];
   dst_MPI_block = new double[Max_MPI_Blocksize];
   src_MPI_zones = new double[nz];
   dst_MPI_zones = new double[nz];
 
-//  std::cout << MPI_myID <<  " " << my_zone_start_ << " " << my_zone_stop_ << 
+//  std::cout << MPI_myID <<  " " << my_zone_start_ << " " << my_zone_stop_ <<
 //   " " << my_zone_stop_ - my_zone_start_ << "\n";
 
   // setup and seed random number generator
@@ -70,7 +72,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   gsl_rng_default_seed = (unsigned int)time(NULL) + MPI_myID;
   TypeR = gsl_rng_default;
   rangen = gsl_rng_alloc (TypeR);
-  
+
   // read relevant parameters
   max_total_particles = params_->getScalar<int>("particles_max_total");
   radiative_eq    = params_->getScalar<int>("transport_radiative_equilibrium");
@@ -79,10 +81,10 @@ void transport::init(ParameterReader* par, grid_general *g)
   temp_min_value_ = params_->getScalar<double>("limits_temp_min");
   last_iteration_ = 0;
 
-  // initialize the frequency grid  
+  // initialize the frequency grid
   std::vector<double> nu_dims = params_->getVector<double>("transport_nu_grid");
   if ((nu_dims.size() != 4)&&(nu_dims.size() != 3)) {
-    cout << "# improperly defined nu_grid; need {nu_1, nu_2, dnu, (log?)}; exiting\n";
+    cerr << "# improperly defined nu_grid; need {nu_1, nu_2, dnu, (log?)}; exiting" << endl;
     exit(1); }
   if (nu_dims.size() == 3)
     nu_grid.init(nu_dims[0],nu_dims[1],nu_dims[2]);
@@ -102,49 +104,51 @@ void transport::init(ParameterReader* par, grid_general *g)
   int nmu  = params_->getScalar<int>("spectrum_n_mu");
   int nphi = params_->getScalar<int>("spectrum_n_phi");
   optical_spectrum.init(stg,sng,nmu,nphi);
-  std::vector<double>gng = params_->getVector<double>("gamma_nu_grid");  
+  std::vector<double>gng = params_->getVector<double>("gamma_nu_grid");
   gamma_spectrum.init(stg,sng,nmu,nphi);
 
-  // initialize nlte_gas class
-  std::string atomdata = params_->getScalar<string>("data_atomic_file");  
+  // setup the GasState class
+  std::string atomdata = params_->getScalar<string>("data_atomic_file");
 
   // set gas opacity flags and parameters
-  gas.grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
-  gas.use_electron_scattering_opacity 
+  gas_state_.grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
+  gas_state_.use_electron_scattering_opacity
     = params_->getScalar<int>("opacity_electron_scattering");
-  gas.use_line_expansion_opacity  
+  gas_state_.use_line_expansion_opacity
     = params_->getScalar<int>("opacity_line_expansion");
-  gas.use_fuzz_expansion_opacity  
+  gas_state_.use_fuzz_expansion_opacity
     = params_->getScalar<int>("opacity_fuzz_expansion");
-  gas.use_bound_free_opacity  
+  gas_state_.use_bound_free_opacity
     = params_->getScalar<int>("opacity_bound_free");
-  gas.use_bound_bound_opacity  
+  gas_state_.use_bound_bound_opacity
     = params_->getScalar<int>("opacity_bound_bound");
-  gas.use_free_free_opacity  
+  gas_state_.use_free_free_opacity
     = params_->getScalar<int>("opacity_free_free");
-  gas.use_user_opacity_  
+  gas_state_.use_user_opacity_
     = params_->getScalar<int>("opacity_user_defined");
   double min_ext = params_->getScalar<double>("opacity_minimum_extinction");
   maximum_opacity_ = params_->getScalar<double>("opacity_maximum_opacity");
-  gas.set_minimum_extinction(min_ext);
-  gas.atom_zero_epsilon_ = params_->getVector<int>("opacity_atom_zero_epsilon");
-  gas.epsilon_           = params_->getScalar<double>("opacity_epsilon");
+  gas_state_.set_minimum_extinction(min_ext);
+  gas_state_.atom_zero_epsilon_ = params_->getVector<int>("opacity_atom_zero_epsilon");
+  gas_state_.epsilon_           = params_->getScalar<double>("opacity_epsilon");
+
+
 
   // set non-lte settings
   int use_nlte = params_->getScalar<int>("opacity_use_nlte");
-  gas.initialize(atomdata,grid->elems_Z,grid->elems_A,nu_grid);
-  gas.set_atoms_in_nlte(params_->getVector<int>("opacity_atoms_in_nlte"));
+  gas_state_.initialize(atomdata,grid->elems_Z,grid->elems_A,nu_grid);
+  gas_state_.set_atoms_in_nlte(params_->getVector<int>("opacity_atoms_in_nlte"));
 
   // getting fuzz line data
-  std::string fuzzfile = params_->getScalar<string>("data_fuzzline_file");  
-  int nl = gas.read_fuzzfile(fuzzfile);
-  if (verbose) std::cout << "# From fuzzfile \"" << fuzzfile << "\" " << 
+  std::string fuzzfile = params_->getScalar<string>("data_fuzzline_file");
+  int nl = gas_state_.read_fuzzfile(fuzzfile);
+  if (verbose) std::cout << "# From fuzzfile \"" << fuzzfile << "\" " <<
      nl << " lines used\n";
-  
+
   // define it as the first step, for NLTE
   first_step_ = 1;
 
-  if (verbose) gas.print_properties();
+  if (verbose) gas_state_.print_properties();
 
   // set up outer inner boundary condition
   boundary_in_reflect_ = params_->getScalar<int>("transport_boundary_in_reflect");
@@ -152,7 +156,7 @@ void transport::init(ParameterReader* par, grid_general *g)
 
   // parameters for treatment of detailed lines
   line_velocity_width_ = params_->getScalar<double>("line_velocity_width");
-  gas.line_velocity_width_ = line_velocity_width_;
+  gas_state_.line_velocity_width_ = line_velocity_width_;
 
   omit_composition_decay_ = params_->getScalar<int>("dont_decay_composition");
 
@@ -160,29 +164,32 @@ void transport::init(ParameterReader* par, grid_general *g)
   omit_scattering_ = params_->getScalar<int>("opacity_no_scattering");
   store_Jnu_ = params_->getScalar<int>("transport_store_Jnu");
   // sanity check
-  if ((!store_Jnu_)&&(use_nlte)) 
-    std::cout << "WARNING: not storing Jnu while using NLTE; Bad idea!\n";
+  if ((!store_Jnu_)&&(use_nlte))
+    std::cerr << "WARNING: not storing Jnu while using NLTE; Bad idea!\n";
 
+  // allocate memory for opacity/emissivity variables
   abs_opacity_.resize(grid->n_zones);
   if (!omit_scattering_) scat_opacity_.resize(grid->n_zones);
   emissivity_.resize(grid->n_zones);
   J_nu_.resize(grid->n_zones);
+  planck_mean_opacity_.resize(grid->n_zones);
+  rosseland_mean_opacity_.resize(grid->n_zones);
 
   for (int i=0; i<grid->n_zones;  i++)
-  {   
+  {
     // allocate absorptive opacity
     try {
       abs_opacity_[i].resize(nu_grid.size()); }
     catch (std::bad_alloc const&) {
-      cout << "Memory allocation fail!" << std::endl; }
-   
+      cerr << "Memory allocation fail!" << std::endl; }
+
     // allocate scattering opacity
     if (!omit_scattering_)
     {
       try {
         scat_opacity_[i].resize(nu_grid.size()); }
      catch (std::bad_alloc const&) {
-        cout << "Memory allocation fail!" << std::endl; }
+        cerr << "Memory allocation fail!" << std::endl; }
     }
 
     // allocate emissivity
@@ -191,7 +198,7 @@ void transport::init(ParameterReader* par, grid_general *g)
     // allocate Jnu (radiation field)
     if (store_Jnu_)
       J_nu_[i].resize(nu_grid.size());
-    else 
+    else
       J_nu_[i].resize(1);
   }
   compton_opac.resize(grid->n_zones);
@@ -201,7 +208,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   emissivity_weight_.resize(nu_grid.size());
   double norm = 0;
   for (int j=0;j<nu_grid.size();j++)
-  { 
+  {
     //double nu  = nu_grid.center(j);
     double w = 1.0; // - 1.0/(1.0 + pow(nu/3e15,2.0));
     //if (nu > 2e15) w = 100;
@@ -210,6 +217,24 @@ void transport::init(ParameterReader* par, grid_general *g)
   }
   for (int j=0;j<nu_grid.size();j++) emissivity_weight_[j] *= nu_grid.size()/norm;
  // for (int j=0;j<nu_grid.size();j++) std::cout << nu_grid.center(j) << " " << emissivity_weight_[j] << "\n";
+
+
+ // ddmc parameters
+ use_ddmc_ = params_->getScalar<int>("transport_use_ddmc");
+ ddmc_tau_ = params_->getScalar<double>("transport_ddmc_tau_threshold");
+ if (use_ddmc_)
+ {
+   ddmc_P_up_.resize(grid->n_zones);
+   ddmc_P_dn_.resize(grid->n_zones);
+   ddmc_P_adv_.resize(grid->n_zones);
+   ddmc_P_abs_.resize(grid->n_zones);
+   ddmc_P_stay_.resize(grid->n_zones);
+ }
+ if ((use_ddmc_)&&(verbose))
+ {
+  std::cout << "# Using DDMC with threshold tau = ";
+  std::cout << ddmc_tau_ << std::endl;
+}
 
   // allocate space for emission distribution function across zones
   zone_emission_cdf_.resize(grid->n_zones);
@@ -228,7 +253,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   initialize_particles(n_parts);
 
   compton_scatter_photons_ = params_->getScalar<int>("opacity_compton_scatter_photons");
-  if (compton_scatter_photons_) 
+  if (compton_scatter_photons_)
     setup_MB_cdf(0.,5.,512); // in non-dimensional velocity units
 
 }
@@ -254,7 +279,7 @@ void transport::setup_MB_cdf(double min_v, double max_v, int num_v)
 
 // -----------------------------------------------------------
 // Read parameters for a spherical emitting core and
-// setup the emission 
+// setup the emission
 // -----------------------------------------------------------
 void transport::setup_core_emission()
 {
@@ -278,19 +303,19 @@ void transport::setup_core_emission()
     // allocate and set up core emission spectrum
     core_emission_spectrum_.resize(nu_grid.size());
 
-    std::string core_spectrum_filename = params_->getScalar<string>("core_spectrum_file");  
+    std::string core_spectrum_filename = params_->getScalar<string>("core_spectrum_file");
     vector<double> cspec_nu, cspec_Lnu;
-    if (core_spectrum_filename != "") 
+    if (core_spectrum_filename != "")
     {
      double x1,x2;
       std::ifstream specfile;
       specfile.open(core_spectrum_filename.c_str());
-      if (!specfile.is_open()) 
+      if (!specfile.is_open())
       {
-        if (verbose) std::cout << "Can't open core_spectrum_file " << core_spectrum_filename << "\n";
+        if (verbose) std::cerr << "Can't open core_spectrum_file " << core_spectrum_filename << endl;
         core_spectrum_filename = "";
       }
-      else while (!specfile.eof( ))   
+      else while (!specfile.eof( ))
       {
         specfile >> x1;
         specfile >> x2;
@@ -299,30 +324,30 @@ void transport::setup_core_emission()
      }
    }
 
-    // set up emission spectrum 
+    // set up emission spectrum
    double L_sum = 0;
    for (int j=0;j<nu_grid.size();j++)
-   { 
+   {
       double nu  = nu_grid.center(j);
       double dnu = nu_grid.delta(j);
 
       // read in spectrum
-      if (core_spectrum_filename != "") 
+      if (core_spectrum_filename != "")
       {
         double Lnu;
         int ind = lower_bound(cspec_nu.begin(),cspec_nu.end(),nu)- cspec_nu.begin() - 1;
         if (ind < 0) Lnu = 0;
         else if ((size_t)ind >= cspec_nu.size()-1) Lnu = 0;
-       else 
+       else
        {
           //double slope = 0; //(cspec_Lnu[ind+1] - cspec_Lnu[ind-1])/(cspec_nu[ind+1] - cspec_nu[ind]);
           Lnu = cspec_Lnu[ind]; // + slope*(nu - cspec_nu[ind]);
         }
-        core_emission_spectrum_.set_value(j,Lnu*dnu*emissivity_weight_[j]); 
+        core_emission_spectrum_.set_value(j,Lnu*dnu*emissivity_weight_[j]);
        L_sum += Lnu*dnu;
       }
       else
-      // blackbody spectrum 
+      // blackbody spectrum
      {
         double bb;
         if (T_core_ <= 0) bb = 1;
@@ -332,19 +357,19 @@ void transport::setup_core_emission()
        L_sum += 4.0*pc::pi*r_core_*r_core_*pc::pi*bb*dnu;
       }
     }
-   core_emission_spectrum_.normalize(); 
+   core_emission_spectrum_.normalize();
    if (L_core_ == 0) L_core_ = L_sum;
 
-    if (verbose) 
+    if (verbose)
     {
-      if (core_spectrum_filename != "") 
-        cout << "# Inner source luminosity (at t = 0) = " << L_core_ << 
+      if (core_spectrum_filename != "")
+        cout << "# Inner source luminosity (at t = 0) = " << L_core_ <<
        " erg/s, read from file " << core_spectrum_filename << "\n";
       else
-        cout << "# Inner source luminosity = " << L_core_ << 
+        cout << "# Inner source luminosity = " << L_core_ <<
         "  erg/s, from a blackbody T = " << T_core_ << "\n";
     }
-  } 
+  }
   // -----------------------------------------------------------
 
 }
@@ -352,23 +377,23 @@ void transport::setup_core_emission()
 
 // -----------------------------------------------------------
 // Read parameters for multiple emitting point sources
-// and etup the emission 
+// and etup the emission
 // -----------------------------------------------------------
 void transport::setup_pointsource_emission()
 {
-  std::string ps_filename = params_->getScalar<string>("particles_pointsource_file");  
+  std::string ps_filename = params_->getScalar<string>("particles_pointsource_file");
   use_pointsources_ = 0;
   if (ps_filename == "") return;
 
   std::ifstream ps_file;
   ps_file.open(ps_filename.c_str());
-  if (!ps_file.is_open()) 
+  if (!ps_file.is_open())
   {
-    if (verbose) std::cout << "Can't open point source file " << ps_filename << "\n";
+    if (verbose) std::cerr << "Can't open point source file " << ps_filename << endl;
     return;
   }
 
-  while (!ps_file.eof( ))   
+  while (!ps_file.eof( ))
   {
     use_pointsources_ = 1;
 
@@ -393,13 +418,13 @@ void transport::setup_pointsource_emission()
   {
     pointsources_L_tot_ += pointsource_L_[i];
     pointsource_emission_cdf_.set_value(i,pointsource_L_[i]);
-  } 
+  }
   pointsource_emission_cdf_.normalize();
 
   // setup emission spectrum
   pointsource_emission_spectrum_.resize(nu_grid.size());
   for (int j=0;j<nu_grid.size();j++)
-  { 
+  {
     double nu  = nu_grid.center(j);
     double dnu = nu_grid.delta(j);
     double bb = blackbody_nu(T_core_,nu);
@@ -407,15 +432,9 @@ void transport::setup_pointsource_emission()
   }
   pointsource_emission_spectrum_.normalize();
 
-  if (verbose) 
+  if (verbose)
   {
     std::cout << "# From pointsource file: " << ps_filename << "\n";
     std::cout << "#   Read " << n_sources << " pointsources; L_tot = " << pointsources_L_tot_ << "\n";
   }
 }
-
-
-  
-
-
-

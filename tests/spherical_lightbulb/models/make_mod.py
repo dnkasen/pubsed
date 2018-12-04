@@ -4,7 +4,9 @@ import h5py
 ####################################
 m_sun  = 1.99e33
 pi     = 3.14159
-nx     = 100
+nx_1d  = 100
+nx_2d  = 100
+nx_3d  = 64
 mass   = 1.0*1.99e33
 vmax   = 1.0e9
 texp   = 20.0*(3600.0*24.0)
@@ -21,6 +23,7 @@ rho0    = 1e-20
 
 fout = open("vacuum_1D.mod","w")
 
+nx    = nx_1d
 dv    = vmax/(1.0*nx)
 rmin = 0.0
 fout.write("1D_sphere standard\n")
@@ -40,7 +43,8 @@ fout.close()
 # Make sedona 2D hdf5 model
 #################################
 
-dv    = vmax/(1.0*nx)
+nx   = nx_2d 
+dv   = vmax/(1.0*nx)
 vx   = np.arange(dv,vmax+0.1,dv)
 vz   = np.arange(-1.0*vmax + dv,vmax+0.1,dv)
 nz   = nx*2
@@ -83,6 +87,7 @@ fout.create_dataset('dr',data=[dv*texp,dv*texp],dtype='d')
 #########################################
 # Make sedona 3D Cartesian hdf5 model
 #########################################
+nx    = nx_3d
 dv    = vmax/(1.0*nx)*2.0
 vx    = np.arange(-1.0*vmax + dv,vmax+0.1,dv)
 vy    = np.arange(-1.0*vmax + dv,vmax+0.1,dv)

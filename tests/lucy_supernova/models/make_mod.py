@@ -6,7 +6,7 @@ m_sun  = 1.99e33
 pi     = 3.14159
 n_1d   = 100
 n_2d   = 70
-n_3d   = 50
+n_3d   = 64
 mass   = 1.4*1.99e33
 vmax   = 1.0e9
 texp   = 1.0*(3600.0*24.0)
@@ -107,3 +107,65 @@ fout.create_dataset('erad',data=temp,dtype='d')
 fout.create_dataset('comp',data=comp,shape=comp.shape,dtype='f')
 fout.create_dataset('dr',data=[dv*texp,dv*texp],dtype='d')
 fout.create_dataset('time',data=[texp],dtype='d')
+
+
+
+##################################
+# Make sedona 3D hdf5 model
+#################################
+nx    = n_3d
+dv    = vmax/(1.0*nx)*2.0
+vx    = np.arange(-1.0*vmax + dv,vmax+0.1,dv)
+vy    = np.arange(-1.0*vmax + dv,vmax+0.1,dv)
+vz    = np.arange(-1.0*vmax + dv,vmax+0.1,dv)
+
+ny = nx
+nz = nx
+rho  = np.zeros((nx,ny,nz))
+temp = np.zeros((nx,ny,nz))
+comp = np.zeros((nx,ny,nz,len(Z)))
+erad = np.zeros((nx,ny,nz))
+vxx  = np.zeros((nx,ny,nz))
+vxy  = np.zeros((nx,ny,nz))
+vxz  = np.zeros((nx,ny,nz))
+
+for i in range(nx):
+	for j in range(ny):
+		for k in range(nz):
+			vr = (vx[i]**2 + vy[j]**2 + vz[k]**2)**0.5
+
+			if (vr < vmax): 
+				rho[i,j,k] = rho0
+				temp[i,j,k] = T0
+			else:
+				rho[i,j,k] = rho0*1e-20
+				temp[i,j,k] = T0*1e-4
+
+			vxx[i,j,k] = vx[i];
+			vxy[i,j,k] = vy[j];
+			vxz[i,j,k] = vz[j];
+
+			# get composition
+			m_enc = 4.0*pi/3.0*(vr*texp)**3.0*rho0/m_sun	
+			if   (m_enc < 0.50): ni_frac = 1.0
+			elif (m_enc < 0.75): ni_frac = (0.75 - m_enc)/0.25
+			else: ni_frac = 0
+			comp[i][j][k][0] = 1 - ni_frac
+			comp[i][j][k][1] = 0.0
+			comp[i][j][k][2] = 0.0
+			comp[i][j][k][3] = ni_frac;
+
+fout = h5py.File('lucy_3D.h5','w')
+fout.create_dataset('time',data=[texp],dtype='d')
+fout.create_dataset('Z',data=Z,dtype='i')
+fout.create_dataset('A',data=A,dtype='i')
+fout.create_dataset('rho',data=rho,dtype='d')
+fout.create_dataset('temp',data=temp,dtype='d')
+fout.create_dataset('vx',data=vxx,dtype='d')
+fout.create_dataset('vy',data=vxy,dtype='d')
+fout.create_dataset('vz',data=vxz,dtype='d')
+fout.create_dataset('erad',data=erad,dtype='d')
+fout.create_dataset('comp',data=comp,dtype='d')
+fout.create_dataset('dr',data=[dv*texp,dv*texp,dv*texp],dtype='d')
+fout.create_dataset('rmin',data=[-1.0*rmax,-1.0*rmax,-1.0*rmax],dtype='d')
+

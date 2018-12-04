@@ -28,15 +28,15 @@ then
 	rm -rf $EXECDIR
 else
   mkdir -p $EXECDIR
-	cp -p sedona.cpp  $EXECDIR
-	cp -p transport/*.cpp transport/*.h $EXECDIR	
-	cp -p hydro/*.cpp hydro/*.h $EXECDIR	
-	cp -p helper/*.cpp helper/*.h $EXECDIR		
-	cp -p opacity/*.cpp opacity/*.h $EXECDIR	
-	cp -p grid/*.cpp grid/*.h $EXECDIR	
+	cp -p transport/*.cpp transport/*.h $EXECDIR
+	cp -p hydro/*.cpp hydro/*.h $EXECDIR
+	cp -p main/*.cpp main/*.h $EXECDIR
+  cp -p utils/*.cpp utils/*.h $EXECDIR
+	cp -p opacity/*.cpp opacity/*.h $EXECDIR
+	cp -p grid/*.cpp grid/*.h $EXECDIR
   cp -p $MAKEDIR/make.exec $EXECDIR/make.exec
   cp -p $MAKEDIR/Makefile.$TARGET $EXECDIR/Makefile
-	cd $EXECDIR; make
+  cd $EXECDIR; make
   cd ..
   cp $EXECDIR/gomc sedona6.ex
 fi

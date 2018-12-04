@@ -6,6 +6,8 @@
 
 namespace pc = physical_constants;
 using std::cout;
+using std::cerr;
+using std::endl;
 
 //------------------------------------------------------------
 // emit new particles
@@ -108,7 +110,7 @@ void transport::initialize_particles(int init_particles)
 
    // check that we have enough space to add these particles
   if (my_n_emit > max_total_particles) {
-      if (verbose) cout << "# Not enough particle space to initialize\n";
+      if (verbose) cerr << "# Not enough particle space to initialize" << endl;
       return; }
 
   if (verbose) cout << "# init with " << init_particles << " total particles ";
@@ -203,7 +205,7 @@ void transport::emit_radioactive(double dt)
 
   // check that we have enough space to add these particles
   if ((int)particles.size()+my_n_emit > max_total_particles) {
-    if (verbose) cout << "# Out of particle space; not adding in\n";
+    if (verbose) cerr << "# Out of particle space; not adding in" << endl;
     return; }
     
   // emit particles
@@ -376,7 +378,7 @@ void transport::emit_inner_source(double dt)
   double Ep  = L_core_*dt/n_emit;
   
   if ((int)particles.size() + n_emit > this->max_total_particles)
-    {cout << "# Not enough particle space\n"; return; }
+    {cerr  << "# Not enough particle space" << endl; return; }
 
   // inject particles from the source
   for (int i=0;i<n_emit;i++)
@@ -481,7 +483,7 @@ void transport::emit_from_pointsoures(double dt)
   int n_emit = total_n_emit/(1.0*MPI_nprocs);
   
   if ((int)particles.size() + n_emit > this->max_total_particles)
-    {cout << "# Not enough particle space\n"; return; }
+    {cerr << "# Not enough particle space" << endl; return; }
 
   double Ep  = pointsources_L_tot_*dt/n_emit;
 

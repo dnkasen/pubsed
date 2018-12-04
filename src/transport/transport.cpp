@@ -16,6 +16,8 @@
 #include "physical_constants.h"
 
 using std::cout;
+using std::cerr;
+using std::endl;
 namespace pc = physical_constants;
 
 //------------------------------------------------------------
@@ -41,6 +43,8 @@ void transport::step(double dt)
   tend = get_system_time();
   if (verbose) cout << "# Communicated opacities (" << (tend-tstr) << " secs) \n";
 
+  if (use_ddmc_) compute_diffusion_probabilities(dt);
+
   // clear the tallies of the radiation quantities in each zone
   wipe_radiation();
 
@@ -53,13 +57,29 @@ void transport::step(double dt)
   // Propagate the particles
   int n_active = particles.size();
   int n_escape = 0;
-  std::list<particle>::iterator pIter = particles.begin();
-  while (pIter != particles.end())
+  int n_particles = particles.size();
+  for(int i=0; i<n_particles; i++)
   {
-    ParticleFate fate = propagate(*pIter,dt);
-    if (fate == escaped) n_escape++;
-    if ((fate == escaped)||(fate == absorbed)) pIter = particles.erase(pIter);
-    else pIter++;
+    int ddmc_zone = 0;
+    if (use_ddmc_)
+    {
+      double dx;
+      grid->get_zone_size(particles[i].ind,&dx);
+      double ztau = planck_mean_opacity_[particles[i].ind]*dx;
+      if (ztau > ddmc_tau_) ddmc_zone = 1;
+    }
+    if (ddmc_zone) particles[i].fate = discrete_diffuse(particles[i],dt);
+    else particles[i].fate = propagate(particles[i],dt);
+  }
+
+  // clean up the particle list
+  for(int i=0; i<n_particles; i++)
+  {
+    if (particles[i].fate == escaped) n_escape++;
+    if ((particles[i].fate == escaped)||(particles[i].fate == absorbed)){
+      particles[i] = particles.back();
+      particles.pop_back();
+    }
   }
 
   // calculate percent particles escaped, and rescale if wanted
@@ -195,8 +215,8 @@ ParticleFate transport::propagate(particle &p, double dt)
     double d_sc  = tau_r/tot_opac_labframe;
     if (tot_opac_labframe == 0) d_sc = std::numeric_limits<double>::infinity();
     if (d_sc < 0)
-      cout << "ERROR: negative interaction distance! " << d_sc << " " << p.nu << " " << dshift << " " <<
-        tot_opac_labframe  << "\n";
+      cerr << "ERROR: negative interaction distance! " << d_sc << " " << p.nu << " " << dshift << " " <<
+        tot_opac_labframe  << endl;
     //std::cout << "dists: "<< d_sc << "\t" << d_bn << "\t" << tot_opac_labframe << "\n";
 
     // find distance to end of time step

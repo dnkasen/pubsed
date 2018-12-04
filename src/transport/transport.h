@@ -11,7 +11,7 @@
 #include "locate_array.h"
 #include "thread_RNG.h"
 #include "spectrum_array.h"
-#include "nlte_gas.h"
+#include "GasState.h"
 #include "ParameterReader.h"
 #include "VoigtProfile.h"
 #include "sedona.h"
@@ -31,7 +31,7 @@ using std::vector;
 /*   double D[3]; */
 /*   double v_dot_D; */
 /* }; */
-  
+
 
 
 
@@ -42,15 +42,15 @@ class transport
  private:
 
   // arrays of particles
-  std::list<particle> particles;
+  std::vector<particle> particles;
   int max_total_particles;
 
   // gas class for opacities
-  nlte_gas gas;
+  GasState gas_state_;
 
   // pointer to parameter reader
   ParameterReader* params_;
-  
+
   // MPI stuff
   int MPI_nprocs;
   int MPI_myID;
@@ -60,7 +60,7 @@ class transport
 #ifdef MPI_PARALLEL
   MPI_Datatype MPI_real;
 #endif
-  
+
   // simulation parameters
   double step_size_;
   int    steady_state;
@@ -68,7 +68,7 @@ class transport
   int    first_step_;
   int    verbose;
   int    omit_scattering_;
-  int    store_Jnu_; 
+  int    store_Jnu_;
   int    core_fix_luminosity_;
   double maximum_opacity_;
   int    last_iteration_;
@@ -84,7 +84,7 @@ class transport
   cdf_array<double> core_emission_spectrum_;
   // emission distribution across zones
   cdf_array<double> zone_emission_cdf_;
- 
+
   // emission point sources
   int use_pointsources_;
   vector<double> pointsource_x_, pointsource_y_, pointsource_z_;
@@ -116,7 +116,7 @@ class transport
 
   // pointer to grid
   grid_general *grid;
-  
+
   // the frequency grid for emissivity/opacity (Hz)
   locate_array nu_grid;
 
@@ -130,9 +130,19 @@ class transport
   vector< cdf_array<OpacityType> >    emissivity_;
   vector< vector<OpacityType> >       abs_opacity_;
   vector< vector<OpacityType> >       scat_opacity_;
+  vector<OpacityType> planck_mean_opacity_;
+  vector<OpacityType> rosseland_mean_opacity_;
   vector< vector<real> > J_nu_;
   vector<real> compton_opac;
   vector<real> photoion_opac;
+
+  // discrete diffusion probabilities
+  vector<real> ddmc_P_up_, ddmc_P_dn_;
+  vector<real> ddmc_P_adv_;
+  vector<real> ddmc_P_abs_;
+  vector<real> ddmc_P_stay_;
+  int use_ddmc_;
+  double ddmc_tau_;
 
   // the radiation quantities in the zone
   vector <real> e_rad;
@@ -160,12 +170,12 @@ class transport
   void   emit_thermal(double dt);
   void   emit_heating_source(double dt);
   void   emit_from_pointsoures(double dt);
-  
+
   void   create_isotropic_particle(int,PType,double,double);
 
   void   initialize_particles(int);
   void sample_photon_frequency(particle*);
-  
+
   // special relativistic functions
   void   transform_comoving_to_lab(particle*);
   void   transform_lab_to_comoving(particle*);
@@ -174,12 +184,14 @@ class transport
   double dshift_lab_to_comoving(particle*);
   double do_dshift(particle*, int);
 
-  // sampling Maxwell-Boltzmann distribution for Compton scatterirng  
+  // sampling Maxwell-Boltzmann distribution for Compton scatterirng
   void setup_MB_cdf(double, double, int);
   void sample_MB_vector(double, double*, double*);
 
   //propagation of particles functions
   ParticleFate propagate(particle &p, double tstop);
+  ParticleFate discrete_diffuse(particle &p, double tstop);
+  void compute_diffusion_probabilities(double dt);
 
   // scattering functions
   ParticleFate do_scatter(particle*, double);
@@ -200,7 +212,7 @@ class transport
   double temp_brent_method(int);
 
  public:
-  
+
 
   void set_last_iteration_flag()
     {last_iteration_ = 1;}
@@ -215,14 +227,14 @@ class transport
   }
 
   //----- functions ---------------
-  
+
   // set things up
   void init(ParameterReader*, grid_general*);
-  
+
   // run a transport step
   void step(double dt);
 
-  // return 
+  // return
   int n_particles() { return particles.size(); }
 
   // finalize and output spectra
