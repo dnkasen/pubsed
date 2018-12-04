@@ -183,7 +183,7 @@ int main(int argc, char **argv)
   // print out initial state
   if (verbose)
   {
-    cout << "# writing intial plot file" << endl;
+    cout << "# writing initial plot file" << endl;
     grid->write_plotfile(0,grid->t_now,write_mass_fractions);
   }
 
