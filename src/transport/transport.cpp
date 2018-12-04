@@ -57,24 +57,29 @@ void transport::step(double dt)
   // Propagate the particles
   int n_active = particles.size();
   int n_escape = 0;
-  std::list<particle>::iterator pIter = particles.begin();
-  while (pIter != particles.end())
+  int n_particles = particles.size();
+  for(int i=0; i<n_particles; i++)
   {
     int ddmc_zone = 0;
     if (use_ddmc_)
     {
       double dx;
-      grid->get_zone_size(pIter->ind,&dx);
-      double ztau = planck_mean_opacity_[pIter->ind]*dx;
+      grid->get_zone_size(particles[i].ind,&dx);
+      double ztau = planck_mean_opacity_[particles[i].ind]*dx;
       if (ztau > ddmc_tau_) ddmc_zone = 1;
     }
-    ParticleFate fate;
-    if (ddmc_zone) fate = discrete_diffuse(*pIter,dt);
-    else fate = propagate(*pIter,dt);
+    if (ddmc_zone) particles[i].fate = discrete_diffuse(particles[i],dt);
+    else particles[i].fate = propagate(particles[i],dt);
+  }
 
-    if (fate == escaped) n_escape++;
-    if ((fate == escaped)||(fate == absorbed)) pIter = particles.erase(pIter);
-    else pIter++;
+  // clean up the particle list
+  for(int i=0; i<n_particles; i++)
+  {
+    if (particles[i].fate == escaped) n_escape++;
+    if ((particles[i].fate == escaped)||(particles[i].fate == absorbed)){
+      particles[i] = particles.back();
+      particles.pop_back();
+    }
   }
 
   // calculate percent particles escaped, and rescale if wanted

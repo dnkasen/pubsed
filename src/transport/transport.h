@@ -42,7 +42,7 @@ class transport
  private:
 
   // arrays of particles
-  std::list<particle> particles;
+  std::vector<particle> particles;
   int max_total_particles;
 
   // gas class for opacities
