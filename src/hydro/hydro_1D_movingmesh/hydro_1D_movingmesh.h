@@ -10,6 +10,11 @@
 #define HYDRO_1D_MOVINGMESH_NUM_Q 8
 #define HYDRO_1D_MOVINGMESH_NUM_G 2
 
+
+enum{RHO,PPP,VRR,XXX,AAA};
+enum{DDD,TAU,SRR};
+
+
 //------------------------------------
 // struct that holds hydro data for a
 // single zone A.K.A. cell
@@ -66,10 +71,13 @@ struct Hydro1DMovingMeshDomain
 {
 
    struct Hydro1DMovingMeshCell * theCells;
-   int Nr,Ng;
+
+   int Nr;  // number of cells
+   int Ng;  // number of ghost zones
+
    double point_mass;
 
-   time_t Wallt_init;
+   time_t Wallt_init; // timer
    int rank,size;
 
    struct Hydro1DMovingMeshCellParams theParList;
@@ -88,12 +96,30 @@ struct Hydro1DMovingMeshDomain
 
 };
 
+//------------------------------------
+// class for doing hydro
+//------------------------------------
 class hydro_1D_movingmesh : public hydro_general
 {
 
 private:
 
-  struct Hydro1DMovingMeshDomain theDomain;
+  struct Hydro1DMovingMeshDomain *theDomain;
+
+  double GAMMA_LAW;
+  double RHO_FLOOR;
+  double PRE_FLOOR;
+  double USE_RT;
+
+  void cons2prim( double * cons , double * prim , double dV );
+  void prim2cons( double * prim , double * cons , double dV );
+  void set_wcell();
+  double mindt( double * prim , double w , double r , double dr );
+
+  double get_vr( double * prim )
+  {  return( prim[VRR] );}
+  double getmindt();
+  double get_eta( double * prim , double * grad_prim , double r );
 
 public:
 
