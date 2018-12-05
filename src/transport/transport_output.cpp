@@ -359,7 +359,11 @@ void transport::writeParticleProp(std::string fname, std::string fieldname, int 
 void transport::readCheckpointedParticles(std::string fname) {
   /* Get number of particles that are stored in the file */
   hsize_t global_n_particles_total;
-  getH5dims(fname, "particles", "e", &global_n_particles_total);
+  if (MPI_myID == 0) {
+    getH5dims(fname, "particles", "e", &global_n_particles_total);
+  }
+  MPI_Bcast(&global_n_particles_total, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  std::cerr << "n particles " << global_n_particles_total << std::endl;
 
   /* Make sure each particle gets "claimed" by one rank */
   int my_n_particles = floor(global_n_particles_total / (1.0 * MPI_nprocs));
@@ -383,6 +387,9 @@ void transport::readCheckpointedParticles(std::string fname) {
   // Rank 0 tells all of the other ranks what their offsets will be
   MPI_Scatter(particle_offsets, 1, MPI_INT, &my_offset, 1, MPI_INT, 0, MPI_COMM_WORLD);
   MPI_Barrier(MPI_COMM_WORLD);
+  std::cerr << MPI_myID << " read offset " << my_offset << std::endl;
+  std::cerr << MPI_myID << " read nparticles " << my_n_particles << std::endl;
+  std::cerr << MPI_myID << " read particles tot " << global_n_particles_total << std::endl;
 
   /* Read in all of the quantities */
   for (int i = 0; i < MPI_nprocs; i++) {
