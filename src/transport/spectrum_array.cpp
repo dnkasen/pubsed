@@ -134,7 +134,9 @@ void spectrum_array::count(double t, double w, double E, double *D)
   // add to counters
   int ind      = index(t_bin,l_bin,m_bin,p_bin);
 
+  #pragma omp atomic
   flux[ind]  += E;
+  #pragma omp atomic
   click[ind] += 1;
 }
 

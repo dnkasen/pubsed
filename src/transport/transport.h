@@ -44,7 +44,7 @@ class transport
  private:
 
   // arrays of particles
-  std::list<particle> particles;
+  std::vector<particle> particles;
   int max_total_particles;
 
   // gas class for opacities
@@ -108,10 +108,10 @@ class transport
   spectrum_array gamma_spectrum;
 
   // random number generator
-  //mutable thread_RNG rangen;
+  mutable thread_RNG rangen;
 
    // random number generator
-  gsl_rng *rangen;
+  //gsl_rng *rangen;
 
   // Voigt profile class
   VoigtProfile voigt_profile_;
