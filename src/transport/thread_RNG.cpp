@@ -1,15 +1,22 @@
 #pragma warning disable 161
+
+#include "sedona.h"
 #include "thread_RNG.h"
 #include <ctime>
+
 #include <mpi.h>
+
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 //-----------------------------------------------------------------
 // initialize the RNG system
 //-----------------------------------------------------------------
 // ASSUMES the number of threads remains constant so it only has to be initialized once
-void thread_RNG::init(){
-  int my_mpiID;
+void thread_RNG::init()
+{
+  int my_mpiID = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &my_mpiID);
 
   // set up the stuff that creates the random number generators
