@@ -45,6 +45,7 @@ class transport
 
   // arrays of particles
   std::vector<particle> particles;
+  std::vector<particle> particles_new; // For debugging checkpointing
   int max_total_particles;
 
   // gas class for opacities
@@ -247,8 +248,11 @@ class transport
   void write_radiation_file(int, int);
   void wipe_spectra();
 
-  void checkpoint_particles(char* fname);
-  void writeParticleProp(char* fname, std::string fieldname, int total_particles, int offset);
+  void checkpoint_particles(std::string fname);
+  void writeParticleProp(std::string fname, std::string fieldname, int total_particles, int offset);
+
+  void readCheckpointedParticles(std::string fname);
+  void readParticleProp(std::string fname, std::string fieldname, int total_particles, int offset);
 
 };
 
