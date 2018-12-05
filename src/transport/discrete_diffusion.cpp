@@ -35,12 +35,12 @@ ParticleFate transport::discrete_diffuse(particle &p, double dt)
     double P_stay = ddmc_P_abs_[p.ind] + ddmc_P_stay_[p.ind];
 
     // see if diffuse
-    double r1 = gsl_rng_uniform(rangen);
+    double r1 = rangen.uniform();
     if (r1 < P_diff)
     {
       // find dimension to diffuse in...
       // move up or down in this dimension
-      double r2 = gsl_rng_uniform(rangen);
+      double r2 = rangen.uniform();
       if (r2 < ddmc_P_up_[p.ind]/P_diff)
       {
         p.ind++;
@@ -62,7 +62,7 @@ ParticleFate transport::discrete_diffuse(particle &p, double dt)
     else
     {
       // check for absorption
-      double r2 = gsl_rng_uniform(rangen);
+      double r2 = rangen.uniform();
       double f_abs = ddmc_P_abs_[p.ind]/P_stay;
       // see if absorbed
       if (r2 < f_abs) { return absorbed;}
