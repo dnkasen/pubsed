@@ -31,7 +31,7 @@ void hydro_1D_lagrangian::init(ParameterReader *params, grid_general *g)
   M_center_    = params->getScalar<double>("hydro_central_point_mass");
   use_gravity_ = params->getScalar<int>("hydro_use_gravity");
   r_accrete_   = params->getScalar<double>("hydro_accrete_radius");
- 
+
   grid->get_radial_edges(r_out_,r_min_,v_out_,v_min_);
   v_min_ = params->getScalar<double>("hydro_v_piston");
 
@@ -39,11 +39,11 @@ void hydro_1D_lagrangian::init(ParameterReader *params, grid_general *g)
   double E_bomb = params->getScalar<double>("hydro_bomb_energy");
   double r_bomb = params->getScalar<double>("hydro_bomb_radius");
   // default if r_bomb undefined, put  in inner 5 zones
-  if (r_bomb == 0) 
+  if (r_bomb == 0)
   {
     if (nz_ <= 10)
       r_bomb = r_out_[1];
-    else  
+    else
       r_bomb = r_out_[10];
   }
   double vol_bomb = 4.0*pc::pi/3.0*r_bomb*r_bomb*r_bomb;
@@ -53,9 +53,13 @@ void hydro_1D_lagrangian::init(ParameterReader *params, grid_general *g)
   for (int i = 0;i < nz_;i++)
   {
     double vol = grid->zone_volume(i);
-  	grid->z[i].p_gas = pc::a*pow(grid->z[i].T_gas,4)/3.0;
+    // radiation pressure EOS
+    //	grid->z[i].p_gas = pc::a*pow(grid->z[i].T_gas,4)/3.0;
+    // gas pressure EOS
+    grid->z[i].p_gas = pc::k*grid->z[i].rho/pc::m_p*grid->z[i].T_gas;
+
     // add in bomb
-    if (r_out_[i] <= 3*r_bomb) 
+    if (r_out_[i] <= 3*r_bomb)
     {
       grid->z[i].p_gas += p_bomb*exp(-r_out_[i]*r_out_[i]/r_bomb/r_bomb);
       grid->z[i].T_gas = pow(3.0*grid->z[i].p_gas/pc::a,0.25);
@@ -73,11 +77,11 @@ void hydro_1D_lagrangian::init(ParameterReader *params, grid_general *g)
   output.open("hydro_data.dat");
   output.close();
 
-} 
+}
 
 
 double hydro_1D_lagrangian::get_time_step()
-{	
+{
   double tstep = std::numeric_limits<double>::infinity();
 
   // courant condition
@@ -102,11 +106,11 @@ double hydro_1D_lagrangian::get_time_step()
 void hydro_1D_lagrangian::step(double dt)
 {
   // -----------------------------------------------------
-  // update the velocities  
+  // update the velocities
   // -----------------------------------------------------
   double msum = M_center_;
   for (int i=z_start_;i<nz_;i++)
-  { 
+  {
     // get zones to do derivatives
     int z1, z2;
     if (i < nz_-1) { z1 = i; z2 = i+1;}
@@ -124,10 +128,10 @@ void hydro_1D_lagrangian::step(double dt)
     double dr1 = get_dr(z1);
     double dr2 = get_dr(z2);
     double rhomean = 0.5*(grid->z[z2].rho*dr2 + grid->z[z1].rho*dr1);
-    
+
     // acceleration from pressure/visc gradients
-    double accel = (dp + dq)/rhomean; 
-    
+    double accel = (dp + dq)/rhomean;
+
     // gravitational acceleration
     if (use_gravity_)
     {
@@ -136,12 +140,12 @@ void hydro_1D_lagrangian::step(double dt)
     }
 
  //    // acceleration from monte carlo flux
- //    if (use_transport) 
+ //    if (use_transport)
  //    {
  //      grid->z[i].v_up += grid->z[i].fx_rad/grid->z[i].rho*dt;
- //      // zone[z].f_rad = zone[z].f_rad/zone[z].rho/C_LIGHT; 
+ //      // zone[z].f_rad = zone[z].f_rad/zone[z].rho/C_LIGHT;
  //      // radiation pressure gradiant in diffusion regime
- //      //if (use_transport) //&&(zone[z].tau > tau_diffuse)) 
+ //      //if (use_transport) //&&(zone[z].tau > tau_diffuse))
  //      // dp += (zone[z1].E_dif/3.0 - zone[z2].E_dif/3.0);
  //    }
 
@@ -157,7 +161,7 @@ void hydro_1D_lagrangian::step(double dt)
       r_out_[i] = r_min_;
       z_start_ = i+1;
     }
-    
+
     if (i == z_start_)
     {
       if ((v_out_[i] < 0)&&(time_ > 20))
@@ -181,7 +185,7 @@ void hydro_1D_lagrangian::step(double dt)
     double r1 = r_out_[i];
     double r0 = r_min_;
     if (i > 0) r0 = r_out_[i-1];
-  
+
     double new_vol = 4.0*pc::pi/3.0*(r1*r1*r1 - r0*r0*r0);
     double new_rho = mass_[i]/new_vol;
     double new_q   = compute_artificial_viscosity(i);
@@ -189,13 +193,13 @@ void hydro_1D_lagrangian::step(double dt)
     // Calculate adiabatic and viscosity total energy input/output
     double dtau = (1.0/new_rho - 1.0/grid->z[i].rho);
     double qgam = -0.5*(new_q + visq_[i])*dtau;
- 
+
     // implicitly calculate energy update
     eden_[i] = (eden_[i] - 0.5*(grid->z[i].p_gas + new_q + visq_[i])*dtau)/
       (1.0 + 0.5*(gamfac_ - 1.0)*new_rho*dtau);
 
-// zvec[i].enrg = (zvec_old[i].enrg - 0.5 * 
-  //      (zvec_old[i].press + zvec[i].visc + zvec_old[i].visc) * rhofac) 
+// zvec[i].enrg = (zvec_old[i].enrg - 0.5 *
+  //      (zvec_old[i].press + zvec[i].visc + zvec_old[i].visc) * rhofac)
     //  / (1.0 + 0.5*(param.gamma - 1.0)*zvec[i].rho * rhofac);
 
     //if (qgam < 0) qgam = 0;
@@ -204,16 +208,16 @@ void hydro_1D_lagrangian::step(double dt)
     // determine total energy sources/sink
     // eps_imc should be by default forced to 1 if thermal_equilibrium is enforced
     //double dE = grid->z[i].eps_imc*Sgam;
-    //if (use_transport) 
-    
+    //if (use_transport)
+
     //double dE = qgam - grid->z[i].p_gas*dtau;
     //dE += (grid->z[i].e_abs - grid->z[i].L_thermal)*new_vol*dt/new_rho; // - grid->z[i].e_emit)/new_rho;
     //eden_[i] += dE;
     //std::cout << grid->z[i].L_thermal*new_vol*dt << " " << eden_[i]*new_rho << " " << dE << "\n";
 
-	// if (eden_[i] < 0)   
+	// if (eden_[i] < 0)
 	// 	printf("ERROR: e_gas < 0; %d %e %e %e %e\n",i,qgam,grid->z[i].p_gas,eden_[i],dE);
-  // if (eden_[i] < 0)   
+  // if (eden_[i] < 0)
 //      exit(1);
    //   eden_[i] = pc::a*pow(100,4.0);
 
@@ -221,10 +225,14 @@ void hydro_1D_lagrangian::step(double dt)
     // calculate other thermo properties, given the energy and density
     // Remember, e_gas has units of ergs per gram, not ergs per cc
     double p_gas = (gamfac_ - 1)*eden_[i]*new_rho;
-    grid->z[i].p_gas  = p_gas;  
+    grid->z[i].p_gas  = p_gas;
     grid->z[i].cs     = sqrt(gamfac_*p_gas/new_rho);
-    grid->z[i].T_gas  = pow(3.0*p_gas/pc::a,0.25);
     grid->z[i].rho    = new_rho;
+    // radiation pressure EOS
+    //grid->z[i].T_gas  = pow(3.0*p_gas/pc::a,0.25);
+    // gas pressure EOS
+    grid->z[i].T_gas = p_gas/(pc::k*grid->z[i].rho/pc::m_p);
+
     visq_[i] = new_q;
 
     if (isnan(grid->z[i].T_gas)) {
@@ -237,11 +245,11 @@ void hydro_1D_lagrangian::step(double dt)
 
 
   //**************
-  // integrated sums  
+  // integrated sums
   if (time_ > time_write_*1.01)
   {
     std::ofstream output;
-    output.open("hydro_data.dat",std::ios_base::app | std::ios_base::out); 
+    output.open("hydro_data.dat",std::ios_base::app | std::ios_base::out);
 
     double E_grav = 0, E_rad = 0, E_ke = 0, M_enc = M_center_;
     for (int i=z_start_;i<nz_;i++)
@@ -270,7 +278,7 @@ double hydro_1D_lagrangian::compute_artificial_viscosity(int i)
 {
   double dr, dv;
   if (i == 0)
-  { 
+  {
     dr = r_out_[0] - r_min_;
     dv = v_min_ - v_out_[0];
   }
@@ -283,10 +291,10 @@ double hydro_1D_lagrangian::compute_artificial_viscosity(int i)
   // limit fluctuations
   //double dvdx = -1*dv/dr;
   //if (dvdx > -0.02) dv = 0;
-  
+
   if (dv < 0) dv = 0;
   double q = C_q_*grid->z[i].rho*dv*dv;
-    
+
   // linear term
   //  q += L_q*grid->z[i].rho*grid->z[i].cs*dv;
   return q;
