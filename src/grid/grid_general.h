@@ -20,11 +20,13 @@
 
 #include <string>
 #include <iostream>
+#include <mpi.h>
 
 
 #include "sedona.h"
 #include "zone.h"
 #include "ParameterReader.h"
+#include "h5utils.h"
 
 #include "hdf5.h"
 #include "hdf5_hl.h"
@@ -65,6 +67,10 @@ class grid_general
   // output functions
   void write_integrated_quantities(int iw, double tt);
   void write_hdf5_plotfile_zones(hid_t file_id, hsize_t *dims_g, int ndims, double);
+
+  void writeCheckpointZones(std::string fname);
+  void writeScalarZoneProp(std::string fname, std::string fieldname);
+  void writeVectorZoneProp(std::string fname, std::string fieldname);
 
   //****** virtual functions (geometry specific)
 
