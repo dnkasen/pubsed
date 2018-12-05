@@ -254,6 +254,7 @@ class transport
   void readCheckpointedParticles(std::string fname);
   void readParticleProp(std::string fname, std::string fieldname, int total_particles, int offset);
 
+  void testCheckpointParticles();
 };
 
 

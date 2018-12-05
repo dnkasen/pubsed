@@ -87,7 +87,6 @@ void transport::create_isotropic_particle
 
   // set packet energy
   p.e  = Ep;
-  std::cerr<<"particle energy" << p.e << std::endl;
 
   // lorentz transform from the comoving to lab frame
   transform_comoving_to_lab(&p);
@@ -147,10 +146,6 @@ void transport::initialize_particles(int init_particles)
     create_isotropic_particle(i,photon,Ep,t_now_);
   }
 
-  checkpoint_particles("test.h5");
-  exit(0);
- 
-  
 }
 
 

@@ -2,11 +2,18 @@
 #include <math.h>
 #include <stdio.h>
 #include <vector>
+#include "transport.h"
+#include "sedona.h"
+#include "ParameterReader.h"
 #include "particle.h"
 #include <iostream>
 #include "hdf5.h"
 #include "hdf5_hl.h"
 #include "h5utils.h"
+#include "grid_general.h"
+#include "grid_1D_sphere.h"
+#include "grid_2D_cyln.h"
+#include "grid_3D_cart.h"
 
 
 // little test C++ code to test doing parallel mpi write to binary file
@@ -36,85 +43,42 @@
     // type[np] 
 
 
-int main(){
+int main(int argc, char **argv){
     MPI_Init(NULL, NULL);
-
 
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     int nprocs;
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
-    int n = 4;
-    char *filename = "out.dat";
+    const int verbose = (rank == 0);
 
-    // array to write to file
-    double *x = new double[n];
-    for (int i=0;i<n;i++) x[i] = rank;
+    std::string param_file = "param.lua";
+    if( argc > 1 ) param_file = std::string( argv[ 1 ] );
+    ParameterReader params(param_file,verbose);
 
+    grid_general *grid;
 
-    std::cerr << H5T_NATIVE_DOUBLE << std::endl;
-    std::cerr << "set x" << std::endl;
-    int chunk = floor(n/nprocs);
-    int offset = rank*chunk;
+    // read the grid type
+    string grid_type = params.getScalar<string>("grid_type");
 
-    double *y = new double[chunk];
-    for (int i = 0; i < chunk; i++) y[i] = rank * 2.2;
+    // create a grid of the appropriate type
+    if      (grid_type == "grid_1D_sphere") grid = new grid_1D_sphere;
+    else if (grid_type == "grid_2D_cyln"  ) grid = new grid_2D_cyln;
+    else if (grid_type == "grid_3D_cart"  ) grid = new grid_3D_cart;
+    else  {
+      if(verbose) std::cerr << "# ERROR: the grid type is not implemented" << std::endl;
+      exit(3);   }
 
-    std::cout << chunk << " " << offset << "\n";
+    // initialize the grid (including reading the model file)
+    grid->init(&params);
 
-//    int targetFile = 0;//
-//    MPI_Comm fileComm;
-//    MPI_Comm_split(MPI_COMM_WORLD, targetFile, rank, &fileComm);
-
-    if (rank == 0) {
-      hsize_t dims_g[1]={n};
-      createFile("test.h5");
-      createGroup("test.h5", "agroup");
-      createDataset("test.h5", "agroup", "adataset", 1, dims_g, H5T_NATIVE_DOUBLE);
-      writeSimple("test.h5", "agroup", "adataset", x, H5T_NATIVE_DOUBLE);
-      createFile("test_par.h5");
-      createGroup("test_par.h5", "agroup");
-      createDataset("test_par.h5", "agroup", "adataset", 1, dims_g, H5T_NATIVE_DOUBLE);
-    }
-
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    for (int i = 0; i < nprocs; i++) {
-      if (i == rank) {
-        std::cerr << "rank " << rank << std::endl;
-        std::cerr << "offset " << offset << std::endl;
-        std::cerr << "chunk " << chunk << std::endl;
-        std::cerr << "glochunk " << nprocs * chunk << std::endl;
-        std::cerr << "y " << y[offset] << std::endl;
-        int starts[1]={offset};
-        int loc_size[1]={chunk};
-        int glo_size[1]={nprocs * chunk};
-        writePatch("test_par.h5", "agroup", "adataset", y, H5T_NATIVE_DOUBLE, 1, starts, loc_size, glo_size);
-      }
-      MPI_Barrier(MPI_COMM_WORLD);
-    }
-
-    double* xnew = new double[n];
-    double* ynew = new double[chunk];
-    // Now read files back in
-    for (int i = 0; i < nprocs; i++) {
-      if (i == rank) {
-        int starts[1]={offset};
-        int loc_size[1]={chunk};
-        int glo_size[1]={nprocs * chunk};
-        readPatch("test_par.h5", "agroup", "adataset", ynew, H5T_NATIVE_DOUBLE, 1, starts, loc_size, glo_size);
-        for (int j=0; j < chunk; j++) {
-          std::cerr << "y " << j << " " << ynew[j] << std::endl;
-        }
-        readSimple("test.h5", "agroup", "adataset", xnew, H5T_NATIVE_DOUBLE);
-        for (int j=0; j < n; j++) {
-          std::cerr << "x " << j << " " << xnew[j] << std::endl;
-        }
-      }
-      MPI_Barrier(MPI_COMM_WORLD);
-    }
-        
+    transport mcarlo;
+    string transport_type = params.getScalar<string>("transport_module");
+    int use_transport = 0;
+    if (transport_type != "") use_transport = 1;
+    if (use_transport) mcarlo.init(&params, grid);
+    mcarlo.testCheckpointParticles();
 
     MPI_Finalize();
 
