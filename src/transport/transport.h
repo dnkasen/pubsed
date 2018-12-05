@@ -4,6 +4,7 @@
 #include <vector>
 #include <list>
 
+#include <string>
 
 #include "particle.h"
 #include "grid_general.h"
@@ -15,6 +16,7 @@
 #include "ParameterReader.h"
 #include "VoigtProfile.h"
 #include "sedona.h"
+#include "h5utils.h"
 
 #ifdef MPI_PARALLEL
 #include <mpi.h>
@@ -244,6 +246,9 @@ class transport
   // print out functions
   void write_radiation_file(int, int);
   void wipe_spectra();
+
+  void checkpoint_particles(char* fname);
+  void writeParticleProp(char* fname, std::string fieldname, int total_particles, int offset);
 
 };
 

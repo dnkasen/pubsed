@@ -10,7 +10,7 @@ void createFile( char * fname ){
 
 void createGroup( char * fname , char * gname ){
   hid_t h5file = H5Fopen( fname , H5F_ACC_RDWR , H5P_DEFAULT );
-  hid_t h5group = H5Gcreate1( h5file , gname , 0 );
+  hid_t h5group = H5Gcreate1(h5file, gname, 0);
   H5Gclose( h5group );
   H5Fclose( h5file );
 }
@@ -76,8 +76,8 @@ void writePatch( char * file , char * group , char * dset , void * data , hid_t 
 }
 
 hid_t openH5File( char * fname ){
-    hid_t h5fil = H5Fopen( fname , H5F_ACC_RDWR , H5P_DEFAULT );
-    return h5fil;
+  hid_t h5fil = H5Fopen( fname , H5F_ACC_RDWR , H5P_DEFAULT );
+  return h5fil;
 }
 
 hid_t openH5Group(hid_t h5file, char* group) {

@@ -2,6 +2,9 @@
 #define _H5UTILS_H 1
 
 #include <hdf5.h>
+#include <vector>
+#include <string>
+#include "particle.h"
 
 // Creates and closes a new HDF5 file called fname
 void createFile( char * fname );
@@ -18,6 +21,18 @@ void createDataset( char * fname , char * gname , char * dname , int dim , hsize
 // containing the data to be written. type is the HDF5 data type name, e.g. H5T_NATIVE_DOUBLE
 void writeSimple( char * file , char * group , char * dset , void * data , hid_t type );
 
+/*template<typename T>
+void writeVector(char * file, char * group, char * dset, vector<T>* datavec) {
+  hid_t h5type = DataTypeFor<T>::type;
+  T* buffer = data->datavec;
+  writeSimple(file, group, dset, data, h5type);
+}*/
+
+// Writes out particle data, assuming that the particles group already exists in
+// the hdf5 file named fname. The field to print is called fieldname, and 
+// total_particles is the total number of particles between all ranks
+void writeParticleProp(char* fname, std::vector<class particle> const &particle_list,  std::string fieldname, int total_particles);
+  
 // Writes to a chunk of the extant dataset file/group/dset. data is a pointer
 // to a buffer containing the data to be written. type is the HDF5 data type name,
 // e.g. H5T_NATIVE_DOUBLE. dim is the number of dimensions in the dataset.
