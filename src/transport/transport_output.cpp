@@ -218,16 +218,16 @@ void transport::checkpoint_particles(char* fname) {
   MPI_Barrier(MPI_COMM_WORLD);
   for (int i = 0; i < MPI_nprocs; i++) {
     if (i == MPI_myID) {
-      writeParticleProp(fname, "particles", "type", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "particles", "x", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "particles", "D", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "particles", "ind", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "particles", "t", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "particles", "e", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "particles", "nu", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "particles", "gamma", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "particles", "dshift", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "particles", "dvds", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "type", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "x", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "D", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "ind", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "t", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "e", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "nu", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "gamma", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "dshift", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "dvds", global_n_particles_total, my_offset);
     }
     MPI_Barrier(MPI_COMM_WORLD);
   }
@@ -241,15 +241,15 @@ void transport::writeParticleProp(char* fname, std::string fieldname, int total_
   int n_dims = 1;
   int n_particles_local = n_particles();
   int* buffer;
+  hid_t t = H5T_NATIVE_DOUBLE;
   if (fieldname == "type") {
-    hid_t t = H5T_NATIVE_INT;
+    t = H5T_NATIVE_INT;
     int* buffer = new int[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
       buffer[i] = particles[i].type;
     }
   }
   else if (fieldname == "x") {
-    hid_t t = H5T_NATIVE_DOUBLE;
     n_dims = 2;
     double* buffer = new double[n_particles_local * 3];
     for (int i = 0; i < n_particles_local; i++) {
@@ -259,7 +259,6 @@ void transport::writeParticleProp(char* fname, std::string fieldname, int total_
     }
   }
   else if (fieldname == "D") {
-    hid_t t = H5T_NATIVE_DOUBLE;
     n_dims = 2;
     double* buffer = new double[n_particles_local * 3];
     for (int i = 0; i < n_particles_local; i++) {
@@ -269,49 +268,43 @@ void transport::writeParticleProp(char* fname, std::string fieldname, int total_
     }
   }
   else if (fieldname == "ind") {
-    hid_t t = H5T_NATIVE_INT;
+    t = H5T_NATIVE_INT;
     int* buffer = new int[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
       buffer[i] = particles[i].ind;
     }
   }
   else if (fieldname == "t") {
-    hid_t t = H5T_NATIVE_DOUBLE;
     double* buffer = new double[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
       buffer[i] = particles[i].t;
     }
   }
   else if (fieldname == "e") {
-    hid_t t = H5T_NATIVE_DOUBLE;
     double* buffer = new double[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
       buffer[i] = particles[i].e;
     }
   }
   else if (fieldname == "nu") {
-    hid_t t = H5T_NATIVE_DOUBLE;
     double* buffer = new double[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
       buffer[i] = particles[i].nu;
     }
   }
   else if (fieldname == "gamma") {
-    hid_t t = H5T_NATIVE_DOUBLE;
     double* buffer = new double[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
       buffer[i] = particles[i].gamma;
     }
   }
   else if (fieldname == "dshift") {
-    hid_t t = H5T_NATIVE_DOUBLE;
     double* buffer = new double[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
       buffer[i] = particles[i].dshift;
     }
   }
   else if (fieldname == "dvds") {
-    hid_t t = H5T_NATIVE_DOUBLE;
     double* buffer = new double[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
       buffer[i] = particles[i].dvds;
@@ -322,22 +315,19 @@ void transport::writeParticleProp(char* fname, std::string fieldname, int total_
     exit(3);
   }
 
-  if (n_dims == 1) {
-    int[1] start = {offset};
-    int[1] size = {n_particles_local};
-    int[1] total_size = {total_particles};
-  }
-  else if (n_dims == 2) {
-    int[2] start = {offset, 0};
-    int[2] size = {n_particles_local, 3};
-    int[2] total_size = {total_particles, 3};
-  }
-  else {
+  // Because the code will only look at n_dims dimensions worth of measurements, we can always
+  // fill in the whole 2-long arrays. If n_dims == 1, the code will just ignore the second
+  // entries.
+  int start[2] = {offset, 0};
+  int size[2] = {n_particles_local, 3};
+  int total_size[2] = {total_particles, 3};
+  
+  if (n_dims != 1 && n_dims != 2) {
     std::cerr << "Dimension count " << n_dims << " not allowed." <<std::endl;
     exit(3);
   }
 
-  writePatch(fname, "particles", fieldname, buffer, t, n_dims, start, size, total_size);
+  writePatch(fname, "particles", fieldname.c_str(), buffer, t, n_dims, start, size, total_size);
   if (buffer) {
     delete[] buffer;
   }

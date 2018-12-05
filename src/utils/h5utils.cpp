@@ -1,35 +1,37 @@
 /* HDF5 helper functions, from Paul Duffell */
 
+#include <string>
+
 #include <hdf5.h>
 #include "h5utils.h"
 
-void createFile( char * fname ){
-  hid_t h5file = H5Fcreate( fname , H5F_ACC_TRUNC , H5P_DEFAULT , H5P_DEFAULT );
+void createFile(std::string fname ){
+  hid_t h5file = H5Fcreate( fname.c_str() , H5F_ACC_TRUNC , H5P_DEFAULT , H5P_DEFAULT );
   H5Fclose( h5file );
 }
 
-void createGroup( char * fname , char * gname ){
-  hid_t h5file = H5Fopen( fname , H5F_ACC_RDWR , H5P_DEFAULT );
-  hid_t h5group = H5Gcreate1( h5file , gname , 0 );
+void createGroup(std::string fname ,std::string gname ){
+  hid_t h5file = H5Fopen( fname.c_str() , H5F_ACC_RDWR , H5P_DEFAULT );
+  hid_t h5group = H5Gcreate1( h5file , gname.c_str() , 0 );
   H5Gclose( h5group );
   H5Fclose( h5file );
 }
 
-void createDataset( char * fname , char * gname , char * dname , int dim , hsize_t * fdims , hid_t type ){
-  hid_t h5file  = H5Fopen( fname , H5F_ACC_RDWR , H5P_DEFAULT );
-  hid_t h5group = H5Gopen1( h5file , gname );
+void createDataset(std::string fname ,std::string gname ,std::string dname , int dim , hsize_t * fdims , hid_t type ){
+  hid_t h5file  = H5Fopen( fname.c_str() , H5F_ACC_RDWR , H5P_DEFAULT );
+  hid_t h5group = H5Gopen1( h5file , gname.c_str() );
   hid_t fspace  = H5Screate_simple(dim,fdims,NULL);
-  hid_t h5dset  = H5Dcreate1( h5group , dname , type , fspace , H5P_DEFAULT );
+  hid_t h5dset  = H5Dcreate1( h5group , dname.c_str() , type , fspace , H5P_DEFAULT );
   H5Sclose( fspace );
   H5Dclose( h5dset );
   H5Gclose( h5group );
   H5Fclose( h5file );
 }
 
-void writeSimple( char * file , char * group , char * dset , void * data , hid_t type ){
-  hid_t h5fil = H5Fopen( file , H5F_ACC_RDWR , H5P_DEFAULT );
-  hid_t h5grp = H5Gopen1( h5fil , group );
-  hid_t h5dst = H5Dopen1( h5grp , dset );
+void writeSimple(std::string file ,std::string group ,std::string dset , void * data , hid_t type ){
+  hid_t h5fil = H5Fopen( file.c_str() , H5F_ACC_RDWR , H5P_DEFAULT );
+  hid_t h5grp = H5Gopen1( h5fil , group.c_str() );
+  hid_t h5dst = H5Dopen1( h5grp , dset.c_str() );
 
   H5Dwrite( h5dst , type , H5S_ALL , H5S_ALL , H5P_DEFAULT , data );
 
@@ -38,10 +40,10 @@ void writeSimple( char * file , char * group , char * dset , void * data , hid_t
   H5Fclose( h5fil );
 }
 
-void writePatch( char * file , char * group , char * dset , void * data , hid_t type , int dim , int * start , int * loc_size , int * glo_size){
-  hid_t h5fil = H5Fopen( file , H5F_ACC_RDWR , H5P_DEFAULT );
-  hid_t h5grp = H5Gopen1( h5fil , group );
-  hid_t h5dst = H5Dopen1( h5grp , dset );
+void writePatch(std::string file ,std::string group ,std::string dset , void * data , hid_t type , int dim , int * start , int * loc_size , int * glo_size){
+  hid_t h5fil = H5Fopen( file.c_str() , H5F_ACC_RDWR , H5P_DEFAULT );
+  hid_t h5grp = H5Gopen1( h5fil , group.c_str() );
+  hid_t h5dst = H5Dopen1( h5grp , dset.c_str() );
 
   hsize_t mdims[dim];
   hsize_t fdims[dim];
@@ -75,18 +77,18 @@ void writePatch( char * file , char * group , char * dset , void * data , hid_t 
   H5Fclose( h5fil );
 }
 
-hid_t openH5File( char * fname ){
-    hid_t h5fil = H5Fopen( fname , H5F_ACC_RDWR , H5P_DEFAULT );
+hid_t openH5File(std::string fname) {
+    hid_t h5fil = H5Fopen( fname.c_str() , H5F_ACC_RDWR , H5P_DEFAULT );
     return h5fil;
 }
 
-hid_t openH5Group(hid_t h5file, char* group) {
-  hid_t h5group = H5Gopen1( h5file , group );
+hid_t openH5Group(hid_t h5file, std::string group) {
+  hid_t h5group = H5Gopen1( h5file , group.c_str() );
   return h5group;
 }
 
-hid_t openH5Dset(hid_t h5group, char* dset) {
-  hid_t h5dset = H5Dopen1 (h5group, dset);
+hid_t openH5Dset(hid_t h5group, std::string dset) {
+  hid_t h5dset = H5Dopen1 (h5group, dset.c_str());
   return h5dset;
 }
 
@@ -102,8 +104,8 @@ void closeH5Dset(hid_t h5dset) {
   H5Dclose(h5dset);
 }
 
-void getH5dims( hid_t h5grp , char * dset , hsize_t * dims ){
-  hid_t h5dst = H5Dopen1( h5grp , dset );
+void getH5dims( hid_t h5grp ,std::string dset , hsize_t * dims ){
+  hid_t h5dst = H5Dopen1( h5grp , dset.c_str() );
   hid_t h5spc = H5Dget_space( h5dst );
 
   H5Sget_simple_extent_dims( h5spc , dims , NULL);
@@ -112,10 +114,10 @@ void getH5dims( hid_t h5grp , char * dset , hsize_t * dims ){
   H5Dclose( h5dst );
 }
 
-void readSimple( char* fname, char* group, char * dset , void * data , hid_t type ){
-  hid_t h5file = H5Fopen( fname , H5F_ACC_RDWR , H5P_DEFAULT );
-  hid_t h5group = H5Gopen1( h5file , group );
-  hid_t h5dst = H5Dopen1( h5group , dset );
+void readSimple(std::string fname, std::string group, std::string dset , void * data , hid_t type ){
+  hid_t h5file = H5Fopen( fname.c_str() , H5F_ACC_RDWR , H5P_DEFAULT );
+  hid_t h5group = H5Gopen1( h5file , group.c_str() );
+  hid_t h5dst = H5Dopen1( h5group , dset.c_str() );
 
   H5Dread( h5dst , type , H5S_ALL , H5S_ALL , H5P_DEFAULT , data );
 
@@ -124,10 +126,10 @@ void readSimple( char* fname, char* group, char * dset , void * data , hid_t typ
   H5Fclose( h5file);
 }
 
-void readPatch(char* fname, char* group, char * dset , void * data , hid_t type , int dim , int * start , int * loc_size , int * glo_size){
-  hid_t h5file = H5Fopen( fname , H5F_ACC_RDWR , H5P_DEFAULT );
-  hid_t h5group = H5Gopen1( h5file , group );
-  hid_t h5dst = H5Dopen1( h5group , dset );
+void readPatch(std::string fname, std::string group, std::string dset , void * data , hid_t type , int dim , int * start , int * loc_size , int * glo_size){
+  hid_t h5file = H5Fopen( fname.c_str() , H5F_ACC_RDWR , H5P_DEFAULT );
+  hid_t h5group = H5Gopen1( h5file , group.c_str() );
+  hid_t h5dst = H5Dopen1( h5group , dset.c_str() );
 
   hsize_t mdims[dim];
   hsize_t fdims[dim];
