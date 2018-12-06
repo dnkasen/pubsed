@@ -77,8 +77,8 @@ ParticleFate transport::discrete_diffuse(particle &p, double dt)
       p.x[2] += zone_vel[2]*dt;
       p.ind = grid->get_zone(p.x);
 
-      // adiabatic loses
-      //p.e *= (1 - zone->diff_v);
+      // adiabatic loss (assumes small change in volume I think)
+      p.e *= (1 - dvds*dt);
       stop = 1;
     }
 
