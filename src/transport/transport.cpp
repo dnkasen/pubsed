@@ -286,7 +286,7 @@ ParticleFate transport::propagate(particle &p, double dt)
 
      double rr = sqrt(p.x[0]*p.x[0] + p.x[1]*p.x[1] + p.x[2]*p.x[2]);
      double xdotD = p.x[0]*p.D[0] + p.x[1]*p.D[1] + p.x[2]*p.D[2];
-     zone->fr_rad += this_E*dshift*opac*xdotD/rr * dshift; 
+     zone->fr_rad += this_E*dshift*continuum_opac_cmf*xdotD/rr * dshift; 
 
     // move particle the distance
     p.x[0] += this_d*p.D[0];
