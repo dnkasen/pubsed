@@ -106,10 +106,10 @@ class transport
   spectrum_array gamma_spectrum;
 
   // random number generator
-  //mutable thread_RNG rangen;
+  mutable thread_RNG rangen;
 
    // random number generator
-  gsl_rng *rangen;
+  //gsl_rng *rangen;
 
   // Voigt profile class
   VoigtProfile voigt_profile_;
@@ -149,6 +149,7 @@ class transport
   // line mean intensity
   vector< vector<real> > line_J_;
   double line_velocity_width_;
+
 
 
   // setup functions
@@ -213,6 +214,8 @@ class transport
 
  public:
 
+  int write_levels;
+
 
   void set_last_iteration_flag()
     {last_iteration_ = 1;}
@@ -242,7 +245,8 @@ class transport
   void output_spectrum(int);
 
   // print out functions
-  void write_radiation_file(int, int);
+  void write_levels_to_plotfile(int);
+  void write_radiation_file(int);
   void wipe_spectra();
 
 };

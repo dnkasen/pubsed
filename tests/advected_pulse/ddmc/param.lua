@@ -8,7 +8,7 @@ model_file   = "../models/constant.mod"      -- input model file
 
 -- time stepping
 tstep_max_steps    = 1000
-tstep_time_stop    = 2e-10
+tstep_time_stop    = 10e-10
 tstep_max_dt       = 2e-12
 tstep_min_dt       = 2e-12
 tstel_max_delta    = 1.0
@@ -19,8 +19,8 @@ transport_use_ddmc           = 1
 transport_ddmc_tau_threshold = 10
 
 -- opacity
-opacity_grey_opacity             = 1.0
+opacity_grey_opacity             = 30.0
 opacity_epsilon                  = 0.0
 
-output_write_plt_file_time   = 1e-11
+output_write_plt_file_time   = 5e-11
 output_write_radiation       = 1

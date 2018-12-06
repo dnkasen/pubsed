@@ -70,7 +70,8 @@ def run_test(pdf="",runcommand=""):
         plt.plot(r-r0,T,'o',color=colors[cnt],markersize=5,markeredgewidth=2,markerfacecolor='none')
 
         # analytic solution
-        D = 3e10/rho*4.0/3.0
+        kappa = 30
+        D = 3e10/rho*4.0/3.0/kappa
         T0 = (esum/(D*time*3.141519)**0.5)**0.25
         rc = r0 + time*vel
         Tan = T0*np.exp(-1.0*(r-rc)**2/(4.0*D*time))

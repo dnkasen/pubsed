@@ -67,11 +67,7 @@ void transport::init(ParameterReader* par, grid_general *g)
 //   " " << my_zone_stop_ - my_zone_start_ << "\n";
 
   // setup and seed random number generator
-  const gsl_rng_type * TypeR;
-  gsl_rng_env_setup();
-  gsl_rng_default_seed = (unsigned int)time(NULL) + MPI_myID;
-  TypeR = gsl_rng_default;
-  rangen = gsl_rng_alloc (TypeR);
+  rangen.init();
 
   // read relevant parameters
   max_total_particles = params_->getScalar<int>("particles_max_total");

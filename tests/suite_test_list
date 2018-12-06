@@ -7,6 +7,8 @@ spherical_lightbulb/3D
 toy_type1a_supernova/1D_spectrum
 advected_pulse/mc
 advected_pulse/ddmc
+adiabatic_expansion/mc
+adiabatic_expansion/ddmc
 one_zone_NLTE/optically_thin_H
 one_zone_NLTE/optically_thick_H
 one_zone_NLTE/optically_thin_solar

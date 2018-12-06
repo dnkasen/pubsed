@@ -25,8 +25,10 @@ ParticleFate transport::discrete_diffuse(particle &p, double dt)
     zone *zone = &(grid->z[p.ind]);
 
     // add in tally of absorbed and total radiation energy
+    #pragma omp atomic
     zone->e_abs += p.e*ddmc_P_abs_[p.ind];
     //zone->e_rad += p.e*ddmc_P_stay_[p.ind];
+    #pragma omp atomic
     J_nu_[p.ind][0] += p.e*ddmc_P_stay_[p.ind]*dt*pc::c;
 //    std::cout <<  p.ind << " " << p.e*ddmc_P_stay_[p.ind] << "\n";
 
@@ -35,12 +37,12 @@ ParticleFate transport::discrete_diffuse(particle &p, double dt)
     double P_stay = ddmc_P_abs_[p.ind] + ddmc_P_stay_[p.ind];
 
     // see if diffuse
-    double r1 = gsl_rng_uniform(rangen);
+    double r1 = rangen.uniform();
     if (r1 < P_diff)
     {
       // find dimension to diffuse in...
       // move up or down in this dimension
-      double r2 = gsl_rng_uniform(rangen);
+      double r2 = rangen.uniform();
       if (r2 < ddmc_P_up_[p.ind]/P_diff)
       {
         p.ind++;
@@ -62,7 +64,7 @@ ParticleFate transport::discrete_diffuse(particle &p, double dt)
     else
     {
       // check for absorption
-      double r2 = gsl_rng_uniform(rangen);
+      double r2 = rangen.uniform();
       double f_abs = ddmc_P_abs_[p.ind]/P_stay;
       // see if absorbed
       if (r2 < f_abs) { return absorbed;}
@@ -75,8 +77,8 @@ ParticleFate transport::discrete_diffuse(particle &p, double dt)
       p.x[2] += zone_vel[2]*dt;
       p.ind = grid->get_zone(p.x);
 
-      // adiabatic loses
-      //p.e *= (1 - zone->diff_v);
+      // adiabatic loss (assumes small change in volume I think)
+      p.e *= (1 - dvds*dt);
       stop = 1;
     }
 
