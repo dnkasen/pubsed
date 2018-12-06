@@ -28,6 +28,7 @@ public:
   real fx_rad;     // radiation x-force in lab frame
   real fy_rad;     // radiation y-force in lab frame
   real fz_rad;     // radiation z-force in lab frame
+  real fr_rad;     // radiation radial force in lab frame
   real eps_imc;    // fleck factor effective absorption
   real L_thermal;  // thermal luminosity 
 
