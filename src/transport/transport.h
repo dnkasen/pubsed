@@ -151,6 +151,7 @@ class transport
   double line_velocity_width_;
 
 
+
   // setup functions
   void setup_core_emission();
   void setup_pointsource_emission();
@@ -213,6 +214,8 @@ class transport
 
  public:
 
+  int write_levels;
+
 
   void set_last_iteration_flag()
     {last_iteration_ = 1;}
@@ -242,7 +245,8 @@ class transport
   void output_spectrum(int);
 
   // print out functions
-  void write_radiation_file(int, int);
+  void write_levels_to_plotfile(int);
+  void write_radiation_file(int);
   void wipe_spectra();
 
 };
