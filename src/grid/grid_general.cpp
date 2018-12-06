@@ -294,7 +294,7 @@ void grid_general::readScalarZoneProp(std::string fname, std::string fieldname) 
   else if (fieldname == "e_rad")
     for (int i = 0; i < n_zones; i++) z_new[i].e_rad = buffer[i];
   else if (fieldname == "e_abs")
-    for (int i = 0; i < n_zones; i++) z_new[i].e_rad = buffer[i];
+    for (int i = 0; i < n_zones; i++) z_new[i].e_abs = buffer[i];
   else if (fieldname == "fx_rad")
     for (int i = 0; i < n_zones; i++) z_new[i].fx_rad = buffer[i];
   else if (fieldname == "fy_rad")
@@ -350,8 +350,9 @@ void grid_general::readVectorZoneProp(std::string fname, std::string fieldname) 
 
   if (fieldname == "X_gas") {
     for (int i = 0; i < n_zones; i++) {
+      z_new[i].X_gas.resize(n_elems);
       for (int j = 0; j < n_elems; j++) {
-        z[i].X_gas[j] = buffer[i * n_elems + j];
+        z_new[i].X_gas[j] = buffer[i * n_elems + j];
       }
     }
   }
