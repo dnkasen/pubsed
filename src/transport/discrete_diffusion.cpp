@@ -25,8 +25,10 @@ ParticleFate transport::discrete_diffuse(particle &p, double dt)
     zone *zone = &(grid->z[p.ind]);
 
     // add in tally of absorbed and total radiation energy
+    #pragma omp atomic
     zone->e_abs += p.e*ddmc_P_abs_[p.ind];
     //zone->e_rad += p.e*ddmc_P_stay_[p.ind];
+    #pragma omp atomic
     J_nu_[p.ind][0] += p.e*ddmc_P_stay_[p.ind]*dt*pc::c;
 //    std::cout <<  p.ind << " " << p.e*ddmc_P_stay_[p.ind] << "\n";
 
