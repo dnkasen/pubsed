@@ -217,6 +217,7 @@ void transport::init(ParameterReader* par, grid_general *g)
 
  // ddmc parameters
  use_ddmc_ = params_->getScalar<int>("transport_use_ddmc");
+ imd_ddmc_switch_ = params_->getScalar<int>("transport_imd_ddmc_switch");
  ddmc_tau_ = params_->getScalar<double>("transport_ddmc_tau_threshold");
  if (use_ddmc_)
  {
