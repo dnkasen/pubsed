@@ -49,6 +49,7 @@ class grid_general
 
   // vector of zones
   std::vector<zone> z;
+  std::vector<zone> z_new; // For restart debugging
   int n_zones;
 
   double t_now;
@@ -71,6 +72,12 @@ class grid_general
   void writeCheckpointZones(std::string fname);
   void writeScalarZoneProp(std::string fname, std::string fieldname);
   void writeVectorZoneProp(std::string fname, std::string fieldname);
+
+  void readCheckpointZones(std::string fname);
+  void readScalarZoneProp(std::string fname, std::string fieldname);
+  void readVectorZoneProp(std::string fname, std::string fieldname);
+
+  void testCheckpointZones();
 
   //****** virtual functions (geometry specific)
 

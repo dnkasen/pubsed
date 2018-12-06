@@ -80,6 +80,8 @@ int main(int argc, char **argv){
     if (use_transport) mcarlo.init(&params, grid);
     mcarlo.testCheckpointParticles();
 
+    grid->testCheckpointZones();
+
     MPI_Finalize();
 
 }
