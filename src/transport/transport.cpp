@@ -129,6 +129,28 @@ void transport::step(double dt)
 
 }
 
+
+//------------------------------------------------------------
+// Calcuate eps_imc...
+//------------------------------------------------------------
+void transport::set_eps_imc()
+{
+  for (int i=0;i<grid->n_zones;i++)
+  {
+
+    if (radiative_eq)
+      {
+        grid->z[i].eps_imc = 0.;
+      }
+    else
+      {
+        grid->z[i].eps_imc  = 1.; // later, will want to start computing this, with an alpha set in params to toggle implicit MC on or off
+      }
+
+  }
+}
+
+
 //--------------------------------------------------------
 // little local helper function to get the current
 // time for timing
@@ -261,6 +283,10 @@ ParticleFate transport::propagate(particle &p, double dt)
      zone->fy_rad += this_E*dshift*continuum_opac_cmf*p.D[1] * dshift;
      #pragma omp atomic
      zone->fz_rad += this_E*dshift*continuum_opac_cmf*p.D[2] * dshift;
+
+     double rr = sqrt(p.x[0]*p.x[0] + p.x[1]*p.x[1] + p.x[2]*p.x[2]);
+     double xdotD = p.x[0]*p.D[0] + p.x[1]*p.D[1] + p.x[2]*p.D[2];
+     zone->fr_rad += this_E*dshift*opac*xdotD/rr * dshift; 
 
     // move particle the distance
     p.x[0] += this_d*p.D[0];

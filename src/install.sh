@@ -30,6 +30,7 @@ else
   mkdir -p $EXECDIR
 	cp -p transport/*.cpp transport/*.h $EXECDIR
 	cp -p hydro/*.cpp hydro/*.h $EXECDIR
+  cp -p hydro/*/*.cpp hydro/*/*.h $EXECDIR
 	cp -p main/*.cpp main/*.h $EXECDIR
   cp -p utils/*.cpp utils/*.h $EXECDIR
 	cp -p opacity/*.cpp opacity/*.h $EXECDIR
