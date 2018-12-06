@@ -123,6 +123,28 @@ void transport::step(double dt)
 
 }
 
+
+//------------------------------------------------------------
+// Calcuate eps_imc...
+//------------------------------------------------------------
+void transport::set_eps_imc()
+{
+  for (int i=0;i<grid->n_zones;i++)
+  {
+
+    if (radiative_eq)
+      {
+        grid->z[i].eps_imc = 0.;
+      }
+    else
+      {
+        grid->z[i].eps_imc  = 1.; // later, will want to start computing this, with an alpha set in params to toggle implicit MC on or off
+      }
+
+  }
+}
+
+
 //--------------------------------------------------------
 // little local helper function to get the current
 // time for timing
