@@ -139,15 +139,15 @@ void hydro_1D_lagrangian::step(double dt)
       accel += -1*msum*pc::G/r_out_[i]/r_out_[i];
     }
 
- //    // acceleration from monte carlo flux
- //    if (use_transport)
- //    {
- //      grid->z[i].v_up += grid->z[i].fx_rad/grid->z[i].rho*dt;
+   // acceleration from transport flux
+   if (use_transport_)
+   {
+      v_out_[i] += grid->z[i].fr_rad/grid->z[i].rho*dt;
  //      // zone[z].f_rad = zone[z].f_rad/zone[z].rho/C_LIGHT;
  //      // radiation pressure gradiant in diffusion regime
  //      //if (use_transport) //&&(zone[z].tau > tau_diffuse))
  //      // dp += (zone[z1].E_dif/3.0 - zone[z2].E_dif/3.0);
- //    }
+    }
 
     // update velocities and boudnaries
     v_out_[i] += accel*dt;
@@ -197,6 +197,11 @@ void hydro_1D_lagrangian::step(double dt)
     // implicitly calculate energy update
     eden_[i] = (eden_[i] - 0.5*(grid->z[i].p_gas + new_q + visq_[i])*dtau)/
       (1.0 + 0.5*(gamfac_ - 1.0)*new_rho*dtau);
+
+    // add in energy from radiation
+    // not implicit yet
+    if (use_transport_)
+      eden_[i] += (grid->z[i].e_abs - grid->z[i].L_thermal)*new_vol*dt/new_rho; // - grid->z[i].e_emit)/new_rho;
 
 // zvec[i].enrg = (zvec_old[i].enrg - 0.5 *
   //      (zvec_old[i].press + zvec[i].visc + zvec_old[i].visc) * rhofac)

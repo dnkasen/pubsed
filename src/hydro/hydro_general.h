@@ -9,13 +9,18 @@ class hydro_general
 
  private:
 
+
+
  public:
 
-  hydro_general() 
+  hydro_general()
   {
     gamfac_ = 1.33333;
     cfl_    = 0.1;
+    use_transport_ = 0;
   }
+
+  int use_transport_;
 
   grid_general *grid;
   double t_start;
