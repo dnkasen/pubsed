@@ -58,24 +58,42 @@ void transport::step(double dt)
   int n_active = particles.size();
   int n_escape = 0;
   int n_particles = particles.size();
+
   #pragma omp parallel for schedule(guided)
   for(int i=0; i<n_particles; i++)
   {
+    // determine whether to use ddmc
     int ddmc_zone = 0;
     if (use_ddmc_)
+      if (ddmc_use_in_zone_[particles[i].ind])
+        ddmc_zone = 1;
+
+    // propagate particles
+    if ((ddmc_zone)&&(particles[i].type == photon))
+      particles[i].fate = discrete_diffuse(particles[i],dt);
+    else
+      particles[i].fate = propagate(particles[i],dt);
+
+    // Add escaped photons to output spectrum
+    if (particles[i].fate == escaped)
     {
-      double dx;
-      grid->get_zone_size(particles[i].ind,&dx);
-      double ztau = planck_mean_opacity_[particles[i].ind]*dx;
-      if (ztau > ddmc_tau_) ddmc_zone = 1;
-    }
-    if (ddmc_zone) particles[i].fate = discrete_diffuse(particles[i],dt);
-    else particles[i].fate = propagate(particles[i],dt);
+      // account for light crossing time, relative to grid center
+        double t_obs = particles[i].t - particles[i].x_dot_d()/pc::c;
+        if (particles[i].type == photon)
+          optical_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
+        if (particles[i].type == gammaray)
+          gamma_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
+      }
+
   }
 
   // clean up the particle list
   for(int i=0; i<n_particles; i++)
   {
+    // make sure back-most particle is alive
+    while ((particles.back().fate == escaped)||(particles.back().fate == absorbed))
+        particles.pop_back();
+
     if (particles[i].fate == escaped) n_escape++;
     if ((particles[i].fate == escaped)||(particles[i].fate == absorbed)){
       particles[i] = particles.back();
@@ -171,6 +189,11 @@ ParticleFate transport::propagate(particle &p, double dt)
     // set pointer to current zone
     assert(p.ind >= 0);
     zone = &(grid->z[p.ind]);
+
+    // if we are in a ddmc zone, return that we should change to ddmc type
+    //if (use_ddmc_)
+  //    if ((ddmc_use_in_zone_[p.ind])&&(p.type == photon))
+    //s    return change_type;
 
     // printout for debug
     //std::cout << " p = " << sqrt(p.x[0]*p.x[0] + p.x[1]*p.x[1]);
@@ -342,15 +365,5 @@ ParticleFate transport::propagate(particle &p, double dt)
     }
    }
 
-
-  // Add escaped photons to output spectrum
-  if (fate == escaped)
-  {
-    // account for light crossing time, relative to grid center
-    double xdot = p.x[0]*p.D[0] + p.x[1]*p.D[1] + p.x[2]*p.D[2];
-    double t_obs = p.t - xdot/pc::c;
-    if (p.type == photon)   optical_spectrum.count(t_obs,p.nu,p.e,p.D);
-    if (p.type == gammaray) gamma_spectrum.count(t_obs,p.nu,p.e,p.D);
-  }
   return fate;
 }
