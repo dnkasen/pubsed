@@ -186,21 +186,20 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double dt)
       {
         p.ind--;
         double rr = p.r();
-        p.x[0] -= p.x[0]/rr*dx;
-        p.x[1] -= p.x[1]/rr*dx;
-        p.x[2] -= p.x[2]/rr*dx;
+        p.x[0] -= p.x[0]/rr*dx + zone_vel[0]*dt_change;
+        p.x[1] -= p.x[1]/rr*dx + zone_vel[0]*dt_change;
+        p.x[2] -= p.x[2]/rr*dx + zone_vel[0]*dt_change;
       }
       else // leak right
       {
         p.ind++;
         double rr = p.r();
-        p.x[0] += p.x[0]/rr*dx;
-        p.x[1] += p.x[1]/rr*dx;
-        p.x[2] += p.x[2]/rr*dx;
+        p.x[0] += p.x[0]/rr*dx + zone_vel[0]*dt_change;
+        p.x[1] += p.x[1]/rr*dx + zone_vel[0]*dt_change;
+        p.x[2] += p.x[2]/rr*dx + zone_vel[0]*dt_change;
       }
-
       p.ind = grid->get_zone(p.x);
-      double dt_change = d_leak / pc::c;
+
       // adiabatic loss (assumes small change in volume I think)
       p.e *= (1 - dvds*dt_change);
       dt_remaining -= dt_change;
