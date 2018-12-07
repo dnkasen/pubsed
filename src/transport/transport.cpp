@@ -79,7 +79,7 @@ void transport::step(double dt)
   }
 
   // Remove escaped and absorbed particles from the particle vector
-  int n_escaped = clean_up_particle_vector()
+  int n_escaped = clean_up_particle_vector();
 
   // calculate percent particles escaped, and rescale if wanted
   if (steady_state)
