@@ -69,7 +69,11 @@ void transport::step(double dt)
       double ztau = planck_mean_opacity_[particles[i].ind]*dx;
       if (ztau > ddmc_tau_) ddmc_zone = 1;
     }
-    if (ddmc_zone) particles[i].fate = discrete_diffuse(particles[i],dt);
+    if (ddmc_zone) 
+    {
+      if (imd_ddmc_switch_ == 1) particles[i].fate = discrete_diffuse_IMD(particles[i],dt);
+      if (imd_ddmc_switch_ == 2) particles[i].fate = discrete_diffuse_DDMC(particles[i],dt);
+    }
     else particles[i].fate = propagate(particles[i],dt);
   }
 

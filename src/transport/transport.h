@@ -142,6 +142,7 @@ class transport
   vector<real> ddmc_P_abs_;
   vector<real> ddmc_P_stay_;
   int use_ddmc_;
+  int imd_ddmc_switch_;
   double ddmc_tau_;
 
   // the radiation quantities in the zone
@@ -191,7 +192,8 @@ class transport
 
   //propagation of particles functions
   ParticleFate propagate(particle &p, double tstop);
-  ParticleFate discrete_diffuse(particle &p, double tstop);
+  ParticleFate discrete_diffuse_IMD(particle &p, double tstop);
+  ParticleFate discrete_diffuse_DDMC(particle &p, double tstop);
   void compute_diffusion_probabilities(double dt);
 
   // scattering functions
