@@ -149,7 +149,7 @@ double get_system_time()
 //--------------------------------------------------------
 int transport::clean_up_particle_vector()
 {
-  int n_escaped;
+  int n_escaped = 0;
   int i=0;
   while (true)
   {
