@@ -17,11 +17,14 @@ private:
 
   // store location of the outer edge of the zone.
   locate_array r_out;
+  locate_array r_out_new; // for restart debugging
   // velocity at inner boundary
   double v_inner_;
+  double v_inner_new;
 
   // store volumes explicitly
   std::vector<double> vol;
+  std::vector<double> vol_new;
 
   // functions for reading in files
   void read_SNR_file(std::ifstream &, int, int);
@@ -51,6 +54,10 @@ public:
 
   void  coordinates(int i,double r[3]) {
     r[0] = r_out[i]; r[1] = 0; r[2] = 0;}
+
+  void writeCheckpointGrid(std::string fname);
+  void readCheckpointGrid(std::string fname);
+  void testCheckpointGrid();
 
   //****** function overides
 

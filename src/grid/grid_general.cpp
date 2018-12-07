@@ -10,6 +10,9 @@ namespace pc = physical_constants;
 //------------------------------------------------------------
 void grid_general::init(ParameterReader* params)
 {
+  MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
+  MPI_Comm_size( MPI_COMM_WORLD, &nproc );
+
 	// read the model file or fill in custom model
 	read_model_file(params);
 
@@ -21,7 +24,6 @@ void grid_general::init(ParameterReader* params)
 		n_zones = z.size();
 	}
 
-  writeCheckpointZones("zones.h5");
 }
 
 void grid_general::write_hdf5_plotfile_zones
@@ -70,8 +72,6 @@ void grid_general::write_hdf5_plotfile_zones
 }
 
 void grid_general::writeCheckpointZones(std::string fname) {
-  int my_rank;
-  MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
   /* Mercifully, only rank 0 has to do any of this */
   if (my_rank == 0) {
     createFile(fname);
@@ -218,12 +218,8 @@ void grid_general::writeVectorZoneProp(std::string fname, std::string fieldname)
 }
 
 void grid_general::readCheckpointZones(std::string fname) {
-  int my_rank;
-  MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
-  int nprocs;
-  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
   /* To avoid doing extra communication, each rank will read in its own grid data. */
-  for (int rank = 0; rank < nprocs; rank++) {
+  for (int rank = 0; rank < nproc; rank++) {
     if (my_rank == rank) {
       /* Adjust vector lengths */
       hsize_t dims[2];
@@ -362,7 +358,36 @@ void grid_general::readVectorZoneProp(std::string fname, std::string fieldname) 
 
   delete[] buffer;
 }
-  
+
+void grid_general::writeCheckpointGeneralGrid(std::string fname) {
+  /* Mercifully, only rank 0 has to do any of this, but calling function will handle telling
+   * which ranks to do what */
+  createFile(fname);
+  createGroup(fname, "grid");
+  hsize_t single_val = 1;
+  hsize_t elem_dim = n_elems;
+
+  createDataset(fname, "grid", "t_now", 1, &single_val, H5T_NATIVE_DOUBLE);
+  writeSimple(fname, "grid", "t_now", &t_now, H5T_NATIVE_DOUBLE);
+  createDataset(fname, "grid", "n_zones", 1, &single_val, H5T_NATIVE_INT);
+  writeSimple(fname, "grid", "n_zones", &n_zones, H5T_NATIVE_INT);
+
+  createDataset(fname, "grid", "n_elems", 1, &single_val, H5T_NATIVE_INT);
+  writeSimple(fname, "grid", "n_elems", &n_elems, H5T_NATIVE_INT);
+
+  writeVector(fname, "grid", "elems_Z", elems_Z, H5T_NATIVE_INT);
+  writeVector(fname, "grid", "elems_A", elems_A, H5T_NATIVE_INT);
+
+}
+
+void grid_general::readCheckpointGeneralGrid(std::string fname) {
+  readSimple(fname, "grid", "t_now", &t_now_new, H5T_NATIVE_DOUBLE);
+  readSimple(fname, "grid", "n_zones", &n_zones_new, H5T_NATIVE_INT);
+  readSimple(fname, "grid", "n_elems", &n_elems_new, H5T_NATIVE_INT);
+  readVector(fname, "grid", "elems_Z", elems_Z_new, H5T_NATIVE_INT);
+  readVector(fname, "grid", "elems_A", elems_A_new, H5T_NATIVE_INT);
+}
+
 void grid_general::write_integrated_quantities(int iw, double tt)
 {
 	// open output file

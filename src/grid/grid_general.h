@@ -36,8 +36,15 @@ class grid_general
 
  protected:
 
+  int my_rank;
+  int nproc;
+
   // fill the grid with data from a model file
   virtual void read_model_file(ParameterReader*) = 0;
+
+  void writeCheckpointGeneralGrid(std::string fname);
+  void readCheckpointGeneralGrid(std::string fname);
+  void testCheckpointGeneralGrid();
 
  public:
 
@@ -51,13 +58,18 @@ class grid_general
   std::vector<zone> z;
   std::vector<zone> z_new; // For restart debugging
   int n_zones;
+  int n_zones_new;
 
   double t_now;
+  double t_now_new;
 
   // vector of isotopes to use
   std::vector<int> elems_Z;
+  std::vector<int> elems_Z_new;
   std::vector<int> elems_A;
+  std::vector<int> elems_A_new;
   int n_elems;
+  int n_elems_new;
 
   // mpi reduce quantities
   void reduce_radiation();
@@ -117,6 +129,11 @@ class grid_general
   virtual void get_zone_size(int, double*)
   {
   }
+
+  /* TODO: MAKE PURE VIRTUAL EVENTUALLY */
+  virtual void writeCheckpointGrid(std::string fname) {};
+  virtual void readCheckpointGrid(std::string fname) {};
+  virtual void testCheckpointGrid() {};
 
 
 };

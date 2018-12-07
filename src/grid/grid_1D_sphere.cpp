@@ -186,8 +186,8 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
     cout << "##############################\n#" << endl;
        
   }
-}
 
+}
   
 
 //************************************************************
@@ -455,4 +455,33 @@ const std::vector<double> v, const double v0)
 
 }
 
+void grid_1D_sphere::writeCheckpointGrid(std::string fname) {
+  std::cerr << my_rank << std::endl;
+  if (my_rank == 0) {
+    writeCheckpointGeneralGrid(fname);
+    /* Specific to 1D */
+    hsize_t single_val = 1;
+    hsize_t zone_size = n_zones;
 
+    createDataset(fname, "grid", "v_inner", 1, &single_val, H5T_NATIVE_DOUBLE);
+    writeSimple(fname, "grid", "v_inner", &v_inner_, H5T_NATIVE_DOUBLE);
+
+    r_out.writeCheckpoint(fname, "grid", "r_out");
+
+    writeVector(fname, "grid", "vol", vol, H5T_NATIVE_DOUBLE);
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+}
+
+void grid_1D_sphere::readCheckpointGrid(std::string fname) {
+  for (int rank = 0; rank < nproc; rank++) {
+    if (my_rank == rank) {
+      readCheckpointGeneralGrid(fname);
+      /* Specific to 1D */
+      readSimple(fname, "grid", "v_inner", &v_inner_new, H5T_NATIVE_DOUBLE);
+      r_out_new.readCheckpoint(fname, "grid", "r_out");
+      readVector(fname, "grid", "vol", vol_new, H5T_NATIVE_DOUBLE);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+}

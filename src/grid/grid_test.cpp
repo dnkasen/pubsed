@@ -6,11 +6,6 @@
 namespace pc = physical_constants;
 
 void grid_general::testCheckpointZones() {
-  int my_rank;
-  MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
-  int nprocs;
-  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
-
   std::cerr << "starting to test zones" << std::endl;
 
   writeCheckpointZones("test_zones.h5");
@@ -23,7 +18,7 @@ void grid_general::testCheckpointZones() {
 
   std::cerr << "read checkpoint zones" << std::endl;
 
-  for (int rank = 0; rank < nprocs; rank++) {
+  for (int rank = 0; rank < nproc; rank++) {
     std::cerr << "rank " << my_rank << std::endl;
     if (rank == my_rank) {
       bool fail = false;
@@ -143,5 +138,47 @@ void grid_general::testCheckpointZones() {
 }
 
 
+void grid_general::testCheckpointGeneralGrid() {
+  writeCheckpointGrid("grid.h5");
 
+  MPI_Barrier(MPI_COMM_WORLD);
 
+  readCheckpointGrid("grid.h5");
+
+  for (int rank = 0; rank < nproc; rank++) {
+    std::cerr << "rank " << my_rank << std::endl;
+    if (rank == my_rank) {
+      bool fail = false;
+      if (t_now != t_now_new) {
+        std::cerr << "issue at t_now on rank " << rank << std::endl;
+        fail = true;
+      }
+      if (n_zones != n_zones_new) {
+        std::cerr << "issue at n_zones on rank " << rank << std::endl;
+        fail = true;
+      }
+      if (n_elems != n_elems_new) {
+        std::cerr << "issue at n_elems on rank " << rank << std::endl;
+        fail = true;
+      }
+      for (int i = 0; i < n_elems_new; i++) {
+        if (elems_Z[i] != elems_Z_new[i]) {
+          std::cerr << "issue at elems_Z, element number " << i << " on rank " << rank << std::endl;
+          std::cerr << elems_Z[i] << " " << elems_Z_new[i] << std::endl;
+          fail = true;
+        }
+        if (elems_A[i] != elems_A_new[i]) {
+          std::cerr << "issue at elems_A, element number " << i << " on rank " << rank << std::endl;
+          std::cerr << elems_A[i] << " " << elems_A_new[i] << std::endl;
+          fail = true;
+        }
+      }
+      if (fail) {
+        std::cerr << "grid restart failed on rank " << my_rank << std::endl;
+        exit(3);
+      }
+      else std::cerr << "general grid restart succeeded on rank " << my_rank << std::endl;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+}
