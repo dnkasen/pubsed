@@ -3,7 +3,10 @@
 
 #include <vector>
 #include <math.h>
+#include <hdf5.h>
 #include <limits>
+
+#include "h5utils.h"
 
 class locate_array {
 
@@ -36,6 +39,9 @@ public:
   double& operator[] (const int i)       {return x[i];};
   void resize(int i) {x.resize(i);};
 
+  // equality
+  bool is_equal(locate_array l, bool complain);
+
   // center of the bin left of nu_i
   double center(const int i) const{
     if (i == 0) return 0.5*(min    + x[0]);
@@ -64,6 +70,9 @@ public:
   int    locate(const double) const;
   double sample(const int, const double) const;
   void   print() const;
+
+  void writeCheckpoint(std::string fname, std::string gname, std::string dset);
+  void readCheckpoint(std::string fname, std::string gname, std::string dset);
 
   //---------------------------------------------------------
 // Linear Interpolation of a passed array
