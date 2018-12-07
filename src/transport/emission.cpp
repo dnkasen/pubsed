@@ -250,7 +250,7 @@ void transport::emit_thermal(double dt)
     //t_emit defined below actually has units of 1/time. This is for comoving frame
    // double t_emit = planck_mean_opac*pc::c; 
       //comoving frame emission energy. Note that dt * vol is frame invariant
-    double E_zone_emit = grid->z[i].L_thermal*vol*dt; //pc::a*pow(T_gas,4)*t_emit*dt*vol*grid->z[i].eps_imc;
+    double E_zone_emit = grid->z[i].L_thermal*vol*dt * grid->z[i].eps_imc; //pc::a*pow(T_gas,4)*t_emit*dt*vol*grid->z[i].eps_imc;
     // save the comoving frame thermal emission
     // you divide by lab frame volume because this is also divided by lab frame time, 
     // and together the vol * dt is frame invariant.

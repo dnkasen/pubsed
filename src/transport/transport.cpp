@@ -32,7 +32,7 @@ void transport::step(double dt)
   double get_system_time(void);
 
   tstr = get_system_time();
-  set_opacity();
+  set_opacity(dt); // need to pass dt for computing implicit monte carlo factors
   tend = get_system_time();
   if (verbose) cout << "# Calculated opacities   (" << (tend-tstr) << " secs) \n";
 
@@ -47,8 +47,6 @@ void transport::step(double dt)
 
   // clear the tallies of the radiation quantities in each zone
   wipe_radiation();
-
-  set_eps_imc();
 
   // emit new particles
   tstr = get_system_time();
@@ -129,26 +127,6 @@ void transport::step(double dt)
 
 }
 
-
-//------------------------------------------------------------
-// Calcuate eps_imc...
-//------------------------------------------------------------
-void transport::set_eps_imc()
-{
-  for (int i=0;i<grid->n_zones;i++)
-  {
-
-    if (radiative_eq)
-      {
-        grid->z[i].eps_imc = 0.;
-      }
-    else
-      {
-        grid->z[i].eps_imc  = 1.; // later, will want to start computing this, with an alpha set in params to toggle implicit MC on or off
-      }
-
-  }
-}
 
 
 //--------------------------------------------------------
@@ -266,7 +244,7 @@ ParticleFate transport::propagate(particle &p, double dt)
     if (p.type == photon)
     {
       #pragma omp atomic
-      zone->e_abs  += this_E*dshift*(continuum_opac_cmf)*eps_absorb_cmf*dshift;
+      zone->e_abs  += this_E*dshift*(continuum_opac_cmf)*eps_absorb_cmf*dshift * zone->eps_imc;
       if (store_Jnu_)
 	#pragma omp atomic
 	J_nu_[p.ind][i_nu] += this_E;

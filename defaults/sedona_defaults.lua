@@ -22,6 +22,7 @@ hydro_accrete_radius = 0
 hydro_bomb_radius    = 0
 hydro_bomb_energy    = 0
 
+
 -- default nu_grid is nothing
 transport_module = "monte_carlo"
 transport_nu_grid  = {1,1,1}
@@ -32,6 +33,7 @@ transport_boundary_out_reflect   = 0
 transport_store_Jnu              = 1
 transport_use_ddmc               = 0
 transport_ddmc_tau_threshold     = 100
+transport_fleck_alpha            = 0
 
 -- inner source emission = none
 core_n_emit           = 0

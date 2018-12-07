@@ -8,7 +8,7 @@ model_file = "../models/ensman_model.mod"        -- input model file
 
 hydro_module     = "1D_lagrangian"
 hydro_gamma_index = 5.0/3.0
-hydro_v_piston    = 2e5
+hydro_v_piston    = 6e5
 transport_module = "monte_carlo"
 
 particles_n_initialize    = 1000

@@ -32,6 +32,7 @@ void hydro_1D_lagrangian::init(ParameterReader *params, grid_general *g)
   use_gravity_ = params->getScalar<int>("hydro_use_gravity");
   r_accrete_   = params->getScalar<double>("hydro_accrete_radius");
 
+
   grid->get_radial_edges(r_out_,r_min_,v_out_,v_min_);
   v_min_ = params->getScalar<double>("hydro_v_piston");
 
@@ -64,8 +65,10 @@ void hydro_1D_lagrangian::init(ParameterReader *params, grid_general *g)
       grid->z[i].p_gas += p_bomb*exp(-r_out_[i]*r_out_[i]/r_bomb/r_bomb);
       grid->z[i].T_gas = pow(3.0*grid->z[i].p_gas/pc::a,0.25);
     }
-  	grid->z[i].cs = sqrt(gamfac_ * grid->z[i].p_gas/grid->z[i].rho);
- 	  eden_[i] = grid->z[i].p_gas/(gamfac_- 1.0)/grid->z[i].rho;
+    grid->z[i].cs = sqrt(gamfac_ * grid->z[i].p_gas/grid->z[i].rho);
+    eden_[i] = grid->z[i].p_gas/(gamfac_- 1.0)/grid->z[i].rho;
+
+    grid->z[i].e_gas = eden_[i]; // this is what will be used for constructing eps_imc
     visq_[i] = compute_artificial_viscosity(i);
     mass_[i] = grid->z[i].rho*vol;
   }

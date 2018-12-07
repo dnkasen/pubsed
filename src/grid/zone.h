@@ -15,6 +15,7 @@ public:
   real v[3];            // velocity vector (cm/s)
   real rho;             // density (g/cm^3)
   real cs;              // sound speed (cm/s)
+  real e_gas;           // gas pressure
   real p_gas;           // gas pressure
   real T_gas;           // gas temperature
 
