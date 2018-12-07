@@ -277,6 +277,8 @@ int AtomicSpecies::set_use_nlte()
   p_nlte_ = gsl_permutation_alloc(n_levels_);
   gsl_permutation_init(p_nlte_);
 
+  return 0;
+
 }
 
 

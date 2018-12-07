@@ -68,6 +68,8 @@ void transport::set_opacity()
     if (!gas_state_.grey_opacity_) solve_error = gas_state_.solve_state(J_nu_[i]);
     //gas_state_.print();
 
+    if(write_levels) gas_state_.write_levels(i);
+
     // calculate the opacities/emissivities
     gas_state_.computeOpacity(abs_opacity_[i],scat,emis);
 
@@ -156,7 +158,7 @@ int transport::get_opacity(particle &p, double dshift, double &opac, double &eps
   if (p.type == photon)
   {
     // interpolate opacity at the local comving frame frequency
-    i_nu = nu_grid.locate(nu);
+    i_nu = nu_grid.locate_within_bounds(nu);
     double a_opac = nu_grid.value_at(nu,abs_opacity_[p.ind],i_nu);
     double s_opac = 0;
     if (!omit_scattering_) s_opac = nu_grid.value_at(nu,scat_opacity_[p.ind],i_nu);

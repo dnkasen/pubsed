@@ -144,6 +144,7 @@ class transport
   vector<real> ddmc_P_adv_;
   vector<real> ddmc_P_abs_;
   vector<real> ddmc_P_stay_;
+  vector<real> ddmc_use_in_zone_;
   int use_ddmc_;
   double ddmc_tau_;
 
@@ -152,6 +153,7 @@ class transport
   // line mean intensity
   vector< vector<real> > line_J_;
   double line_velocity_width_;
+
 
 
   // setup functions
@@ -216,6 +218,8 @@ class transport
 
  public:
 
+  int write_levels;
+
 
   void set_last_iteration_flag()
     {last_iteration_ = 1;}
@@ -245,7 +249,8 @@ class transport
   void output_spectrum(int);
 
   // print out functions
-  void write_radiation_file(int, int);
+  void write_levels_to_plotfile(int);
+  void write_radiation_file(int);
   void wipe_spectra();
 
   void checkpoint_particles(std::string fname);

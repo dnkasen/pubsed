@@ -55,6 +55,67 @@ void transport::output_spectrum()
   output_spectrum(0);
 }
 
+void transport::write_levels_to_plotfile(int iw)
+{
+  char pltfile[1000];
+  sprintf(pltfile,"plt_%05d.h5",iw);
+
+  const int RANK=1;
+
+
+  hid_t file_id_dest = H5Fopen(pltfile,H5F_ACC_RDWR,H5P_DEFAULT);
+  hid_t zone_id_dest = H5Gopen(file_id_dest,"zonedata",H5P_DEFAULT);
+  for(int i=0;i<grid->n_zones;i++)
+  {
+    char zonefile[1000];
+    sprintf(zonefile,"zone_%d.h5",i);
+
+    hid_t file_id_src = H5Fopen(zonefile,H5F_ACC_RDONLY,H5P_DEFAULT);
+
+    char zid[100];
+    sprintf(zid,"%d",i);
+    //hid_t zone_grp_src = H5Gopen(file_id_src,zid,H5P_DEFAULT);
+    hid_t zone_grp_dest = H5Gopen(zone_id_dest,zid,H5P_DEFAULT);
+
+
+    for(size_t j=0;j<gas_state_.atoms.size();j++)
+    {
+      char ag[100];
+      int this_Z = gas_state_.elem_Z[j];
+      sprintf(ag,"Z_%d",this_Z);
+      hid_t atom_id_src = H5Gopen(file_id_src,ag,H5P_DEFAULT);
+      hid_t atom_id_dest = H5Gcreate1(zone_grp_dest,ag,0);
+
+      float* tmp_ion = new float[this_Z+1];
+      hsize_t dims_ion[RANK]={(hsize_t)(this_Z+1)};
+      
+      H5LTread_dataset_float(atom_id_src,"ion_fraction",tmp_ion);
+      H5LTmake_dataset(atom_id_dest,"ion_fraction",RANK,dims_ion,H5T_NATIVE_FLOAT,tmp_ion);
+
+      int this_nl = gas_state_.atoms[j].n_levels_;
+      float* tmp_level = new float[this_nl];
+      hsize_t dims_level[RANK] = {(hsize_t)this_nl};
+      H5LTread_dataset_float(atom_id_src,"level_fraction",tmp_level);
+      H5LTmake_dataset(atom_id_dest,"level_fraction",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
+
+      H5LTread_dataset_float(atom_id_src,"level_departure",tmp_level);
+      H5LTmake_dataset(atom_id_dest,"level_departure",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
+
+      H5Gclose(atom_id_dest);
+      H5Gclose(atom_id_src);
+      delete[] tmp_level;
+      delete[] tmp_ion;
+    }
+
+    H5Gclose(zone_grp_dest);
+    H5Fclose(file_id_src);
+
+  }
+
+  H5Gclose(zone_id_dest);
+  H5Fclose(file_id_dest);
+}
+
 
 //------------------------------------------------------------
 // Write detailed opacities and radiation field
@@ -62,7 +123,7 @@ void transport::output_spectrum()
 // assumes that the pltfile has already been
 // created
 //------------------------------------------------------------
-void transport::write_radiation_file(int iw, int write_levels)
+void transport::write_radiation_file(int iw)
 {
   // get file name
   char zonefile[1000];
@@ -130,48 +191,48 @@ void transport::write_radiation_file(int iw, int write_levels)
       else tmp_array[j] = 0; }
     H5LTmake_dataset(zone_id,"Jnu",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
-    if (write_levels)
-    {
-      // just recalculate state for now... I know...
-      // set up the state of the gas in this zone
-      gas_state_.dens_ = grid->z[i].rho;
-      gas_state_.temp_ = grid->z[i].T_gas;
-      gas_state_.time_ = grid->t_now;
-      gas_state_.set_mass_fractions(grid->z[i].X_gas);
-      // solve for the state
-      if (!gas_state_.grey_opacity_) gas_state_.solve_state(J_nu_[i]);
+    // if (write_levels)
+    // {
+    //   // just recalculate state for now... I know...
+    //   // set up the state of the gas in this zone
+    //   gas_state_.dens_ = grid->z[i].rho;
+    //   gas_state_.temp_ = grid->z[i].T_gas;
+    //   gas_state_.time_ = grid->t_now;
+    //   gas_state_.set_mass_fractions(grid->z[i].X_gas);
+    //   // solve for the state
+    //   if (!gas_state_.grey_opacity_) gas_state_.solve_state(J_nu_[i]);
 
-      for (size_t j=0;j<gas_state_.atoms.size();j++)
-      {
-        char afile[100];
-        int this_Z = gas_state_.elem_Z[j];
-        sprintf(afile,"Z_%d",this_Z);
-        hid_t atom_id =  H5Gcreate1( zone_id, afile, 0 );
+    //   for (size_t j=0;j<gas_state_.atoms.size();j++)
+    //   {
+    //     char afile[100];
+    //     int this_Z = gas_state_.elem_Z[j];
+    //     sprintf(afile,"Z_%d",this_Z);
+    //     hid_t atom_id =  H5Gcreate1( zone_id, afile, 0 );
 
-        // write out ionization fractions for this atom
-        float tmp_ion[100];
-        hsize_t  dims_ion[RANK]={(hsize_t)this_Z+1};
-        for (int k=0;k<gas_state_.elem_Z[j]+1;k++)
-          tmp_ion[k] = gas_state_.get_ionization_fraction(j,k);
-        H5LTmake_dataset(atom_id,"ion_fraction",RANK,dims_ion,H5T_NATIVE_FLOAT,tmp_ion);
+    //     // write out ionization fractions for this atom
+    //     float tmp_ion[100];
+    //     hsize_t  dims_ion[RANK]={(hsize_t)this_Z+1};
+    //     for (int k=0;k<gas_state_.elem_Z[j]+1;k++)
+    //       tmp_ion[k] = gas_state_.get_ionization_fraction(j,k);
+    //     H5LTmake_dataset(atom_id,"ion_fraction",RANK,dims_ion,H5T_NATIVE_FLOAT,tmp_ion);
 
-        // write out level populations for this atom
-        int this_nl = gas_state_.atoms[j].n_levels_;
-        float* tmp_level = new float[this_nl];
-        hsize_t  dims_level[RANK]={(hsize_t)this_nl};
-        for (int k=0;k<this_nl;k++)
-          tmp_level[k] = gas_state_.get_level_fraction(j,k);
-        H5LTmake_dataset(atom_id,"level_fraction",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
+    //     // write out level populations for this atom
+    //     int this_nl = gas_state_.atoms[j].n_levels_;
+    //     float* tmp_level = new float[this_nl];
+    //     hsize_t  dims_level[RANK]={(hsize_t)this_nl};
+    //     for (int k=0;k<this_nl;k++)
+    //       tmp_level[k] = gas_state_.get_level_fraction(j,k);
+    //     H5LTmake_dataset(atom_id,"level_fraction",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
 
-        // write out level departures for this atom
-        for (int k=0;k<this_nl;k++)
-          tmp_level[k] = gas_state_.get_level_departure(j,k);
-        H5LTmake_dataset(atom_id,"level_departure",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
+    //     // write out level departures for this atom
+    //     for (int k=0;k<this_nl;k++)
+    //       tmp_level[k] = gas_state_.get_level_departure(j,k);
+    //     H5LTmake_dataset(atom_id,"level_departure",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
 
-        H5Gclose(atom_id);
-        delete[] tmp_level;
-      }
-    }
+    //     H5Gclose(atom_id);
+    //     delete[] tmp_level;
+    //   }
+    // }
     H5Gclose(zone_id);
   }
   H5Gclose(zone_dir);

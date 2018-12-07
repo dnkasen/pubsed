@@ -13,7 +13,7 @@ using namespace std;
 //---------------------------------------------------------
 // Just allocation the memory for this
 //---------------------------------------------------------
-void locate_array::init(const int n) 
+void locate_array::init(const int n)
 {
   x.assign(n,0);
 }
@@ -150,6 +150,8 @@ bool locate_array::is_equal(locate_array l, bool complain) {
 // locate (return closest index below the value)
 // if off left side of boundary, returns 0
 // if off right side of boundary, returns size
+// Warning: The returned index will be out of bounds
+// if off right hand side
 //---------------------------------------------------------
 int locate_array::locate(const double xval) const
 {
@@ -157,7 +159,23 @@ int locate_array::locate(const double xval) const
   // upper_bound returns first element greater than xval
   // values mark bin tops, so this is what we want
   return upper_bound(x.begin(), x.end(), xval) - x.begin();
-} 
+}
+
+//---------------------------------------------------------
+// locate (return closest index below the value)
+// if off left side of boundary, returns 0
+// if off right side of boundary, returns size-1
+//---------------------------------------------------------
+int locate_array::locate_within_bounds(const double xval) const
+{
+  if (x.size() == 1) return 0;
+  // upper_bound returns first element greater than xval
+  // values mark bin tops, so this is what we want
+  int ind = upper_bound(x.begin(), x.end(), xval) - x.begin();
+  if (ind == x.size()) return x.size()-1;
+  return ind;
+}
+
 
 
 //---------------------------------------------------------
@@ -210,7 +228,6 @@ void locate_array::readCheckpoint(std::string fname, std::string gname, std::str
   readSimple(h5_locatearray_group, "min", &min, H5T_NATIVE_DOUBLE);
   readSimple(h5_locatearray_group, "do_log_interpolate", &do_log_interpolate, H5T_NATIVE_INT);
 }
-
 
 void locate_array::swap(locate_array new_array){
   // swap the vectors

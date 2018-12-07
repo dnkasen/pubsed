@@ -18,23 +18,33 @@ ParticleFate transport::discrete_diffuse(particle &p, double dt)
   double dx;
   grid->get_zone_size(p.ind,&dx);
 
+  // for now incrementing whole time-stepping
+  // this is not really correct
+  p.t += dt;
+
   // set this zone
   while (!stop)
   {
+    // find current zone and check for escape
+    p.ind = grid->get_zone(p.x);
+    if (p.ind == -1) {return absorbed;}
+    if (p.ind == -2) {return escaped;}
+
     // pointer to current zone
     zone *zone = &(grid->z[p.ind]);
 
     // add in tally of absorbed and total radiation energy
+    #pragma omp atomic
     zone->e_abs += p.e*ddmc_P_abs_[p.ind];
     //zone->e_rad += p.e*ddmc_P_stay_[p.ind];
+    #pragma omp atomic
     J_nu_[p.ind][0] += p.e*ddmc_P_stay_[p.ind]*dt*pc::c;
-//    std::cout <<  p.ind << " " << p.e*ddmc_P_stay_[p.ind] << "\n";
 
     // total probability of diffusing in some direction
     double P_diff = ddmc_P_up_[p.ind]  + ddmc_P_dn_[p.ind];
     double P_stay = ddmc_P_abs_[p.ind] + ddmc_P_stay_[p.ind];
 
-    // see if diffuse
+    // randomly choose whether to diffuse
     double r1 = rangen.uniform();
     if (r1 < P_diff)
     {
@@ -58,7 +68,7 @@ ParticleFate transport::discrete_diffuse(particle &p, double dt)
         p.x[2] -= p.x[2]/rr*dx;
       }
     }
-    // don't diffuse
+    // else don't diffuse and stop
     else
     {
       // check for absorption
@@ -73,20 +83,17 @@ ParticleFate transport::discrete_diffuse(particle &p, double dt)
       p.x[0] += zone_vel[0]*dt;
       p.x[1] += zone_vel[1]*dt;
       p.x[2] += zone_vel[2]*dt;
-      p.ind = grid->get_zone(p.x);
 
-      // adiabatic loses
-      //p.e *= (1 - zone->diff_v);
+      // adiabatic loss (assumes small change in volume I think)
+      p.e *= (1 - dvds*dt);
       stop = 1;
     }
-
-    p.t += dt;
-
-    // check for escape
-    if (p.ind < 0)         {return absorbed;}
-    if (p.ind > grid->n_zones - 1)	  {return escaped; }
-
   }
+
+  // find current zone and check for escape
+  p.ind = grid->get_zone(p.x);
+  if (p.ind == -1) {return absorbed;}
+  if (p.ind == -2) {return escaped;}
   return stopped;
 
 }
@@ -106,6 +113,11 @@ void transport::compute_diffusion_probabilities(double dt)
     double dx;
     grid->get_zone_size(i,&dx);
 
+    // determine if we will use ddmc in this zone
+    double ztau = planck_mean_opacity_[i]*dx;
+    if (ztau > ddmc_tau_) ddmc_use_in_zone_[i] = 1;
+    else ddmc_use_in_zone_[i] = 0;
+
     // indices of adjacent zones
     int ip = i+1;
     if (ip == nz) ip = i;
@@ -115,18 +127,27 @@ void transport::compute_diffusion_probabilities(double dt)
     double sigma_p = planck_mean_opacity_[i];
 
     // diffusion probability in zone and adjacent zones
-    double Dj0 = pc::c/(3.0*sigma_p);
-    double Djp = pc::c/(3.0*sigma_p);
-    double Djm = pc::c/(3.0*sigma_p);
+    double Dj0 = pc::c/(3.0*planck_mean_opacity_[i]);
+    double Djp = pc::c/(3.0*planck_mean_opacity_[ip]);
+    double Djm = pc::c/(3.0*planck_mean_opacity_[im]);
 
     double Dh_up = 2*dx*(Dj0*Djp)/(Dj0*dx + Djp*dx);
     double Dh_dn = 2*dx*(Dj0*Djm)/(Dj0*dx + Djm*dx);
 
-    ddmc_P_up_[i] = (dt/dx)*(Dh_up/dx);
-    ddmc_P_dn_[i] = (dt/dx)*(Dh_dn/dx);
+    double rcoords[3];
+    grid->coordinates(i,rcoords);
+    double r_p = rcoords[0];
+    grid->coordinates(im,rcoords);
+    double r_m = rcoords[0];
+    if (i == 0) r_m = 0;
+    double r_0 = 0.5*(r_p + r_m);
+
+    // diffusion probabilitys up and down
+    // assumes spherical symmetry so the r^2/r_0^2 factor
+    ddmc_P_up_[i] = (dt/dx)*(Dh_up/dx)*r_p*r_p/r_0/r_0;
+    ddmc_P_dn_[i] = (dt/dx)*(Dh_dn/dx)*r_m*r_m/r_0/r_0;
     // boundary condition -- don't diffuse inward at innermost cell
-    if (i==0)
-      ddmc_P_dn_[i] = 0;
+    if (i==0) ddmc_P_dn_[i] = 0;
 
     // advection probability
     ddmc_P_adv_[i] = 0.0;

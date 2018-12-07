@@ -225,6 +225,7 @@ void transport::init(ParameterReader* par, grid_general *g)
    ddmc_P_adv_.resize(grid->n_zones);
    ddmc_P_abs_.resize(grid->n_zones);
    ddmc_P_stay_.resize(grid->n_zones);
+   ddmc_use_in_zone_.resize(grid->n_zones);
  }
  if ((use_ddmc_)&&(verbose))
  {

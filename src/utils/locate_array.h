@@ -1,5 +1,5 @@
 #ifndef _LOCATE_ARRAY_H
-#define _LOCATE_ARRAY_H 
+#define _LOCATE_ARRAY_H
 
 #include <vector>
 #include <math.h>
@@ -49,7 +49,7 @@ public:
   }
 
   // left side of bin i
-  double left(const int i) const{ 
+  double left(const int i) const{
     if (i == 0) return min;
     else return x[i-1];}
 
@@ -68,6 +68,8 @@ public:
   double minval() {return min; }
 
   int    locate(const double) const;
+  int    locate_within_bounds(const double xval) const;
+
   double sample(const int, const double) const;
   void   print() const;
 
@@ -77,8 +79,8 @@ public:
   //---------------------------------------------------------
 // Linear Interpolation of a passed array
 //---------------------------------------------------------
-template<typename T> 
-T interpolate_between(const double xval, const int i1, const int i2, const std::vector<T>& y) const 
+template<typename T>
+T interpolate_between(const double xval, const int i1, const int i2, const std::vector<T>& y) const
 {
   if (x.size() == 1) return y[0];
   double slope = (y[i2]-y[i1]) / (x[i2]-x[i1]);
@@ -90,7 +92,7 @@ T interpolate_between(const double xval, const int i1, const int i2, const std::
 //---------------------------------------------------------
 // Log-Log Interpolation of a passed array
 //---------------------------------------------------------
-template<typename T> 
+template<typename T>
 T log_interpolate_between(const double xval, const int i1, const int i2, const std::vector<T>& y) const
 {
   if (x.size() == 1) return y[0];
