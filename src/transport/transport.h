@@ -141,6 +141,7 @@ class transport
   vector<real> ddmc_P_adv_;
   vector<real> ddmc_P_abs_;
   vector<real> ddmc_P_stay_;
+  vector<real> ddmc_use_in_zone_;
   int use_ddmc_;
   double ddmc_tau_;
 
