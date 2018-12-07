@@ -71,15 +71,26 @@ int main(int argc, char **argv){
       exit(3);   }
 
     // initialize the grid (including reading the model file)
+    std::cerr << "initializing grid" << std::endl;
     grid->init(&params);
 
+    std::cerr << "initializing mcarlo" << std::endl;
     transport mcarlo;
     string transport_type = params.getScalar<string>("transport_module");
     int use_transport = 0;
     if (transport_type != "") use_transport = 1;
     if (use_transport) mcarlo.init(&params, grid);
+
+    std::cerr << "testing particles" << std::endl;
     mcarlo.testCheckpointParticles();
 
+    for (int i = 0; i < grid->elems_A.size();i++) {
+      std::cerr << grid->elems_A[i] << " " << grid->elems_Z[i] << std::endl;
+    }
+
+    std::cerr << "testing grid" << std::endl;
+    grid->testCheckpointGrid();
+    std::cerr << "testing zones" << std::endl;
     grid->testCheckpointZones();
 
     MPI_Finalize();
