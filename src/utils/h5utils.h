@@ -1,6 +1,8 @@
 #ifndef _H5UTILS_H
 #define _H5UTILS_H 1
 
+#include <vector>
+#include <iostream>
 #include <hdf5.h>
 
 // Creates and closes a new HDF5 file called fname
@@ -8,15 +10,18 @@ void createFile(std::string fname);
 
 // Creates a group called gname in the existing HDF5 file fname
 void createGroup(std::string fname, std::string gname);
+void createGroup(hid_t parent, std::string gname);
 
 // Creates a dataset called dname in the existing HDF5 group and file named gname
 // and fname. The created dataset will be have dimension fdims[0] by fdims[1] by ... fdims[dim-1].
 // dim is the number of dimensions. type is the HDF5 data type name, e.g. H5T_NATIVE_DOUBLE.
 void createDataset(std::string fname, std::string gname, std::string dname, int dim, hsize_t* fdims, hid_t type);
+void createDataset(hid_t h5group, std::string dname, int dim, hsize_t* fdims, hid_t type);
 
 // Writes to the extant dataset file/group/dset. data is a pointer to a buffer
 // containing the data to be written. type is the HDF5 data type name, e.g. H5T_NATIVE_DOUBLE
 void writeSimple(std::string file, std::string group, std::string dset, void* data, hid_t type);
+void writeSimple(hid_t h5grp, std::string dset, void* data, hid_t type);
 
 // Writes to a chunk of the extant dataset file/group/dset. data is a pointer
 // to a buffer containing the data to be written. type is the HDF5 data type name,
@@ -26,6 +31,23 @@ void writeSimple(std::string file, std::string group, std::string dset, void* da
 // start is the offset of the patch in each dimension.
 void writePatch(std::string file, std::string group, std::string dset, void* data, hid_t type, int dim, int* start, int* loc_size, int* glo_size);
 
+template <typename T>
+void writeVector(std::string file, std::string group, std::string dset, std::vector<T>& vec, hid_t t) {
+  T* buffer = vec.data();
+  int ndims = 1;
+  hsize_t dims = vec.size();
+  createDataset(file, group, dset, ndims, &dims, t);
+  writeSimple(file, group, dset, buffer, t);
+}
+
+template <typename T>
+void writeVector(hid_t h5group, std::string dset, std::vector<T>& vec, hid_t t) {
+  T* buffer = vec.data();
+  int ndims = 1;
+  hsize_t dims = vec.size();
+  createDataset(h5group, dset, ndims, &dims, t);
+  writeSimple(h5group, dset, buffer, t);
+}
 // Opens and returns a handle to hdf5 file fname
 hid_t openH5File(std::string fname);
 
@@ -53,6 +75,36 @@ void getH5dims(std::string fname, std::string gname, std::string dset, hsize_t* 
 // into the buffer data
 void readSimple(hid_t h5grp, std::string dset, void* data, hid_t type);
 void readSimple(std::string fname, std::string group, std::string dset, void* data, hid_t type);
+
+template <typename T>
+void readVector(std::string file, std::string group, std::string dset, std::vector<T>& vec, hid_t t) {
+  hsize_t dim;
+  getH5dims(file, group, dset, &dim);
+
+  T* buffer = new T[dim];
+
+  readSimple(file, group, dset, buffer, t);
+  vec.resize(dim);
+  for (int i = 0; i < dim; i++) {
+    vec[i] = buffer[i];
+  }
+  delete[] buffer;
+}
+
+template <typename T>
+void readVector(hid_t h5parent, std::string dset, std::vector<T>& vec, hid_t t) {
+  hsize_t dim;
+  getH5dims(h5parent, dset, &dim);
+
+  T* buffer = new T[dim];
+
+  readSimple(h5parent, dset, buffer, t);
+  vec.resize(dim);
+  for (int i = 0; i < dim; i++) {
+    vec[i] = buffer[i];
+  }
+  delete[] buffer;
+}
 
 // Reads in a patch of data from the dataset fname/group/dset to the buffer data.
 // dim is the number of dimensions in the dataset. The patch to read has size

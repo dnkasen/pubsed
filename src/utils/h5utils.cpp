@@ -17,7 +17,12 @@ void createGroup(std::string fname ,std::string gname){
   H5Fclose(h5file);
 }
 
-void createDataset(std::string fname ,std::string gname ,std::string dname, int dim, hsize_t* fdims, hid_t type){
+void createGroup(hid_t h5parent, std::string gname){
+  hid_t h5group = H5Gcreate1(h5parent, gname.c_str(), 0);
+  H5Gclose(h5group);
+}
+
+void createDataset(std::string fname, std::string gname, std::string dname, int dim, hsize_t* fdims, hid_t type){
   hid_t h5file  = H5Fopen(fname.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
   hid_t h5group = H5Gopen1(h5file, gname.c_str());
   hid_t fspace  = H5Screate_simple(dim,fdims,NULL);
@@ -27,6 +32,14 @@ void createDataset(std::string fname ,std::string gname ,std::string dname, int 
   H5Gclose(h5group);
   H5Fclose(h5file);
 }
+
+void createDataset(hid_t h5group, std::string dname, int dim, hsize_t* fdims, hid_t type) {
+  hid_t fspace  = H5Screate_simple(dim,fdims,NULL);
+  hid_t h5dset  = H5Dcreate1(h5group, dname.c_str(), type, fspace, H5P_DEFAULT);
+  H5Sclose(fspace);
+  H5Dclose(h5dset);
+}
+
 
 void writeSimple(std::string file ,std::string group ,std::string dset, void* data, hid_t type){
   hid_t h5fil = H5Fopen(file.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
@@ -38,6 +51,14 @@ void writeSimple(std::string file ,std::string group ,std::string dset, void* da
   H5Dclose(h5dst);
   H5Gclose(h5grp);
   H5Fclose(h5fil);
+}
+
+void writeSimple(hid_t h5grp, std::string dname, void* data, hid_t type){
+  hid_t h5dst = H5Dopen1(h5grp, dname.c_str());
+
+  H5Dwrite(h5dst, type, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+
+  H5Dclose(h5dst);
 }
 
 void writePatch(std::string file ,std::string group ,std::string dset, void* data, hid_t type, int dim, int* start, int* loc_size, int* glo_size){
