@@ -192,7 +192,8 @@ class transport
 
   //propagation of particles functions
   ParticleFate propagate(particle &p, double tstop);
-  ParticleFate discrete_diffuse(particle &p, double tstop);
+  ParticleFate discrete_diffuse_IMD(particle &p, double tstop);
+  ParticleFate discrete_diffuse_DDMC(particle &p, double tstop);
   void compute_diffusion_probabilities(double dt);
 
   // scattering functions

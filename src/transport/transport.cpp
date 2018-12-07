@@ -70,7 +70,7 @@ void transport::step(double dt)
 
     // propagate particles
     if ((ddmc_zone)&&(particles[i].type == photon))
-      particles[i].fate = discrete_diffuse(particles[i],dt);
+      particles[i].fate = discrete_diffuse_DDMC(particles[i],dt);
     else
       particles[i].fate = propagate(particles[i],dt);
 
@@ -126,13 +126,13 @@ void transport::step(double dt)
   }
 
   tend = get_system_time();
-  if (verbose) cout << "# Propagated particles          (" << (tend-tstr) << " secs) \n";
+  if (verbose) cout << "# Propagated particles   (" << (tend-tstr) << " secs) \n";
 
   // normalize and MPI combine radiation tallies
   tstr = get_system_time();
   reduce_radiation(dt);
   tend = get_system_time();
-  if (verbose) cout << "# Reduced radiation (" << (tend-tstr) << " secs) \n";
+  if (verbose) cout << "# Communicated radiation (" << (tend-tstr) << " secs) \n";
 
   // solve for T_gas structure if radiative eq. applied
   if (radiative_eq)
