@@ -107,14 +107,14 @@ ParticleFate transport::discrete_diffuse_IMD(particle &p, double dt)
 // Reference: Densmore+, J. of Comput. Physics 222, 485-503 (2007)
 // This is only implemented for 1D spherical also.
 // ------------------------------------------------------
-ParticleFate transport::discrete_diffuse_DDMC(particle &p, double dt)
+ParticleFate transport::discrete_diffuse_DDMC(particle &p, double tstop)
 {
   // pointer to current zone
   zone *zone = &(grid->z[p.ind]);
   int nz = grid->n_zones;
 
   // initialize particle's timestamp
-  double dt_remaining = dt;
+  double dt_remaining = tstop - p.t;
 
   // indices of adjacent zones
   int ii = p.ind;
@@ -136,10 +136,20 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double dt)
   double sigma_ip1 = planck_mean_opacity_[ip];
   double sigma_im1 = planck_mean_opacity_[im];
 
+  double rcoords[3];
+  grid->coordinates(ip,rcoords);
+  double r_p = rcoords[0];
+  grid->coordinates(im,rcoords);
+  double r_m = rcoords[0];
+  if (ii == 0) r_m = 0;
+  double r_0 = 0.5*(r_p + r_m);
+
   // Compute left/right leakage opacity
-  double sigma_leak_left  = (2.0/3.0/dx) * (1.0 / (sigma_i*dx + sigma_im1*dxm1));
-  double sigma_leak_right = (2.0/3.0/dx) * (1.0 / (sigma_i*dx + sigma_ip1*dxp1));
+  double sigma_leak_left  = (2.0/3.0/dx) * (1.0 / (sigma_i*dx + sigma_im1*dxm1))*r_m*r_m/r_0/r_0;
+  double sigma_leak_right = (2.0/3.0/dx) * (1.0 / (sigma_i*dx + sigma_ip1*dxp1))*r_p*r_p/r_0/r_0;
   double sigma_leak_tot   = sigma_leak_left + sigma_leak_right;
+
+
 
   // While loop to sample
   while (dt_remaining > 0.0)
@@ -159,19 +169,21 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double dt)
     {
       // Tally mean intensity
       #pragma omp atomic
-      J_nu_[p.ind][0] += p.e*dt*pc::c;
+      J_nu_[p.ind][0] += p.e*dt_remaining*pc::c;
 
       // advect it
       double zone_vel[3], dvds;
       grid->get_velocity(p.ind,p.x,p.D,zone_vel, &dvds);
-      p.x[0] += zone_vel[0]*dt;
-      p.x[1] += zone_vel[1]*dt;
-      p.x[2] += zone_vel[2]*dt;
+      p.x[0] += zone_vel[0]*dt_remaining;
+      p.x[1] += zone_vel[1]*dt_remaining;
+      p.x[2] += zone_vel[2]*dt_remaining;
       p.ind = grid->get_zone(p.x);
 
       // adiabatic loss (assumes small change in volume I think)
       p.e *= (1 - dvds*dt_remaining);
 
+      // stay in this zone the remainder of the time step
+      p.t += dt_remaining;
       dt_remaining = -1.0;
     }
     else // Leak to adjacent zone
@@ -182,41 +194,46 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double dt)
       double zone_vel[3], dvds;
       grid->get_velocity(p.ind,p.x,p.D,zone_vel, &dvds);
       double dt_change = d_leak / pc::c;
+      // Tally mean intensity
+      #pragma omp atomic
+      J_nu_[p.ind][0] += p.e*dt_change*pc::c;
 
       if (xi2 <= P_leak_left)  // leak left
       {
         p.ind--;
         double rr = p.r();
-        p.x[0] -= p.x[0]/rr*dx + zone_vel[0]*dt_change;
-        p.x[1] -= p.x[1]/rr*dx + zone_vel[0]*dt_change;
-        p.x[2] -= p.x[2]/rr*dx + zone_vel[0]*dt_change;
+        p.x[0] += -p.x[0]/rr*dx + zone_vel[0]*dt_change;
+        p.x[1] += -p.x[1]/rr*dx + zone_vel[1]*dt_change;
+        p.x[2] += -p.x[2]/rr*dx + zone_vel[2]*dt_change;
       }
       else // leak right
       {
         p.ind++;
         double rr = p.r();
         p.x[0] += p.x[0]/rr*dx + zone_vel[0]*dt_change;
-        p.x[1] += p.x[1]/rr*dx + zone_vel[0]*dt_change;
-        p.x[2] += p.x[2]/rr*dx + zone_vel[0]*dt_change;
+        p.x[1] += p.x[1]/rr*dx + zone_vel[1]*dt_change;
+        p.x[2] += p.x[2]/rr*dx + zone_vel[2]*dt_change;
       }
       p.ind = grid->get_zone(p.x);
-
+      if (p.ind == -1) {return absorbed;}
+      if (p.ind == -2) {return escaped;}
+      
       // adiabatic loss (assumes small change in volume I think)
       p.e *= (1 - dvds*dt_change);
+      p.t += dt_change;
+
+
+
       dt_remaining -= dt_change;
     }
 
-    p.t += dt;
-
-    // check for escape
-    if (p.ind < 0)         {return absorbed;}
-    if (p.ind > grid->n_zones - 1)        {return escaped; }
+    // determine current zone and check for escape
+    p.ind = grid->get_zone(p.x);
+    if (p.ind == -1) {return absorbed;}
+    if (p.ind == -2) {return escaped;}
 
   }
-  // find current zone and check for escape
-  p.ind = grid->get_zone(p.x);
-  if (p.ind == -1) {return absorbed;}
-  if (p.ind == -2) {return escaped;}
+
   return stopped;
 }
 
@@ -376,8 +393,6 @@ void transport::compute_diffusion_probabilities(double dt)
     if (ip == nz) ip = i;
     int im = i-1;
     if (im < 0)   im = 0;
-
-    double sigma_p = planck_mean_opacity_[i];
 
     // diffusion probability in zone and adjacent zones
     double Dj0 = pc::c/(3.0*planck_mean_opacity_[i]);
