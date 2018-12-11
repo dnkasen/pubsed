@@ -15,7 +15,7 @@ tstel_max_delta    = 1.0
 
 -- inner source
 particles_n_initialize       = 1e5
-transport_use_ddmc           = 0
+transport_use_ddmc           = 1
 transport_ddmc_tau_threshold = 0.1
 
 -- opacity
