@@ -1,5 +1,6 @@
 #include <math.h>
 #include <gsl/gsl_rng.h>
+#include <cassert>
 #include "transport.h"
 #include "radioactive.h"
 #include "physical_constants.h"
@@ -219,7 +220,137 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double dt)
   return stopped;
 }
 
+// ------------------------------------------------------
+// Propagate a particle using the
+// Random Walk Monte Carlo approach.
+// Reference: Fleck & Canfield, J. of Comput. Physics 54, 508-523 (1984)
+// ------------------------------------------------------
+void random_direction(double dir[3], thread_RNG& rangen){
+  // double magnitude = 0;
+  // for(int i=0; i<3; i++){
+  //   dir[i] = rangen.uniform();
+  //   magnitude += dir[i]*dir[i];
+  // }
+  // magnitude = sqrt(magnitude);
+  // for(int i=0; i<3; i++) dir[i] /= magnitude;
+  double costheta = 2.*rangen.uniform() - 1.;
+  double sintheta = sqrt(1.-costheta*costheta);
+  double phi = 2.*M_PI * rangen.uniform();
+  dir[0] = sintheta * cos(phi);
+  dir[1] = sintheta * sin(phi);
+  dir[2] = costheta;
+}
+double sample_CDF(const vector<double>& CDF, const locate_array& x, const double u){
+  int index = upper_bound(CDF.begin(), CDF.end(), u) - CDF.begin();
+  assert(index<CDF.size());
+  assert(index>=0);
 
+  double x1 = x.left(index);
+  double x2 = x.right(index);
+  double P1 = index==0 ? 0 : CDF[index-1];
+  double P2 = CDF[index];
+  assert(u>=P1);
+  assert(u<=P2);
+  double result = x1 + (x2-x1)/(P2-P1) * (u-P1);
+  assert(result<=x2);
+  assert(result>=x1);
+  return result;
+}
+double interpolate_CDF(const vector<double>& CDF, const locate_array& x, const double xval){
+  int index = x.locate(xval);
+  assert(index<CDF.size());
+  assert(index>=0);
+
+  double x1 = x.left(index);
+  double x2 = x.right(index);
+  assert(xval>=x1);
+  assert(xval<=x2);
+  double P1 = index==0 ? 0 : CDF[index-1];
+  double P2 = CDF[index];
+  double result = P1 + (P2-P1)/(x2-x1) * (xval-x1);
+  assert(result>=P1);
+  assert(result<=P2);
+  return result;
+}
+ParticleFate transport::discrete_diffuse_RandomWalk(particle &p, double dt)
+{
+  int stop = 0;
+
+  double dx;
+
+  double t_stop = p.t + dt;
+  
+  // set this zone
+  while (!stop)
+  {
+    double dt_remaining = t_stop - p.t;
+    assert(dt_remaining > 0);
+    
+    // find current zone and check for escape
+    p.ind = grid->get_zone(p.x);
+    grid->get_zone_size(p.ind,&dx);
+    if (p.ind == -1) {return absorbed;}
+    if (p.ind == -2) {return escaped;}
+
+    // total probability of diffusing to the edge of the sphere
+    double D = pc::c/(3.0*planck_mean_opacity_[p.ind]) * 3./4.;
+    double X = dt_remaining*D/(dx*dx);
+    
+    double dt_step, R_diffuse;
+    double u = rangen.uniform();
+    double sampled_X = sample_CDF(randomwalk_Pescape, randomwalk_x, u);
+    if (sampled_X < X){ // particle reaches surface before census
+      // use sampled X to determine in-flight time
+      R_diffuse = dx;
+      dt_step = sampled_X*dx*dx/D;
+      stop = 0;
+      assert(p.t + dt_step <= t_stop + dt*1e-6);
+    }
+    else{ // particle still in sphere at census
+      // use sampled X to determine travel displacement
+      dt_step = t_stop - p.t;
+      R_diffuse = sqrt((dt_step*D) / sampled_X);
+      assert(R_diffuse <= dx);
+      stop = 1;
+    }
+    p.t += dt_step;
+    if(p.t >= t_stop) stop = 1;
+    assert(R_diffuse <= dx);
+    
+    // add in tally of absorbed and total radiation energy
+    //#pragma omp atomic
+    //zone->e_abs += p.e*ddmc_P_abs_[p.ind];
+    //zone->e_rad += p.e*ddmc_P_stay_[p.ind];
+    #pragma omp atomic
+    J_nu_[p.ind][0] += p.e*dt_step*pc::c;
+
+    // move the particle a distance R_diffuse
+    double diffuse_dir[3];
+    random_direction(diffuse_dir, rangen);
+    for(int i=0; i<3; i++) p.x[i] += diffuse_dir[i] * R_diffuse;
+
+    // get outgoing direction
+    do{
+      random_direction(p.D, rangen);
+    } while (p.D[0]*diffuse_dir[0] + p.D[1]*diffuse_dir[1] + p.D[2]*diffuse_dir[2] < 0);
+
+    // advect it
+    double zone_vel[3], dvds;
+    grid->get_velocity(p.ind,p.x,p.D,zone_vel, &dvds);
+    p.x[0] += zone_vel[0]*dt_step;
+    p.x[1] += zone_vel[1]*dt_step;
+    p.x[2] += zone_vel[2]*dt_step;
+    
+    // adiabatic loss (assumes small change in volume I think)
+    p.e *= (1 - dvds*dt);
+  }
+
+  // find current zone and check for escape
+  p.ind = grid->get_zone(p.x);
+  if (p.ind == -1) {return absorbed;}
+  if (p.ind == -2) {return escaped;}
+  return stopped;  
+}
 
 
 // ------------------------------------------------------
