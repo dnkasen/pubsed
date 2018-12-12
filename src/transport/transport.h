@@ -229,6 +229,9 @@ class transport
     time_core_ = 0;
   }
 
+  // destructor
+  ~transport();
+
   //----- functions ---------------
 
   // set things up

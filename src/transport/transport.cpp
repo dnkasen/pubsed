@@ -400,3 +400,14 @@ ParticleFate transport::propagate_monte_carlo(particle &p, double tstop)
 
   return fate;
 }
+
+transport::~transport() {
+  if (src_MPI_block)
+    delete[] src_MPI_block;
+  if (src_MPI_zones)
+    delete[] src_MPI_zones;
+  if (dst_MPI_block)
+    delete[] dst_MPI_block;
+  if (dst_MPI_zones)
+    delete[] dst_MPI_zones;
+}

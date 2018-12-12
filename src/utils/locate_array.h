@@ -4,6 +4,7 @@
 #include <vector>
 #include <math.h>
 #include <limits>
+#include <iostream>
 
 class locate_array {
 
