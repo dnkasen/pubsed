@@ -194,6 +194,7 @@ class transport
   ParticleFate discrete_diffuse_IMD(particle &p, double tstop);
   ParticleFate discrete_diffuse_DDMC(particle &p, double tstop);
   ParticleFate discrete_diffuse_RandomWalk(particle &p, double tstop);
+  void setup_RandomWalk();
   void compute_diffusion_probabilities(double dt);
   int clean_up_particle_vector();
 

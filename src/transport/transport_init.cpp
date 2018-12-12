@@ -217,21 +217,24 @@ void transport::init(ParameterReader* par, grid_general *g)
 
  // ddmc parameters
  use_ddmc_ = params_->getScalar<int>("transport_use_ddmc");
- ddmc_tau_ = params_->getScalar<double>("transport_ddmc_tau_threshold");
  if (use_ddmc_)
  {
+   ddmc_tau_ = params_->getScalar<double>("transport_ddmc_tau_threshold");
    ddmc_P_up_.resize(grid->n_zones);
    ddmc_P_dn_.resize(grid->n_zones);
    ddmc_P_adv_.resize(grid->n_zones);
    ddmc_P_abs_.resize(grid->n_zones);
    ddmc_P_stay_.resize(grid->n_zones);
    ddmc_use_in_zone_.resize(grid->n_zones);
+
+   if(use_ddmc_ == 3)
+     setup_RandomWalk();
+
+   if(verbose){
+     std::cout << "# Using diffusion method "<<use_ddmc_<< " with threshold tau = ";
+     std::cout << ddmc_tau_ << std::endl;
+   }
  }
- if ((use_ddmc_)&&(verbose))
- {
-  std::cout << "# Using DDMC with threshold tau = ";
-  std::cout << ddmc_tau_ << std::endl;
-}
 
   // allocate space for emission distribution function across zones
   zone_emission_cdf_.resize(grid->n_zones);
@@ -252,36 +255,6 @@ void transport::init(ParameterReader* par, grid_general *g)
   compton_scatter_photons_ = params_->getScalar<int>("opacity_compton_scatter_photons");
   if (compton_scatter_photons_)
     setup_MB_cdf(0.,5.,512); // in non-dimensional velocity units
-
-  //============//
-  // RANDOMWALK //
-  //============//
-  // calculate randomwalk diffusion time probability array
-  int sumN = params_->getScalar<int>("randomwalk_sumN");
-  int npoints = params_->getScalar<int>("randomwalk_npoints");
-  double randomwalk_max_x = params_->getScalar<double>("randomwalk_max_x");
-  
-  randomwalk_x.init(0, randomwalk_max_x, npoints);
-  randomwalk_Pescape.resize(npoints);
-  
-  #pragma omp parallel for
-  for(int i=1; i<=npoints; i++){
-    double x = randomwalk_x.right(i);
-    
-    double sum = 0;
-    for(int n=1; n<=sumN; n++){
-      double tmp = exp(-x * (n*pc::pi)*(n*pc::pi));
-      if(n%2 == 0) tmp *= -1;
-      sum += tmp;
-    }
-    
-    randomwalk_Pescape[i] = 1.0-2.*sum;
-  }
-
-  // normalize the results
-  for(int i=0; i<npoints; i++)
-    randomwalk_Pescape[i] /= randomwalk_Pescape[npoints-1];
-
 }
 
 
