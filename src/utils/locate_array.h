@@ -109,7 +109,7 @@ T log_interpolate_between(const double xval, const int i1, const int i2, const s
 template<typename T>
 T value_at_extrapolate(const double xval, const std::vector<T>& y) const{
 
-  int ind = locate(xval);
+  int ind = locate_within_bounds(xval);
   return y[ind];
   /*
   int i1, i2;
@@ -147,7 +147,7 @@ T value_at_extrapolate(const double xval, const std::vector<T>& y) const{
 template<typename T>
 T value_at(const double xval, const std::vector<T>& y) const
 {
-  int ind = locate(xval);
+  int ind = locate_within_bounds(xval);
   return value_at(xval,y,ind);
 }
 
