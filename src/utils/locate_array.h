@@ -154,6 +154,10 @@ T value_at(const double xval, const std::vector<T>& y) const
 template<typename T>
 T value_at(const double xval, const std::vector<T>& y,int ind) const
 {
+  if ((ind >= y.size()) || (ind < 0)) {
+    std::cerr << "index out of bounds in value_at. Index " << ind << " for vector length " << y.size() << std::endl;
+    exit(6);
+  }
   return y[ind];
   /*
   int i1, i2;
