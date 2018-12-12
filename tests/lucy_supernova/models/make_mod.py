@@ -143,7 +143,7 @@ for i in range(nx):
 
 			vxx[i,j,k] = vx[i];
 			vxy[i,j,k] = vy[j];
-			vxz[i,j,k] = vz[j];
+			vxz[i,j,k] = vz[k];
 
 			# get composition
 			m_enc = 4.0*pi/3.0*(vr*texp)**3.0*rho0/m_sun	

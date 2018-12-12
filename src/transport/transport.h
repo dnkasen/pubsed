@@ -141,6 +141,7 @@ class transport
   vector<real> ddmc_P_adv_;
   vector<real> ddmc_P_abs_;
   vector<real> ddmc_P_stay_;
+  vector<real> ddmc_use_in_zone_;
   int use_ddmc_;
   double ddmc_tau_;
 
@@ -149,7 +150,6 @@ class transport
   // line mean intensity
   vector< vector<real> > line_J_;
   double line_velocity_width_;
-
 
   // setup functions
   void setup_core_emission();
@@ -170,9 +170,7 @@ class transport
   void   emit_thermal(double dt);
   void   emit_heating_source(double dt);
   void   emit_from_pointsoures(double dt);
-
   void   create_isotropic_particle(int,PType,double,double);
-
   void   initialize_particles(int);
   void sample_photon_frequency(particle*);
 
@@ -190,8 +188,11 @@ class transport
 
   //propagation of particles functions
   ParticleFate propagate(particle &p, double tstop);
-  ParticleFate discrete_diffuse(particle &p, double tstop);
+  ParticleFate propagate_monte_carlo(particle &p, double dt);
+  ParticleFate discrete_diffuse_IMD(particle &p, double tstop);
+  ParticleFate discrete_diffuse_DDMC(particle &p, double tstop);
   void compute_diffusion_probabilities(double dt);
+  int clean_up_particle_vector();
 
   // scattering functions
   ParticleFate do_scatter(particle*, double);
@@ -212,6 +213,8 @@ class transport
   double temp_brent_method(int);
 
  public:
+
+  int write_levels;
 
 
   void set_last_iteration_flag()
@@ -242,7 +245,8 @@ class transport
   void output_spectrum(int);
 
   // print out functions
-  void write_radiation_file(int, int);
+  void write_levels_to_plotfile(int);
+  void write_radiation_file(int);
   void wipe_spectra();
 
 };

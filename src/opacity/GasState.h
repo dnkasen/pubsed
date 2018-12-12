@@ -5,6 +5,8 @@
 #include "AtomicSpecies.h"
 #include "locate_array.h"
 #include "sedona.h"
+#include "hdf5.h"
+#include "hdf5_hl.h"
 
 class GasState
 {
@@ -212,6 +214,7 @@ class GasState
 
   void print_properties();
   void print();
+  void write_levels(int iz);
 };
 
 

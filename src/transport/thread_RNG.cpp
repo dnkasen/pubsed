@@ -1,22 +1,26 @@
-#pragma warning disable 161
+#include "sedona.h"
 #include "thread_RNG.h"
 #include <ctime>
+
 #include <mpi.h>
+
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 //-----------------------------------------------------------------
 // initialize the RNG system
 //-----------------------------------------------------------------
 // ASSUMES the number of threads remains constant so it only has to be initialized once
 void thread_RNG::init(){
-  int my_mpiID;
+  int my_mpiID, mpi_nranks;
   MPI_Comm_rank(MPI_COMM_WORLD, &my_mpiID);
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_nranks);
 
   // set up the stuff that creates the random number generators
   const gsl_rng_type* TypeR = gsl_rng_default;
   gsl_rng_env_setup();
   int nthreads;
-  
   #pragma omp parallel
   #pragma omp single
   {
@@ -27,15 +31,22 @@ void thread_RNG::init(){
     #endif
   }
   if(my_mpiID==0) printf("# Using %d threads on each MPI rank.\n", nthreads);
-    
-  // assign a unique RNG to each thread
   generators.resize(nthreads);
-  for(int i=0; i<nthreads; i++){
-    if(i==0)
-      gsl_rng_default_seed = (unsigned int)time(NULL);
-    else
-      gsl_rng_default_seed = gsl_rng_get(generators[0]);
-    generators[i] = gsl_rng_alloc (TypeR);
+
+  // set generator for rank 0 thread 0
+  unsigned long int seed = (unsigned long int)time(NULL);
+  generators[0] = gsl_rng_alloc(TypeR);
+  gsl_rng_set(generators[0], seed);
+
+  // assign unique RNG to each rank.
+  for(int i=0; i<my_mpiID; i++) seed = gsl_rng_get(generators[0]);
+  gsl_rng_set(generators[0], seed);
+
+  // assign a unique RNG to each thread
+  for(int thread=1; thread<nthreads; thread++){
+    seed = gsl_rng_get(generators[0]);
+    generators[thread] = gsl_rng_alloc(TypeR);
+    gsl_rng_set(generators[thread], seed);
   }
 }
 

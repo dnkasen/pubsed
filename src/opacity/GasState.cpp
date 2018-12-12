@@ -133,7 +133,7 @@ int GasState::read_fuzzfile(std::string fuzzfile)
 
   // check if fuzzfile exists
   FILE *fin = fopen(fuzzfile.c_str(),"r");
-  if ((fin == NULL)&&(verbose_))
+  if ((fin == NULL)&&(verbose_)&&(fuzzfile != ""))
     std::cerr << "# Warning: Can't open atomic data fuzzfile: "
     << fuzzfile << std::endl;
   if (fin == NULL) return 0;
@@ -405,4 +405,46 @@ void GasState::print()
     printf("%4d %12.4e %12.4e\n",elem_Z[i],mass_frac[i],atoms[i].get_ion_frac());
   //for (size_t i=0;i<elem_Z.size();++i)
   //  atoms[i].print();
+}
+
+
+void GasState::write_levels(int iz)
+{
+  char zonefile[1000];
+  sprintf(zonefile,"zone_%d.h5",iz);
+  hid_t file_id = H5Fcreate(zonefile,H5F_ACC_TRUNC, H5P_DEFAULT,  H5P_DEFAULT);
+
+  const int RANK = 1;
+
+  for(size_t j=0;j<atoms.size();j++)
+  {
+    char afile[100];
+    int this_Z = elem_Z[j];
+    sprintf(afile,"Z_%d",this_Z);
+    hid_t atom_id = H5Gcreate1(file_id,afile,0);
+
+
+    float* tmp_ion = new float[elem_Z[j]+1];
+    hsize_t dims_ion[RANK]={(hsize_t)elem_Z[j]+1};
+    for(int k=0;k<elem_Z[j]+1;k++)
+      tmp_ion[k] = get_ionization_fraction(j,k);
+    H5LTmake_dataset(atom_id,"ion_fraction",RANK,dims_ion,H5T_NATIVE_FLOAT,tmp_ion);
+
+    int this_nl = atoms[j].n_levels_;
+    float* tmp_level = new float[this_nl];
+    hsize_t dims_level[RANK]={(hsize_t)this_nl};
+    for(int k=0;k<this_nl;k++)
+      tmp_level[k] = get_level_fraction(j,k);
+    H5LTmake_dataset(atom_id,"level_fraction",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
+
+    for(int k=0;k<this_nl;k++)
+      tmp_level[k] = get_level_departure(j,k);
+    H5LTmake_dataset(atom_id,"level_departure",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
+
+    H5Gclose(atom_id);
+    delete[] tmp_level;
+    delete[] tmp_ion;
+  }
+  H5Fclose(file_id);
+
 }

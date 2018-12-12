@@ -230,6 +230,10 @@ int main(int argc, char **argv)
     // do transport step
     if (use_transport)
     {
+      mcarlo.write_levels = 0;
+      if(((t>=next_write_out)||(steady_iterate))&&write_levels)
+        mcarlo.write_levels = 1;
+
       mcarlo.step(dt);
       // print out spectrum if an iterative calc
       if (steady_iterate) mcarlo.output_spectrum(it);
@@ -247,8 +251,10 @@ int main(int argc, char **argv)
         cout << "# writing plot file " << i_write + 1;
         cout << " at time " << t_write << endl;
         grid->write_plotfile(i_write+1,t_write,write_mass_fractions);
-        if ((use_transport)&&(write_radiation))
-          mcarlo.write_radiation_file(i_write+1, write_levels);
+        if ((use_transport)&&(write_radiation)){
+          mcarlo.write_radiation_file(i_write+1);
+          if(write_levels) mcarlo.write_levels_to_plotfile(i_write+1);
+        }
       }
 
       //write spectrum
