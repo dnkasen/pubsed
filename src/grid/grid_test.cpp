@@ -14,7 +14,7 @@ void grid_general::testCheckpointZones() {
 
   MPI_Barrier(MPI_COMM_WORLD);
 
-  readCheckpointZones("test_zones.h5");
+  readCheckpointZones("test_zones.h5", true);
 
   std::cerr << "read checkpoint zones" << std::endl;
 
@@ -143,7 +143,7 @@ void grid_general::testCheckpointGeneralGrid() {
 
   MPI_Barrier(MPI_COMM_WORLD);
 
-  readCheckpointGrid("grid.h5");
+  readCheckpointGrid("grid.h5", true);
 
   for (int rank = 0; rank < nproc; rank++) {
     std::cerr << "rank " << my_rank << std::endl;

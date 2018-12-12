@@ -253,13 +253,14 @@ class transport
   void write_radiation_file(int);
   void wipe_spectra();
 
-  void checkpoint_particles(std::string fname);
+  void writeCheckpointParticles(std::string fname);
   void writeParticleProp(std::string fname, std::string fieldname, int total_particles, int offset);
 
-  void readCheckpointedParticles(std::string fname);
+  void readCheckpointParticles(std::string fname, bool test);
   void readParticleProp(std::string fname, std::string fieldname, int total_particles, int offset);
 
   void testCheckpointParticles();
+  void testCheckpointSpectrum();
 };
 
 

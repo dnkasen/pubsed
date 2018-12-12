@@ -67,6 +67,7 @@ void transport::init(ParameterReader* par, grid_general *g)
 //   " " << my_zone_stop_ - my_zone_start_ << "\n";
 
   // setup and seed random number generator
+  // TODO; deal with re-initializing this in restart case. for now just leave it
   rangen.init();
 
   // read relevant parameters
@@ -94,14 +95,18 @@ void transport::init(ParameterReader* par, grid_general *g)
      std::cout << "# frequency grid: n = " << nu_grid.size() << "\n";
   }
 
-  // intialize output spectrum
-  std::vector<double>stg = params_->getVector<double>("spectrum_time_grid");
-  std::vector<double>sng = params_->getVector<double>("spectrum_nu_grid");
-  int nmu  = params_->getScalar<int>("spectrum_n_mu");
-  int nphi = params_->getScalar<int>("spectrum_n_phi");
-  optical_spectrum.init(stg,sng,nmu,nphi);
-  std::vector<double>gng = params_->getVector<double>("gamma_nu_grid");
-  gamma_spectrum.init(stg,sng,nmu,nphi);
+  if (params_->getScalar<string>("restart"))
+    optical_spectrum.readCheckpointSpectrum(params_->getScalar<string>("checkpoint_file_name"), "optical_spectrum");
+  else {
+    // intialize output spectrum
+    std::vector<double>stg = params_->getVector<double>("spectrum_time_grid");
+    std::vector<double>sng = params_->getVector<double>("spectrum_nu_grid");
+    int nmu  = params_->getScalar<int>("spectrum_n_mu");
+    int nphi = params_->getScalar<int>("spectrum_n_phi");
+    optical_spectrum.init(stg,sng,nmu,nphi);
+    std::vector<double>gng = params_->getVector<double>("gamma_nu_grid");
+    gamma_spectrum.init(stg,sng,nmu,nphi);
+  }
 
   // setup the GasState class
   std::string atomdata = params_->getScalar<string>("data_atomic_file");
@@ -231,7 +236,7 @@ void transport::init(ParameterReader* par, grid_general *g)
  {
   std::cout << "# Using DDMC with threshold tau = ";
   std::cout << ddmc_tau_ << std::endl;
-}
+  }
 
   // allocate space for emission distribution function across zones
   zone_emission_cdf_.resize(grid->n_zones);
@@ -246,8 +251,12 @@ void transport::init(ParameterReader* par, grid_general *g)
   t_now_ = g->t_now;
 
   // initialize particles
-  int n_parts = params_->getScalar<int>("particles_n_initialize");
-  initialize_particles(n_parts);
+  if (params_->getScalar<string>("restart"))
+    readCheckpointParticles(params_->getScalar<string>("checkpoint_file_name"));
+  else {
+    int n_parts = params_->getScalar<int>("particles_n_initialize");
+    initialize_particles(n_parts);
+  }
 
   compton_scatter_photons_ = params_->getScalar<int>("opacity_compton_scatter_photons");
   if (compton_scatter_photons_)

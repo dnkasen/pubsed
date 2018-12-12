@@ -72,6 +72,14 @@ int main(int argc, char **argv)
   if( argc > 1 ) param_file = std::string( argv[ 1 ] );
   ParameterReader params(param_file,verbose);
 
+  // Handle restart bookkeeping
+  int do_restart = params.getScalar<int>("do_restart");
+  int do_checkpoint = params.getScalar<int>("do_checkpoint");
+  if (do_restart)
+    std::string restart_file = params.getScalar<string>("restart_file");
+  if (do_checkpoint)
+    std::string checkpoint_file = params.getScalar<string>("checkpoint_file");
+// TODO: complain if old and new code versions aren't the same.
 
   //---------------------------------------------------------------------
   // SET UP THE GRID
@@ -136,8 +144,11 @@ int main(int argc, char **argv)
       }
     }
     int force_rproc  = params.getScalar<int>("force_rprocess_heating");
-    hydro->evolve_to_start(t_start, force_rproc);
-    grid->t_now = t_start;
+    // Don't evolve to start if this is a restart.
+    if (not do_restart) {
+      hydro->evolve_to_start(t_start, force_rproc);
+      grid->t_now = t_start;
+    }
   }
 
   //---------------------------------------------------------------------
@@ -159,6 +170,9 @@ int main(int argc, char **argv)
   double dt_max  = params.getScalar<double>("tstep_max_dt");
   double dt_min  = params.getScalar<double>("tstep_min_dt");
   double dt_del  = params.getScalar<double>("tstep_max_delta");
+  // TODO: read in last time step information if restart. Might need a sedona class to
+  // do that in a non-annoying way, but that's for another time/branch
+  
 
   // check for steady state iterative calculation
   // or a time dependent calculation
@@ -190,7 +204,8 @@ int main(int argc, char **argv)
   std::cout << std::scientific;
   std::cout << std::setprecision(2);
 
-  // loop over time/iterations
+  // loop over time/iterations. dt at iteration i doesn't depend on dt at
+  // iteration i + 1. Not currently checkpointed, but may need to be later.
   double dt, t = grid->t_now;
   for(int it=1; it<=n_steps; it++,t+=dt)
   {
@@ -259,8 +274,16 @@ int main(int argc, char **argv)
 
       //write spectrum
       if (use_transport)
-        mcarlo.output_spectrum(i_write+1);
-
+        mcarlo.output_spectrum(i_write+1)
+          
+      if (do_checkpoint) {
+        grid->writeCheckpointGrid(checkpoint_file);
+        grid->writeCheckpointZones(checkpoint_file);
+        mcarlo.writeCheckpointParticles(checkpoint_file);
+        mcarlo.optical_spectrum.writeCheckpoint(checkpoint_file, "optical spectrum");
+        mcarlo.gamma_spectrum.writeCheckpoint(checkpoint_file, "gamma spectrum");
+      }
+        
       // determine next write out
       if ((write_out_log > 0)&&(i_write > 0))
         next_write_out = next_write_out*(1.0 + write_out_log);

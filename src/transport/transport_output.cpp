@@ -242,7 +242,7 @@ void transport::write_radiation_file(int iw)
   delete[] tmp_array;
 }
 
-void transport::checkpoint_particles(std::string fname) {
+void transport::writeCheckpointParticles(std::string fname) {
   // Figures out what every rank's offset is going to be in the big particle list
   int my_n_particles = n_particles();
   int my_offset, global_n_particles_total;
@@ -411,7 +411,7 @@ void transport::writeParticleProp(std::string fname, std::string fieldname, int 
   }
 }
 
-void transport::readCheckpointedParticles(std::string fname) {
+void transport::readCheckpointedParticles(std::string fname, bool test = false) {
   /* Get number of particles that are stored in the file */
   hsize_t global_n_particles_total;
   for (int rank = 0; rank < MPI_nprocs; rank++) {
@@ -459,6 +459,10 @@ void transport::readCheckpointedParticles(std::string fname) {
       readParticleProp(fname, "dshift", global_n_particles_total, my_offset);
       readParticleProp(fname, "dvds", global_n_particles_total, my_offset);
       readParticleProp(fname, "fate", global_n_particles_total, my_offset);
+
+      if (not test) {
+        particles = particles_new;
+      }
     }
     MPI_Barrier(MPI_COMM_WORLD);
   }

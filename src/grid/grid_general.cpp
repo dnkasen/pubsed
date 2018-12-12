@@ -13,8 +13,11 @@ void grid_general::init(ParameterReader* params)
   MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
   MPI_Comm_size( MPI_COMM_WORLD, &nproc );
 
-	// read the model file or fill in custom model
-	read_model_file(params);
+  // If it's a restart, restart the grid. Otherwise read in the model file
+  if (params->getScalar<int>("restart"))
+    restartGrid(params);
+  else
+	  read_model_file(params);
 
 	// complain if the grid is obviously not right
 	if(z.size()==0)
@@ -217,7 +220,7 @@ void grid_general::writeVectorZoneProp(std::string fname, std::string fieldname)
   writeSimple(fname, "zones", fieldname, buffer, t);
 }
 
-void grid_general::readCheckpointZones(std::string fname) {
+void grid_general::readCheckpointZones(std::string fname, bool test = false) {
   /* To avoid doing extra communication, each rank will read in its own grid data. */
   for (int rank = 0; rank < nproc; rank++) {
     if (my_rank == rank) {
@@ -253,6 +256,10 @@ void grid_general::readCheckpointZones(std::string fname) {
       readScalarZoneProp(fname, "P23");
       readScalarZoneProp(fname, "P33");
       readVectorZoneProp(fname, "X_gas");
+
+      if (not test) {
+        z = z_new;
+      }
     }
     MPI_Barrier(MPI_COMM_WORLD);
   }
@@ -380,12 +387,19 @@ void grid_general::writeCheckpointGeneralGrid(std::string fname) {
 
 }
 
-void grid_general::readCheckpointGeneralGrid(std::string fname) {
+void grid_general::readCheckpointGeneralGrid(std::string fname, bool test = false) {
   readSimple(fname, "grid", "t_now", &t_now_new, H5T_NATIVE_DOUBLE);
   readSimple(fname, "grid", "n_zones", &n_zones_new, H5T_NATIVE_INT);
   readSimple(fname, "grid", "n_elems", &n_elems_new, H5T_NATIVE_INT);
   readVector(fname, "grid", "elems_Z", elems_Z_new, H5T_NATIVE_INT);
   readVector(fname, "grid", "elems_A", elems_A_new, H5T_NATIVE_INT);
+  if (not test) {
+    t_now = t_now_new;
+    n_zones = n_zones_new;
+    n_elems = n_elems_new;
+    elems_A = elems_A_new;
+    elems_Z = elems_Z_new;
+  }
 }
 
 void grid_general::write_integrated_quantities(int iw, double tt)

@@ -76,6 +76,23 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
   infile.close();
 }
     
+void grid_1D_sphere::restartGrid(ParameterReader* params) {
+  string restart_file = params->getScalar<string>("model_file");
+
+  // geometry of model
+  if(params.getScalar<string>("grid_type") != "1D_sphere") 
+  {
+    if (verbose) cerr << "Err: grid_type param disagrees with the model file" << endl;
+    exit(4);
+  }
+  if (verbose) {
+    cout << "# model file = " << model_file << "\n";
+    cout << "# Model is a 1D_sphere\n"; }
+
+  string checkpoint_file_name = params->getScalar<string>("checkpoint_file");
+  readCheckpointGrid(checkpoint_file_name);
+  readCheckpointZones(checkpoint_file_name);
+}
 
 
 void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
@@ -473,14 +490,19 @@ void grid_1D_sphere::writeCheckpointGrid(std::string fname) {
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
-void grid_1D_sphere::readCheckpointGrid(std::string fname) {
+void grid_1D_sphere::readCheckpointGrid(std::string fname, bool test = false) {
   for (int rank = 0; rank < nproc; rank++) {
     if (my_rank == rank) {
-      readCheckpointGeneralGrid(fname);
+      readCheckpointGeneralGrid(fname, test);
       /* Specific to 1D */
       readSimple(fname, "grid", "v_inner", &v_inner_new, H5T_NATIVE_DOUBLE);
       r_out_new.readCheckpoint(fname, "grid", "r_out");
       readVector(fname, "grid", "vol", vol_new, H5T_NATIVE_DOUBLE);
+      if (not test) {
+        v_inner_ = v_inner_new;
+        r_out = r_out_new;
+        vol = vol_new;
+      }
     }
     MPI_Barrier(MPI_COMM_WORLD);
   }

@@ -59,6 +59,8 @@ public:
   void readCheckpointGrid(std::string fname);
   void testCheckpointGrid();
 
+  void restartGrid(ParameterReader* params);
+
   //****** function overides
 
   virtual void get_zone_size(int i, double *delta)

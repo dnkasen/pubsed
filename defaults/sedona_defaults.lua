@@ -98,6 +98,12 @@ line_velocity_width         = 0
 line_profile                = "voigt"
 line_x_extent               = 100
 
+-- checkpoint/restart parameters
+do_restart                     = 0
+do_checkpoint               = 0
+restart_file                = "chk.h5"
+checkpoint_file             = "chk_out.h5"
+
 -- output spectrum information
 spectrum_name      = "spectrum";
 spectrum_time_grid = {0,1,1}

@@ -24,7 +24,7 @@ void transport::testCheckpointParticles() {
 
   MPI_Barrier(MPI_COMM_WORLD);
 
-  readCheckpointedParticles("test_particles.h5");
+  readCheckpointedParticles("test_particles.h5", true);
 
   for (int rank = 0; rank < MPI_nprocs; rank++) {
     if (rank == MPI_myID) {
@@ -96,4 +96,17 @@ void transport::testCheckpointParticles() {
     MPI_Barrier(MPI_COMM_WORLD);
   }
   std::cerr << "Partices written out and back in correctly on rank " << MPI_myID << std::endl;
+}
+
+void transport::testCheckpointSpectrum() {
+  optical_spectrum.writeCheckpointSpectrum("spectrum_test.h5", "optical_spectrum");
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  optical_spectrum_new.readCheckpointSpectrum("spectrum_test.h5", "optical_spectrum");
+
+  if (not optical_spectrum.is_equal(optical_spectrum_new)) {
+    std::cerr << "optical spectra not equal" << std::endl;
+    exit(3);
+  }
 }
