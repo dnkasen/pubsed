@@ -185,8 +185,7 @@ int AtomicSpecies::initialize(std::string fname, int z, locate_array ng, int &le
     lines_[i].f_lu = lam_cm*lam_cm*A*gu/gl/(8*pc::pi*pc::sigma_tot);
 
     // find index of bin in deal
-    lines_[i].bin = nu_grid_.locate(nu);
-    if (lines_[i].bin == nu_grid_.size()) lines_[i].bin = nu_grid_.size() - 1;
+    lines_[i].bin = nu_grid_.locate_within_bounds(nu);
 
     // default init tau and beta
     lines_[i].tau  = 0;
