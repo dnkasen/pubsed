@@ -201,8 +201,18 @@ ParticleFate transport::propagate(particle &p, double dt)
       if ((ddmc_use_in_zone_[p.ind])&&(p.type == photon))
         in_ddmc_zone = 1;
 
-    if (in_ddmc_zone)
-        fate = discrete_diffuse_DDMC(p, tstop);
+    if (in_ddmc_zone){
+      if(use_ddmc_ == 1)
+	fate = discrete_diffuse_IMD(p, tstop);
+      else if(use_ddmc_ == 2)
+	fate = discrete_diffuse_DDMC(p, tstop);
+      else if(use_ddmc_ == 3)
+	fate = discrete_diffuse_RandomWalk(p, tstop);
+      else{
+	cout << "Invalid diffusion method" << endl;
+	exit(1);
+      }
+    }
     else
         fate = propagate_monte_carlo(p, tstop);
   }

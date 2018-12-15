@@ -144,6 +144,8 @@ class transport
   vector<real> ddmc_use_in_zone_;
   int use_ddmc_;
   double ddmc_tau_;
+  locate_array randomwalk_x;
+  vector<double> randomwalk_Pescape;
 
   // the radiation quantities in the zone
   vector <real> e_rad;
@@ -191,6 +193,8 @@ class transport
   ParticleFate propagate_monte_carlo(particle &p, double dt);
   ParticleFate discrete_diffuse_IMD(particle &p, double tstop);
   ParticleFate discrete_diffuse_DDMC(particle &p, double tstop);
+  ParticleFate discrete_diffuse_RandomWalk(particle &p, double tstop);
+  void setup_RandomWalk();
   void compute_diffusion_probabilities(double dt);
   int clean_up_particle_vector();
 
