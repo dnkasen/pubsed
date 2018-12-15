@@ -221,7 +221,7 @@ int grid_1D_sphere::get_zone(const double *x) const
   if(r >= r_out[r_out.size()-1] ) return -2;
 
   // find in zone array using stl algorithm up_bound and subtracting iterators
-  int ind = r_out.locate(r);
+  int ind = r_out.locate_within_bounds(r);
   return ind;
 }
 

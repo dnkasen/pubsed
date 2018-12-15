@@ -126,6 +126,9 @@ public:
   int set_use_nlte();
   int read_fuzzfile(std::string);
 
+  // Destructor
+  ~AtomicSpecies();
+
   // solve state
   void calculate_radiative_rates(std::vector<real> J_nu);
   int  solve_state(double ne);
