@@ -18,11 +18,11 @@ private:
   // store location of the outer edge of the zone.
   locate_array r_out;
   // velocity at inner boundary
-  double v_inner_; 
+  double v_inner_;
 
   // store volumes explicitly
   std::vector<double> vol;
-  
+
   // functions for reading in files
   void read_SNR_file(std::ifstream &, int, int);
 
@@ -49,8 +49,17 @@ public:
 
   int get_next_zone(const double *x, const double *D, int, double, double *dist) const;
 
-  void    coordinates(int i,double r[3]) {
+  void  coordinates(int i,double r[3]) {
     r[0] = r_out[i]; r[1] = 0; r[2] = 0;}
+
+  //****** function overides
+
+  virtual void get_zone_size(int i, double *delta)
+  {
+    *delta = r_out.delta(i);
+  }
+
+
 
 };
 

@@ -27,6 +27,8 @@ class particle
   double   dshift;        // doppler shift
   double   dvds;          // directional velocity derivative 
 
+  ParticleFate fate;
+
   double r() 
   { return sqrt(x[0]*x[0] + x[1]*x[1] + x[2]*x[2]); }
 

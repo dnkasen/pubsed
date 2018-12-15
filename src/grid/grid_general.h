@@ -101,6 +101,10 @@ class grid_general
   (const std::vector<double>, double, const std::vector<double>, double)
   { }
 
+  virtual void get_zone_size(int, double*)
+  {
+  }
+
 
 };
 

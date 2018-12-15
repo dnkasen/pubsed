@@ -16,6 +16,8 @@
 #include "physical_constants.h"
 
 using std::cout;
+using std::cerr;
+using std::endl;
 namespace pc = physical_constants;
 
 //------------------------------------------------------------
@@ -29,6 +31,7 @@ void transport::step(double dt)
   double tend,tstr;
   double get_system_time(void);
 
+  // calculate the opacities
   tstr = get_system_time();
   set_opacity();
   tend = get_system_time();
@@ -41,6 +44,8 @@ void transport::step(double dt)
   tend = get_system_time();
   if (verbose) cout << "# Communicated opacities (" << (tend-tstr) << " secs) \n";
 
+  if (use_ddmc_) compute_diffusion_probabilities(dt);
+
   // clear the tallies of the radiation quantities in each zone
   wipe_radiation();
 
@@ -52,20 +57,34 @@ void transport::step(double dt)
 
   // Propagate the particles
   int n_active = particles.size();
-  int n_escape = 0;
-  std::list<particle>::iterator pIter = particles.begin();
-  while (pIter != particles.end())
+  int n_particles = particles.size();
+
+  #pragma omp parallel for schedule(guided)
+  for(int i=0; i<n_particles; i++)
   {
-    ParticleFate fate = propagate(*pIter,dt);
-    if (fate == escaped) n_escape++;
-    if ((fate == escaped)||(fate == absorbed)) pIter = particles.erase(pIter);
-    else pIter++;
+    // propagate particles
+    particles[i].fate = propagate(particles[i],dt);
+
+    // Add escaped photons to output spectrum
+    if (particles[i].fate == escaped)
+    {
+      // account for light crossing time, relative to grid center
+        double t_obs = particles[i].t - particles[i].x_dot_d()/pc::c;
+        if (particles[i].type == photon)
+          optical_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
+        if (particles[i].type == gammaray)
+          gamma_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
+      }
+
   }
+
+  // Remove escaped and absorbed particles from the particle vector
+  int n_escaped = clean_up_particle_vector();
 
   // calculate percent particles escaped, and rescale if wanted
   if (steady_state)
   {
-    double per_esc = (1.0*n_escape)/(1.0*n_active);
+    double per_esc = (1.0*n_escaped)/(1.0*n_active);
     if (core_fix_luminosity_)
     {
       if (verbose)
@@ -87,13 +106,13 @@ void transport::step(double dt)
   }
 
   tend = get_system_time();
-  if (verbose) cout << "# Propagated particles          (" << (tend-tstr) << " secs) \n";
+  if (verbose) cout << "# Propagated particles   (" << (tend-tstr) << " secs) \n";
 
   // normalize and MPI combine radiation tallies
   tstr = get_system_time();
   reduce_radiation(dt);
   tend = get_system_time();
-  if (verbose) cout << "# Reduced radiation (" << (tend-tstr) << " secs) \n";
+  if (verbose) cout << "# Communicated radiation (" << (tend-tstr) << " secs) \n";
 
   // solve for T_gas structure if radiative eq. applied
   if (radiative_eq)
@@ -122,17 +141,49 @@ double get_system_time()
 
 }
 
+
 //--------------------------------------------------------
-// Propagate a single monte carlo particle until
-// it  escapes, is absorbed, or the time step ends
+// Loop over the vector of particles
+// and remove those that are either escaped or absorbed
+// Returns the number of particles that escaped
+//--------------------------------------------------------
+int transport::clean_up_particle_vector()
+{
+  int n_escaped = 0;
+  int i=0;
+  while (true)
+  {
+    // remove particles from back until we have one that is allive
+    while ((particles.back().fate == escaped)||(particles.back().fate == absorbed))
+    {
+      if (particles.back().fate == escaped) n_escaped++;
+        particles.pop_back();
+        if (particles.size() == 0) break;
+    }
+
+   // see if we've finished with all particles
+   if (i >= particles.size()) break;
+
+   // check if we should remove this particle
+   if (particles[i].fate == escaped) n_escaped++;
+   if ((particles[i].fate == escaped)||(particles[i].fate == absorbed)){
+     particles[i] = particles.back();
+     particles.pop_back();
+   }
+   i = i+1;
+ }
+  return n_escaped;
+}
+
+//--------------------------------------------------------
+// Propagate a particle until either the
+// time step ends at a time tstop
+// or the particle escapes or is absorbed.
+// Returns this fate of the particle
 //--------------------------------------------------------
 ParticleFate transport::propagate(particle &p, double dt)
 {
-  enum ParticleEvent {scatter, boundary, tstep};
-  ParticleEvent event;
-
   // To be sure, get initial position of the particle
-  ParticleFate  fate = moving;
   p.ind = grid->get_zone(p.x);
 
   if (p.ind == -1) {return absorbed;}
@@ -141,15 +192,45 @@ ParticleFate transport::propagate(particle &p, double dt)
   // time of end of timestep
   double tstop = t_now_ + dt;
 
-  // pointer to current zone
-  zone *zone = &(grid->z[p.ind]);
+  ParticleFate  fate = moving;
+  while (fate == moving)
+  {
+    // check if we are in DDMC zone
+    int in_ddmc_zone = 0;
+    if (use_ddmc_)
+      if ((ddmc_use_in_zone_[p.ind])&&(p.type == photon))
+        in_ddmc_zone = 1;
 
-  // propagate until this flag is set
+    if (in_ddmc_zone)
+        fate = discrete_diffuse_DDMC(p, tstop);
+    else
+        fate = propagate_monte_carlo(p, tstop);
+  }
+
+return fate;
+
+}
+
+//--------------------------------------------------------
+// Propagate a single monte carlo particle until
+// it  escapes, is absorbed, or the time step ends
+//--------------------------------------------------------
+ParticleFate transport::propagate_monte_carlo(particle &p, double tstop)
+{
+  enum ParticleEvent {scatter, boundary, tstep};
+  ParticleEvent event;
+
+  ParticleFate  fate = moving;
   while (fate == moving)
   {
     // set pointer to current zone
     assert(p.ind >= 0);
-    zone = &(grid->z[p.ind]);
+    zone *zone = &(grid->z[p.ind]);
+
+    // check if we have moved into a DDMC zone
+    if (use_ddmc_)
+      if ((ddmc_use_in_zone_[p.ind])&&(p.type == photon))
+        return moving;
 
     // printout for debug
     //std::cout << " p = " << sqrt(p.x[0]*p.x[0] + p.x[1]*p.x[1]);
@@ -189,14 +270,14 @@ ParticleFate transport::propagate(particle &p, double dt)
     double tot_opac_labframe = tot_opac_cmf*dshift;
 
     // random optical depth to next interaction
-    double tau_r = -1.0*log(1 - gsl_rng_uniform(rangen));
+    double tau_r = -1.0*log(1 - rangen.uniform());
 
     // step size to next interaction event
     double d_sc  = tau_r/tot_opac_labframe;
     if (tot_opac_labframe == 0) d_sc = std::numeric_limits<double>::infinity();
     if (d_sc < 0)
-      cout << "ERROR: negative interaction distance! " << d_sc << " " << p.nu << " " << dshift << " " <<
-        tot_opac_labframe  << "\n";
+      cerr << "ERROR: negative interaction distance! " << d_sc << " " << p.nu << " " << dshift << " " <<
+        tot_opac_labframe  << endl;
     //std::cout << "dists: "<< d_sc << "\t" << d_bn << "\t" << tot_opac_labframe << "\n";
 
     // find distance to end of time step
@@ -222,16 +303,24 @@ ParticleFate transport::propagate(particle &p, double dt)
     // don't add gamma-rays here (they would be separate)
     if (p.type == photon)
     {
+      #pragma omp atomic
       zone->e_abs  += this_E*dshift*(continuum_opac_cmf)*eps_absorb_cmf*dshift;
-      if (store_Jnu_) J_nu_[p.ind][i_nu] += this_E;
-      else J_nu_[p.ind][0] += this_E;
-      //std::cout << p.ind << " " << i_nu << " " << p.e << " " << this_E << " " << J_nu_[p.ind][i_nu] << "\n";
+      if (store_Jnu_)
+	     #pragma omp atomic
+	      J_nu_[p.ind][i_nu] += this_E;
+      else
+	     #pragma omp atomic
+	      J_nu_[p.ind][0] += this_E;
     }
 
-     // radiation force
-     zone->fx_rad += this_E*dshift*continuum_opac_cmf*p.D[0] * dshift; // Extra dshift definitely needed here (two total)
-     zone->fy_rad += this_E*dshift*continuum_opac_cmf*p.D[1] * dshift;
-     zone->fz_rad += this_E*dshift*continuum_opac_cmf*p.D[2] * dshift;
+     // tally radiation force
+     // Extra dshift definitely needed here (two total)
+    #pragma omp atomic
+    zone->fx_rad += this_E*dshift*continuum_opac_cmf*p.D[0] * dshift;
+    #pragma omp atomic
+    zone->fy_rad += this_E*dshift*continuum_opac_cmf*p.D[1] * dshift;
+    #pragma omp atomic
+    zone->fz_rad += this_E*dshift*continuum_opac_cmf*p.D[2] * dshift;
 
     // move particle the distance
     p.x[0] += this_d*p.D[0];
@@ -239,8 +328,6 @@ ParticleFate transport::propagate(particle &p, double dt)
     p.x[2] += this_d*p.D[2];
     // advance the time
     p.t = p.t + this_d/pc::c;
-
-
 
     // ---------------------------------
     // do a boundary event
@@ -293,14 +380,13 @@ ParticleFate transport::propagate(particle &p, double dt)
       if (fate == moving)
       {
  //        fate = do_scatter(&p,eps_absorb_cmf);
-   //     if (gsl_rng_uniform(rangen) > 0.38)
+   //     if (rangen.uniform() > 0.38)
     //    fate = absorbed;
         //else fate = do_scatter(&p,0);
          // debug
         fate = do_scatter(&p,eps_absorb_cmf);
         //if (p.nu*pc::h < pc::rydberg) fate = escaped;
        }
-
     }
 
     // ---------------------------------
@@ -308,20 +394,9 @@ ParticleFate transport::propagate(particle &p, double dt)
     // ---------------------------------
     else if (event == tstep)
     {
-//      std::cout << "dists: "<< d_sc << "\t" << d_bn << "\t" << d_tm << "\t" << d_nu << "\n";
        fate = stopped;
     }
    }
 
-
-  // Add escaped photons to output spectrum
-  if (fate == escaped)
-  {
-    // account for light crossing time, relative to grid center
-    double xdot = p.x[0]*p.D[0] + p.x[1]*p.D[1] + p.x[2]*p.D[2];
-    double t_obs = p.t - xdot/pc::c;
-    if (p.type == photon)   optical_spectrum.count(t_obs,p.nu,p.e,p.D);
-    if (p.type == gammaray) gamma_spectrum.count(t_obs,p.nu,p.e,p.D);
-  }
   return fate;
 }

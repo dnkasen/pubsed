@@ -16,7 +16,7 @@ void grid_general::init(ParameterReader* params)
 	// complain if the grid is obviously not right
 	if(z.size()==0)
 	{
-		std::cout << "Error: there are no grid zones." << std::endl;
+		std::cerr << "Error: there are no grid zones." << std::endl;
 		exit(5);
 		n_zones = z.size();
 	}

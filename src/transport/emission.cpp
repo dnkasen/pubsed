@@ -6,6 +6,8 @@
 
 namespace pc = physical_constants;
 using std::cout;
+using std::cerr;
+using std::endl;
 
 //------------------------------------------------------------
 // emit new particles
@@ -26,8 +28,8 @@ void transport::sample_photon_frequency(particle *p)
 {
   if (p->type == photon)
   {
-    int inu  = emissivity_[p->ind].sample(gsl_rng_uniform(rangen));
-    p->nu = nu_grid.sample(inu,gsl_rng_uniform(rangen));
+    int inu  = emissivity_[p->ind].sample(rangen.uniform());
+    p->nu = nu_grid.sample(inu,rangen.uniform());
     if (p->nu > 1e20) std::cout << "pnu " << p->nu << "\n";
   }
   else if (p->type == gammaray)
@@ -62,9 +64,9 @@ void transport::create_isotropic_particle
   
   // random sample position in zone
   std::vector<double> rand;
-  rand.push_back(gsl_rng_uniform(rangen));
-  rand.push_back(gsl_rng_uniform(rangen));
-  rand.push_back(gsl_rng_uniform(rangen));
+  rand.push_back(rangen.uniform());
+  rand.push_back(rangen.uniform());
+  rand.push_back(rangen.uniform());
   double r[3];
   grid->sample_in_zone(i,rand,r);
   p.x[0] = r[0];
@@ -72,8 +74,8 @@ void transport::create_isotropic_particle
   p.x[2] = r[2];
 
   // emit isotropically in comoving frame
-  double mu  = 1 - 2.0*gsl_rng_uniform(rangen);
-  double phi = 2.0*pc::pi*gsl_rng_uniform(rangen);
+  double mu  = 1 - 2.0*rangen.uniform();
+  double phi = 2.0*pc::pi*rangen.uniform();
   double smu = sqrt(1 - mu*mu);
   p.D[0] = smu*cos(phi);
   p.D[1] = smu*sin(phi);
@@ -93,6 +95,7 @@ void transport::create_isotropic_particle
   p.t  = t;
 
   // add to particle vector
+  #pragma omp critical
   particles.push_back(p);
 
 }
@@ -108,7 +111,7 @@ void transport::initialize_particles(int init_particles)
 
    // check that we have enough space to add these particles
   if (my_n_emit > max_total_particles) {
-      if (verbose) cout << "# Not enough particle space to initialize\n";
+      if (verbose) cerr << "# Not enough particle space to initialize" << endl;
       return; }
 
   if (verbose) cout << "# init with " << init_particles << " total particles ";
@@ -139,7 +142,7 @@ void transport::initialize_particles(int init_particles)
   double Ep = E_sum/(1.0*my_n_emit);
   for (int q=0;q<my_n_emit;q++) 
   {
-    int i = zone_emission_cdf_.sample(gsl_rng_uniform(rangen));
+    int i = zone_emission_cdf_.sample(rangen.uniform());
     create_isotropic_particle(i,photon,Ep,t_now_);
   }
  
@@ -176,7 +179,7 @@ void transport::emit_radioactive(double dt)
 
   // randomize remainder
   double remainder = total_n_emit/(1.0*MPI_nprocs) - my_n_emit;
-  if (gsl_rng_uniform(rangen) < remainder) my_n_emit += 1;
+  if (rangen.uniform() < remainder) my_n_emit += 1;
 
   radioactive radio;
   double gfrac;
@@ -203,23 +206,24 @@ void transport::emit_radioactive(double dt)
 
   // check that we have enough space to add these particles
   if ((int)particles.size()+my_n_emit > max_total_particles) {
-    if (verbose) cout << "# Out of particle space; not adding in\n";
+    if (verbose) cerr << "# Out of particle space; not adding in" << endl;
     return; }
     
   // emit particles
   for (int q=0;q<my_n_emit;q++) 
   {
-    int i = zone_emission_cdf_.sample(gsl_rng_uniform(rangen));
-    double t  = t_now_ + dt*gsl_rng_uniform(rangen);
+    int i = zone_emission_cdf_.sample(rangen.uniform());
+    double t  = t_now_ + dt*rangen.uniform();
 
     // determine if make gamma-ray or positron
-    if (gsl_rng_uniform(rangen) < gamma_frac[i])
+    if (rangen.uniform() < gamma_frac[i])
       create_isotropic_particle(i,gammaray,E_p,t);
     else
     {
-	     // positrons are just immediately made into photons
-	     grid->z[i].L_radio_dep += E_p;
-	     create_isotropic_particle(i,photon,E_p,t);
+      // positrons are just immediately made into photons
+      #pragma omp atomic
+      grid->z[i].L_radio_dep += E_p;
+      create_isotropic_particle(i,photon,E_p,t);
     }
   }
 
@@ -265,8 +269,8 @@ void transport::emit_thermal(double dt)
   // emit particles
   for (int q=0;q<my_n_emit;q++) 
   {
-    int i = zone_emission_cdf_.sample(gsl_rng_uniform(rangen));
-    double t  = t_now_ + dt*gsl_rng_uniform(rangen);
+    int i = zone_emission_cdf_.sample(rangen.uniform());
+    double t  = t_now_ + dt*rangen.uniform();
     create_isotropic_particle(i,photon,E_p,t);
   }
 
@@ -332,7 +336,7 @@ void transport::emit_thermal(double dt)
   // e_emit might already be recorded based on the temperature. or, you could do it photon by photon here
   //grid->z[i].e_emit += particle[q].energy/vol;
 
-  //particle[q].t      = t_now + dt*gsl_rng_uniform(rangen);
+  //particle[q].t      = t_now + dt*rangen.uniform();
   //    }
   //    n_particles += n_add;
   //    n_add_tot   += n_add;
@@ -376,7 +380,7 @@ void transport::emit_inner_source(double dt)
   double Ep  = L_core_*dt/n_emit;
   
   if ((int)particles.size() + n_emit > this->max_total_particles)
-    {cout << "# Not enough particle space\n"; return; }
+    {cerr  << "# Not enough particle space" << endl; return; }
 
   // inject particles from the source
   for (int i=0;i<n_emit;i++)
@@ -390,8 +394,8 @@ void transport::emit_inner_source(double dt)
       p.x[1] = 0;
       p.x[2] = 0;
       // emit isotropically in comoving frame
-      double mu  = 1 - 2.0*gsl_rng_uniform(rangen);
-      double phi = 2.0*pc::pi*gsl_rng_uniform(rangen);
+      double mu  = 1 - 2.0*rangen.uniform();
+      double phi = 2.0*pc::pi*rangen.uniform();
       double smu = sqrt(1 - mu*mu);
       p.D[0] = smu*cos(phi);
       p.D[1] = smu*sin(phi);
@@ -400,10 +404,10 @@ void transport::emit_inner_source(double dt)
     else 
     {
       // pick initial position on photosphere
-      double phi_core   = 2*pc::pi*gsl_rng_uniform(rangen);
+      double phi_core   = 2*pc::pi*rangen.uniform();
       double cosp_core  = cos(phi_core);
       double sinp_core  = sin(phi_core);
-      double cost_core  = 1 - 2.0*gsl_rng_uniform(rangen);
+      double cost_core  = 1 - 2.0*rangen.uniform();
       double sint_core  = sqrt(1-cost_core*cost_core);
       // real spatial coordinates    
       double a_phot = r_core_ + r_core_*1e-10;
@@ -412,9 +416,9 @@ void transport::emit_inner_source(double dt)
       p.x[2] = a_phot*cost_core;
 
       // pick photon propagation direction wtr to local normal                   
-      double phi_loc = 2*pc::pi*gsl_rng_uniform(rangen);
+      double phi_loc = 2*pc::pi*rangen.uniform();
       // choose sqrt(R) to get outward, cos(theta) emission         
-      double cost_loc  = sqrt(gsl_rng_uniform(rangen));
+      double cost_loc  = sqrt(rangen.uniform());
       double sint_loc  = sqrt(1 - cost_loc*cost_loc);
       // local direction vector                     
       double D_xl = sint_loc*cos(phi_loc);
@@ -438,11 +442,11 @@ void transport::emit_inner_source(double dt)
     else
     {
       // sample frequency from blackbody 
-      int inu = core_emission_spectrum_.sample(gsl_rng_uniform(rangen));
-      p.nu = nu_grid.sample(inu,gsl_rng_uniform(rangen));
+      int inu = core_emission_spectrum_.sample(rangen.uniform());
+      p.nu = nu_grid.sample(inu,rangen.uniform());
       p.e  /= emissivity_weight_[inu];
       // straight bin emission
-      //int ilam = gsl_rng_uniform(rangen)*nu_grid.size(); 
+      //int ilam = rangen.uniform()*nu_grid.size(); 
       //p.e *= core_emis.get_value(ilam)*nu_grid.size(); 
     } 
 
@@ -453,12 +457,13 @@ void transport::emit_inner_source(double dt)
     transform_comoving_to_lab(&p);
 
     // set time to current
-    p.t  = t_now_ + gsl_rng_uniform(rangen)*dt;
+    p.t  = t_now_ + rangen.uniform()*dt;
     
     // set type to photon
     p.type = photon;
   
     // add to particle vector
+    #pragma omp critical
     particles.push_back(p);
   }
 
@@ -481,7 +486,7 @@ void transport::emit_from_pointsoures(double dt)
   int n_emit = total_n_emit/(1.0*MPI_nprocs);
   
   if ((int)particles.size() + n_emit > this->max_total_particles)
-    {cout << "# Not enough particle space\n"; return; }
+    {cerr << "# Not enough particle space" << endl; return; }
 
   double Ep  = pointsources_L_tot_*dt/n_emit;
 
@@ -491,15 +496,15 @@ void transport::emit_from_pointsoures(double dt)
     particle p;
   
     // pick your pointsource to emit from
-    int ind = pointsource_emission_cdf_.sample(gsl_rng_uniform(rangen));
+    int ind = pointsource_emission_cdf_.sample(rangen.uniform());
 
     p.x[0] = pointsource_x_[ind];
     p.x[1] = pointsource_y_[ind];
     p.x[2] = pointsource_z_[ind];
    
     // emit isotropically in comoving frame
-    double mu  = 1 - 2.0*gsl_rng_uniform(rangen);
-    double phi = 2.0*pc::pi*gsl_rng_uniform(rangen);
+    double mu  = 1 - 2.0*rangen.uniform();
+    double phi = 2.0*pc::pi*rangen.uniform();
     double smu = sqrt(1 - mu*mu);
     p.D[0] = smu*cos(phi);
     p.D[1] = smu*sin(phi);
@@ -509,8 +514,8 @@ void transport::emit_from_pointsoures(double dt)
     p.e = Ep;
 
     // sample frequency 
-    int inu = pointsource_emission_spectrum_.sample(gsl_rng_uniform(rangen));
-    p.nu = nu_grid.sample(inu,gsl_rng_uniform(rangen));
+    int inu = pointsource_emission_spectrum_.sample(rangen.uniform());
+    p.nu = nu_grid.sample(inu,rangen.uniform());
 
     // get index of current zone
     p.ind = grid->get_zone(p.x);
@@ -519,12 +524,13 @@ void transport::emit_from_pointsoures(double dt)
     transform_comoving_to_lab(&p);
 
     // set time to current
-    p.t  = t_now_ + gsl_rng_uniform(rangen)*dt;
+    p.t  = t_now_ + rangen.uniform()*dt;
     
     // set type to photon
     p.type = photon;
   
     // add to particle vector
+    #pragma omp critical
     particles.push_back(p);
   }
 
