@@ -63,6 +63,10 @@ int main(int argc, char **argv)
   clock_t time_start = clock();
 #endif
 
+#ifdef SEDONA_GIT_VERSION
+  std::cerr << "git version " << std::string(SEDONA_GIT_VERSION) << std::endl;
+#endif
+
   //---------------------------------------------------------------------
   // BEGIN SETTING UP
   //---------------------------------------------------------------------

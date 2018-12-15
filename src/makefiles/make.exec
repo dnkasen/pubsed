@@ -3,6 +3,10 @@
 #######
 .PHONY: all clean realclean gomc snopac
 
+SEDONA_GIT_VERSION := $(shell cd $(SEDONA_HOME); git describe --abbrev=12 --dirty --always --tags)
+DEFINES += -DSEDONA_GIT_VERSION=\"$(SEDONA_GIT_VERSION)\"
+CXXFLAGS += $(DEFINES)
+
 # location of gsl 
 GSL_INC=$(GSL_DIR)/include
 GSL_LIB=$(GSL_DIR)/lib
