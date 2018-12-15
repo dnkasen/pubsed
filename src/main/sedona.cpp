@@ -64,7 +64,13 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef SEDONA_GIT_VERSION
-  std::cerr << "git version " << std::string(SEDONA_GIT_VERSION) << std::endl;
+  if (verbose)
+    std::cerr << "# git version " << std::string(SEDONA_GIT_VERSION) << std::endl;
+#endif
+
+#ifdef COMPILE_DATETIME
+  if (verbose)
+    std::cerr << "# compiled on " << std::string(COMPILE_DATETIME) << std::endl;
 #endif
 
   //---------------------------------------------------------------------

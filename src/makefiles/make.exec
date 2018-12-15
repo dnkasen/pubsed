@@ -4,7 +4,8 @@
 .PHONY: all clean realclean gomc snopac
 
 SEDONA_GIT_VERSION := $(shell cd $(SEDONA_HOME); git describe --abbrev=12 --dirty --always --tags)
-DEFINES += -DSEDONA_GIT_VERSION=\"$(SEDONA_GIT_VERSION)\"
+COMPILE_DATETIME := $(shell date --iso=seconds)
+DEFINES += -DSEDONA_GIT_VERSION=\"$(SEDONA_GIT_VERSION)\" -DCOMPILE_DATETIME=\"$(COMPILE_DATETIME)\"
 CXXFLAGS += $(DEFINES)
 
 # location of gsl 
