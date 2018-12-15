@@ -24,6 +24,11 @@ private:
   double vol_;        // volume of each zone = dx*dy*dz
   int *index_x_,*index_y_,*index_z_;
 
+  int get_index(int i, int j, int k)
+  {
+    int ind =  i*ny_*nz_ + j*nz_ + k;
+    return ind;
+  }
 
 public:
 
