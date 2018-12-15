@@ -108,6 +108,12 @@ void transport::create_isotropic_particle
 void transport::initialize_particles(int init_particles)
 {
   int my_n_emit = init_particles/(1.0*MPI_nprocs);
+  // If init_particles % MPI_nprocs != 0, create the remaining particles
+  // on the first remainder nodes.
+  int remainder = init_particles % MPI_nprocs;
+  if (MPI_myID < remainder) {
+    my_n_emit += 1;
+  }
 
    // check that we have enough space to add these particles
   if (my_n_emit > max_total_particles) {
