@@ -43,6 +43,14 @@ AtomicSpecies::AtomicSpecies()
   min_level_pop_ = 1e-30;
 }
 
+AtomicSpecies::~AtomicSpecies() {
+  if (levels_)
+    delete[] levels_;
+  if (lines_)
+    delete[] lines_;
+  if (ions_)
+    delete[] ions_;
+}
 
 //-------------------------------------------------------
 // solve for the state of the atom

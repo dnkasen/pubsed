@@ -298,6 +298,9 @@ double time_wasted;
       cout << " = " << time_wasted/60.0/60 << " hours" << endl;
   }
 
+  // Clean up
+  delete grid;
+  delete hydro;
 #ifdef MPI_PARALLEL
   // finish up mpi
   MPI_Finalize();
