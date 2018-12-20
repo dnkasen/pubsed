@@ -29,7 +29,7 @@ opacity_grey_opacity     = 0.1
 transport_radiative_equilibrium   = 1
 
 transport_use_ddmc           = 3
-transport_ddmc_tau_threshold = 1.0
+transport_ddmc_tau_threshold = 10.0
 randomwalk_sumN = 1000
 randomwalk_npoints = 200
 randomwalk_max_x = 2
