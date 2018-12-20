@@ -27,10 +27,21 @@ void hydro_1D_lagrangian::init(ParameterReader *params, grid_general *g)
 
   gamfac_      = params->getScalar<double>("hydro_gamma_index");
   cfl_         = params->getScalar<double>("hydro_cfl");
+  mean_particle_mass_ = params->getScalar<double>("hydro_mean_particle_mass");
   C_q_         = params->getScalar<double>("hydro_viscosity_parameter");
   M_center_    = params->getScalar<double>("hydro_central_point_mass");
   use_gravity_ = params->getScalar<int>("hydro_use_gravity");
+  use_transport_ = params->getScalar<int>("hydro_use_transport");
+  boundary_outflow_ = params->getScalar<int>("hydro_boundary_outflow");
+  boundary_rigid_outer_wall_ = params->getScalar<int>("hydro_boundary_rigid_outer_wall");
   r_accrete_   = params->getScalar<double>("hydro_accrete_radius");
+
+  // handle conflicting input
+  if (boundary_outflow_ == 1 && boundary_rigid_outer_wall_ == 1)
+    {
+      printf("WARNING!!! Hydro outer boundary cannot be simultaneously outflow and outer wall! Setting to outflow\n");
+      boundary_rigid_outer_wall_ = 1;
+    }
 
 
   grid->get_radial_edges(r_out_,r_min_,v_out_,v_min_);
@@ -43,7 +54,7 @@ void hydro_1D_lagrangian::init(ParameterReader *params, grid_general *g)
   if (r_bomb == 0)
   {
     if (nz_ <= 10)
-      r_bomb = r_out_[1];
+      r_bomb = r_out_[0]; // if you use index 1 note that this will not work if there is only 1 zone
     else
       r_bomb = r_out_[10];
   }
@@ -57,18 +68,21 @@ void hydro_1D_lagrangian::init(ParameterReader *params, grid_general *g)
     // radiation pressure EOS
     //	grid->z[i].p_gas = pc::a*pow(grid->z[i].T_gas,4)/3.0;
     // gas pressure EOS
-    grid->z[i].p_gas = pc::k*grid->z[i].rho/pc::m_p*grid->z[i].T_gas;
+    grid->z[i].p_gas = pc::k*grid->z[i].rho/(mean_particle_mass_ * pc::m_p)*grid->z[i].T_gas;
 
     // add in bomb
-    if (r_out_[i] <= 3*r_bomb)
-    {
+
+    if (r_out_[i] <= 3*r_bomb && E_bomb > 0.)
+     {
       grid->z[i].p_gas += p_bomb*exp(-r_out_[i]*r_out_[i]/r_bomb/r_bomb);
+
+      //assuming radiation pressure dominates and T_gas = T_r
       grid->z[i].T_gas = pow(3.0*grid->z[i].p_gas/pc::a,0.25);
     }
     grid->z[i].cs = sqrt(gamfac_ * grid->z[i].p_gas/grid->z[i].rho);
-    eden_[i] = grid->z[i].p_gas/(gamfac_- 1.0)/grid->z[i].rho;
+    eden_[i] = grid->z[i].p_gas/(gamfac_- 1.0)/grid->z[i].rho; // Units energy per mass
 
-    grid->z[i].e_gas = eden_[i]; // this is what will be used for constructing eps_imc
+    grid->z[i].e_gas = eden_[i]; // this is what will be used for constructing eps_imc. Units energy per mass
     visq_[i] = compute_artificial_viscosity(i);
     mass_[i] = grid->z[i].rho*vol;
   }
@@ -100,7 +114,7 @@ double hydro_1D_lagrangian::get_time_step()
   	if (dt < tstep) tstep = dt;
 
   }
-  std::cout << z0 << " " << tstep << "\n";
+  //  std::cout << z0 << " " << tstep << "\n";
   return tstep;
 }
 
@@ -116,14 +130,18 @@ void hydro_1D_lagrangian::step(double dt)
   {
     // get zones to do derivatives
     int z1, z2;
-    if (i < nz_-1) { z1 = i; z2 = i+1;}
-    else {z1 = i-1; z2 = i;}
+    if (nz_ == 1) {z1 = i; z2 = i;}
+    else
+      {
+        if (i < nz_-1) { z1 = i; z2 = i+1;} // note that this will not work if there is only one zone
+        else {z1 = i-1; z2 = i;}
+      }
 
     // gas pressure and viscosity gradiant (times -1)
     double dp = grid->z[z1].p_gas - grid->z[z2].p_gas;
     double dq  = visq_[z1] - visq_[z2];
     // outer outflow boundary
-    if (i == nz_-1) {
+    if (i == nz_-1 && boundary_outflow_) {
       dq = visq_[z2];
       dp = grid->z[z2].p_gas; }
 
@@ -145,21 +163,28 @@ void hydro_1D_lagrangian::step(double dt)
    // acceleration from transport flux
    if (use_transport_)
    {
-      v_out_[i] += grid->z[i].fr_rad/grid->z[i].rho*dt;
+     accel += grid->z[i].fr_rad/grid->z[i].rho;
  //      // zone[z].f_rad = zone[z].f_rad/zone[z].rho/C_LIGHT;
  //      // radiation pressure gradiant in diffusion regime
  //      //if (use_transport) //&&(zone[z].tau > tau_diffuse))
  //      // dp += (zone[z1].E_dif/3.0 - zone[z2].E_dif/3.0);
     }
 
+   // override accleration of outer zone boundary if using rigid wall
+   if (i == nz_-1 && boundary_rigid_outer_wall_)
+     {
+       accel = 0.;
+     }
+
     // update velocities and boudnaries
     v_out_[i] += accel*dt;
+
     r_out_[i] += v_out_[i]*dt;
 
-    // check if this zone is accreted
+
     if (r_out_[i] <= r_accrete_)
     {
-      //std::cout << "accreted " << i << "\n";
+      std::cout << "accreted " << i << "\n";
       M_center_ += mass_[i];
       r_out_[i] = r_min_;
       z_start_ = i+1;
@@ -171,10 +196,11 @@ void hydro_1D_lagrangian::step(double dt)
       {
         M_center_ += mass_[i];
         z_start_ = i+1;
-        //std::cout << "accreted " << i << "\n";
+        std::cout << "accreted " << i << "\n";
 
       }
     }
+
 
   }
   r_min_ += v_min_*dt;
@@ -204,7 +230,9 @@ void hydro_1D_lagrangian::step(double dt)
     // add in energy from radiation
     // not implicit yet
     if (use_transport_)
-      eden_[i] += (grid->z[i].e_abs - grid->z[i].L_thermal)*new_vol*dt/new_rho; // - grid->z[i].e_emit)/new_rho;
+      {
+	eden_[i] += (grid->z[i].e_abs  - grid->z[i].L_thermal * grid->z[i].eps_imc)*dt/new_rho; // e_abs already has eps_imc factor included
+      }
 
 // zvec[i].enrg = (zvec_old[i].enrg - 0.5 *
   //      (zvec_old[i].press + zvec[i].visc + zvec_old[i].visc) * rhofac)
@@ -234,12 +262,13 @@ void hydro_1D_lagrangian::step(double dt)
     // Remember, e_gas has units of ergs per gram, not ergs per cc
     double p_gas = (gamfac_ - 1)*eden_[i]*new_rho;
     grid->z[i].p_gas  = p_gas;
+    grid->z[i].e_gas  = eden_[i];
     grid->z[i].cs     = sqrt(gamfac_*p_gas/new_rho);
     grid->z[i].rho    = new_rho;
     // radiation pressure EOS
     //grid->z[i].T_gas  = pow(3.0*p_gas/pc::a,0.25);
     // gas pressure EOS
-    grid->z[i].T_gas = p_gas/(pc::k*grid->z[i].rho/pc::m_p);
+    grid->z[i].T_gas = p_gas/(pc::k*grid->z[i].rho/mean_particle_mass_/pc::m_p); 
 
     visq_[i] = new_q;
 
