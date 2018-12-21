@@ -80,8 +80,8 @@ def run_test(pdf="",runcommand=""):
 
     max_err,mean_err = get_error(n1/n2,an)
     if (mean_err > 0.01): failure = 1
-    if (max_err > 0.02):  failure = 1
-
+    if (max_err > 0.03):  failure = 1
+    print max_err,mean_err
 
     # add plot to pdf file (or show on screen)
     if (pdf != ''): pdf.savefig()
