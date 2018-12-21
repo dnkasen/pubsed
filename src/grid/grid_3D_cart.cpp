@@ -4,7 +4,6 @@
 #include <iostream>
 #include <iomanip>
 #include <cassert>
-#include "Lua.h"
 #include "grid_3D_cart.h"
 #include "physical_constants.h"
 
@@ -386,10 +385,84 @@ void grid_3D_cart::coordinates(int i,double r[3])
 //------------------------------------------------------------
 void grid_3D_cart::get_velocity(int i, double x[3], double D[3], double v[3], double *dvds)
 {
-  // may want to interpolate here
-  v[0] = z[i].v[0];
-  v[1] = z[i].v[1];
-  v[2] = z[i].v[2];
+  // trilinear interpolation
+  // e.g., https://en.wikipedia.org/wiki/Trilinear_interpolation
+
+  // put grid data into array form
+  // this should probalby be stored this way to start...
+  double rmin[3];
+  rmin[0] = x0_;
+  rmin[1] = y0_;
+  rmin[2] = z0_;
+  double del[3];
+  del[0] = dx_;
+  del[1] = dy_;
+  del[2] = dz_;
+  int npts[3];
+  npts[0] = nx_;
+  npts[1] = ny_;
+  npts[2] = nz_;
+
+  // indices along each dimensions for this zone
+  int ic[3];
+  ic[0] = index_x_[i];
+  ic[1] = index_y_[i];
+  ic[2] = index_z_[i];
+
+  // find lattice points to interpolate from
+  int    i_lo[3], i_hi[3];
+  double r_lo[3];
+  for (int j=0;j<3;j++)
+  {
+    double cen = rmin[j] + (ic[j] + 0.5)*del[j];
+    if (x[j] > cen)
+    {
+      r_lo[j] = cen;
+      i_lo[j] = ic[j];
+      i_hi[j] = ic[j] + 1;
+      if (i_hi[j] >= npts[j]) i_hi[j] = i_lo[j];
+    }
+    else
+    {
+      r_lo[j] = rmin[j] + (ic[j] - 0.5)*del[j];
+      i_lo[j] = ic[j] - 1;
+      i_hi[j] = ic[j];
+      if (i_lo[j] < 0) i_lo[j] = i_hi[j];
+    }
+  }
+
+  // differences in each dimension
+  double xd = (x[0] - r_lo[0])/dx_;
+  double yd = (x[1] - r_lo[1])/dy_;
+  double zd = (x[2] - r_lo[2])/dz_;
+
+  // interpolate each of the 3 velocity components
+  for (int j = 0;j < 3; j++)
+  {
+    // values at 8 lattice points
+    double c000 = z[get_index(i_lo[0],i_lo[1],i_lo[2])].v[j];
+    double c001 = z[get_index(i_lo[0],i_lo[1],i_hi[2])].v[j];
+    double c010 = z[get_index(i_lo[0],i_hi[1],i_lo[2])].v[j];
+    double c011 = z[get_index(i_lo[0],i_hi[1],i_hi[2])].v[j];
+    double c100 = z[get_index(i_hi[0],i_lo[1],i_lo[2])].v[j];
+    double c101 = z[get_index(i_hi[0],i_lo[1],i_hi[2])].v[j];
+    double c110 = z[get_index(i_hi[0],i_hi[1],i_lo[2])].v[j];
+    double c111 = z[get_index(i_hi[0],i_hi[1],i_hi[2])].v[j];
+
+    // interpolation along x
+    double c00 = c000*(1-xd) + c100*xd;
+    double c01 = c001*(1-xd) + c101*xd;
+    double c10 = c010*(1-xd) + c110*xd;
+    double c11 = c011*(1-xd) + c111*xd;
+
+    // interpolation along y
+    double c0 = c00*(1-yd) + c10*yd;
+    double c1 = c01*(1-yd) + c11*yd;
+
+    // interpolation along z
+    double c = c0*(1-zd) + c1*zd;
+    v[j] = c;
+}
 
   // debug -- need to calculate this
   *dvds = 0;

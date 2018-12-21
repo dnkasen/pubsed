@@ -41,6 +41,7 @@ class grid_general
 
   // set everything up
   void init(ParameterReader* params);
+  virtual ~grid_general() {}
 
   // descrption of grid type
   std::string grid_type;

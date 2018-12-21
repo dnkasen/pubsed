@@ -100,8 +100,8 @@ void AtomicSpecies::bound_bound_opacity(std::vector<double>& opac, std::vector<d
     // region to add to -- hard code to 20 doppler widths
     double nu_1 = nu_0 - dnu*5; //*30;
     double nu_2 = nu_0 + dnu*5; //*30; //debug
-    int inu1 = nu_grid_.locate(nu_1);
-    int inu2 = nu_grid_.locate(nu_2);
+    int inu1 = nu_grid_.locate_within_bounds(nu_1);
+    int inu2 = nu_grid_.locate_within_bounds(nu_2);
 
 
     // line emissivity: ergs/sec/cm^3/str

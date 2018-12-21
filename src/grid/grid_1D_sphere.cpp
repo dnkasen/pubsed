@@ -35,48 +35,228 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
 
   // open up the model file, complaining if it fails to open
   string model_file = params->getScalar<string>("model_file");
-  std::ifstream infile;
-  infile.open(model_file.c_str());
-  if(infile.fail())
-  {
-    if (verbose) cerr << "Err: can't read model file: " << model_file << endl;
-    exit(4);
-  }
 
-  // geometry of model
-  infile >> grid_type;
-  if(grid_type != "1D_sphere") 
-  {
-    if (verbose) cerr << "Err: grid_type param disagrees with the model file" << endl;
-    exit(4);
-  }
-  if (verbose) {
-    cout << "# model file = " << model_file << "\n";
-    cout << "# Model is a 1D_sphere\n"; }
+  // determine the model file format
+  std::string mod_extension(".mod");
+  std::string hdf5_extension(".h5");
+
+  std::size_t found = model_file.find(hdf5_extension);
+  if (found!=std::string::npos)
+    {
+      std::cout << "# model file is an hdf5 file (.h5)" << endl;
+      read_hdf5_file(model_file,verbose,0);
+    }
   
-  // type of system
-  string system;
-  infile >> system;
+  else
+    {
+      found = model_file.find(mod_extension);
+      if (found!=std::string::npos)
+	{
+	  std::cout << "# model file is ASCII format (.mod)" << endl;
+	}
+      else
+	{
+	  if (verbose) cerr << "Don't recognize model file format (file extension). Exiting." << endl;
+	  exit(1);
+	}
 
-  // number of zones
-  infile >> n_zones;
+    
+      std::ifstream infile;
+      infile.open(model_file.c_str());
+      if(infile.fail())
+	{
+	  if (verbose) cerr << "Err: can't read model file: " << model_file << endl;
+	  exit(4);
+	}
+
+      // geometry of model
+      infile >> grid_type;
+      if(grid_type != "1D_sphere") 
+	{
+	  if (verbose) cerr << "Err: grid_type param disagrees with the model file" << endl;
+	  exit(4);
+	}
+      if (verbose) {
+	cout << "# model file = " << model_file << "\n";
+	cout << "# Model is a 1D_sphere\n"; }
+  
+      // type of system
+      string system;
+      infile >> system;
+
+      // number of zones
+      infile >> n_zones;
+      z.resize(n_zones);
+      r_out.resize(n_zones);
+      vol.resize(n_zones);
+  
+      // read zone properties for a supernova remnant
+      if (system == "SNR") 
+	read_SNR_file(infile,verbose,1);
+      else if (system == "standard") 
+	read_SNR_file(infile,verbose,0);
+      else {
+	if (verbose) cerr << " Don't recognize model type " << system << "; Exiting" << endl;
+	exit(1); }
+
+      infile.close();
+    }
+}
+    
+void grid_1D_sphere::read_hdf5_file(std::string model_file, int verbose, int snr)
+{
+
+  if (snr)
+    {
+      if (verbose) cerr << " SNR as an hdf5 input file not currently implemented. Exiting" << endl;
+      exit(1);
+    }
+  
+  // open hdf5 file
+  hid_t file_id = H5Fopen(model_file.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+  herr_t status;
+
+  // get time
+  double tt[1];
+  status = H5LTread_dataset_double(file_id,"/time",tt);
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find time" << endl;
+  t_now = tt[0];
+
+  //get inner radius
+  double rm[1];
+  status = H5LTread_dataset_double(file_id,"/r_min",rm);
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find r_min" << endl;
+  r_out.min = rm[0];
+
+  v_inner_ = 0.; // just like in .mod case
+
+  // get grid size and dimensions
+  hsize_t dims[2];
+  status = H5LTget_dataset_info(file_id,"/comp",dims, NULL, NULL);
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find comp" << endl;
+
+  n_zones = dims[0];
+  n_elems = dims[1];
   z.resize(n_zones);
   r_out.resize(n_zones);
   vol.resize(n_zones);
+
+  int *etmp = new int[n_elems];
+  status = H5LTread_dataset_int(file_id,"/Z",etmp);
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find Z" << endl;
+  for (int k=0;k<n_elems;k++) elems_Z.push_back(etmp[k]);
+  status = H5LTread_dataset_int(file_id,"/A",etmp);
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find A" << endl;
+  for (int k=0;k<n_elems;k++) elems_A.push_back(etmp[k]);
+  delete [] etmp;
+
+  double *tmp = new double[n_zones];
+  // read radii
+  status = H5LTread_dataset_double(file_id,"/r_out",tmp);
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find r_out" << endl;
+  for (int i=0; i < n_zones; i++) r_out[i] = tmp[i];
+  // read density
+  status = H5LTread_dataset_double(file_id,"/rho",tmp);
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find rho" << endl;
+  for (int i=0; i < n_zones; i++) z[i].rho = tmp[i];
+  // read temperature
+  status = H5LTread_dataset_double(file_id,"/temp",tmp);
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find temp" << endl;
+  for (int i=0; i < n_zones; i++) z[i].T_gas = tmp[i];
+  // read v
+  status = H5LTread_dataset_double(file_id,"/v",tmp);
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find v" << endl;
+  for (int i=0; i < n_zones; i++) z[i].v[0] = tmp[i];
+  // read erad
+  status = H5LTread_dataset_double(file_id,"/erad",tmp);
+  if (status < 0)
+    {
+    if (verbose) std::cout << "# Grid warning: Can't find erad. Using gas temperatrure and assuming blackbody radiation field." << endl;
+    for (int i=0; i < n_zones; i++) z[i].e_rad = pc::a * pow(z[i].T_gas,4.);
+    }
+  else
+    {
+      for (int i=0; i < n_zones; i++) z[i].e_rad = tmp[i];
+    }
+
+  delete [] tmp;
+
+  // get mass fractions
+  double *ctmp = new double[n_zones*n_elems];
+  status = H5LTread_dataset_double(file_id,"/comp",ctmp);
+
+  int cnt = 0;
+  for (int i=0; i < n_zones; i++)
+  {
+    z[i].X_gas.resize(n_elems);
+    double norm = 0;
+    for (int k=0; k < n_elems;  k++)
+    {
+      z[i].X_gas[k] = ctmp[cnt];
+      norm += z[i].X_gas[k];
+      cnt++;
+    }
+
+    // Make sure initial compositions are normalized, and compute mu
+    z[i].mu = 0;
+    for (int k = 0; k < n_elems; k++)
+      {
+	z[i].X_gas[k] /= norm;
+	z[i].mu += z[i].X_gas[k]*elems_A[k];
+      }
+  }
+  delete [] ctmp;
+
+  // close HDF5 input file
+  H5Fclose (file_id);
+
+  for (int i=0; i < n_zones; i++)
+    {
+    // calculate shell volume
+    double r0;
+    if(i==0) r0 = r_out.min;
+    else     r0 = r_out[i-1];
+    vol[i] = 4.0*pc::pi/3.0*(r_out[i]*r_out[i]*r_out[i] - r0*r0*r0);
+  }
   
-  // read zone properties for a supernova remnant
-  if (system == "SNR") 
-    read_SNR_file(infile,verbose,1);
-  else if (system == "standard") 
-    read_SNR_file(infile,verbose,0);
-  else {
-    if (verbose) cerr << " Don't recognize model type " << system << "; Exiting" << endl;
-    exit(1); }
+  
+  // print out properties of the model
+  if (verbose) 
+  {
+    if (snr) cout << "#\n####### 1D SNR MODEL ##########\n";
+    else cout << "#\n####### 1D STANDARD MODEL ##########\n";
+    cout << "# n_x = " << n_zones << endl;
+    cout << "# elems (n=" << n_elems << ") ";
+    for (int k=0;k<n_elems;k++) cout << elems_Z[k] << "." << elems_A[k] << " ";
+    cout << "\n#\n";
 
-  infile.close();
+    // summed properties
+    double tmass = 0;
+    double ke    = 0;
+    double re    = 0;
+    std::vector<double>elem_mass(n_elems);
+    for (int k=0;k<n_elems;k++) elem_mass[k] = 0;
+
+    // calculate some useful summed properties
+    for (int i=0;i<n_zones;i++)
+    {
+      tmass += z[i].rho*vol[i];
+      for (int k=0;k<n_elems;k++) elem_mass[k] += vol[i]*z[i].rho*z[i].X_gas[k];
+      ke += 0.5*z[i].rho*vol[i]*z[i].v[0]*z[i].v[0];
+      re += z[i].e_rad*vol[i];
+    }
+
+    printf("# mass = %.4e (%.4e Msun)\n",tmass,tmass/pc::m_sun);
+    for (int k=0;k<n_elems;k++) {
+      cout << "# " << elems_Z[k] << "." << elems_A[k] <<  "\t";
+      cout << elem_mass[k] << " (" << elem_mass[k]/pc::m_sun << " Msun)\n"; }
+    printf("# kinetic energy   = %.4e\n",ke);
+    printf("# radiation energy = %.4e\n",re);
+    cout << "##############################\n#" << endl;
+
+  }
+  
 }
-    
-
 
 void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
 {
@@ -141,7 +321,8 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
       }
 	
     // assume LTE radiation field to start
-    z[i].e_rad = pc::a*pow(z[i].T_gas,4);
+    //    z[i].e_rad = pc::a*pow(z[i].T_gas,4);
+    z[i].e_rad = pc::a* pow(3.4e6,4);
       
     // calculate shell volume
     double r0;
@@ -221,7 +402,7 @@ int grid_1D_sphere::get_zone(const double *x) const
   if(r >= r_out[r_out.size()-1] ) return -2;
 
   // find in zone array using stl algorithm up_bound and subtracting iterators
-  int ind = r_out.locate(r);
+  int ind = r_out.locate_within_bounds(r);
   return ind;
 }
 
