@@ -10,9 +10,9 @@
 #define HYDRO_1D_MOVINGMESH_NUM_Q 8
 #define HYDRO_1D_MOVINGMESH_NUM_G 2
 
-
 enum{RHO,PPP,VRR,XXX,AAA};
 enum{DDD,TAU,SRR};
+enum{_HLL_,_HLLC_};
 
 
 //------------------------------------
@@ -110,14 +110,44 @@ private:
   double RHO_FLOOR;
   double PRE_FLOOR;
   double USE_RT;
+  int riemann_solver;
+  int rt_flag;
+
+  // boundary conditions
+  double boundary_prim_[HYDRO_1D_MOVINGMESH_NUM_Q];
 
   void cons2prim( double * cons , double * prim , double dV );
   void prim2cons( double * prim , double * cons , double dV );
   void set_wcell();
   double mindt( double * prim , double w , double r , double dr );
 
+  void take_onestep(double RK, double dt, int, int );
+  void move_cells(double RK , double dt);
+  void adjust_RK_cons(double RK );
+  void radial_flux(double dt );
+  void calc_dr( );
+  void calc_prim();
+  void boundary();
+
+  double get_dA( double r );
+  double get_dV( double rp , double rm );
+  double get_moment_arm( double rp , double rm );
+  double minmod( double a , double b , double c );
+
+
+  void riemann
+  ( struct Hydro1DMovingMeshCell * cL , struct Hydro1DMovingMeshCell * cR, double r , double dAdt );
+  void flux( double * prim , double * flux );
+  void plm();
+  void vel( double * prim1 , double * prim2 , double * Sl , double * Sr , double * Ss );
+  void getUstar( double * prim , double * Ustar , double Sk , double Ss );
+  void add_source(double dt );
+  void source( double * prim , double * cons , double rp , double rm , double dVdt );
+  void source_alpha( double * prim , double * cons , double * grad_prim , double r , double dVdt );
+
   double get_vr( double * prim )
   {  return( prim[VRR] );}
+
   double getmindt();
   double get_eta( double * prim , double * grad_prim , double r );
 
