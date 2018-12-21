@@ -4,7 +4,6 @@
 #include <iostream>
 #include <iomanip>
 #include <cassert>
-#include "Lua.h"
 #include "grid_3D_cart.h"
 #include "physical_constants.h"
 
