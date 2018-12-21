@@ -26,25 +26,10 @@ void transport::wipe_radiation()
       for (int j=0;j<nu_grid.size();j++)
         J_nu_[i][j] = 0;
     grid->z[i].L_radio_emit = 0;
-    //grid->z[i].fx_rad = 0;
-    //grid->z[i].fy_rad = 0;
-    //grid->z[i].fz_rad = 0;
-  }
-}
-
-//------------------------------------------------------------
-// Calcuate eps_imc...
-//------------------------------------------------------------
-void transport::set_eps_imc()
-{
-  for (int i=0;i<grid->n_zones;i++)
-  {
-
-    if (radiative_eq)
-      grid->z[i].eps_imc = 0.;
-    else
-      grid->z[i].eps_imc  = 1.; // later, will want to start computing this, with an alpha set in params to toggle implicit MC on or off
-
+    grid->z[i].fx_rad = 0;
+    grid->z[i].fy_rad = 0;
+    grid->z[i].fz_rad = 0;
+    grid->z[i].fr_rad = 0;
   }
 }
 

@@ -74,6 +74,7 @@ class transport
   int    last_iteration_;
   int    omit_composition_decay_;
   int    compton_scatter_photons_;
+  double fleck_alpha_;
 
   // current time in simulation
   double t_now_;
@@ -160,7 +161,7 @@ class transport
 
   // opacity functions
   int   get_opacity(particle&, double, double&, double&);
-  void   set_opacity();
+  void   set_opacity(double dt);
   double klein_nishina(double);
   double blackbody_nu(double T, double nu);
   void   reduce_opacities();
@@ -206,7 +207,6 @@ class transport
 
   // radiation quantities functions
   void wipe_radiation();
-  void set_eps_imc();
   void reduce_radiation(double);
   void reduce_Tgas();
   void reduce_Lthermal();

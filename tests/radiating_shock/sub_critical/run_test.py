@@ -38,56 +38,42 @@ def run_test(pdf="",runcommand=""):
     failure = 0
     plt.clf()
 
-    m_p = 1.67262158e-24   # mass of proton (g)
-    k   = 1.380658e-16     # boltzmann constant (ergs/K)
+    # write code here to read in output data and
+    # plot it compared to standard reference
 
-    # read exact solution and mine
-    z,x,rho,p,v = np.loadtxt('exact_solution.dat',unpack=True)
-    r_me,rho_me,v_me,T_me = np.loadtxt('plt_00005.dat',unpack=True,usecols=[0,1,2,3])
-    r_me = r_me - 1e3
-    p_me = rho_me/m_p*k*T_me
-    t = p*m_p/rho/k
+    for i in range(3,9,2):
+        fin = h5py.File('plt_0000' + str(i) + '.h5')
+        time = (np.array(fin['time']))[0]
+        r  = np.array(fin['r'])
+        T_gas = np.array(fin['T_gas'])
+        T_rad = np.array(fin['T_rad'])
+        print time
+        plt.plot(r,T_gas)
 
-    xlims = (0,6)
-    use = (x < 5)
-    plt.suptitle('sod shock tube hydro test')
+#    for example...
+#    plt.plot(x,y)
+#    plt.legend(['sedona','analytic'])
+#    plt.title(testname)
+#    plt.xlabel('x')
+#    plt.ylabel('y')
+#    plt.yscale('log')
+#    plt.xlim(0,1)
+#    plt.ylim(0,1)
 
-    plt.subplot(2,2,1)
-    plt.xlim(xlims)
-    plt.plot(x,rho,color='red',linewidth=3)
-    plt.plot(r_me,rho_me,'o',markerfacecolor='none')
-    plt.ylabel('density')
-    max_err,mean_err = get_error(rho_me,rho,x=r_me,x_comp=x,use = use)
-    if (mean_err > 0.05): failure = 1
 
-    plt.subplot(2,2,2)
-    plt.xlim(xlims)
-    plt.plot(x,v,color='red',linewidth=3)
-    plt.plot(r_me,v_me,'o',markerfacecolor='none')
-    plt.ylabel('velocity')
-    max_err,mean_err = get_error(v_me,v,x=r_me,x_comp=x,use = use)
-    if (mean_err > 0.05): failure = 2
+    # write code here to do a numerical comparison
+    # of output data to standard reference and
+    # determine success or failure
+    # set failure to some number != 0 if something
+    # is wrong
 
-    plt.subplot(2,2,3)
-    plt.xlim(xlims)
-    plt.plot(x,p,color='red',linewidth=3)
-    plt.plot(r_me,p_me,'o',markerfacecolor='none')
-    plt.ylabel('pressure')
-    max_err,mean_err = get_error(p_me,p,x=r_me,x_comp=x,use = use)
-    if (mean_err > 0.05): failure = 3
+#    max_err,mean_err = get_error(y_sedona,y_reference)
+#    if (mean_err > 0.1): failure = 1
 
-    plt.subplot(2,2,4)
-    plt.xlim(xlims)
-    plt.plot(x,t,color='red',linewidth=3)
-    plt.plot(r_me,T_me,'o',markerfacecolor='none')
-    plt.ylabel('temperature')
-    max_err,mean_err = get_error(T_me,t,x=r_me,x_comp=x,use = use)
-    if (mean_err > 0.05): failure = 4
 
     # add plot to pdf file (or show on screen)
     if (pdf != ''): pdf.savefig()
     else:
-        plt.ion()
         plt.show()
         j = get_input('Press any key to continue >')
 

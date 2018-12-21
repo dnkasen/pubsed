@@ -33,7 +33,7 @@ void transport::step(double dt)
 
   // calculate the opacities
   tstr = get_system_time();
-  set_opacity();
+  set_opacity(dt); // need to pass dt for computing implicit monte carlo factors
   tend = get_system_time();
   if (verbose) cout << "# Calculated opacities   (" << (tend-tstr) << " secs) \n";
 
@@ -48,8 +48,6 @@ void transport::step(double dt)
 
   // clear the tallies of the radiation quantities in each zone
   wipe_radiation();
-
-  set_eps_imc();
 
   // emit new particles
   tstr = get_system_time();
@@ -126,6 +124,8 @@ void transport::step(double dt)
   if (!steady_state) t_now_ += dt;
 
 }
+
+
 
 //--------------------------------------------------------
 // little local helper function to get the current
@@ -314,7 +314,7 @@ ParticleFate transport::propagate_monte_carlo(particle &p, double tstop)
     if (p.type == photon)
     {
       #pragma omp atomic
-      zone->e_abs  += this_E*dshift*(continuum_opac_cmf)*eps_absorb_cmf*dshift;
+      zone->e_abs  += this_E*dshift*(continuum_opac_cmf)*eps_absorb_cmf*dshift * zone->eps_imc;
       if (store_Jnu_)
 	     #pragma omp atomic
 	      J_nu_[p.ind][i_nu] += this_E;
@@ -331,6 +331,10 @@ ParticleFate transport::propagate_monte_carlo(particle &p, double tstop)
     zone->fy_rad += this_E*dshift*continuum_opac_cmf*p.D[1] * dshift;
     #pragma omp atomic
     zone->fz_rad += this_E*dshift*continuum_opac_cmf*p.D[2] * dshift;
+
+     double rr = sqrt(p.x[0]*p.x[0] + p.x[1]*p.x[1] + p.x[2]*p.x[2]);
+     double xdotD = p.x[0]*p.D[0] + p.x[1]*p.D[1] + p.x[2]*p.D[2];
+     zone->fr_rad += this_E*dshift*continuum_opac_cmf*xdotD/rr * dshift; 
 
     // move particle the distance
     p.x[0] += this_d*p.D[0];
