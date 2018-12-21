@@ -1,12 +1,12 @@
-// 
+//
 // File    : Lua.hh
 // ----------------
 // Created : Mon Mar 17 14:51:58 2008
 // Authors : Rollin C. Thomas (RCT) - rcthomas@lbl.gov
 // Purpose : Lua interface.
-//  
+//
 // $Header: /cvs/mp22/ddmc_sn/Lua.hh,v 1.4 2008/05/09 00:46:07 rthomas Exp $
-// 
+//
 
 #ifndef __LUA__
 #define __LUA__
@@ -24,7 +24,7 @@ extern "C"
 /// @class Lua
 /// @brief Interface to Lua via a wrapped Lua state.
 
-class Lua
+class LuaInterface
 {
 
    private :
@@ -38,16 +38,16 @@ class Lua
    public :
 
       /// Constructor.
-      Lua();
+      LuaInterface();
 
       /// Destructor.
-      ~Lua();
+      ~LuaInterface();
 
       /// Constructor, initializes state from a script.
-      Lua( std::string script );
+      LuaInterface( std::string script );
 
       /// Constructor, initializes state from a script with additional path information.
-      Lua( std::string script, std::string path );
+      LuaInterface( std::string script, std::string path );
 
       /// Access to the lua state.
       lua_State* state() const;
@@ -100,9 +100,9 @@ class Lua
       void get_value( const char* param, bool& value );
 
 };
-   
+
 template< typename T >
-T Lua::scalar( const char* param )
+T LuaInterface::scalar( const char* param )
 {
    std::pair< T, bool > value = scalar_pair< T >( param );
    if( ! value.second ) error( "'%s' must not be nil\n", param );
@@ -110,7 +110,7 @@ T Lua::scalar( const char* param )
 }
 
 template< typename T >
-std::vector< T > Lua::vector( const char* param )
+std::vector< T > LuaInterface::vector( const char* param )
 {
    std::pair< std::vector< T >, bool > value = vector_pair< T >( param );
    if( ! value.second ) error( "'%s' must not be nil\n", param );
@@ -118,7 +118,7 @@ std::vector< T > Lua::vector( const char* param )
 }
 
 template< typename T >
-std::pair< T, bool > Lua::scalar_pair( const char* param )
+std::pair< T, bool > LuaInterface::scalar_pair( const char* param )
 {
    std::pair< T, bool > value;
    lua_getglobal( _lua_state, param );
@@ -136,7 +136,7 @@ std::pair< T, bool > Lua::scalar_pair( const char* param )
 }
 
 template< typename T >
-std::pair< std::vector< T >, bool > Lua::vector_pair( const char* param )
+std::pair< std::vector< T >, bool > LuaInterface::vector_pair( const char* param )
 {
    T buffer;
    std::pair< std::vector< T >, bool > value;
@@ -162,7 +162,7 @@ std::pair< std::vector< T >, bool > Lua::vector_pair( const char* param )
 }
 
 template< typename T, typename U >
-T Lua::scalar( const char* param, U const key )
+T LuaInterface::scalar( const char* param, U const key )
 {
    std::pair< T, bool > value = scalar_pair< T >( param, key );
    if( ! value.second ) error( "'%s' table lookup is nil\n", param );
@@ -170,7 +170,7 @@ T Lua::scalar( const char* param, U const key )
 }
 
 template< typename T, typename U >
-std::vector< T > Lua::vector( const char* param, U const key )
+std::vector< T > LuaInterface::vector( const char* param, U const key )
 {
    std::pair< std::vector< T >, bool > value = vector_pair< T >( param, key );
    if( ! value.second ) error( "'%s' table lookup is nil\n", param );
@@ -178,7 +178,7 @@ std::vector< T > Lua::vector( const char* param, U const key )
 }
 
 template< typename T, typename U >
-std::pair< T, bool > Lua::scalar_pair( const char* param, U const key )
+std::pair< T, bool > LuaInterface::scalar_pair( const char* param, U const key )
 {
    std::pair< T, bool > value;
    lua_getglobal( _lua_state, param );
@@ -200,7 +200,7 @@ std::pair< T, bool > Lua::scalar_pair( const char* param, U const key )
 }
 
 template< typename T, typename U >
-std::pair< std::vector< T >, bool > Lua::vector_pair( const char* param, U const key )
+std::pair< std::vector< T >, bool > LuaInterface::vector_pair( const char* param, U const key )
 {
    T buffer;
    std::pair< std::vector< T >, bool > value;
@@ -237,13 +237,13 @@ std::pair< std::vector< T >, bool > Lua::vector_pair( const char* param, U const
 }
 
 template< typename T >
-void Lua::put_key( T const key )
+void LuaInterface::put_key( T const key )
 {
    lua_pushnumber( _lua_state, key );
 }
 
 template< typename T >
-void Lua::get_value( const char* param, T& value )
+void LuaInterface::get_value( const char* param, T& value )
 {
    if( ! lua_isnumber( _lua_state, -1 ) ) error( "'%s' should be number\n", param );
    value = (T)lua_tonumber( _lua_state, -1 );
