@@ -135,7 +135,7 @@ void transport::set_opacity(double dt)
     }
     else
     {
-       / /Not distinguishing between lab frame density and comoving frame density
+       // Not distinguishing between lab frame density and comoving frame density
 	     double fleck_beta  = 4.0*pc::a*pow(grid->z[i].T_gas,4)/(grid->z[i].e_gas*grid->z[i].rho);
        // here planck mean opac has units cm^-1 .
        // When grey opacity is used, planck_mean_opacity should just be the correct grey opacity
