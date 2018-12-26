@@ -126,9 +126,13 @@ void transport::set_opacity(double dt)
       photoion_opac[i] += ndens*2.0*pc::thomson_cs*photo;
     }
 
-    //------------------------------------------------------------
-    // Calcuate eps_imc...
-    //------------------------------------------------------------
+  }
+
+  //------------------------------------------------------------
+  // Calcuate eps_imc...
+  //------------------------------------------------------------
+  for (int i=0;i<grid->n_zones;i++)
+  {
     if (radiative_eq)
     {
       grid->z[i].eps_imc = 1.;
@@ -143,7 +147,7 @@ void transport::set_opacity(double dt)
        double f_imc = fleck_alpha_*fleck_beta*tfac;
        grid->z[i].eps_imc = 1.0/(1.0 + f_imc);
     }
-    }
+  }
 
   // turn nlte back on after first step, if wanted
   if (first_step_) {
