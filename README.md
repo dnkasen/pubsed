@@ -4,6 +4,8 @@ Sedona is a code base primarily focused on calculating the radiation signatures 
 ## Get Started!
 To get started, visit `doc/` and read the Users Guide!
 
+You can find the dev guidelines at https://github.com/dnkasen/sedona6/wiki/Developers-Guide. Please read before you start editing code.
+
 To download additional atomic data, go to
 https://www.dropbox.com/sh/pw9ttd90w503vzq/AAD3H78_5dGSFCRgBoupg0Iva?dl=0
 
