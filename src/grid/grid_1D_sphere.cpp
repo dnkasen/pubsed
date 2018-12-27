@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
-#include <iomanip>   
+#include <iomanip>
 #include <math.h>
 #include <cassert>
 
@@ -46,7 +46,7 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
       std::cout << "# model file is an hdf5 file (.h5)" << endl;
       read_hdf5_file(model_file,verbose,0);
     }
-  
+
   else
     {
       found = model_file.find(mod_extension);
@@ -60,7 +60,7 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
 	  exit(1);
 	}
 
-    
+
       std::ifstream infile;
       infile.open(model_file.c_str());
       if(infile.fail())
@@ -71,7 +71,7 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
 
       // geometry of model
       infile >> grid_type;
-      if(grid_type != "1D_sphere") 
+      if(grid_type != "1D_sphere")
 	{
 	  if (verbose) cerr << "Err: grid_type param disagrees with the model file" << endl;
 	  exit(4);
@@ -79,7 +79,7 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
       if (verbose) {
 	cout << "# model file = " << model_file << "\n";
 	cout << "# Model is a 1D_sphere\n"; }
-  
+
       // type of system
       string system;
       infile >> system;
@@ -89,11 +89,11 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
       z.resize(n_zones);
       r_out.resize(n_zones);
       vol.resize(n_zones);
-  
+
       // read zone properties for a supernova remnant
-      if (system == "SNR") 
+      if (system == "SNR")
 	read_SNR_file(infile,verbose,1);
-      else if (system == "standard") 
+      else if (system == "standard")
 	read_SNR_file(infile,verbose,0);
       else {
 	if (verbose) cerr << " Don't recognize model type " << system << "; Exiting" << endl;
@@ -102,7 +102,7 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
       infile.close();
     }
 }
-    
+
 void grid_1D_sphere::read_hdf5_file(std::string model_file, int verbose, int snr)
 {
 
@@ -111,7 +111,7 @@ void grid_1D_sphere::read_hdf5_file(std::string model_file, int verbose, int snr
       if (verbose) cerr << " SNR as an hdf5 input file not currently implemented. Exiting" << endl;
       exit(1);
     }
-  
+
   // open hdf5 file
   hid_t file_id = H5Fopen(model_file.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   herr_t status;
@@ -218,10 +218,10 @@ void grid_1D_sphere::read_hdf5_file(std::string model_file, int verbose, int snr
     else     r0 = r_out[i-1];
     vol[i] = 4.0*pc::pi/3.0*(r_out[i]*r_out[i]*r_out[i] - r0*r0*r0);
   }
-  
-  
+
+
   // print out properties of the model
-  if (verbose) 
+  if (verbose)
   {
     if (snr) cout << "#\n####### 1D SNR MODEL ##########\n";
     else cout << "#\n####### 1D STANDARD MODEL ##########\n";
@@ -255,7 +255,7 @@ void grid_1D_sphere::read_hdf5_file(std::string model_file, int verbose, int snr
     cout << "##############################\n#" << endl;
 
   }
-  
+
 }
 
 void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
@@ -271,7 +271,7 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
 
   // read element isotopes, format is Z.A
   infile >> this->n_elems;
-  for (int k=0;k<n_elems;k++) 
+  for (int k=0;k<n_elems;k++)
   {
     std::string species;
     infile >> species;
@@ -319,21 +319,22 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
 	z[i].X_gas[k] /= norm;
 	z[i].mu += z[i].X_gas[k]*elems_A[k];
       }
-	
+
     // assume LTE radiation field to start
-    //    z[i].e_rad = pc::a*pow(z[i].T_gas,4);
-    z[i].e_rad = pc::a* pow(3.4e6,4);
-      
+    z[i].e_rad = pc::a*pow(z[i].T_gas,4);
+    // DEBUG - this was left over from something...
+    //z[i].e_rad = pc::a* pow(3.4e6,4);
+
     // calculate shell volume
     double r0;
     if(i==0) r0 = r_out.min;
     else     r0 = r_out[i-1];
     vol[i] = 4.0*pc::pi/3.0*(r_out[i]*r_out[i]*r_out[i] - r0*r0*r0);
   }
-  
-  
+
+
   // print out properties of the model
-  if (verbose) 
+  if (verbose)
   {
     if (snr) cout << "#\n####### 1D SNR MODEL ##########\n";
     else cout << "#\n####### 1D STANDARD MODEL ##########\n";
@@ -365,29 +366,29 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
     printf("# kinetic energy   = %.4e\n",ke);
     printf("# radiation energy = %.4e\n",re);
     cout << "##############################\n#" << endl;
-       
+
   }
 }
 
-  
+
 
 //************************************************************
 // expand the grid
 //************************************************************
-void grid_1D_sphere::expand(double e) 
+void grid_1D_sphere::expand(double e)
 {
-  for (int i=0;i<n_zones;i++) r_out[i] *= e; 
+  for (int i=0;i<n_zones;i++) r_out[i] *= e;
   r_out.min *=e;
-  
+
   // recalculate shell volume
-  for (int i=0;i<n_zones;i++) 
+  for (int i=0;i<n_zones;i++)
   {
     double r0;
     if(i==0) r0 = r_out.min;
     else     r0 = r_out[i-1];
     vol[i] = 4.0*pc::pi/3.0*(r_out[i]*r_out[i]*r_out[i] - r0*r0*r0);
   }
-  
+
 }
 
 //************************************************************
@@ -396,7 +397,7 @@ void grid_1D_sphere::expand(double e)
 int grid_1D_sphere::get_zone(const double *x) const
 {
   double r = sqrt(x[0]*x[0] + x[1]*x[1] + x[2]*x[2]);
-  
+
   // check if off the boundaries
   if(r < r_out.min             ) return -1;
   if(r >= r_out[r_out.size()-1] ) return -2;
@@ -435,7 +436,7 @@ int grid_1D_sphere::get_next_zone(const double *x, const double *D, int i, doubl
     double rad = xdotD*xdotD + r_i*r_i - rsq;
     if   (rad < 0)  l_in = -1;
     else l_in = -1*xdotD - sqrt(rad);
-  } 
+  }
 
   // find shortest positive distance
   int ind;
@@ -469,7 +470,7 @@ void grid_1D_sphere::write_plotfile(int iw, double tt, int write_mass_fracs)
   FILE *outfile;
   outfile = fopen(zonefile,"w");
 
-  fprintf(outfile,"# t = %8.4e ; rmin = %8.4e\n",tt, r_out.min); 
+  fprintf(outfile,"# t = %8.4e ; rmin = %8.4e\n",tt, r_out.min);
   fprintf(outfile, "#  %-12.12s %-15.15s %-15.15s %-15.15s %-15.15s %-15.15s %-15.15s","r", "rho","v", "T_gas", "T_rad", "L_dep_nuc","L_emit_nuc");
   if (write_mass_fracs) // output mass fractions
     {
@@ -479,7 +480,7 @@ void grid_1D_sphere::write_plotfile(int iw, double tt, int write_mass_fracs)
 	  sprintf(elem_id,"%d.%d",elems_Z[j],elems_A[j]);
 	  fprintf(outfile," %-15.15s",elem_id);
 	}
-      
+
     }
   fprintf(outfile,"\n");
 
@@ -497,15 +498,15 @@ void grid_1D_sphere::write_plotfile(int iw, double tt, int write_mass_fracs)
       }
     fprintf(outfile,"\n");
   }
-  
+
   fclose(outfile);
-  
+
   // write hdf5 file
   sprintf(zonefile,"plt_%05d.h5",iw);
 
   // open hdf5 file
   hid_t file_id = H5Fcreate( zonefile, H5F_ACC_TRUNC, H5P_DEFAULT,  H5P_DEFAULT);
- 
+
   // print out r array
   hsize_t  dims_x[1]={(hsize_t)n_zones};
   float *xarr = new float[n_zones];
@@ -517,7 +518,7 @@ void grid_1D_sphere::write_plotfile(int iw, double tt, int write_mass_fracs)
   // print out time
   hsize_t  dims_r[1]={1};
   float r0 = r_out.min;
-  H5LTmake_dataset(file_id,"r_inner",1,dims_r,H5T_NATIVE_FLOAT,&r0); 
+  H5LTmake_dataset(file_id,"r_inner",1,dims_r,H5T_NATIVE_FLOAT,&r0);
 
   hsize_t  dims_g[1]={(hsize_t) n_zones};
   write_hdf5_plotfile_zones(file_id, dims_g, 1, tt);
@@ -548,7 +549,7 @@ void grid_1D_sphere::sample_in_zone
 {
   // inner radius of shell
   double r_0;
-  if (i == 0) r_0 = r_out.min; 
+  if (i == 0) r_0 = r_out.min;
   else r_0 = r_out[i-1];
 
   // thickness of shell
@@ -571,7 +572,7 @@ void grid_1D_sphere::sample_in_zone
 
 
 //************************************************************
-// get the velocity vector 
+// get the velocity vector
 //************************************************************
 void grid_1D_sphere::get_velocity(int i, double x[3], double D[3], double v[3], double *dvds)
 {
@@ -587,7 +588,7 @@ void grid_1D_sphere::get_velocity(int i, double x[3], double D[3], double v[3], 
 
   double vv = v_0 + dv_dr*dr;
 
-  // assuming radial velocity 
+  // assuming radial velocity
   v[0] = x[0]/rr*vv;
   v[1] = x[1]/rr*vv;
   v[2] = x[2]/rr*vv;
@@ -616,8 +617,8 @@ void grid_1D_sphere::get_radial_edges
   v0 = v_inner_;
 }
 void grid_1D_sphere::set_radial_edges
-(const std::vector<double> r, const double r0, 
-const std::vector<double> v, const double v0) 
+(const std::vector<double> r, const double r0,
+const std::vector<double> v, const double v0)
 {
   r_out.min = r0;
   v_inner_ = v0;
@@ -635,5 +636,3 @@ const std::vector<double> v, const double v0)
 
 
 }
-
-
