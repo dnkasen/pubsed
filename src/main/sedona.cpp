@@ -75,10 +75,12 @@ int main(int argc, char **argv)
   // Handle restart bookkeeping
   int do_restart = params.getScalar<int>("do_restart");
   int do_checkpoint = params.getScalar<int>("do_checkpoint");
+  std::string restart_file;
+  std::string checkpoint_file;
   if (do_restart)
-    std::string restart_file = params.getScalar<string>("restart_file");
+    restart_file = params.getScalar<string>("restart_file");
   if (do_checkpoint)
-    std::string checkpoint_file = params.getScalar<string>("checkpoint_file");
+    checkpoint_file = params.getScalar<string>("checkpoint_file");
 // TODO: complain if old and new code versions aren't the same.
 
   //---------------------------------------------------------------------
@@ -274,14 +276,19 @@ int main(int argc, char **argv)
 
       //write spectrum
       if (use_transport)
-        mcarlo.output_spectrum(i_write+1)
-          
+        mcarlo.output_spectrum(i_write+1);
+      
       if (do_checkpoint) {
-        grid->writeCheckpointGrid(checkpoint_file);
+        createFile(checkpoint_file);
+        std::cerr << "checkpointing" << std::endl;
         grid->writeCheckpointZones(checkpoint_file);
+        std::cerr << "wrote zones" << std::endl;
         mcarlo.writeCheckpointParticles(checkpoint_file);
-        mcarlo.optical_spectrum.writeCheckpoint(checkpoint_file, "optical spectrum");
-        mcarlo.gamma_spectrum.writeCheckpoint(checkpoint_file, "gamma spectrum");
+        std::cerr << "wrote particles" << std::endl;
+        mcarlo.writeCheckpointSpectra(checkpoint_file);
+        std::cerr << "wrote spectrum" << std::endl;
+        grid->writeCheckpointGrid(checkpoint_file);
+        std::cerr << "wrote grid" << std::endl;
       }
         
       // determine next write out

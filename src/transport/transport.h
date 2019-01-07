@@ -106,7 +106,9 @@ class transport
 
   // class to hold output spectrum
   spectrum_array optical_spectrum;
+  spectrum_array optical_spectrum_new;
   spectrum_array gamma_spectrum;
+  spectrum_array gamma_spectrum_new;
 
   // random number generator
   mutable thread_RNG rangen;
@@ -255,9 +257,11 @@ class transport
 
   void writeCheckpointParticles(std::string fname);
   void writeParticleProp(std::string fname, std::string fieldname, int total_particles, int offset);
+  void writeCheckpointSpectra(std::string fname);
 
-  void readCheckpointParticles(std::string fname, bool test);
+  void readCheckpointParticles(std::string fname, bool test=false);
   void readParticleProp(std::string fname, std::string fieldname, int total_particles, int offset);
+  void readCheckpointSpectra(std::string fname, bool test=false);
 
   void testCheckpointParticles();
   void testCheckpointSpectrum();

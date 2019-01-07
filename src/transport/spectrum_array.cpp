@@ -86,29 +86,41 @@ void spectrum_array::writeCheckpointSpectrum(std::string fname, std::string spec
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
   MPI_Comm_rank(MPI_COMM_WORLD, &nproc);
   if (my_rank == 0) {
-    createFile(fname);
+    std::cerr << "creating spectrum group" << std::endl;
     createGroup(fname, spectrum_name);
+    std::cerr << "writing props" << std::endl;
     time_grid.writeCheckpoint(fname, spectrum_name, "time_grid");
+    std::cerr << "wrote time" << std::endl;
     wave_grid.writeCheckpoint(fname, spectrum_name, "wave_grid");
+    std::cerr << "wrote wave" << std::endl;
     mu_grid.writeCheckpoint(fname, spectrum_name, "mu_grid");
+    std::cerr << "wrote mu" << std::endl;
     phi_grid.writeCheckpoint(fname, spectrum_name, "phi_grid");
+    std::cerr << "wrote phi" << std::endl;
 
     writeVector(fname, spectrum_name, "flux", flux, H5T_NATIVE_DOUBLE);
+    std::cerr << "wrote flux" << std::endl;
     writeVector(fname, spectrum_name, "click", click, H5T_NATIVE_INT);
+    std::cerr << "wrote click" << std::endl;
 
     hsize_t single_val = 1;
     hsize_t name_len = 1000;
     createDataset(fname, spectrum_name, "n_elements", 1, &single_val, H5T_NATIVE_INT);
     writeSimple(fname, spectrum_name, "n_elements", &n_elements, H5T_NATIVE_INT);
+    std::cerr << "wrote nelems" << std::endl;
 
-    createDataset(fname, spectrum_name, "name", 1, &name_len, H5T_STRING);
-    writeSimple(fname, spectrum_name, "name", name, H5T_STRING);
+    createDataset(fname, spectrum_name, "name", 1, &name_len, H5T_C_S1);
+    writeSimple(fname, spectrum_name, "name", name, H5T_C_S1);
+    std::cerr << "wrote name" << std::endl;
     createDataset(fname, spectrum_name, "a1", 1, &single_val, H5T_NATIVE_INT);
     writeSimple(fname, spectrum_name, "a1", &a1, H5T_NATIVE_INT);
+    std::cerr << "wrote a1" << std::endl;
     createDataset(fname, spectrum_name, "a2", 1, &single_val, H5T_NATIVE_INT);
     writeSimple(fname, spectrum_name, "a2", &a2, H5T_NATIVE_INT);
+    std::cerr << "wrote a2" << std::endl;
     createDataset(fname, spectrum_name, "a3", 1, &single_val, H5T_NATIVE_INT);
     writeSimple(fname, spectrum_name, "a3", &a3, H5T_NATIVE_INT);
+    std::cerr << "wrote a3" << std::endl;
   }
   MPI_Barrier(MPI_COMM_WORLD);
 }
@@ -138,19 +150,19 @@ void spectrum_array::readCheckpointSpectrum(std::string fname, std::string n) {
 
 bool spectrum_array::is_equal(spectrum_array sa, bool complain) {
   bool equal = true;
-  if (not time_grid.is_equal(sa.time_grid)) {
+  if (not time_grid.is_equal(sa.time_grid, complain)) {
     if (complain) std::cerr << "spectrum array time grids are different" << std::endl;
     equal = false;
   }
-  if (not wave_grid.is_equal(sa.wave_grid)) {
+  if (not wave_grid.is_equal(sa.wave_grid, complain)) {
     if (complain) std::cerr << "spectrum array wave grids are different" << std::endl;
     equal = false;
   }
-  if (not mu_grid.is_equal(sa.mu_grid)) {
+  if (not mu_grid.is_equal(sa.mu_grid, complain)) {
     if (complain) std::cerr << "spectrum array mu grids are different" << std::endl;
     equal = false;
   }
-  if (not phi_grid.is_equal(sa.phi_grid)) {
+  if (not phi_grid.is_equal(sa.phi_grid, complain)) {
     if (complain) std::cerr << "spectrum array phi grids are different" << std::endl;
     equal = false;
   }

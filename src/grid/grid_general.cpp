@@ -14,7 +14,7 @@ void grid_general::init(ParameterReader* params)
   MPI_Comm_size( MPI_COMM_WORLD, &nproc );
 
   // If it's a restart, restart the grid. Otherwise read in the model file
-  if (params->getScalar<int>("restart"))
+  if (params->getScalar<int>("do_restart"))
     restartGrid(params);
   else
 	  read_model_file(params);
@@ -77,8 +77,9 @@ void grid_general::write_hdf5_plotfile_zones
 void grid_general::writeCheckpointZones(std::string fname) {
   /* Mercifully, only rank 0 has to do any of this */
   if (my_rank == 0) {
-    createFile(fname);
+    std::cerr << "creating group" << std::endl;
     createGroup(fname, "zones");
+    std::cerr << "creating scalar prop" << std::endl;
     writeScalarZoneProp(fname, "v");
     writeScalarZoneProp(fname, "rho");
     writeScalarZoneProp(fname, "cs");
@@ -220,7 +221,7 @@ void grid_general::writeVectorZoneProp(std::string fname, std::string fieldname)
   writeSimple(fname, "zones", fieldname, buffer, t);
 }
 
-void grid_general::readCheckpointZones(std::string fname, bool test = false) {
+void grid_general::readCheckpointZones(std::string fname, bool test) {
   /* To avoid doing extra communication, each rank will read in its own grid data. */
   for (int rank = 0; rank < nproc; rank++) {
     if (my_rank == rank) {
@@ -369,7 +370,6 @@ void grid_general::readVectorZoneProp(std::string fname, std::string fieldname) 
 void grid_general::writeCheckpointGeneralGrid(std::string fname) {
   /* Mercifully, only rank 0 has to do any of this, but calling function will handle telling
    * which ranks to do what */
-  createFile(fname);
   createGroup(fname, "grid");
   hsize_t single_val = 1;
   hsize_t elem_dim = n_elems;
@@ -387,7 +387,7 @@ void grid_general::writeCheckpointGeneralGrid(std::string fname) {
 
 }
 
-void grid_general::readCheckpointGeneralGrid(std::string fname, bool test = false) {
+void grid_general::readCheckpointGeneralGrid(std::string fname, bool test) {
   readSimple(fname, "grid", "t_now", &t_now_new, H5T_NATIVE_DOUBLE);
   readSimple(fname, "grid", "n_zones", &n_zones_new, H5T_NATIVE_INT);
   readSimple(fname, "grid", "n_elems", &n_elems_new, H5T_NATIVE_INT);

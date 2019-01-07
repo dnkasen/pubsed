@@ -77,16 +77,24 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
 }
     
 void grid_1D_sphere::restartGrid(ParameterReader* params) {
+  // verbocity
+#ifdef MPI_PARALLEL
+  int my_rank;
+  MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
+  const int verbose = (my_rank == 0);
+#else
+  const int verbose = 1;
+#endif
   string restart_file = params->getScalar<string>("model_file");
 
   // geometry of model
-  if(params.getScalar<string>("grid_type") != "1D_sphere") 
+  if(params->getScalar<string>("grid_type") != "1D_sphere") 
   {
     if (verbose) cerr << "Err: grid_type param disagrees with the model file" << endl;
     exit(4);
   }
   if (verbose) {
-    cout << "# model file = " << model_file << "\n";
+    cout << "# model file = " << restart_file << "\n";
     cout << "# Model is a 1D_sphere\n"; }
 
   string checkpoint_file_name = params->getScalar<string>("checkpoint_file");
@@ -490,7 +498,7 @@ void grid_1D_sphere::writeCheckpointGrid(std::string fname) {
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
-void grid_1D_sphere::readCheckpointGrid(std::string fname, bool test = false) {
+void grid_1D_sphere::readCheckpointGrid(std::string fname, bool test) {
   for (int rank = 0; rank < nproc; rank++) {
     if (my_rank == rank) {
       readCheckpointGeneralGrid(fname, test);

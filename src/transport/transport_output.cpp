@@ -264,7 +264,6 @@ void transport::writeCheckpointParticles(std::string fname) {
     hsize_t dims1[1] =  {global_n_particles_total};
     int ndim3 = 2;
     hsize_t dims3[2] = {global_n_particles_total, 3};
-    createFile(fname);
     createGroup(fname, "particles");
     createDataset(fname, "particles", "type", ndim1, dims1, H5T_NATIVE_INT);
     createDataset(fname, "particles", "x", ndim3, dims3, H5T_NATIVE_DOUBLE);
@@ -411,7 +410,12 @@ void transport::writeParticleProp(std::string fname, std::string fieldname, int 
   }
 }
 
-void transport::readCheckpointedParticles(std::string fname, bool test = false) {
+void transport::writeCheckpointSpectra(std::string fname) {
+  optical_spectrum.writeCheckpointSpectrum(fname, "optical spectrum");
+  gamma_spectrum.writeCheckpointSpectrum(fname, "gamma spectrum");
+}
+
+void transport::readCheckpointParticles(std::string fname, bool test) {
   /* Get number of particles that are stored in the file */
   hsize_t global_n_particles_total;
   for (int rank = 0; rank < MPI_nprocs; rank++) {
@@ -579,4 +583,9 @@ void transport::readParticleProp(std::string fname, std::string fieldname, int t
     std::cerr << "HDF5 type is wrong" << std::endl;
     exit(3);
   }
+}
+
+void transport::readCheckpointSpectra(std::string fname, bool test) {
+  optical_spectrum.readCheckpointSpectrum(fname, "optical spectrum");
+  gamma_spectrum.readCheckpointSpectrum(fname, "gamma spectrum");
 }

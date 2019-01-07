@@ -5,6 +5,12 @@
 #include <hdf5.h>
 #include "h5utils.h"
 
+hid_t H5VarString() {
+  hid_t var_string = H5Tcopy(H5T_C_S1);
+  H5Tset_size(var_string, 256);
+  return var_string;
+}
+
 void createFile(std::string fname){
   hid_t h5file = H5Fcreate(fname.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
   H5Fclose(h5file);

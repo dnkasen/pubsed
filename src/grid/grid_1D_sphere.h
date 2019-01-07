@@ -56,7 +56,7 @@ public:
     r[0] = r_out[i]; r[1] = 0; r[2] = 0;}
 
   void writeCheckpointGrid(std::string fname);
-  void readCheckpointGrid(std::string fname);
+  void readCheckpointGrid(std::string fname, bool test=false);
   void testCheckpointGrid();
 
   void restartGrid(ParameterReader* params);

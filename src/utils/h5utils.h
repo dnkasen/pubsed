@@ -5,6 +5,8 @@
 #include <iostream>
 #include <hdf5.h>
 
+// Returns variable length string HDF5 type
+hid_t H5VarString();
 // Creates and closes a new HDF5 file called fname
 void createFile(std::string fname);
 
