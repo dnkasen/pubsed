@@ -213,18 +213,21 @@ void spectrum_array::print()
   H5LTmake_dataset(file_id,"time",RANK,dims_t,H5T_NATIVE_FLOAT,tmp_array);
   delete[] tmp_array;
 
-  // write fluxes array
+  int *click_buffer = click.data();
+  // write fluxes and counts arrays
   if (n_mu == 1)
   {
     const int RANKF = 2;
     hsize_t  dims_flux[RANKF]={(hsize_t)n_t,(hsize_t)n_nu};
     H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
+    H5LTmake_dataset(file_id,"click",RANKF,dims_flux,H5T_NATIVE_INT,click_buffer);
   }
   else
   {
     const int RANKF = 3;
     hsize_t  dims_flux[RANKF]={(hsize_t)n_t,(hsize_t)n_nu,(hsize_t)n_mu};
     H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
+    H5LTmake_dataset(file_id,"click",RANKF,dims_flux,H5T_NATIVE_INT,click_buffer);
   }
   delete[] darray;
 
