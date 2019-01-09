@@ -260,17 +260,26 @@ void transport::writeCheckpointParticles(std::string fname) {
   MPI_Bcast(&global_n_particles_total, 1, MPI_INT, 0, MPI_COMM_WORLD);
   // Rank 0 sets up all of the datasets in the H5 file
   if (MPI_myID == 0) {
+    createFile(fname);
     int ndim1 = 1;
     hsize_t dims1[1] =  {global_n_particles_total};
     int ndim3 = 2;
     hsize_t dims3[2] = {global_n_particles_total, 3};
+    std::cerr << "making group" << std::endl;
     createGroup(fname, "particles");
+    std::cerr << "making datasets" << std::endl;
     createDataset(fname, "particles", "type", ndim1, dims1, H5T_NATIVE_INT);
+    std::cerr << "making x" << std::endl;
     createDataset(fname, "particles", "x", ndim3, dims3, H5T_NATIVE_DOUBLE);
+    std::cerr << "making D" << std::endl;
     createDataset(fname, "particles", "D", ndim3, dims3, H5T_NATIVE_DOUBLE);
+    std::cerr << "making ind" << std::endl;
     createDataset(fname, "particles", "ind", ndim1, dims1, H5T_NATIVE_INT);
+    std::cerr << "making t" << std::endl;
     createDataset(fname, "particles", "t", ndim1, dims1, H5T_NATIVE_DOUBLE);
+    std::cerr << "making e" << std::endl;
     createDataset(fname, "particles", "e", ndim1, dims1, H5T_NATIVE_DOUBLE);
+    std::cerr << "bisection 1" << std::endl;
     createDataset(fname, "particles", "nu", ndim1, dims1, H5T_NATIVE_DOUBLE);
     createDataset(fname, "particles", "gamma", ndim1, dims1, H5T_NATIVE_DOUBLE);
     createDataset(fname, "particles", "dshift", ndim1, dims1, H5T_NATIVE_DOUBLE);
@@ -280,6 +289,7 @@ void transport::writeCheckpointParticles(std::string fname) {
   MPI_Barrier(MPI_COMM_WORLD);
   for (int i = 0; i < MPI_nprocs; i++) {
     if (i == MPI_myID) {
+      std::cerr << "writing props" << std::endl;
       writeParticleProp(fname, "type", global_n_particles_total, my_offset);
       writeParticleProp(fname, "x", global_n_particles_total, my_offset);
       writeParticleProp(fname, "D", global_n_particles_total, my_offset);

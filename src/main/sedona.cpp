@@ -281,10 +281,10 @@ int main(int argc, char **argv)
       if (do_checkpoint) {
         createFile(checkpoint_file);
         std::cerr << "checkpointing" << std::endl;
-        grid->writeCheckpointZones(checkpoint_file);
-        std::cerr << "wrote zones" << std::endl;
         mcarlo.writeCheckpointParticles(checkpoint_file);
         std::cerr << "wrote particles" << std::endl;
+        grid->writeCheckpointZones(checkpoint_file);
+        std::cerr << "wrote zones" << std::endl;
         mcarlo.writeCheckpointSpectra(checkpoint_file);
         std::cerr << "wrote spectrum" << std::endl;
         grid->writeCheckpointGrid(checkpoint_file);

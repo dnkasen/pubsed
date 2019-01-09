@@ -29,13 +29,21 @@ void createGroup(hid_t h5parent, std::string gname){
 }
 
 void createDataset(std::string fname, std::string gname, std::string dname, int dim, hsize_t* fdims, hid_t type){
+  std::cerr << "open file" << std::endl;
   hid_t h5file  = H5Fopen(fname.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+  std::cerr << "open group" << std::endl;
   hid_t h5group = H5Gopen1(h5file, gname.c_str());
+  std::cerr << "open fsimple" << std::endl;
   hid_t fspace  = H5Screate_simple(dim,fdims,NULL);
+  std::cerr << "open dataset" << std::endl;
   hid_t h5dset  = H5Dcreate1(h5group, dname.c_str(), type, fspace, H5P_DEFAULT);
-  H5Sclose(fspace);
+  std::cerr << "close dataset" << std::endl;
   H5Dclose(h5dset);
+  std::cerr << "close fspace" << std::endl;
+  H5Sclose(fspace);
+  std::cerr << "close group" << std::endl;
   H5Gclose(h5group);
+  std::cerr << "close file" << std::endl;
   H5Fclose(h5file);
 }
 

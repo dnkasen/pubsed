@@ -20,6 +20,7 @@ void transport::testCheckpointParticles() {
     MPI_Barrier(MPI_COMM_WORLD);
   }
 
+  createFile("test_particles.h5");
   writeCheckpointParticles("test_particles.h5");
 
   MPI_Barrier(MPI_COMM_WORLD);
