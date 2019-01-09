@@ -245,7 +245,8 @@ void transport::write_radiation_file(int iw)
 void transport::writeCheckpointParticles(std::string fname) {
   // Figures out what every rank's offset is going to be in the big particle list
   int my_n_particles = n_particles();
-  int my_offset, global_n_particles_total;
+  int my_offset;
+  int global_n_particles_total = 0;
   int* global_n_particles = new int[MPI_nprocs];
   int* particle_offsets = new int[MPI_nprocs];
   MPI_Gather(&my_n_particles, 1, MPI_INT, global_n_particles, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -259,8 +260,9 @@ void transport::writeCheckpointParticles(std::string fname) {
   MPI_Scatter(particle_offsets, 1, MPI_INT, &my_offset, 1, MPI_INT, 0, MPI_COMM_WORLD);
   MPI_Bcast(&global_n_particles_total, 1, MPI_INT, 0, MPI_COMM_WORLD);
   // Rank 0 sets up all of the datasets in the H5 file
+  std::cerr << my_n_particles << " " << global_n_particles_total << std::endl;
   if (MPI_myID == 0) {
-    createFile(fname);
+    //createFile(fname);
     int ndim1 = 1;
     hsize_t dims1[1] =  {global_n_particles_total};
     int ndim3 = 2;

@@ -86,7 +86,7 @@ int main(int argc, char **argv)
   //---------------------------------------------------------------------
   // SET UP THE GRID
   //---------------------------------------------------------------------
-  grid_general *grid;
+  grid_general *grid = NULL;
 
   // read the grid type
   string grid_type = params.getScalar<string>("grid_type");
