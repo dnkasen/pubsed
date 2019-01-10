@@ -38,17 +38,24 @@ AtomicSpecies::AtomicSpecies()
   use_betas_          = 0;
   minimum_extinction_ = 0;
   use_nlte_           = 0;
+  
+  n_levels_            = 0;
+  n_lines_             = 0;
+  n_ions_              = 0;
 
+  levels_             = NULL;
+  lines_              = NULL;
+  ions_               = NULL;
   // debug -- I hard coded this for now...
   min_level_pop_ = 1e-30;
 }
 
 AtomicSpecies::~AtomicSpecies() {
-  if (levels_)
+  if (levels_ != NULL)
     delete[] levels_;
-  if (lines_)
+  if (lines_ != NULL)
     delete[] lines_;
-  if (ions_)
+  if (ions_ != NULL)
     delete[] ions_;
 }
 
