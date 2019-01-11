@@ -17,3 +17,5 @@ one_zone_NLTE/optically_thick_solar
 lucy_supernova/1D
 lucy_supernova/1D_rwmc
 lucy_supernova/2D
+#one_zone_rad_eq/grey_IMC
+sod_shock_tube

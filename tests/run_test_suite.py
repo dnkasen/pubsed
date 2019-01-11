@@ -17,6 +17,11 @@ import timeit
 
 parser = optparse.OptionParser()
 parser.add_option("-n",dest="nproc")
+parser.add_option("--testlist","-t",dest="testlist",type='string')
+parser.add_option("--testfile","-f",dest="testfile",type="string")
+parser.add_option("--outfile","-o",dest="outfile",type="string")
+parser.add_option("-v",action="store_true",dest="verbose")
+
 (opts, args) = parser.parse_args()
 
 nproc = 1
@@ -28,25 +33,38 @@ executable = "sedona6.ex"
 
 homedir = os.getcwd()
 date = time.strftime("%m-%d-%y")
-outfile = homedir + '/test_results_' + date + '.txt'
-pdffile = homedir + '/test_results_' + date + '.pdf'
-pdf = PdfPages(pdffile)
-runcommand = "mpirun -np " + str(nproc) + " ./" + executable + " >> " + outfile
 
+# setup output files
+if (opts.outfile):
+    outfile = homedir + '/' + opts.outfile + '.txt'
+    pdffile = homedir + '/' + opts.outfile + '.pdf'
+else:
+    outfile = homedir + '/test_results_' + date + '.txt'
+    pdffile = homedir + '/test_results_' + date + '.pdf'
+pdf = PdfPages(pdffile)
+
+
+runcommand = "mpirun -np " + str(nproc) + " ./" + executable
+if (not opts.verbose):
+    runcommand = runcommand + " >> " + outfile
 
 
 ########################################
 
-# get list of tests in suite_test_list file
-fin = open("suite_test_list","r")
-
-testlist = []
-for line in fin:
-    line = line.rstrip('\n')
-    line = line.rstrip(' ')
-    if (os.path.isdir(line)):
-        testlist.append(line)
-
+# get list of tests eihter from input flag
+if (opts.testlist):
+    testlist = opts.testlist.split(',')
+# or else from the default list file
+else:
+    testfile_name = "suite_test_list"
+    if (opts.testfile): testfile_name = opts.testfile
+    fin = open(testfile_name,"r")
+    testlist = []
+    for line in fin:
+        line = line.rstrip('\n')
+        line = line.rstrip(' ')
+        if (os.path.isdir(line)):
+            testlist.append(line)
 
 line = "echo \"Testing SEDONA code on " + date + "\"  > " + outfile
 print "Testing SEDONA code on " + date + "\n"

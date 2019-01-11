@@ -17,7 +17,7 @@ ParticleFate transport::do_scatter(particle *p, double eps)
   // do photon interaction physics
   if (p->type == photon)
   {
-    // see if scattered 
+    // see if scattered
     if (rangen.uniform() > eps)
       {
 	if (compton_scatter_photons_)
@@ -30,18 +30,19 @@ ParticleFate transport::do_scatter(particle *p, double eps)
       // check for effective scattering
       double z2 = rangen.uniform();
       // enforced radiative equilibrium always effective scatters
-      if (z2 > zone->eps_imc) isotropic_scatter(p,1);
+      if ((z2 > zone->eps_imc)||(radiative_eq))
+       isotropic_scatter(p,1);
       else fate = absorbed;
     }
   }
-    
+
   // gamma ray interaction physics
   if (p->type == gammaray)
   {
-    // see if scattered 
+    // see if scattered
     if (rangen.uniform() > eps) compton_scatter(p);
     // or if absorbed, turn it into a photon
-    else 
+    else
     {
       grid->z[p->ind].L_radio_dep += p->e;
       p->type = photon;
@@ -57,12 +58,12 @@ ParticleFate transport::do_scatter(particle *p, double eps)
       // lorentz transform back to lab frame
       transform_comoving_to_lab(p);
       // debug - didn't put in transform in
-    } 
+    }
   }
   return fate;
 
 }
-      
+
 
 //------------------------------------------------------------
 // physics of compton scattering for gamma-rays
@@ -85,7 +86,7 @@ void transport::compton_scatter(particle *p)
     D_new[0] = smu*cos(phi);
     D_new[1] = smu*sin(phi);
     D_new[2] = mu;
-    
+
     // angle between old and new directions
     double cost = p->D[0]*D_new[0] + p->D[1]*D_new[1] + p->D[2]*D_new[2];
     // new energy ratio (E_new/E_old) at this angle (assuming lambda in MeV)
@@ -95,15 +96,15 @@ void transport::compton_scatter(particle *p)
     // see if this scatter angle OK
     if (rangen.uniform() < diff_cs) break;
   }
-  
+
   // new frequency
   p->nu = p->nu*E_ratio;
-  
+
   // add in gamma-ray energy deposition
   //if (p->type == gammaray) grid->z[p->ind].L_radio_dep += p->e*(1 - E_ratio);
 
   // sample whether we stay alive, if not become a photon
-  if (rangen.uniform() > E_ratio) 
+  if (rangen.uniform() > E_ratio)
   {
     grid->z[p->ind].L_radio_dep += p->e;
     p->type = photon;
@@ -133,10 +134,10 @@ void transport::sample_MB_vector(double T, double* v_e, double* p_d)
   while (true)
     {
 
-      // if you prefer, you could also rejection sample to get v_tot. 
-      
+      // if you prefer, you could also rejection sample to get v_tot.
+
       double v_tot = sqrt(2. * pc::k * T /pc::m_e) * mb_dv * (mb_cdf_.sample(rangen.uniform()) + rangen.uniform() );
-      
+
       double mu  = 1. - 2.0*rangen.uniform();
       double phi = 2.0*pc::pi*rangen.uniform();
       double smu = sqrt(1 - mu*mu);
@@ -183,11 +184,11 @@ void transport::compton_scatter_photon(particle *p)
   double beta   = v_tot/pc::c;
   double gamma  = 1.0/sqrt(1 - beta*beta);
   double vdd = (v_sc[0] * p->D[0] + v_sc[1] * p->D[1] + v_sc[2] * p->D[2] );
-  
+
   double dshift_into_scatterer = gamma * (1. - vdd/pc::c); // this is simplified since we defined beta and gamma based on the parallel velocity component
 
     // transform the 0th component (energy and frequency)
-  p->e  *= dshift_into_scatterer; 
+  p->e  *= dshift_into_scatterer;
   p->nu *= dshift_into_scatterer;
 
   // transform the 1-3 components (direction)
@@ -196,11 +197,11 @@ void transport::compton_scatter_photon(particle *p)
   p->D[1] = 1.0/dshift_into_scatterer * (p->D[1] - gamma*v_sc[1]/pc::c * (1. - gamma*vdd/pc::c/(gamma+1)) );
   p->D[2] = 1.0/dshift_into_scatterer * (p->D[2] - gamma*v_sc[2]/pc::c * (1. - gamma*vdd/pc::c/(gamma+1)) );
 
-  
+
   // sample new direction by rejection method
   double E_ratio;
   double D_new[3];
-      
+
   while (true)
   {
     // isotropic new direction
@@ -210,7 +211,7 @@ void transport::compton_scatter_photon(particle *p)
     D_new[0] = smu*cos(phi);
     D_new[1] = smu*sin(phi);
     D_new[2] = mu;
-    
+
     // angle between old and new directions
     double cost = p->D[0]*D_new[0] + p->D[1]*D_new[1] + p->D[2]*D_new[2];
     // new energy ratio (E_new/E_old) at this angle (assuming lambda in MeV)
@@ -225,16 +226,16 @@ void transport::compton_scatter_photon(particle *p)
   p->nu = p->nu * E_ratio;
   p->e = p->e * E_ratio;
 
-  
+
   //Transform out of rest frame of electon into comoving frame
     // shift back to comoving frame
   for (int i=0;i<3;i++) v_sc[i] = -1.*v_sc[i];
   vdd = (v_sc[0] * D_new[0] + v_sc[1] * D_new[1] + v_sc[2] * D_new[2] );
-  
+
   double dshift_out_scatterer = gamma * (1. - vdd/pc::c);
 
     // transform the 0th component (energy and frequency)
-  p->e  *= dshift_out_scatterer; 
+  p->e  *= dshift_out_scatterer;
   p->nu *= dshift_out_scatterer;
 
   // transform the 1-3 components (direction)
@@ -256,9 +257,9 @@ void transport::compton_scatter_photon(particle *p)
 //   assert(p->ind >= 0);
 //   // get doppler shift from lab to comoving frame
 //   double dshift_in = dshift_lab_to_comoving(&p);
-  
+
 //   // transform energy, frequency into comoving frame
-//   p->e  *= dshift_in; 
+//   p->e  *= dshift_in;
 //   p->nu *= dshift_in;
 
 //   // Randomly generate new direction isotropically in comoving frame
@@ -276,7 +277,7 @@ void transport::compton_scatter_photon(particle *p)
 //     int ilam  = emis[p->ind].sample(rangen.uniform());
 //     p->nu = nu_grid.sample(ilam,rangen.uniform());
 //   }
-  
+
 //   // lorentz transform back to lab frame
 //   transform_comoving_to_lab(&p);
 
@@ -303,7 +304,7 @@ void transport::isotropic_scatter(particle *p, int redist)
   // transform quantities into comoving frame
   p->e  = p->e*dshift_in;
   p->nu = p->nu*dshift_in;
-  
+
   // sample new direction by rejection method
   double D_new[3];
 
@@ -314,17 +315,17 @@ void transport::isotropic_scatter(particle *p, int redist)
   D_new[0] = smu*cos(phi);
   D_new[1] = smu*sin(phi);
   D_new[2] = mu;
-  
+
   // choose new wavelength if redistributed
   if (redist) sample_photon_frequency(p);
 
   // outgoing velocity vector
   for (int i=0;i<3;i++) V[i] = -1*V[i];
-  
+
   // doppler shifts outgoing
   double vdp = (D_new[0]*V[0] + D_new[1]*V[1] + D_new[2]*V[2]);
   double vd_out = gamma*(1 - vdp/pc::c);
-  
+
   // transformation of direction vector back into lab frame
   p->D[0] = 1.0/vd_out*(D_new[0] - gamma*V[0]/pc::c*(1 - gamma*vdp/pc::c/(gamma+1)));
   p->D[1] = 1.0/vd_out*(D_new[1] - gamma*V[1]/pc::c*(1 - gamma*vdp/pc::c/(gamma+1)));
@@ -333,12 +334,8 @@ void transport::isotropic_scatter(particle *p, int redist)
   p->D[0] = p->D[0]/norm;
   p->D[1] = p->D[1]/norm;
   p->D[2] = p->D[2]/norm;
-  
+
   // transformation of energy/wavelength into lab frame
   p->e  = p->e*vd_out;
   p->nu = p->nu*vd_out;
 }
-  
-
-
-

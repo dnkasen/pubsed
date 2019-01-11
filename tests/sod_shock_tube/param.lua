@@ -10,6 +10,7 @@ hydro_module     = "1D_lagrangian"
 hydro_gamma_index = 1.4
 hydro_cfl         = 0.1
 hydro_viscosity_parameter = 3
+hydro_mean_particle_mass = 1.0
 
 -- use no transport
 transport_module = ""
