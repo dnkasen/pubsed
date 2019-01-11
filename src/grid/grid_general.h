@@ -44,7 +44,7 @@ class grid_general
 
   void writeCheckpointGeneralGrid(std::string fname);
   void readCheckpointGeneralGrid(std::string fname, bool test=false);
-  void testCheckpointGeneralGrid();
+  void testCheckpointGeneralGrid(std::string fname);
 
  public:
 
@@ -89,7 +89,7 @@ class grid_general
   void readScalarZoneProp(std::string fname, std::string fieldname);
   void readVectorZoneProp(std::string fname, std::string fieldname);
 
-  void testCheckpointZones();
+  void testCheckpointZones(std::string fname);
 
   //****** virtual functions (geometry specific)
 
@@ -133,7 +133,7 @@ class grid_general
   /* TODO: MAKE PURE VIRTUAL EVENTUALLY */
   virtual void writeCheckpointGrid(std::string fname) {};
   virtual void readCheckpointGrid(std::string fname, bool test=false) {};
-  virtual void testCheckpointGrid() {};
+  virtual void testCheckpointGrid(std::string fname) {};
   virtual void restartGrid(ParameterReader* params) {};
 
 

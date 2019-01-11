@@ -5,16 +5,16 @@
 #include "physical_constants.h"
 namespace pc = physical_constants;
 
-void grid_general::testCheckpointZones() {
+void grid_general::testCheckpointZones(std::string fname) {
   std::cerr << "starting to test zones" << std::endl;
 
-  writeCheckpointZones("test_zones.h5");
+  writeCheckpointZones(fname);
 
   std::cerr << "wrote checkpoint zones" << std::endl;
 
   MPI_Barrier(MPI_COMM_WORLD);
 
-  readCheckpointZones("test_zones.h5", true);
+  readCheckpointZones(fname, true);
 
   std::cerr << "read checkpoint zones" << std::endl;
 
@@ -138,12 +138,12 @@ void grid_general::testCheckpointZones() {
 }
 
 
-void grid_general::testCheckpointGeneralGrid() {
-  writeCheckpointGrid("grid.h5");
+void grid_general::testCheckpointGeneralGrid(std::string fname) {
+  writeCheckpointGrid(fname);
 
   MPI_Barrier(MPI_COMM_WORLD);
 
-  readCheckpointGrid("grid.h5", true);
+  readCheckpointGrid(fname, true);
 
   for (int rank = 0; rank < nproc; rank++) {
     std::cerr << "rank " << my_rank << std::endl;

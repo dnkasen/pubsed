@@ -57,6 +57,8 @@ int main(int argc, char **argv){
     if( argc > 1 ) param_file = std::string( argv[ 1 ] );
     ParameterReader params(param_file,verbose);
 
+    std::string test_fname = "test_check.h5";
+    createFile(test_fname);
     grid_general *grid;
 
     // read the grid type
@@ -82,16 +84,18 @@ int main(int argc, char **argv){
     if (use_transport) mcarlo.init(&params, grid);
 
     std::cerr << "testing particles" << std::endl;
-    mcarlo.testCheckpointParticles();
+    mcarlo.testCheckpointParticles(test_fname);
 
     for (int i = 0; i < grid->elems_A.size();i++) {
       std::cerr << grid->elems_A[i] << " " << grid->elems_Z[i] << std::endl;
     }
 
     std::cerr << "testing grid" << std::endl;
-    grid->testCheckpointGrid();
+    grid->testCheckpointGrid(test_fname);
     std::cerr << "testing zones" << std::endl;
-    grid->testCheckpointZones();
+    grid->testCheckpointZones(test_fname);
+
+    mcarlo.testCheckpointSpectrum(test_fname);
 
     MPI_Finalize();
 

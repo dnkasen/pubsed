@@ -8,7 +8,7 @@
 #include "transport.h"
 #include "physical_constants.h"
 
-void transport::testCheckpointParticles() {
+void transport::testCheckpointParticles(std::string fname) {
   for (int rank = 0; rank < MPI_nprocs; rank++) {
     if (rank == MPI_myID) {
       std::cerr << "rank " << rank << std::endl;
@@ -20,12 +20,11 @@ void transport::testCheckpointParticles() {
     MPI_Barrier(MPI_COMM_WORLD);
   }
 
-  createFile("test_particles.h5");
-  writeCheckpointParticles("test_particles.h5");
+  writeCheckpointParticles(fname);
 
   MPI_Barrier(MPI_COMM_WORLD);
 
-  readCheckpointParticles("test_particles.h5", true);
+  readCheckpointParticles(fname, true);
 
   for (int rank = 0; rank < MPI_nprocs; rank++) {
     if (rank == MPI_myID) {
@@ -99,16 +98,17 @@ void transport::testCheckpointParticles() {
   std::cerr << "Partices written out and back in correctly on rank " << MPI_myID << std::endl;
 }
 
-void transport::testCheckpointSpectrum() {
-  optical_spectrum.writeCheckpointSpectrum("spectrum_test.h5", "optical_spectrum");
+void transport::testCheckpointSpectrum(std::string fname) {
+  optical_spectrum.writeCheckpointSpectrum(fname, "optical_spectrum");
   
   MPI_Barrier(MPI_COMM_WORLD);
 
-  optical_spectrum_new.readCheckpointSpectrum("spectrum_test.h5", "optical_spectrum");
+  optical_spectrum_new.readCheckpointSpectrum(fname, "optical_spectrum");
 
   bool complain = true;
   if (not optical_spectrum.is_equal(optical_spectrum_new, complain)) {
     std::cerr << "optical spectra not equal" << std::endl;
     exit(3);
   }
+  std::cerr << "Spectrum written out and back correctly" << std::endl;
 }

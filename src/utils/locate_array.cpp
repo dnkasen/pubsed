@@ -124,6 +124,8 @@ void locate_array::copy(locate_array l)
 bool locate_array::is_equal(locate_array l, bool complain) {
   bool equal = true;
   if (min != l.min) {
+    print();
+    l.print();
     if (complain) std::cerr << "locate array minima are different" << std::endl;
     equal = false;
   }
@@ -140,6 +142,9 @@ bool locate_array::is_equal(locate_array l, bool complain) {
       if (complain) std::cerr << "locate array array elements are different" << std::endl;
       equal = false;
     }
+  }
+  if (!equal && complain) {
+    print();
   }
   return equal;
 }

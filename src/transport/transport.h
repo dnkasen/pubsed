@@ -263,8 +263,8 @@ class transport
   void readParticleProp(std::string fname, std::string fieldname, int total_particles, int offset);
   void readCheckpointSpectra(std::string fname, bool test=false);
 
-  void testCheckpointParticles();
-  void testCheckpointSpectrum();
+  void testCheckpointParticles(std::string fname);
+  void testCheckpointSpectrum(std::string fname);
 };
 
 

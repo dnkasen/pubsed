@@ -82,6 +82,7 @@ template <typename T>
 void readVector(std::string file, std::string group, std::string dset, std::vector<T>& vec, hid_t t) {
   hsize_t dim;
   getH5dims(file, group, dset, &dim);
+  std::cerr << dim << std::endl;
 
   T* buffer = new T[dim];
 

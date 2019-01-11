@@ -3,8 +3,8 @@
 
 #include "grid_1D_sphere.h"
 
-void grid_1D_sphere::testCheckpointGrid() {
-  testCheckpointGeneralGrid();
+void grid_1D_sphere::testCheckpointGrid(std::string fname) {
+  testCheckpointGeneralGrid(fname);
   
   for (int rank = 0; rank < nproc; rank++) {
     if (rank == my_rank) {
