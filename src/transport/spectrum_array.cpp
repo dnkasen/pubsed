@@ -151,6 +151,9 @@ void spectrum_array::print()
   char specfile[1000];
   sprintf(specfile,"%s.dat",name);
 
+  int mpi_procs;
+  MPI_Comm_size( MPI_COMM_WORLD, &mpi_procs );
+
   FILE *out = fopen(specfile,"w");
 
   int n_times  = this->time_grid.size();
@@ -161,6 +164,7 @@ void spectrum_array::print()
   fprintf(out,"# %d %d %d %d\n",n_times,n_wave,n_mu,n_phi);
 
   double *darray = new double[n_elements];
+  double *click_buffer = new double[n_elements];
 
   // unitize and printout
   for (int k=0;k<n_mu;k++)
@@ -180,8 +184,9 @@ void spectrum_array::print()
 
          // normalize it
          darray[id] = flux[id]/norm;
+         click_buffer[id] = click[id] * mpi_procs;
 
-    	   fprintf(out,"%12.5e %10d\n", darray[id],click[id]);
+    	   fprintf(out,"%12.5e %12.5e\n", darray[id],click_buffer[id]);
     	 }
   fclose(out);
 
@@ -213,23 +218,23 @@ void spectrum_array::print()
   H5LTmake_dataset(file_id,"time",RANK,dims_t,H5T_NATIVE_FLOAT,tmp_array);
   delete[] tmp_array;
 
-  int *click_buffer = click.data();
   // write fluxes and counts arrays
   if (n_mu == 1)
   {
     const int RANKF = 2;
     hsize_t  dims_flux[RANKF]={(hsize_t)n_t,(hsize_t)n_nu};
     H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
-    H5LTmake_dataset(file_id,"click",RANKF,dims_flux,H5T_NATIVE_INT,click_buffer);
+    H5LTmake_dataset(file_id,"click",RANKF,dims_flux,H5T_NATIVE_DOUBLE,click_buffer);
   }
   else
   {
     const int RANKF = 3;
     hsize_t  dims_flux[RANKF]={(hsize_t)n_t,(hsize_t)n_nu,(hsize_t)n_mu};
     H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
-    H5LTmake_dataset(file_id,"click",RANKF,dims_flux,H5T_NATIVE_INT,click_buffer);
+    H5LTmake_dataset(file_id,"click",RANKF,dims_flux,H5T_NATIVE_DOUBLE,click_buffer);
   }
   delete[] darray;
+  delete[] click_buffer;
 
   H5Fclose (file_id);
 
@@ -267,10 +272,10 @@ void spectrum_array::MPI_average()
 
   // average clicks (receive goes out of scope after section)
   {
-    vector<int> receive;
+    vector<double> receive;
     receive.resize(n_elements);
     for (int i=0;i<n_elements;++i) receive[i] = 0.0;
-    MPI_Allreduce(&click.front(), &receive.front(), n_elements, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&click.front(), &receive.front(), n_elements, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     click.swap(receive);
   }
 
@@ -279,8 +284,10 @@ void spectrum_array::MPI_average()
   MPI_Comm_rank( MPI_COMM_WORLD, &myID      );
   //if(myID == receiving_ID){
  //   #pragma omp parallel for
-    for (int i=0;i<n_elements;i++)
+    for (int i=0;i<n_elements;i++) {
       flux[i]  /= mpi_procs;
+      click[i] /= mpi_procs;
+    }
 
 #endif
 }
