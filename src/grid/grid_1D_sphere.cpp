@@ -484,16 +484,20 @@ void grid_1D_sphere::writeCheckpointGrid(std::string fname) {
   std::cerr << my_rank << std::endl;
   if (my_rank == 0) {
     writeCheckpointGeneralGrid(fname);
+    std::cerr << "general grid" << std::endl;
     /* Specific to 1D */
     hsize_t single_val = 1;
     hsize_t zone_size = n_zones;
 
     createDataset(fname, "grid", "v_inner", 1, &single_val, H5T_NATIVE_DOUBLE);
     writeSimple(fname, "grid", "v_inner", &v_inner_, H5T_NATIVE_DOUBLE);
+    std::cerr << "v_inner" << std::endl;
 
     r_out.writeCheckpoint(fname, "grid", "r_out");
+    std::cerr << "r_out" << std::endl;
 
     writeVector(fname, "grid", "vol", vol, H5T_NATIVE_DOUBLE);
+    std::cerr << "vol" << std::endl;
   }
   MPI_Barrier(MPI_COMM_WORLD);
 }
@@ -501,11 +505,15 @@ void grid_1D_sphere::writeCheckpointGrid(std::string fname) {
 void grid_1D_sphere::readCheckpointGrid(std::string fname, bool test) {
   for (int rank = 0; rank < nproc; rank++) {
     if (my_rank == rank) {
+      std::cerr << "rank " << my_rank << " reading checkpoint general" << std::endl;
       readCheckpointGeneralGrid(fname, test);
+      std::cerr << "rank " << my_rank << " read checkpoint general" << std::endl;
       /* Specific to 1D */
       readSimple(fname, "grid", "v_inner", &v_inner_new, H5T_NATIVE_DOUBLE);
+      std::cerr << "read v_inner" << std::endl;
       r_out_new.readCheckpoint(fname, "grid", "r_out");
       readVector(fname, "grid", "vol", vol_new, H5T_NATIVE_DOUBLE);
+      std::cerr << "read grid vector" << std::endl;
       if (not test) {
         v_inner_ = v_inner_new;
         r_out = r_out_new;

@@ -221,6 +221,7 @@ void locate_array::writeCheckpoint(std::string fname, std::string gname, std::st
   
   closeH5Group(h5_locatearray_group);
   closeH5Group(h5group);
+  closeH5File(h5file);
 
 }
 
@@ -232,6 +233,10 @@ void locate_array::readCheckpoint(std::string fname, std::string gname, std::str
   readVector(h5_locatearray_group, "x", x, H5T_NATIVE_DOUBLE);
   readSimple(h5_locatearray_group, "min", &min, H5T_NATIVE_DOUBLE);
   readSimple(h5_locatearray_group, "do_log_interpolate", &do_log_interpolate, H5T_NATIVE_INT);
+
+  closeH5Group(h5_locatearray_group);
+  closeH5Group(h5group);
+  closeH5File(h5file);
 }
 
 void locate_array::swap(locate_array new_array){

@@ -454,11 +454,15 @@ void transport::readCheckpointParticles(std::string fname, bool test) {
   if (MPI_myID == 0) {
     particle_offsets[0] = 0;
     for (int i = 1; i < MPI_nprocs; i++) {
-      particle_offsets[i] = particle_offsets[i - 1] += global_n_particles[i];
+      particle_offsets[i] = particle_offsets[i - 1] + global_n_particles[i];
+    }
+    for (int i = 0; i < MPI_nprocs; i++) {
+      std::cerr << particle_offsets[i] << std::endl;
     }
   }
   // Rank 0 tells all of the other ranks what their offsets will be
   MPI_Scatter(particle_offsets, 1, MPI_INT, &my_offset, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  std::cerr << "rank " << MPI_myID << " offset " << my_offset << std::endl;
   MPI_Barrier(MPI_COMM_WORLD);
 
   /* Read in all of the quantities */
@@ -489,7 +493,7 @@ void transport::readCheckpointParticles(std::string fname, bool test) {
 
 void transport::readParticleProp(std::string fname, std::string fieldname, int total_particles, int offset) {
   int n_dims = 1;
-  int n_particles_local = n_particles();
+  int n_particles_local = n_particles_new();
   int* buffer_i;
   double* buffer_d;
   // Set up patch info

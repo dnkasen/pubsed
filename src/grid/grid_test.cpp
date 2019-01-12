@@ -141,6 +141,8 @@ void grid_general::testCheckpointZones(std::string fname) {
 void grid_general::testCheckpointGeneralGrid(std::string fname) {
   writeCheckpointGrid(fname);
 
+  std::cerr << "wrote grid" << std::endl;
+
   MPI_Barrier(MPI_COMM_WORLD);
 
   readCheckpointGrid(fname, true);

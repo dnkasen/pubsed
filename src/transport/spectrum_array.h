@@ -26,7 +26,9 @@ private:
 
   // counting arrays
   std::vector<double> flux;
-  std::vector<int>    click;
+  // This is the average number of clicks per rank. The quantity output in 
+  // the print method is the total number of clicks over all ranks.
+  std::vector<double>    click;
 
   // Indexing
   int n_elements;
