@@ -78,6 +78,8 @@ void transport::init(ParameterReader* par, grid_general *g)
   temp_min_value_ = params_->getScalar<double>("limits_temp_min");
   last_iteration_ = 0;
 
+  std::string restart_file = params_->getScalar<string>("restart_file");
+
   // initialize the frequency grid
   std::vector<double> nu_dims = params_->getVector<double>("transport_nu_grid");
   if ((nu_dims.size() != 4)&&(nu_dims.size() != 3)) {
@@ -96,7 +98,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   }
 
   if (params_->getScalar<int>("do_restart"))
-    optical_spectrum.readCheckpointSpectrum(params_->getScalar<string>("checkpoint_file_name"), "optical_spectrum");
+    readCheckpointSpectra(restart_file);
   else {
     // intialize output spectrum
     std::vector<double>stg = params_->getVector<double>("spectrum_time_grid");
@@ -252,7 +254,7 @@ void transport::init(ParameterReader* par, grid_general *g)
 
   // initialize particles
   if (params_->getScalar<int>("do_restart"))
-    readCheckpointParticles(params_->getScalar<string>("checkpoint_file_name"));
+    readCheckpointParticles(restart_file);
   else {
     int n_parts = params_->getScalar<int>("particles_n_initialize");
     initialize_particles(n_parts);

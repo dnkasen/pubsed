@@ -85,10 +85,10 @@ void grid_1D_sphere::restartGrid(ParameterReader* params) {
 #else
   const int verbose = 1;
 #endif
-  string restart_file = params->getScalar<string>("model_file");
+  string restart_file = params->getScalar<string>("restart_file");
 
   // geometry of model
-  if(params->getScalar<string>("grid_type") != "1D_sphere") 
+  if(params->getScalar<string>("grid_type") != "grid_1D_sphere") 
   {
     if (verbose) cerr << "Err: grid_type param disagrees with the model file" << endl;
     exit(4);
@@ -97,9 +97,8 @@ void grid_1D_sphere::restartGrid(ParameterReader* params) {
     cout << "# model file = " << restart_file << "\n";
     cout << "# Model is a 1D_sphere\n"; }
 
-  string checkpoint_file_name = params->getScalar<string>("checkpoint_file");
-  readCheckpointGrid(checkpoint_file_name);
-  readCheckpointZones(checkpoint_file_name);
+  readCheckpointGrid(restart_file);
+  readCheckpointZones(restart_file);
 }
 
 

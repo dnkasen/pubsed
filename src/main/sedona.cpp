@@ -126,8 +126,9 @@ int main(int argc, char **argv)
 
   // Evolve to start time if homologous
   // by adiabatically expanding or compress rho and T
+  // But this should only happen if there's not a restart
   double t_start = params.getScalar<double>("tstep_time_start");
-  if ((hydro_type == "homologous")&&(t_start > 0))
+  if ((hydro_type == "homologous")&&(t_start > 0) && (not do_restart))
   {
     if (verbose)
     {
@@ -146,11 +147,8 @@ int main(int argc, char **argv)
       }
     }
     int force_rproc  = params.getScalar<int>("force_rprocess_heating");
-    // Don't evolve to start if this is a restart.
-    if (not do_restart) {
-      hydro->evolve_to_start(t_start, force_rproc);
-      grid->t_now = t_start;
-    }
+    hydro->evolve_to_start(t_start, force_rproc);
+    grid->t_now = t_start;
   }
 
   //---------------------------------------------------------------------
