@@ -13,7 +13,7 @@ def run_test(pdf="",runcommand=""):
     # clean up old results and run the code
     ###########################################
     if (runcommand != ""):
-    	os.system("rm *_spectrum_* plt_* integrated_quantities.dat")
+    	os.system("rm spectrum_* plt_* integrated_quantities.dat")
     	os.system(runcommand)
 
     fail_flag = 0

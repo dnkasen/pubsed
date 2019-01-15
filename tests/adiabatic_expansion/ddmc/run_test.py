@@ -29,7 +29,7 @@ def run_test(pdf="",runcommand=""):
     # clean up any old results and run the code
     #-------------------------------------------
     if (runcommand != ""):
-    	os.system("rm *_spectrum_* plt_* integrated_quantities.dat")
+    	os.system("rm spectrum_* plt_* integrated_quantities.dat")
     	os.system(runcommand)
 
     #-------------------------------------------
@@ -58,7 +58,7 @@ def run_test(pdf="",runcommand=""):
         T_rad = np.array(fin['T_rad'])
         redge = vedge*time[j]
 
-        Tmod[j] = np.mean(T_rad[(r > redge*0.1)*(r < redge*0.7)])
+        Tmod[j] = np.mean(T_rad[(r > redge*0.2)*(r < redge*0.8)])
 
         if (j % 10 == 0):
             Tan = r*0 + temp0*(t0/time[j])
@@ -71,6 +71,7 @@ def run_test(pdf="",runcommand=""):
         plt.title('adiabatic expansion ddmc - temperature profiles')
         plt.xlabel('radius (cm)')
         plt.ylabel('radiation temperature')
+        plt.ylim(0,1.2e4)
 
 
     # add plot to pdf file (or show on screen)

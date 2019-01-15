@@ -108,6 +108,12 @@ void transport::create_isotropic_particle
 void transport::initialize_particles(int init_particles)
 {
   int my_n_emit = init_particles/(1.0*MPI_nprocs);
+  // If init_particles % MPI_nprocs != 0, create the remaining particles
+  // on the first remainder nodes.
+  int remainder = init_particles % MPI_nprocs;
+  if (MPI_myID < remainder) {
+    my_n_emit += 1;
+  }
 
    // check that we have enough space to add these particles
   if (my_n_emit > max_total_particles) {
@@ -249,7 +255,7 @@ void transport::emit_thermal(double dt)
     //t_emit defined below actually has units of 1/time. This is for comoving frame
    // double t_emit = planck_mean_opac*pc::c; 
       //comoving frame emission energy. Note that dt * vol is frame invariant
-    double E_zone_emit = grid->z[i].L_thermal*vol*dt; //pc::a*pow(T_gas,4)*t_emit*dt*vol*grid->z[i].eps_imc;
+    double E_zone_emit = grid->z[i].L_thermal*vol*dt * grid->z[i].eps_imc; //pc::a*pow(T_gas,4)*t_emit*dt*vol*grid->z[i].eps_imc;
     // save the comoving frame thermal emission
     // you divide by lab frame volume because this is also divided by lab frame time, 
     // and together the vol * dt is frame invariant.

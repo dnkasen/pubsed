@@ -15,6 +15,7 @@ public:
   real v[3];            // velocity vector (cm/s)
   real rho;             // density (g/cm^3)
   real cs;              // sound speed (cm/s)
+  real e_gas;           // gas pressure
   real p_gas;           // gas pressure
   real T_gas;           // gas temperature
 
@@ -28,6 +29,7 @@ public:
   real fx_rad;     // radiation x-force in lab frame
   real fy_rad;     // radiation y-force in lab frame
   real fz_rad;     // radiation z-force in lab frame
+  real fr_rad;     // radiation radial force in lab frame
   real eps_imc;    // fleck factor effective absorption
   real L_thermal;  // thermal luminosity 
 

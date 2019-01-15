@@ -15,10 +15,10 @@ tstep_min_dt       = 0.2*days
 tstep_max_delta    = 0.2
 
 -- particles and opacity
-particles_n_initialize  = 1e4
+particles_n_initialize  = 1e5
 opacity_grey_opacity             = 50000
 transport_radiative_equilibrium  = 1
 output_write_plt_file_time       = 1*days
 
-transport_use_ddmc = 1
-transport_ddmc_tau_threshold = 10
+transport_use_ddmc = 2
+transport_ddmc_tau_threshold = 0.1

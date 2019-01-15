@@ -3,7 +3,6 @@
 #include <iostream>
 #include "transport.h"
 #include "physical_constants.h"
-#include "Lua.h"
 #include "grid_general.h"
 
 namespace pc = physical_constants;
@@ -23,12 +22,12 @@ void transport::solve_eq_temperature()
 	  else if (radiative_eq == 2)
 	    grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
 	}
-      
+
       // mpi reduce the results
       reduce_Tgas();
     }
 }
-  
+
 
 //***************************************************************/
 // This is the function that expresses radiative equillibrium
@@ -42,7 +41,6 @@ double transport::rad_eq_function(int c,double T)
   double E_absorbed = grid->z[c].e_abs; // debug + grid->z[c].L_radio_dep;
   // total energy emitted (to be calculated)
   double E_emitted = 0.;
-  double Eab = 0;
 
   // Calculate total emission assuming no frequency (grey) opacity
   if (nu_grid.size() == 1)
@@ -73,14 +71,14 @@ double transport::rad_eq_function(int c,double T)
 
 
 //-----------------------------------------------------------
-// Brents method (from Numerical Recipes) to solve 
+// Brents method (from Numerical Recipes) to solve
 // non-linear equation for T in rad equillibrium
 //-----------------------------------------------------------
 // definitions used for temperature solver
 
 #define SIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
 double transport::temp_brent_method(int cell)
-{  
+{
   double brent_solve_tolerance = 1.0e-2;
   double temp_range_min = temp_min_value_;
   double temp_range_max = temp_max_value_;
@@ -97,7 +95,7 @@ double transport::temp_brent_method(int cell)
   double fa=rad_eq_function(cell,a);
   double fb=rad_eq_function(cell,b);
   double fc,p,q,r,s,tol1,xm;
-  
+
   //if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0))
   //  printf("Root must be bracketed in zbrent");
   fc=fb;
@@ -155,5 +153,3 @@ double transport::temp_brent_method(int cell)
   printf("Maximum number of iterations exceeded in zbrent");
   return 0.0;
 }
-
-

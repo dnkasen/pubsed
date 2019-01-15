@@ -12,15 +12,20 @@ grid_type      = "grid_1D_sphere"  -- grid geometry; must match input model
 
 -- default hydro module is none
 hydro_module      = "none"
-hydro_gamma_index = 4.0/3.0
+hydro_gamma_index = 5.0/3.0
+hydro_mean_particle_mass = 0.7
 hydro_cfl         = 0.1
 hydro_v_piston    = 0
 hydro_viscosity_parameter = 5
 hydro_central_point_mass  = 0
 hydro_use_gravity    = 0
+hydro_use_transport  = 0
 hydro_accrete_radius = 0
 hydro_bomb_radius    = 0
 hydro_bomb_energy    = 0
+hydro_boundary_outflow = 1
+hydro_boundary_rigid_outer_wall = 0
+
 
 -- default nu_grid is nothing
 transport_module = "monte_carlo"
@@ -32,6 +37,7 @@ transport_boundary_out_reflect   = 0
 transport_store_Jnu              = 1
 transport_use_ddmc               = 0
 transport_ddmc_tau_threshold     = 100
+transport_fleck_alpha            = 0
 
 -- inner source emission = none
 core_n_emit           = 0

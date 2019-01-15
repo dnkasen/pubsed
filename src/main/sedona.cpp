@@ -63,6 +63,16 @@ int main(int argc, char **argv)
   clock_t time_start = clock();
 #endif
 
+#ifdef SEDONA_GIT_VERSION
+  if (verbose)
+    std::cout << "# git version " << std::string(SEDONA_GIT_VERSION) << std::endl;
+#endif
+
+#ifdef COMPILE_DATETIME
+  if (verbose)
+    std::cout << "# compiled on " << std::string(COMPILE_DATETIME) << std::endl;
+#endif
+
   //---------------------------------------------------------------------
   // BEGIN SETTING UP
   //---------------------------------------------------------------------
@@ -343,6 +353,9 @@ double time_wasted;
       cout << " = " << time_wasted/60.0/60 << " hours" << endl;
   }
 
+  // Clean up
+  delete grid;
+  delete hydro;
 #ifdef MPI_PARALLEL
   // finish up mpi
   MPI_Finalize();

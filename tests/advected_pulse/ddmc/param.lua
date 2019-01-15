@@ -15,7 +15,7 @@ tstel_max_delta    = 1.0
 
 -- transport
 particles_n_initialize       = 1e6
-transport_use_ddmc           = 1
+transport_use_ddmc           = 2
 transport_ddmc_tau_threshold = 10
 
 -- opacity

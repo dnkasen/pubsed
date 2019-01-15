@@ -28,11 +28,10 @@ private:
 
   // functions for reading in files
   void read_SNR_file(std::ifstream &, int, int);
+  void read_hdf5_file(std::string, int, int);
 
 
 public:
-
-  virtual ~grid_1D_sphere() {}
 
   void read_model_file(ParameterReader*);
 

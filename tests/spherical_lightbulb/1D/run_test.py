@@ -38,7 +38,7 @@ def run_test(pdf="",runcommand=""):
     trad = data[:,4]
 
     # Analytic temperature from dillution factor W
-    rr = np.arange(r0*1.01,max(r),0.05*r0)
+    rr = np.arange(r0*1.01,max(r),0.05*r0,dtype=np.float64)
     w    = 0.5*(1 - (1 - r0**2/rr**2)**0.5)
     TW = (L*w/(4.0*pi*r0**2)/sb)**0.25
 
@@ -139,6 +139,7 @@ def run_test(pdf="",runcommand=""):
 #-------------------------------------------
 # error calculator helper function
 #-------------------------------------------
+np.seterr(divide='ignore')
 
 def get_error(a,b,x=[],x_comp=[],use=[]):
 
@@ -180,8 +181,9 @@ def get_error(a,b,x=[],x_comp=[],use=[]):
         y_comp = y_comp[use]
     err = abs(y - y_comp)
 
-    max_err = max(err/y_comp)
-    mean_err = np.mean(err)/np.mean(y_comp)
+    with np.errstate(divide='ignore'):
+        max_err = max(err/y_comp)
+        mean_err = np.mean(err)/np.mean(y_comp)
 
     return max_err,mean_err
 

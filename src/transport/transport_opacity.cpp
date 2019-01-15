@@ -9,7 +9,7 @@ namespace pc = physical_constants;
 //-----------------------------------------------------------------
 // set opacity and emissivities
 //-----------------------------------------------------------------
-void transport::set_opacity()
+void transport::set_opacity(double dt)
 {
   // tmp vector to hold emissivity
   vector<OpacityType> emis(nu_grid.size());
@@ -124,6 +124,28 @@ void transport::set_opacity()
       photo *= pow(1.0*grid->elems_Z[k],5.0);
       photo *= pow(pc::m_e_MeV,3.5);
       photoion_opac[i] += ndens*2.0*pc::thomson_cs*photo;
+    }
+
+  }
+
+  //------------------------------------------------------------
+  // Calcuate eps_imc...
+  //------------------------------------------------------------
+  for (int i=0;i<grid->n_zones;i++)
+  {
+    if (radiative_eq)
+    {
+      grid->z[i].eps_imc = 1.;
+    }
+    else
+    {
+       // Not distinguishing between lab frame density and comoving frame density
+	     double fleck_beta  = 4.0*pc::a*pow(grid->z[i].T_gas,4)/(grid->z[i].e_gas*grid->z[i].rho);
+       // here planck mean opac has units cm^-1 .
+       // When grey opacity is used, planck_mean_opacity should just be the correct grey opacity
+       double tfac = pc::c*planck_mean_opacity_[i]*dt;
+       double f_imc = fleck_alpha_*fleck_beta*tfac;
+       grid->z[i].eps_imc = 1.0/(1.0 + f_imc);
     }
   }
 
