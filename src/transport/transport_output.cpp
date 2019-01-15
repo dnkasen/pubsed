@@ -249,13 +249,16 @@ void transport::writeCheckpointParticles(std::string fname) {
   int global_n_particles_total = 0;
   int* global_n_particles = new int[MPI_nprocs];
   int* particle_offsets = new int[MPI_nprocs];
+  std::cerr << "going to gather" << std::endl;
   MPI_Gather(&my_n_particles, 1, MPI_INT, global_n_particles, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  std::cerr << "gathered" << std::endl;
   if (MPI_myID == 0) {
     for (int i = 0; i < MPI_nprocs; i++) {
       particle_offsets[i] = global_n_particles_total;
       global_n_particles_total += global_n_particles[i];
     }
   }
+  std::cerr << "computed offsets" << std::endl;
   // Rank 0 tells all of the other ranks what their offsets will be
   MPI_Scatter(particle_offsets, 1, MPI_INT, &my_offset, 1, MPI_INT, 0, MPI_COMM_WORLD);
   MPI_Bcast(&global_n_particles_total, 1, MPI_INT, 0, MPI_COMM_WORLD);

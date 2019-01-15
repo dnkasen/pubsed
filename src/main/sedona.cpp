@@ -201,6 +201,23 @@ int main(int argc, char **argv)
     grid->write_plotfile(0,grid->t_now,write_mass_fractions);
   }
 
+  if (do_restart) {
+    // Only one rank needs to create the file.
+    // Using the verbose variable as a proxy for this when MPI is used
+    std::string checkpoint_file_init = "check_init.h5";
+    if (verbose)
+      createFile(checkpoint_file_init);
+    std::cerr << "checkpointing" << std::endl;
+    mcarlo.writeCheckpointParticles(checkpoint_file_init);
+    std::cerr << "wrote particles" << std::endl;
+    grid->writeCheckpointZones(checkpoint_file_init);
+    std::cerr << "wrote zones" << std::endl;
+    mcarlo.writeCheckpointSpectra(checkpoint_file_init);
+    std::cerr << "wrote spectrum" << std::endl;
+    grid->writeCheckpointGrid(checkpoint_file_init);
+    std::cerr << "wrote grid" << std::endl;
+  }
+
   std::cout << std::scientific;
   std::cout << std::setprecision(2);
 
