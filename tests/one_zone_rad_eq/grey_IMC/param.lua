@@ -10,7 +10,7 @@ transport_boundary_in_reflect    = 1
 transport_boundary_out_reflect   = 1
 transport_fleck_alpha            = 0.5
 
-tstep_max_steps    = 1e8
+tstep_max_steps    = 1e5
 tstep_time_stop    = 2.e-7
 tstep_max_dt       = 1.e-11
 tstep_min_dt       = 1.e-11
@@ -21,14 +21,13 @@ hydro_use_transport = 1
 hydro_boundary_outflow = 0
 hydro_boundary_rigid_outer_wall = 1
 
-particles_max_total  = 1e5
 particles_n_emit_thermal  = 0
-particles_n_initialize  = 1
+particles_n_initialize    = 1e4
 
 -- output spectrum
 spectrum_nu_grid    = transport_nu_grid
 output_write_atomic_levels = 0
-output_write_radiation = 0
+output_write_radiation = 1
 output_write_plt_file_time = 1.e-11
 output_write_plt_log_space = 0.5
 
