@@ -26,7 +26,18 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-
+namespace {
+void checkpoint(int verbose, std::string checkpoint_file, transport &mcarlo, grid_general* grid) {
+  if (verbose) {
+    createFile(checkpoint_file);
+    std::cerr << "# checkpointing" << std::endl;
+  }
+  mcarlo.writeCheckpointParticles(checkpoint_file);
+  grid->writeCheckpointZones(checkpoint_file);
+  mcarlo.writeCheckpointSpectra(checkpoint_file);
+  grid->writeCheckpointGrid(checkpoint_file);
+}
+}
 
 //--------------------------------------------------------
 // The main code
@@ -304,17 +315,7 @@ int main(int argc, char **argv)
         mcarlo.output_spectrum(i_write+1);
       
       if (do_checkpoint) {
-        if (verbose)
-          createFile(checkpoint_file);
-        std::cerr << "checkpointing" << std::endl;
-        mcarlo.writeCheckpointParticles(checkpoint_file);
-        std::cerr << "wrote particles" << std::endl;
-        grid->writeCheckpointZones(checkpoint_file);
-        std::cerr << "wrote zones" << std::endl;
-        mcarlo.writeCheckpointSpectra(checkpoint_file);
-        std::cerr << "wrote spectrum" << std::endl;
-        grid->writeCheckpointGrid(checkpoint_file);
-        std::cerr << "wrote grid" << std::endl;
+        checkpoint(verbose, checkpoint_file, mcarlo, grid);
       }
         
       // determine next write out
