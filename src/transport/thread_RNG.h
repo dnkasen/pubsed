@@ -16,6 +16,7 @@ public:
 
   void   init();
   double uniform();
+  ~thread_RNG();
 };
 
 #endif

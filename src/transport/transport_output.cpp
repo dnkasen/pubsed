@@ -256,6 +256,7 @@ void transport::writeCheckpointParticles(std::string fname) {
     for (int i = 0; i < MPI_nprocs; i++) {
       particle_offsets[i] = global_n_particles_total;
       global_n_particles_total += global_n_particles[i];
+      std::cerr << i << " write offset " << particle_offsets[i] << std::endl;
     }
   }
   std::cerr << "computed offsets" << std::endl;
@@ -445,6 +446,7 @@ void transport::readCheckpointParticles(std::string fname, bool test) {
   int my_n_particles = floor(global_n_particles_total / (1.0 * MPI_nprocs));
   int remainder = global_n_particles_total % MPI_nprocs;
   if (MPI_myID < remainder) {
+    std::cerr << "adding a particle to rank " << MPI_myID << " on restart" << std::endl;
     my_n_particles += 1;
   }
   particles_new.resize(my_n_particles);
@@ -453,14 +455,15 @@ void transport::readCheckpointParticles(std::string fname, bool test) {
   int my_offset;
   int* global_n_particles = new int[MPI_nprocs];
   int* particle_offsets = new int[MPI_nprocs];
+  MPI_Barrier(MPI_COMM_WORLD);
   MPI_Gather(&my_n_particles, 1, MPI_INT, global_n_particles, 1, MPI_INT, 0, MPI_COMM_WORLD);
   if (MPI_myID == 0) {
     particle_offsets[0] = 0;
     for (int i = 1; i < MPI_nprocs; i++) {
-      particle_offsets[i] = particle_offsets[i - 1] + global_n_particles[i];
+      particle_offsets[i] = particle_offsets[i - 1] + global_n_particles[i - 1];
     }
     for (int i = 0; i < MPI_nprocs; i++) {
-      std::cerr << particle_offsets[i] << std::endl;
+      std::cerr << particle_offsets[i] << " " << global_n_particles[i] << std::endl;
     }
   }
   // Rank 0 tells all of the other ranks what their offsets will be

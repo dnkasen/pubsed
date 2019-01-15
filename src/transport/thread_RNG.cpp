@@ -64,3 +64,9 @@ double thread_RNG::uniform(){
 
   return gsl_rng_uniform(generators[my_ompID]);
 }
+
+thread_RNG::~thread_RNG() {
+  for (auto i = generators.begin(); i != generators.end(); ++i) {
+    gsl_rng_free(*i);
+  }
+}

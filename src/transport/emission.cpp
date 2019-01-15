@@ -112,6 +112,7 @@ void transport::initialize_particles(int init_particles)
   // on the first remainder nodes.
   int remainder = init_particles % MPI_nprocs;
   if (MPI_myID < remainder) {
+    std::cerr << MPI_myID << " adding particle to " << my_n_emit << std::endl;
     my_n_emit += 1;
   }
 

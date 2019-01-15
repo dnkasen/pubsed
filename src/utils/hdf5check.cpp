@@ -96,6 +96,7 @@ int main(int argc, char **argv){
     grid->testCheckpointZones(test_fname);
 
     mcarlo.testCheckpointSpectrum(test_fname);
+    delete grid;
 
     MPI_Finalize();
 

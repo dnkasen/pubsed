@@ -219,6 +219,7 @@ void grid_general::writeVectorZoneProp(std::string fname, std::string fieldname)
   }
 
   writeSimple(fname, "zones", fieldname, buffer, t);
+  delete[] buffer;
 }
 
 void grid_general::readCheckpointZones(std::string fname, bool test) {

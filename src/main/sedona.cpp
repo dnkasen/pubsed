@@ -304,7 +304,8 @@ int main(int argc, char **argv)
         mcarlo.output_spectrum(i_write+1);
       
       if (do_checkpoint) {
-        createFile(checkpoint_file);
+        if (verbose)
+          createFile(checkpoint_file);
         std::cerr << "checkpointing" << std::endl;
         mcarlo.writeCheckpointParticles(checkpoint_file);
         std::cerr << "wrote particles" << std::endl;
