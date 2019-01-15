@@ -249,43 +249,30 @@ void transport::writeCheckpointParticles(std::string fname) {
   int global_n_particles_total = 0;
   int* global_n_particles = new int[MPI_nprocs];
   int* particle_offsets = new int[MPI_nprocs];
-  std::cerr << "going to gather" << std::endl;
   MPI_Gather(&my_n_particles, 1, MPI_INT, global_n_particles, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  std::cerr << "gathered" << std::endl;
   if (MPI_myID == 0) {
     for (int i = 0; i < MPI_nprocs; i++) {
       particle_offsets[i] = global_n_particles_total;
       global_n_particles_total += global_n_particles[i];
-      std::cerr << i << " write offset " << particle_offsets[i] << std::endl;
     }
   }
-  std::cerr << "computed offsets" << std::endl;
   // Rank 0 tells all of the other ranks what their offsets will be
   MPI_Scatter(particle_offsets, 1, MPI_INT, &my_offset, 1, MPI_INT, 0, MPI_COMM_WORLD);
   MPI_Bcast(&global_n_particles_total, 1, MPI_INT, 0, MPI_COMM_WORLD);
   // Rank 0 sets up all of the datasets in the H5 file
-  std::cerr << my_n_particles << " " << global_n_particles_total << std::endl;
   if (MPI_myID == 0) {
     //createFile(fname);
     int ndim1 = 1;
     hsize_t dims1[1] =  {global_n_particles_total};
     int ndim3 = 2;
     hsize_t dims3[2] = {global_n_particles_total, 3};
-    std::cerr << "making group" << std::endl;
     createGroup(fname, "particles");
-    std::cerr << "making datasets" << std::endl;
     createDataset(fname, "particles", "type", ndim1, dims1, H5T_NATIVE_INT);
-    std::cerr << "making x" << std::endl;
     createDataset(fname, "particles", "x", ndim3, dims3, H5T_NATIVE_DOUBLE);
-    std::cerr << "making D" << std::endl;
     createDataset(fname, "particles", "D", ndim3, dims3, H5T_NATIVE_DOUBLE);
-    std::cerr << "making ind" << std::endl;
     createDataset(fname, "particles", "ind", ndim1, dims1, H5T_NATIVE_INT);
-    std::cerr << "making t" << std::endl;
     createDataset(fname, "particles", "t", ndim1, dims1, H5T_NATIVE_DOUBLE);
-    std::cerr << "making e" << std::endl;
     createDataset(fname, "particles", "e", ndim1, dims1, H5T_NATIVE_DOUBLE);
-    std::cerr << "bisection 1" << std::endl;
     createDataset(fname, "particles", "nu", ndim1, dims1, H5T_NATIVE_DOUBLE);
     createDataset(fname, "particles", "gamma", ndim1, dims1, H5T_NATIVE_DOUBLE);
     createDataset(fname, "particles", "dshift", ndim1, dims1, H5T_NATIVE_DOUBLE);
@@ -295,7 +282,6 @@ void transport::writeCheckpointParticles(std::string fname) {
   MPI_Barrier(MPI_COMM_WORLD);
   for (int i = 0; i < MPI_nprocs; i++) {
     if (i == MPI_myID) {
-      std::cerr << "writing props" << std::endl;
       writeParticleProp(fname, "type", global_n_particles_total, my_offset);
       writeParticleProp(fname, "x", global_n_particles_total, my_offset);
       writeParticleProp(fname, "D", global_n_particles_total, my_offset);
@@ -440,13 +426,11 @@ void transport::readCheckpointParticles(std::string fname, bool test) {
     }
     MPI_Barrier(MPI_COMM_WORLD);
   }
-  std::cerr << MPI_myID << " "  << global_n_particles_total << std::endl;
 
   /* Make sure each particle gets "claimed" by one rank */
   int my_n_particles = floor(global_n_particles_total / (1.0 * MPI_nprocs));
   int remainder = global_n_particles_total % MPI_nprocs;
   if (MPI_myID < remainder) {
-    std::cerr << "adding a particle to rank " << MPI_myID << " on restart" << std::endl;
     my_n_particles += 1;
   }
   particles_new.resize(my_n_particles);
@@ -462,13 +446,9 @@ void transport::readCheckpointParticles(std::string fname, bool test) {
     for (int i = 1; i < MPI_nprocs; i++) {
       particle_offsets[i] = particle_offsets[i - 1] + global_n_particles[i - 1];
     }
-    for (int i = 0; i < MPI_nprocs; i++) {
-      std::cerr << particle_offsets[i] << " " << global_n_particles[i] << std::endl;
-    }
   }
   // Rank 0 tells all of the other ranks what their offsets will be
   MPI_Scatter(particle_offsets, 1, MPI_INT, &my_offset, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  std::cerr << "rank " << MPI_myID << " offset " << my_offset << std::endl;
   MPI_Barrier(MPI_COMM_WORLD);
 
   /* Read in all of the quantities */

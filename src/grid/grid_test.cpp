@@ -6,20 +6,13 @@
 namespace pc = physical_constants;
 
 void grid_general::testCheckpointZones(std::string fname) {
-  std::cerr << "starting to test zones" << std::endl;
-
   writeCheckpointZones(fname);
-
-  std::cerr << "wrote checkpoint zones" << std::endl;
 
   MPI_Barrier(MPI_COMM_WORLD);
 
   readCheckpointZones(fname, true);
 
-  std::cerr << "read checkpoint zones" << std::endl;
-
   for (int rank = 0; rank < nproc; rank++) {
-    std::cerr << "rank " << my_rank << std::endl;
     if (rank == my_rank) {
       bool fail = false;
       for (int i = 0; i < n_zones; i++) {
@@ -141,14 +134,11 @@ void grid_general::testCheckpointZones(std::string fname) {
 void grid_general::testCheckpointGeneralGrid(std::string fname) {
   writeCheckpointGrid(fname);
 
-  std::cerr << "wrote grid" << std::endl;
-
   MPI_Barrier(MPI_COMM_WORLD);
 
   readCheckpointGrid(fname, true);
 
   for (int rank = 0; rank < nproc; rank++) {
-    std::cerr << "rank " << my_rank << std::endl;
     if (rank == my_rank) {
       bool fail = false;
       if (t_now != t_now_new) {

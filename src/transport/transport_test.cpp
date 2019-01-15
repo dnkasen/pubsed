@@ -9,17 +9,6 @@
 #include "physical_constants.h"
 
 void transport::testCheckpointParticles(std::string fname) {
-  for (int rank = 0; rank < MPI_nprocs; rank++) {
-    if (rank == MPI_myID) {
-      std::cerr << "rank " << rank << std::endl;
-      for (int i = 0; i < particles.size(); i++) {
-        particles[i].print();
-      }
-      std::cout << std::endl;
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-  }
-
   writeCheckpointParticles(fname);
 
   MPI_Barrier(MPI_COMM_WORLD);
@@ -28,9 +17,7 @@ void transport::testCheckpointParticles(std::string fname) {
 
   for (int rank = 0; rank < MPI_nprocs; rank++) {
     if (rank == MPI_myID) {
-      std::cerr << "rank " << rank << std::endl;
       for (int i = 0; i < particles_new.size(); i++) {
-        particles_new[i].print();
         if (particles_new[i].type != particles[i].type) {
           std::cerr << "New particle type is different." << std::endl;
           exit(1);
@@ -110,5 +97,5 @@ void transport::testCheckpointSpectrum(std::string fname) {
     std::cerr << "optical spectra not equal" << std::endl;
     exit(3);
   }
-  std::cerr << "Spectrum written out and back correctly" << std::endl;
+  std::cerr << "Spectrum written out and back correctly on rank " << MPI_myID << std::endl;
 }

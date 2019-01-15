@@ -118,29 +118,18 @@ void spectrum_array::readCheckpointSpectrum(std::string fname, std::string n) {
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   for (int rank = 0; rank < nproc; rank++) {
     if (rank == my_rank) {
-      std::cerr << "locate arrays" << std::endl;
       time_grid.readCheckpoint(fname, n, "time_grid");
       wave_grid.readCheckpoint(fname, n, "wave_grid");
       mu_grid.readCheckpoint(fname, n, "mu_grid");
       phi_grid.readCheckpoint(fname, n, "phi_grid");
 
-      std::cerr << "vectors" << std::endl;
       readVector(fname, n, "flux", flux, H5T_NATIVE_DOUBLE);
       readVector(fname, n, "click", click, H5T_NATIVE_DOUBLE);
-      std::cerr << "simples" << std::endl;
       readSimple(fname, n, "name", name, H5T_C_S1);
-      std::cerr << "nelems" << std::endl;
       readSimple(fname, n, "n_elements", &n_elements, H5T_NATIVE_INT);
-      if (n_elements < 0) {
-        std::cerr << n_elements << std::endl;
-      }
-      std::cerr << "a1" << std::endl;
       readSimple(fname, n, "a1", &a1, H5T_NATIVE_INT);
-      std::cerr << "a2" << std::endl;
       readSimple(fname, n, "a2", &a2, H5T_NATIVE_INT);
-      std::cerr << "a13" << std::endl;
       readSimple(fname, n, "a3", &a3, H5T_NATIVE_INT);
-      std::cerr << "finished reading" << std::endl;
     }
     MPI_Barrier(MPI_COMM_WORLD);
   }

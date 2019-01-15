@@ -58,7 +58,8 @@ int main(int argc, char **argv){
     ParameterReader params(param_file,verbose);
 
     std::string test_fname = "test_check.h5";
-    createFile(test_fname);
+    if (verbose)
+      createFile(test_fname);
     grid_general *grid;
 
     // read the grid type
@@ -73,26 +74,17 @@ int main(int argc, char **argv){
       exit(3);   }
 
     // initialize the grid (including reading the model file)
-    std::cerr << "initializing grid" << std::endl;
     grid->init(&params);
 
-    std::cerr << "initializing mcarlo" << std::endl;
     transport mcarlo;
     string transport_type = params.getScalar<string>("transport_module");
     int use_transport = 0;
     if (transport_type != "") use_transport = 1;
     if (use_transport) mcarlo.init(&params, grid);
 
-    std::cerr << "testing particles" << std::endl;
     mcarlo.testCheckpointParticles(test_fname);
 
-    for (int i = 0; i < grid->elems_A.size();i++) {
-      std::cerr << grid->elems_A[i] << " " << grid->elems_Z[i] << std::endl;
-    }
-
-    std::cerr << "testing grid" << std::endl;
     grid->testCheckpointGrid(test_fname);
-    std::cerr << "testing zones" << std::endl;
     grid->testCheckpointZones(test_fname);
 
     mcarlo.testCheckpointSpectrum(test_fname);

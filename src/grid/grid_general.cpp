@@ -77,9 +77,7 @@ void grid_general::write_hdf5_plotfile_zones
 void grid_general::writeCheckpointZones(std::string fname) {
   /* Mercifully, only rank 0 has to do any of this */
   if (my_rank == 0) {
-    std::cerr << "creating group" << std::endl;
     createGroup(fname, "zones");
-    std::cerr << "creating scalar prop" << std::endl;
     writeScalarZoneProp(fname, "v");
     writeScalarZoneProp(fname, "rho");
     writeScalarZoneProp(fname, "cs");
@@ -389,15 +387,10 @@ void grid_general::writeCheckpointGeneralGrid(std::string fname) {
 }
 
 void grid_general::readCheckpointGeneralGrid(std::string fname, bool test) {
-  std::cerr << "t_now" << std::endl;
   readSimple(fname, "grid", "t_now", &t_now_new, H5T_NATIVE_DOUBLE);
-  std::cerr << "nzones" << std::endl;
   readSimple(fname, "grid", "n_zones", &n_zones_new, H5T_NATIVE_INT);
-  std::cerr << "nelems" << std::endl;
   readSimple(fname, "grid", "n_elems", &n_elems_new, H5T_NATIVE_INT);
-  std::cerr << "elems z" << std::endl;
   readVector(fname, "grid", "elems_Z", elems_Z_new, H5T_NATIVE_INT);
-  std::cerr << "elems A" << std::endl;
   readVector(fname, "grid", "elems_A", elems_A_new, H5T_NATIVE_INT);
   if (not test) {
     t_now = t_now_new;
