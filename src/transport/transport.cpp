@@ -149,6 +149,10 @@ double get_system_time()
 //--------------------------------------------------------
 int transport::clean_up_particle_vector()
 {
+
+  // do nothing to an empty particle vector
+  if (particles.size() == 0) return 0;
+
   int n_escaped = 0;
   int i=0;
   while (true)
@@ -334,7 +338,7 @@ ParticleFate transport::propagate_monte_carlo(particle &p, double tstop)
 
      double rr = sqrt(p.x[0]*p.x[0] + p.x[1]*p.x[1] + p.x[2]*p.x[2]);
      double xdotD = p.x[0]*p.D[0] + p.x[1]*p.D[1] + p.x[2]*p.D[2];
-     zone->fr_rad += this_E*dshift*continuum_opac_cmf*xdotD/rr * dshift; 
+     zone->fr_rad += this_E*dshift*continuum_opac_cmf*xdotD/rr * dshift;
 
     // move particle the distance
     p.x[0] += this_d*p.D[0];
