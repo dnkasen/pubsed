@@ -40,6 +40,10 @@ class hydro_1D_lagrangian : public hydro_general
   int use_gravity_;
   double M_center_;
 
+  // boundary conditions
+  int boundary_outflow_;
+  int boundary_rigid_outer_wall_;
+
   double get_dr(int i)
   {
     if (i == 0) return r_out_[0] - r_min_;

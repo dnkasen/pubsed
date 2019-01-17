@@ -1,10 +1,10 @@
-# sod set up from 
+# sod set up from
 # http://cococubed.asu.edu/code_pages/exact_riemann.shtml
 
-nx   = 300
+nx   = 500
 rho  = 1
 r0   = 1e3
-rsh  = 5
+rsh  = 10
 dr = (rsh)/(1.0*nx)
 v    = 0
 
@@ -20,10 +20,10 @@ fout.write("1.1\n")
 for i  in range(nx):
 	r = (i+1)*dr
 
-	if (r < 2): 
+	if (r < 2):
 		rho = 10.0
 		p   = 100.0
-	else: 
+	else:
 		rho = 1.0
 		p   = 1.0
 
@@ -32,4 +32,3 @@ for i  in range(nx):
 	fout.write(line)
 
 fout.close()
-

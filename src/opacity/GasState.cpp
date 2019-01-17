@@ -133,7 +133,7 @@ int GasState::read_fuzzfile(std::string fuzzfile)
 
   // check if fuzzfile exists
   FILE *fin = fopen(fuzzfile.c_str(),"r");
-  if ((fin == NULL)&&(verbose_))
+  if ((fin == NULL)&&(verbose_)&&(fuzzfile != ""))
     std::cerr << "# Warning: Can't open atomic data fuzzfile: "
     << fuzzfile << std::endl;
   if (fin == NULL) return 0;
@@ -448,6 +448,3 @@ void GasState::write_levels(int iz)
   H5Fclose(file_id);
 
 }
-
-
-

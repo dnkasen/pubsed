@@ -28,9 +28,6 @@ private:
 
 public:
 
-  virtual ~grid_2D_cyln() {}
-
-
   // required functions
   void    read_model_file(ParameterReader*);
   void    write_plotfile(int,double,int);

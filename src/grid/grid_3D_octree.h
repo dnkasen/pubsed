@@ -26,8 +26,6 @@ private:
 
 public:
 
-  virtual ~grid_3D_octree() {}
-
   // required functions
   void    read_model_file(ParameterReader*);
   void    write_plotfile(int,double);

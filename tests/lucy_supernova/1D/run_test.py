@@ -47,7 +47,7 @@ def run_test(pdf="",runcommand=""):
     if (mean_err > 0.1): failure = 2
 
     ## make plot
-    plt.title
+    plt.title('1D Lucy Supernova test - monte carlo')
     plt.legend(['sedona LC','sedona GR','lucy LC','lucy GR'])
     plt.xlim(0,55)
     plt.xlabel('luminosity (erg/s)',size=13)

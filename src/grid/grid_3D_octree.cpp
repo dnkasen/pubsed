@@ -4,7 +4,6 @@
 #include <iostream>
 #include <iomanip>
 #include <cassert>
-#include "Lua.h"
 #include "grid_3D_octree.h"
 #include "physical_constants.h"
 #include "hdf5.h"
@@ -37,7 +36,7 @@ void grid_3D_octree::read_model_file(ParameterReader* params)
   // open up the model file, complaining if it fails to open
   string model_file = params->getScalar<string>("model_file");
 
-  // open hdf5 file 
+  // open hdf5 file
   hid_t file_id = H5Fopen (model_file.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   herr_t status;
 
@@ -139,14 +138,14 @@ void grid_3D_octree::read_model_file(ParameterReader* params)
   for (int i=0;i<n_zones;++i)
   {
     double vol = zone_volume(i);
-    double vsq = z[i].v[0]*z[i].v[0] + z[i].v[1]*z[i].v[1] + z[i].v[2]*z[i].v[2];  
+    double vsq = z[i].v[0]*z[i].v[0] + z[i].v[1]*z[i].v[1] + z[i].v[2]*z[i].v[2];
     totmass    += vol*z[i].rho;
     totke      += 0.5*vol*z[i].rho*vsq;
     totrad     += vol*z[i].e_rad;
     for (int l = 0;l < n_elems; ++l) elem_mass[l] += vol*z[i].rho*z[i].X_gas[l];
   }
 
-  //--------------------------------------------------- 
+  //---------------------------------------------------
   // Printout model properties
   //---------------------------------------------------
   if (verbose)
@@ -162,12 +161,12 @@ void grid_3D_octree::read_model_file(ParameterReader* params)
     printf("# mass = %.4e (%.4e Msun)\n",totmass,totmass/pc::m_sun);
      for (int k=0;k<n_elems;k++) {
        cout << "# " << elems_Z[k] << "." << elems_A[k] <<  "\t";
-       cout << elem_mass[k] << " (" << elem_mass[k]/pc::m_sun << " Msun)\n"; 
+       cout << elem_mass[k] << " (" << elem_mass[k]/pc::m_sun << " Msun)\n";
      }
      printf("# kinetic energy   = %.4e\n",totke);
      printf("# radiation energy = %.4e\n",totrad);
      cout << "##############################\n#" << endl;
-  } 
+  }
 
 }
 
@@ -191,7 +190,7 @@ void grid_3D_octree::write_plotfile(int iw, double tt)
  //  dr[1] = dy_;
  //  dr[2] = dz_;
  //  H5LTmake_dataset(file_id,"dr",1,dims_dr,H5T_NATIVE_FLOAT,dr);
-	
+
 	// // print out x array
 	// hsize_t  dims_x[1]={(hsize_t)nx_};
 	// float *xarr = new float[nx_];
@@ -212,11 +211,11 @@ void grid_3D_octree::write_plotfile(int iw, double tt)
 	// for (int i=0;i<nz_;i++) zarr[i] = i*dz_ + z0_;
 	// H5LTmake_dataset(file_id,"z",1,dims_z,H5T_NATIVE_FLOAT,zarr);
  //  delete [] zarr;
- 
+
  //  hsize_t  dims_g[3]={(hsize_t) nx_,(hsize_t) ny_,(hsize_t) nz_};
  //  write_hdf5_plotfile_zones(file_id, dims_g, 3, tt);
  //  write_integrated_quantities(iw,tt);
-  
+
  //  // Close the output file
  //  H5Fclose (file_id);
 
@@ -227,7 +226,7 @@ void grid_3D_octree::write_plotfile(int iw, double tt)
 //************************************************************
 // expand the grid
 //************************************************************
-void grid_3D_octree::expand(double e) 
+void grid_3D_octree::expand(double e)
 {
   // dx_ *= e;
   // dy_ *= e;
@@ -249,27 +248,27 @@ int grid_3D_octree::get_zone(const double *x) const
   // int j;
   // for (j=0; j<3; j++)
   //   if (fabs(pos[j])>MAX_DISTANCE_FROM0) return -1;
-    
+
   // // find parent cell it belongs
   // int n_x[3], n_sub_ID;
-  // long cell_ID = 0;  
-  // while (in_cell_check == 0) 
+  // long cell_ID = 0;
+  // while (in_cell_check == 0)
   // {
   //   cell_ID = CELL[cell_ID].parent_ID;
   //   if (cell_ID < 0) return -1;
-        
+
   //   in_cell_check = 1;
-  //   for (j=0; j<3; j++) 
+  //   for (j=0; j<3; j++)
   //   {
   //     if (pos[j] > CELL[cell_ID].min_x[j] + CELL[cell_ID].width ||
   //               pos[j] < CELL[cell_ID].min_x[j]) in_cell_check = 0;
   //   }
   // }
-    
+
   // // find the finest-level cell
-  // while (CELL[cell_ID].sub_cell_check == 1) 
+  // while (CELL[cell_ID].sub_cell_check == 1)
   // {
-  //   for (j=0; j<3; j++) 
+  //   for (j=0; j<3; j++)
   //   {
   //     n_x[j] = (int)((pos[j] - CELL[cell_ID].min_x[j])/(CELL[cell_ID].width/N_SUBCELL));
   //     if (n_x[j] < 0) n_x[j] = 0;
@@ -302,7 +301,7 @@ int grid_3D_octree::get_next_zone
   // else
   //   bn = dx_*(index_x_[i] + tiny) + x0_;
   // len[0] = (bn - x[0])/D[0];
-  
+
   // //---------------------------------
   // // distance to y interfaces
   // //---------------------------------
@@ -311,7 +310,7 @@ int grid_3D_octree::get_next_zone
   // else
   //   bn = dx_*(index_y_[i] + tiny) + y0_;
   // len[1] = (bn - x[1])/D[1];
-  
+
   //  //---------------------------------
   // // distance to z interfaces
   // //---------------------------------
@@ -387,7 +386,7 @@ void grid_3D_octree::coordinates(int i,double r[3])
 
 
 //------------------------------------------------------------
-// get the velocity vector 
+// get the velocity vector
 //------------------------------------------------------------
 void grid_3D_octree::get_velocity(int i, double x[3], double D[3], double v[3], double *dvds)
 {
@@ -396,4 +395,3 @@ void grid_3D_octree::get_velocity(int i, double x[3], double D[3], double v[3], 
   // v[1] = z[i].v[1];
   // v[2] = z[i].v[2];
 }
-

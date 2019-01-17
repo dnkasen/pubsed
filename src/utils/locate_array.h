@@ -1,9 +1,10 @@
 #ifndef _LOCATE_ARRAY_H
-#define _LOCATE_ARRAY_H 
+#define _LOCATE_ARRAY_H
 
 #include <vector>
 #include <math.h>
 #include <limits>
+#include <iostream>
 
 class locate_array {
 
@@ -43,7 +44,7 @@ public:
   }
 
   // left side of bin i
-  double left(const int i) const{ 
+  double left(const int i) const{
     if (i == 0) return min;
     else return x[i-1];}
 
@@ -62,14 +63,16 @@ public:
   double minval() {return min; }
 
   int    locate(const double) const;
+  int    locate_within_bounds(const double xval) const;
+
   double sample(const int, const double) const;
   void   print() const;
 
   //---------------------------------------------------------
 // Linear Interpolation of a passed array
 //---------------------------------------------------------
-template<typename T> 
-T interpolate_between(const double xval, const int i1, const int i2, const std::vector<T>& y) const 
+template<typename T>
+T interpolate_between(const double xval, const int i1, const int i2, const std::vector<T>& y) const
 {
   if (x.size() == 1) return y[0];
   double slope = (y[i2]-y[i1]) / (x[i2]-x[i1]);
@@ -81,7 +84,7 @@ T interpolate_between(const double xval, const int i1, const int i2, const std::
 //---------------------------------------------------------
 // Log-Log Interpolation of a passed array
 //---------------------------------------------------------
-template<typename T> 
+template<typename T>
 T log_interpolate_between(const double xval, const int i1, const int i2, const std::vector<T>& y) const
 {
   if (x.size() == 1) return y[0];
@@ -107,7 +110,7 @@ T log_interpolate_between(const double xval, const int i1, const int i2, const s
 template<typename T>
 T value_at_extrapolate(const double xval, const std::vector<T>& y) const{
 
-  int ind = locate(xval);
+  int ind = locate_within_bounds(xval);
   return y[ind];
   /*
   int i1, i2;
@@ -145,13 +148,17 @@ T value_at_extrapolate(const double xval, const std::vector<T>& y) const{
 template<typename T>
 T value_at(const double xval, const std::vector<T>& y) const
 {
-  int ind = locate(xval);
+  int ind = locate_within_bounds(xval);
   return value_at(xval,y,ind);
 }
 
 template<typename T>
 T value_at(const double xval, const std::vector<T>& y,int ind) const
 {
+  if ((ind >= y.size()) || (ind < 0)) {
+    std::cerr << "index out of bounds in value_at. Index " << ind << " for vector length " << y.size() << std::endl;
+    exit(6);
+  }
   return y[ind];
   /*
   int i1, i2;

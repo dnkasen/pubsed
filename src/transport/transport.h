@@ -74,6 +74,7 @@ class transport
   int    last_iteration_;
   int    omit_composition_decay_;
   int    compton_scatter_photons_;
+  double fleck_alpha_;
 
   // current time in simulation
   double t_now_;
@@ -141,17 +142,18 @@ class transport
   vector<real> ddmc_P_adv_;
   vector<real> ddmc_P_abs_;
   vector<real> ddmc_P_stay_;
+  vector<real> ddmc_use_in_zone_;
   int use_ddmc_;
   int imd_ddmc_switch_;
   double ddmc_tau_;
+  locate_array randomwalk_x;
+  vector<double> randomwalk_Pescape;
 
   // the radiation quantities in the zone
   vector <real> e_rad;
   // line mean intensity
   vector< vector<real> > line_J_;
   double line_velocity_width_;
-
-
 
   // setup functions
   void setup_core_emission();
@@ -160,7 +162,7 @@ class transport
 
   // opacity functions
   int   get_opacity(particle&, double, double&, double&);
-  void   set_opacity();
+  void   set_opacity(double dt);
   double klein_nishina(double);
   double blackbody_nu(double T, double nu);
   void   reduce_opacities();
@@ -172,9 +174,7 @@ class transport
   void   emit_thermal(double dt);
   void   emit_heating_source(double dt);
   void   emit_from_pointsoures(double dt);
-
   void   create_isotropic_particle(int,PType,double,double);
-
   void   initialize_particles(int);
   void sample_photon_frequency(particle*);
 
@@ -192,9 +192,13 @@ class transport
 
   //propagation of particles functions
   ParticleFate propagate(particle &p, double tstop);
+  ParticleFate propagate_monte_carlo(particle &p, double dt);
   ParticleFate discrete_diffuse_IMD(particle &p, double tstop);
   ParticleFate discrete_diffuse_DDMC(particle &p, double tstop);
+  ParticleFate discrete_diffuse_RandomWalk(particle &p, double tstop);
+  void setup_RandomWalk();
   void compute_diffusion_probabilities(double dt);
+  int clean_up_particle_vector();
 
   // scattering functions
   ParticleFate do_scatter(particle*, double);
@@ -204,7 +208,6 @@ class transport
 
   // radiation quantities functions
   void wipe_radiation();
-  void set_eps_imc();
   void reduce_radiation(double);
   void reduce_Tgas();
   void reduce_Lthermal();
@@ -230,6 +233,9 @@ class transport
   {
     time_core_ = 0;
   }
+
+  // destructor
+  ~transport();
 
   //----- functions ---------------
 
