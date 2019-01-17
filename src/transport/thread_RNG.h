@@ -17,6 +17,9 @@ public:
   void   init();
   double uniform();
   ~thread_RNG();
+
+  void writeCheckpointRNG(std::string fname);
+  void readCheckpointRNG(std::string fname);
 };
 
 #endif
