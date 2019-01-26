@@ -218,7 +218,7 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double tstop)
       p.ind = grid->get_zone(p.x);
       if (p.ind == -1) {return absorbed;}
       if (p.ind == -2) {return escaped;}
-      
+
       // adiabatic loss (assumes small change in volume I think)
       p.e *= (1 - dvds*dt_change);
       p.t += dt_change;
@@ -251,21 +251,21 @@ void transport::setup_RandomWalk(){
   int sumN = params_->getScalar<int>("randomwalk_sumN");
   int npoints = params_->getScalar<int>("randomwalk_npoints");
   double randomwalk_max_x = params_->getScalar<double>("randomwalk_max_x");
-  
+
   randomwalk_x.init(0, randomwalk_max_x, npoints);
   randomwalk_Pescape.resize(npoints);
-  
+
   #pragma omp parallel for
   for(int i=1; i<=npoints; i++){
     double x = randomwalk_x.right(i);
-    
+
     double sum = 0;
     for(int n=1; n<=sumN; n++){
       double tmp = exp(-x * (n*pc::pi)*(n*pc::pi));
       if(n%2 == 0) tmp *= -1;
       sum += tmp;
     }
-    
+
     randomwalk_Pescape[i] = 1.0-2.*sum;
   }
 
@@ -323,6 +323,7 @@ double interpolate_CDF(const vector<double>& CDF, const locate_array& x, const d
 ParticleFate transport::discrete_diffuse_RandomWalk(particle &p, double t_stop)
 {
   int stop = 0;
+  if (steady_state) t_stop = 1e99;
 
   double dx;
 
@@ -330,29 +331,33 @@ ParticleFate transport::discrete_diffuse_RandomWalk(particle &p, double t_stop)
   while (!stop)
   {
     double dt_remaining = t_stop - p.t;
+    if (steady_state) dt_remaining = 1e99;
     assert(dt_remaining > 0);
-    
+
     // find current zone and check for escape
     p.ind = grid->get_zone(p.x);
     grid->get_zone_size(p.ind,&dx);
+
     if (p.ind == -1) {return absorbed;}
     if (p.ind == -2) {return escaped;}
 
     // total probability of diffusing to the edge of the sphere
     double D = pc::c/(3.0*planck_mean_opacity_[p.ind]);// * 3./4.;
     double X = dt_remaining*D/(dx*dx);
-    
+
     double dt_step, R_diffuse;
     double u = rangen.uniform();
     double sampled_X = sample_CDF(randomwalk_Pescape, randomwalk_x, u);
-    if (sampled_X < X){ // particle reaches surface before census
+    if (sampled_X < X)
+    { // particle reaches surface before census
       // use sampled X to determine in-flight time
       R_diffuse = dx;
       dt_step = sampled_X*dx*dx/D;
       stop = 0;
-      assert(p.t + dt_step <= t_stop + dt_step*1e-6);
+      //assert(p.t + dt_step <= t_stop + dt_step*1e-6);
     }
-    else{ // particle still in sphere at census
+    else
+    { // particle still in sphere at census
       // use sampled X to determine travel displacement
       dt_step = t_stop - p.t;
       R_diffuse = sqrt((dt_step*D) / sampled_X);
@@ -362,13 +367,15 @@ ParticleFate transport::discrete_diffuse_RandomWalk(particle &p, double t_stop)
     p.t += dt_step;
     if(p.t >= t_stop) stop = 1;
     assert(R_diffuse <= dx);
-    
+
     // add in tally of absorbed and total radiation energy
     //#pragma omp atomic
     //zone->e_abs += p.e*ddmc_P_abs_[p.ind];
     //zone->e_rad += p.e*ddmc_P_stay_[p.ind];
     #pragma omp atomic
     J_nu_[p.ind][0] += p.e*dt_step*pc::c;
+    #pragma omp atomic
+    grid->z[p.ind].e_abs  += p.e*dt_step*pc::c*planck_mean_opacity_[p.ind];
 
     // move the particle a distance R_diffuse
     double diffuse_dir[3];
@@ -386,16 +393,17 @@ ParticleFate transport::discrete_diffuse_RandomWalk(particle &p, double t_stop)
     p.x[0] += zone_vel[0]*dt_step;
     p.x[1] += zone_vel[1]*dt_step;
     p.x[2] += zone_vel[2]*dt_step;
-    
+
     // adiabatic loss (assumes small change in volume I think)
     p.e *= (1 - dvds*dt_step);
   }
 
   // find current zone and check for escape
   p.ind = grid->get_zone(p.x);
+
   if (p.ind == -1) {return absorbed;}
   if (p.ind == -2) {return escaped;}
-  return stopped;  
+  return stopped;
 }
 
 
