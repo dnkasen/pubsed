@@ -47,8 +47,7 @@ def run_test(pdf="",runcommand=""):
     n = len(r)
 
 
-
-    r0 = 5.0;
+    r0 = 2.5;
     E0 = (1.0e4)**4.0
 
     # total internal energy in pulse
@@ -58,7 +57,7 @@ def run_test(pdf="",runcommand=""):
 
     colors = ['k','r','b','g']
     cnt = 0
-    for i in np.arange(6,19,6):
+    for i in [6,14,20]: 
 
         # read sedona data
         fname = 'plt_000' + str(i) + '.h5'
@@ -70,7 +69,7 @@ def run_test(pdf="",runcommand=""):
         fin.close()
 
         # plot up
-        plt.plot(r,T,'o',color=colors[cnt],markersize=5,markeredgewidth=2,markerfacecolor='none')
+        plt.plot(r,T,'o',color=colors[cnt],markersize=5) #,markeredgewidth=2,markerfacecolor='none')
 
         # analytic solution
         D = 3e10/rho/3.0
