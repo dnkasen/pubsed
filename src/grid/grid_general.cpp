@@ -14,7 +14,9 @@ void grid_general::init(ParameterReader* params)
   MPI_Comm_size( MPI_COMM_WORLD, &nproc );
 
   // If it's a restart, restart the grid. Otherwise read in the model file
-  if (params->getScalar<int>("do_restart"))
+  do_restart_ = params->getScalar<int>("run_do_restart");
+  std::cout << do_restart_ << " REST\n";
+  if (do_restart_)
     restartGrid(params);
   else
 	  read_model_file(params);
@@ -404,25 +406,33 @@ void grid_general::readCheckpointGeneralGrid(std::string fname, bool test) {
 void grid_general::write_integrated_quantities(int iw, double tt)
 {
 	// open output file
-  	FILE* fout = NULL;
-  	if (iw == 0) fout = fopen(TIME_PLOTFILE_NAME,"w");
-  	else  fout = fopen(TIME_PLOTFILE_NAME,"a");
-  	if (fout == NULL) return;
+  FILE* fout = NULL;
 
-  	// write header
-  	if (iw == 0)
-      fprintf(fout,"#    time(sec)     E_radiation      L_nuc_dep      L_nuc_emit      Mass\n");
+  // if continuing or restarting, just append to existing time file
+  if (do_restart_||(iw > 0))
+  {
+    fout = fopen(TIME_PLOTFILE_NAME,"a");
+    if (fout == NULL) return;
+  }
+  // otherwise create new file
+  else
+  {
+    fout = fopen(TIME_PLOTFILE_NAME,"w");
+    if (fout == NULL) return;
+    // write header
+    fprintf(fout,"#    time(sec)     E_radiation      L_nuc_dep      L_nuc_emit      Mass\n");
+  }
 
-	// integrated qunaitites
-  	double L_dep = 0, L_emit = 0, E_rad = 0, mass = 0;
-  	for (int i=0;i<n_zones;++i)
- 	{
-    	double vol = zone_volume(i);
-    	L_dep  += z[i].L_radio_dep*vol;
-    	L_emit += z[i].L_radio_emit*vol;
-    	E_rad  += z[i].e_rad*vol;
-    	mass   += z[i].rho*vol;
- 	 }
-    fprintf(fout,"%15.6e %15.6e %15.6e %15.6e %15.6e\n",tt,E_rad,L_dep,L_emit,mass);
- 	fclose(fout);
+  // integrated quantities
+  double L_dep = 0, L_emit = 0, E_rad = 0, mass = 0;
+  for (int i=0;i<n_zones;++i)
+  {
+    double vol = zone_volume(i);
+    L_dep  += z[i].L_radio_dep*vol;
+    L_emit += z[i].L_radio_emit*vol;
+    E_rad  += z[i].e_rad*vol;
+    mass   += z[i].rho*vol;
+  }
+  fprintf(fout,"%15.6e %15.6e %15.6e %15.6e %15.6e\n",tt,E_rad,L_dep,L_emit,mass);
+  fclose(fout);
 }

@@ -26,17 +26,21 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-namespace {
-void checkpoint(int verbose, std::string checkpoint_file, transport &mcarlo, grid_general* grid) {
-  if (verbose) {
-    createFile(checkpoint_file);
-    std::cerr << "# checkpointing" << std::endl;
+
+
+namespace
+{
+  void checkpoint(int verbose, std::string checkpoint_file, transport &mcarlo, grid_general* grid)
+  {
+    if (verbose)
+    {
+      createFile(checkpoint_file);
+    }
+    mcarlo.writeCheckpointParticles(checkpoint_file);
+    grid->writeCheckpointZones(checkpoint_file);
+    mcarlo.writeCheckpointSpectra(checkpoint_file);
+    grid->writeCheckpointGrid(checkpoint_file);
   }
-  mcarlo.writeCheckpointParticles(checkpoint_file);
-  grid->writeCheckpointZones(checkpoint_file);
-  mcarlo.writeCheckpointSpectra(checkpoint_file);
-  grid->writeCheckpointGrid(checkpoint_file);
-}
 }
 
 //--------------------------------------------------------
@@ -94,14 +98,14 @@ int main(int argc, char **argv)
   ParameterReader params(param_file,verbose);
 
   // Handle restart bookkeeping
-  int do_restart = params.getScalar<int>("do_restart");
-  int do_checkpoint = params.getScalar<int>("do_checkpoint");
+  int do_restart = params.getScalar<int>("run_do_restart");
+  int do_checkpoint = params.getScalar<int>("run_do_checkpoint");
   std::string restart_file;
   std::string checkpoint_file;
   if (do_restart)
-    restart_file = params.getScalar<string>("restart_file");
+    restart_file = params.getScalar<string>("run_restart_file");
   if (do_checkpoint)
-    checkpoint_file = params.getScalar<string>("checkpoint_file");
+    checkpoint_file = params.getScalar<string>("run_checkpoint_file");
 // TODO: complain if old and new code versions aren't the same.
 
   //---------------------------------------------------------------------
@@ -193,7 +197,7 @@ int main(int argc, char **argv)
   double dt_del  = params.getScalar<double>("tstep_max_delta");
   // TODO: read in last time step information if restart. Might need a sedona class to
   // do that in a non-annoying way, but that's for another time/branch
-  
+
 
   // check for steady state iterative calculation
   // or a time dependent calculation
@@ -222,21 +226,17 @@ int main(int argc, char **argv)
     grid->write_plotfile(0,grid->t_now,write_mass_fractions);
   }
 
-  if (do_restart) {
+  if (do_restart)
+  {
     // Only one rank needs to create the file.
     // Using the verbose variable as a proxy for this when MPI is used
     std::string checkpoint_file_init = "check_init.h5";
     if (verbose)
       createFile(checkpoint_file_init);
-    std::cerr << "checkpointing" << std::endl;
     mcarlo.writeCheckpointParticles(checkpoint_file_init);
-    std::cerr << "wrote particles" << std::endl;
     grid->writeCheckpointZones(checkpoint_file_init);
-    std::cerr << "wrote zones" << std::endl;
     mcarlo.writeCheckpointSpectra(checkpoint_file_init);
-    std::cerr << "wrote spectrum" << std::endl;
     grid->writeCheckpointGrid(checkpoint_file_init);
-    std::cerr << "wrote grid" << std::endl;
   }
 
   std::cout << std::scientific;
@@ -313,11 +313,11 @@ int main(int argc, char **argv)
       //write spectrum
       if (use_transport)
         mcarlo.output_spectrum(i_write+1);
-      
+
       if (do_checkpoint) {
         checkpoint(verbose, checkpoint_file, mcarlo, grid);
       }
-        
+
       // determine next write out
       if ((write_out_log > 0)&&(i_write > 0))
         next_write_out = next_write_out*(1.0 + write_out_log);
