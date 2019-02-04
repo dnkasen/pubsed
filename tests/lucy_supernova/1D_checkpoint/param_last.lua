@@ -28,6 +28,6 @@ opacity_grey_opacity     = 0.1
 transport_radiative_equilibrium   = 1
 
 -- checkpoint/restart parameters
-do_restart                  = 1
-do_checkpoint               = 0
-restart_file                = "chk_out.h5"
+run_do_restart                  = 1
+run_do_checkpoint               = 0
+run_restart_file                = "chk_out.h5"
