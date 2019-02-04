@@ -4,6 +4,7 @@
 #include "GasState.h"
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 
 #ifdef MPI_PARALLEL
 #include "mpi.h"
@@ -447,4 +448,53 @@ void GasState::write_levels(int iz)
   }
   H5Fclose(file_id);
 
+}
+
+std::string format_with_commas(long int value)
+{
+    std::string numWithCommas = std::to_string(value);
+    int insertPosition = numWithCommas.length() - 3;
+    while (insertPosition > 0)
+    {
+        numWithCommas.insert(insertPosition, ",");
+        insertPosition-=3;
+    }
+    return numWithCommas;
+}
+
+void GasState::print_memory_footprint()
+{
+    long int n_tot_lines  = 0;
+    long int n_tot_levels = 0;
+    for (int i=0;i<atoms.size();i++)
+    {
+        n_tot_lines  += atoms[i].n_lines_;
+        n_tot_levels += atoms[i].n_levels_;
+    }
+    long int size_line = sizeof(AtomicLine);
+    long int size_level = sizeof(AtomicLevel);
+
+    long int tot_line  = size_line*n_tot_lines;
+    long int tot_level = size_level*n_tot_levels;
+    long int total = tot_line + tot_level;
+
+    std::cout << "#-----------------------------------------------------|\n";
+    std::cout << std::setw(10) << "#  data   |";
+    std::cout << std::setw(15) << " number |";
+    std::cout << std::setw( 12) << " each (B) |";
+    std::cout << std::setw( 18) << " total (B) |\n";
+    std::cout << "#-----------------------------------------------------|\n";
+    std::cout << std::setw(10) << "# lines   |";
+    std::cout << std::setw(15) << format_with_commas(n_tot_lines) + " |";
+    std::cout << std::setw(12) << format_with_commas(size_line) + " |";
+    std::cout << std::setw(18) << format_with_commas(tot_line) + " |\n";
+    std::cout << std::setw(10) << "# levels  |";
+    std::cout << std::setw(15) << format_with_commas(n_tot_levels) + " |";
+    std::cout << std::setw(12) << format_with_commas(size_level) + " |";
+    std::cout << std::setw(18) << format_with_commas(tot_level) + " |\n";
+    std::cout << std::setw(10) << "# total   |";
+    std::cout << std::setw(15) <<  " |";
+    std::cout << std::setw(12) <<  " |";
+    std::cout << std::setw(18) << format_with_commas(total) + " |\n";
+    std::cout << "#-----------------------------------------------------|\n";
 }

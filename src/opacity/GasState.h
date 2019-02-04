@@ -214,7 +214,9 @@ class GasState
 
   void print_properties();
   void print();
+  void print_memory_footprint();
   void write_levels(int iz);
+
 };
 
 
