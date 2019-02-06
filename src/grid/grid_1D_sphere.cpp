@@ -44,74 +44,29 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
   if (found!=std::string::npos)
   {
     std::cout << "# model file is an hdf5 file (.h5)" << endl;
-    read_hdf5_file(model_file,verbose,0);
+    read_hdf5_file(model_file,verbose);
   }
-
   else
   {
     found = model_file.find(mod_extension);
-    if (found!=std::string::npos)
+    if (verbose)
     {
-      std::cout << "# model file is ASCII format (.mod)" << endl;
+      if (found!=std::string::npos)
+        std::cout << "# model file is ASCII format (.mod)" << endl;
+      else
+        cerr << "# Don't recognize model file extension, assuming ascii" << endl;
     }
-    else
-    {
-      if (verbose) cerr << "Don't recognize model file format (file extension). Exiting." << endl;
-      exit(1);
-    }
-
-
-    std::ifstream infile;
-    infile.open(model_file.c_str());
-    if(infile.fail())
-    {
-      if (verbose) cerr << "Err: can't read model file: " << model_file << endl;
-      exit(4);
-    }
-
-    // geometry of model
-    infile >> grid_type;
-    if(grid_type != "1D_sphere")
-    {
-      if (verbose) cerr << "Err: grid_type param disagrees with the model file" << endl;
-      exit(4);
-    }
-    if (verbose) {
-      cout << "# model file = " << model_file << "\n";
-      cout << "# Model is a 1D_sphere\n"; }
-
-    // type of system
-    string system;
-    infile >> system;
-
-    // number of zones
-    infile >> n_zones;
-    z.resize(n_zones);
-    r_out.resize(n_zones);
-    vol.resize(n_zones);
-
-    // read zone properties for a supernova remnant
-    if (system == "SNR")
-      read_SNR_file(infile,verbose,1);
-    else if (system == "standard")
-      read_SNR_file(infile,verbose,0);
-    else {
-      if (verbose) cerr << " Don't recognize model type " << system << "; Exiting" << endl;
-      exit(1); }
-
-    infile.close();
+    read_ascii_file(model_file,verbose);
   }
 }
 
-void grid_1D_sphere::read_hdf5_file(std::string model_file, int verbose, int snr)
+//------------------------------------------------------------
+//------------------------------------------------------------
+// Read model data from an hdf5 input file
+//------------------------------------------------------------
+//------------------------------------------------------------
+void grid_1D_sphere::read_hdf5_file(std::string model_file, int verbose)
 {
-
-  if (snr)
-  {
-    if (verbose) cerr << " SNR as an hdf5 input file not currently implemented. Exiting" << endl;
-    exit(1);
-  }
-
   // open hdf5 file
   hid_t file_id = H5Fopen(model_file.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   herr_t status;
@@ -223,8 +178,7 @@ void grid_1D_sphere::read_hdf5_file(std::string model_file, int verbose, int snr
   // print out properties of the model
   if (verbose)
   {
-    if (snr) cout << "#\n####### 1D SNR MODEL ##########\n";
-    else cout << "#\n####### 1D STANDARD MODEL ##########\n";
+    cout << "#\n####### 1D SPHERE STANDARD MODEL ##########\n";
     cout << "# n_x = " << n_zones << endl;
     cout << "# elems (n=" << n_elems << ") ";
     for (int k=0;k<n_elems;k++) cout << elems_Z[k] << "." << elems_A[k] << " ";
@@ -258,33 +212,58 @@ void grid_1D_sphere::read_hdf5_file(std::string model_file, int verbose, int snr
 
 }
 
-void grid_1D_sphere::restartGrid(ParameterReader* params) {
-  // verbocity
-#ifdef MPI_PARALLEL
-  int my_rank;
-  MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
-  const int verbose = (my_rank == 0);
-#else
-  const int verbose = 1;
-#endif
-  string restart_file = params->getScalar<string>("restart_file");
+//------------------------------------------------------------
+//------------------------------------------------------------
+// Read model data from an ascii input file
+//------------------------------------------------------------
+//------------------------------------------------------------
+void grid_1D_sphere::read_ascii_file(std::string model_file, int verbose)
+{
+  std::ifstream infile;
+  infile.open(model_file.c_str());
+  if(infile.fail())
+  {
+    if (verbose) cerr << "Err: can't read model file: " << model_file << endl;
+    exit(4);
+  }
 
   // geometry of model
-  if(params->getScalar<string>("grid_type") != "grid_1D_sphere") 
+  infile >> grid_type;
+  if(grid_type != "1D_sphere")
   {
     if (verbose) cerr << "Err: grid_type param disagrees with the model file" << endl;
     exit(4);
   }
-  if (verbose) {
-    cout << "# model file = " << restart_file << "\n";
-    cout << "# Model is a 1D_sphere\n"; }
+  if (verbose)
+  {
+    cout << "# model file = " << model_file << "\n";
+    cout << "# Model is a 1D_sphere\n";
+  }
 
-  readCheckpointGrid(restart_file);
-  readCheckpointZones(restart_file);
-}
+  // type of system
+  string system;
+  infile >> system;
 
-void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
-{
+  // number of zones
+  infile >> n_zones;
+  z.resize(n_zones);
+  r_out.resize(n_zones);
+  vol.resize(n_zones);
+
+  std::cout << n_zones << " nz\n";
+
+  // read style of this model file
+  int snr = 0;
+  if (system == "SNR")
+    snr = 1;
+  else if (system == "standard")
+    snr = 0;
+  else
+  {
+    if (verbose) cerr << " Don't recognize model type " << system << "; Exiting" << endl;
+    exit(1);
+  }
+
   // read header, general properties
   double texp;
   infile >> r_out.min;
@@ -413,6 +392,34 @@ void grid_1D_sphere::expand(double e)
   }
 
 }
+
+
+
+void grid_1D_sphere::restartGrid(ParameterReader* params) {
+  // verbocity
+#ifdef MPI_PARALLEL
+  int my_rank;
+  MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
+  const int verbose = (my_rank == 0);
+#else
+  const int verbose = 1;
+#endif
+  string restart_file = params->getScalar<string>("run_restart_file");
+
+  // geometry of model
+  if(params->getScalar<string>("grid_type") != "grid_1D_sphere")
+  {
+    if (verbose) cerr << "Err: grid_type param disagrees with the model file" << endl;
+    exit(4);
+  }
+  if (verbose) {
+    cout << "# model file = " << restart_file << "\n";
+    cout << "# Model is a 1D_sphere\n"; }
+
+  readCheckpointGrid(restart_file);
+  readCheckpointZones(restart_file);
+}
+
 
 //************************************************************
 // Overly simple search to find zone

@@ -26,9 +26,9 @@ private:
   std::vector<double> vol;
   std::vector<double> vol_new;
 
-  // functions for reading in files
-  void read_SNR_file(std::ifstream &, int, int);
-  void read_hdf5_file(std::string, int, int);
+  // functions for reading in model files
+  void read_ascii_file(std::string, int);
+  void read_hdf5_file(std::string, int);
 
 
 public:

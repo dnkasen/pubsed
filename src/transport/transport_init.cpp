@@ -79,7 +79,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   fleck_alpha_ = params_->getScalar<double>("transport_fleck_alpha");
   last_iteration_ = 0;
 
-  std::string restart_file = params_->getScalar<string>("restart_file");
+  std::string restart_file = params_->getScalar<string>("run_restart_file");
 
   // initialize the frequency grid
   std::vector<double> nu_dims = params_->getVector<double>("transport_nu_grid");
@@ -98,7 +98,7 @@ void transport::init(ParameterReader* par, grid_general *g)
      std::cout << "# frequency grid: n = " << nu_grid.size() << "\n";
   }
 
-  if (params_->getScalar<int>("do_restart"))
+  if (params_->getScalar<int>("run_do_restart"))
     readCheckpointSpectra(restart_file);
   else {
     // intialize output spectrum
@@ -257,7 +257,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   t_now_ = g->t_now;
 
   // initialize particles
-  if (params_->getScalar<int>("do_restart"))
+  if (params_->getScalar<int>("run_do_restart"))
     readCheckpointParticles(restart_file);
   else {
     int n_parts = params_->getScalar<int>("particles_n_initialize");

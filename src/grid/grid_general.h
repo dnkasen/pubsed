@@ -38,6 +38,7 @@ class grid_general
 
   int my_rank;
   int nproc;
+  int do_restart_;
 
   // fill the grid with data from a model file
   virtual void read_model_file(ParameterReader*) = 0;
