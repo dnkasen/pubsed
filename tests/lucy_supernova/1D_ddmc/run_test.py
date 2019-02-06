@@ -47,12 +47,13 @@ def run_test(pdf="",runcommand=""):
     if (mean_err > 0.1): failure = 2
 
     ## make plot
-    plt.title
+    plt.title('1D Lucy Supernova test - DDMC')
     plt.legend(['sedona LC','sedona GR','lucy LC','lucy GR'])
     plt.xlim(0,55)
-    plt.xlabel('luminosity (erg/s)',size=13)
-    plt.ylabel('days since explosion',size=13)
-    if (pdf != ''): pdf.savefig()
+    #plt.yscale('log')
+    plt.ylabel('luminosity (erg/s)',size=13)
+    plt.xlabel('days since explosion',size=13)
+    if (pdf != ''): plt.savefig()
     else:
         plt.ion()
         plt.show()
