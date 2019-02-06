@@ -7,6 +7,10 @@
 #include "ParameterReader.h"
 #include "sedona.h"
 
+#ifdef MPI_PARALLEL
+#include <mpi.h>
+#endif
+
 using namespace std;
 namespace pc = physical_constants;
 
@@ -16,7 +20,6 @@ static ParameterReader params;
 static std::vector<OpacityType> abs_opacity, scat_opacity, tot_opacity, emissivity;
 
 // functions
-/*
 static double rosseland_mean(std::vector<OpacityType> opac);
 static double planck_mean(std::vector<OpacityType> opac);
 static void write_mesa_file(std::string);
@@ -24,14 +27,22 @@ static void write_frequency_file(std::string, int);
 static void write_gas_state(std::string);
 static void write_mean_opacities(std::string);
 static int verbose;
-*/
+
 
 int main(int argc, char **argv)
 {
-}
 
-/*
-  verbose = 1;
+int my_rank,n_procs;
+#ifdef MPI_PARALLEL
+  MPI_Init( &argc, &argv );
+  MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
+  MPI_Comm_size( MPI_COMM_WORLD, &n_procs);
+#else
+  my_rank = 0;
+  n_procs = 1;
+#endif
+
+verbose = (my_rank == 0);
 
   // open up the parameter reader
   std::string param_file = "param.lua";
@@ -68,7 +79,7 @@ int main(int argc, char **argv)
      nl << " lines used\n";gas.read_fuzzfile(fuzzfile);
   std::vector<double> massfrac = params.getVector<double>("mass_fractions");
   gas.set_mass_fractions(massfrac);
-  gas.time = params.getScalar<double>("time");
+  gas.time_ = params.getScalar<double>("time");
 
   // opacity parameters
   gas.use_nlte_ = 0;
@@ -138,8 +149,8 @@ void write_frequency_file(std::string outfile, int style)
     for (temp=temperature_list.begin();temp != temperature_list.end(); ++ temp )
     {
       double this_dens = pow(10,*dens);
-      gas.temp = *temp;
-      gas.dens = this_dens;
+      gas.temp_ = *temp;
+      gas.dens_ = this_dens;
       gas.solve_state();
       gas.computeOpacity(abs_opacity,scat_opacity,emissivity);
 
@@ -220,8 +231,8 @@ void write_mean_opacities(std::string outfile)
       double this_dens = *dens;
       if (use_logR) this_dens = pow(10,*dens + 3*log10(*temp) - 18);
       else this_dens = pow(10,*dens);
-      gas.temp = *temp;
-      gas.dens = this_dens;
+      gas.temp_ = *temp;
+      gas.dens_ = this_dens;
       std::vector<double> J_nu;
       gas.solve_state(J_nu);
       gas.computeOpacity(abs_opacity,scat_opacity,emissivity);
@@ -238,7 +249,7 @@ void write_mean_opacities(std::string outfile)
 
       double ndens = gas.get_density()/gas.get_mean_atomic_weight()/pc::m_p;
       double x_e = gas.get_electron_density()/ndens;
-      fprintf(fout,"%12.4e %12.4e %12.4e",gas.temp,gas.dens,x_e);
+      fprintf(fout,"%12.4e %12.4e %12.4e",gas.get_temperature(),gas.get_density(),x_e);
       fprintf(fout,"%12.4e %12.4e %12.4e %12.4e\n",kp,eps_p,kr,eps_r);
     }
   fclose(fout);
@@ -272,7 +283,7 @@ void write_mesa_file(std::string mesafile)
   fprintf(mesaout,"  %lu  %f  %f ",density_list.size(),density_list.front(),density_list.back());
   fprintf(mesaout,"  %lu  %f  %f\n",temperature_list.size(),log10(temperature_list.front()),log10(temperature_list.back()));
   fprintf(mesaout,"logT                       logR = logRho - 3*logT + 18\n");
-  fprintf(mesaout,"1   0   %f   %f   %f ",gas.time/(60*60*24),X_hydrogen,Z_metals);
+  fprintf(mesaout,"1   0   %f   %f   %f ",gas.time_/(60*60*24),X_hydrogen,Z_metals);
 
   vector <double>::iterator dens, temp;
   for (dens=density_list.begin();dens != density_list.end(); ++ dens )
@@ -290,8 +301,8 @@ void write_mesa_file(std::string mesafile)
       else
         this_dens = pow(10,*dens);
 
-      gas.temp = *temp;
-      gas.dens = this_dens;
+      gas.temp_ = *temp;
+      gas.dens_ = this_dens;
       std::vector<double> J_nu;
       gas.solve_state(J_nu);
       gas.computeOpacity(abs_opacity,scat_opacity,emissivity);
@@ -326,7 +337,7 @@ double rosseland_mean(std::vector<OpacityType> opac)
   {
     double dnu = nu_grid[i] - nu_grid[i-1];
     double nu0 = 0.5*(nu_grid[i] + nu_grid[i-1]);
-    double zeta = pc::h*nu0/pc::k/gas.temp;
+    double zeta = pc::h*nu0/pc::k/gas.get_temperature();
     double ezeta = exp(zeta);
     double dBdT  = pow(nu0,4);
     dBdT *= ezeta/(ezeta - 1)/(ezeta-1);
@@ -335,7 +346,7 @@ double rosseland_mean(std::vector<OpacityType> opac)
     sum  += dBdT/(opac[i])*dnu;
   //  std::cout <<  nu0 << " " << opac[i] << " " << dBdT << "\n";
   }
-  double kappa_R = norm/sum/gas.dens;
+  double kappa_R = norm/sum/gas.get_density();
   return kappa_R;
 }
 
@@ -351,13 +362,13 @@ double planck_mean(std::vector<OpacityType> opac)
   {
     double dnu = nu_grid[i] - nu_grid[i-1];
     double nu0 = 0.5*(nu_grid[i] + nu_grid[i-1]);
-    double zeta = pc::h*nu0/pc::k/gas.temp;
+    double zeta = pc::h*nu0/pc::k/gas.get_temperature();
     double Bnu  = pow(nu0,3)/(exp(zeta) - 1);
     if (isnan(Bnu))Bnu = 0;
     norm += Bnu*dnu;
     sum  += Bnu*opac[i]*dnu;
   }
-  double kappa_P = sum/norm/gas.dens;
+  double kappa_P = sum/norm/gas.get_density();
   return kappa_P;
 }
-*/
+

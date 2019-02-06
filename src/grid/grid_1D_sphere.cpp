@@ -51,14 +51,15 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
     {
       found = model_file.find(mod_extension);
       if (found!=std::string::npos)
-	{
-	  std::cout << "# model file is ASCII format (.mod)" << endl;
-	}
+	  {
+        if (verbose)
+	       std::cout << "# model file is ASCII format (.mod)" << endl;
+	  }
       else
-	{
+	 {
 	  if (verbose) cerr << "Don't recognize model file format (file extension). Exiting." << endl;
 	  exit(1);
-	}
+	 }
 
 
       std::ifstream infile;

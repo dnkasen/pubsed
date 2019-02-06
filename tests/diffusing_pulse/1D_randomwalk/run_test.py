@@ -48,7 +48,7 @@ def run_test(pdf="",runcommand=""):
 
 
 
-    r0 = 5.0;
+    r0 = 2.5;
     E0 = (1.0e4)**4.0
 
     # total internal energy in pulse
