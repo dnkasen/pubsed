@@ -13,8 +13,9 @@ grid_type      = "grid_1D_sphere"  -- grid geometry; must match input model
 -- job run (i.e., checkpoint/restart) parameters
 run_do_restart              = 0
 run_do_checkpoint           = 0
+run_do_checkpoint_test      = 0
 run_restart_file            = "chk.h5"
-run_checkpoint_file         = "chk_out.h5"
+run_checkpoint_name_base    = "chk"
 
 -- default hydro module is none
 hydro_module      = "none"

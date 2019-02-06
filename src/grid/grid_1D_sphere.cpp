@@ -250,8 +250,6 @@ void grid_1D_sphere::read_ascii_file(std::string model_file, int verbose)
   r_out.resize(n_zones);
   vol.resize(n_zones);
 
-  std::cout << n_zones << " nz\n";
-
   // read style of this model file
   int snr = 0;
   if (system == "SNR")

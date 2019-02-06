@@ -2,6 +2,7 @@
 #define _THREAD_RNG_H
 #include <gsl/gsl_rng.h>
 #include <vector>
+#include <string>
 
 class thread_RNG
 {

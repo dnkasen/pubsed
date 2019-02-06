@@ -30,16 +30,19 @@ using std::endl;
 
 namespace
 {
-  void checkpoint(int verbose, std::string checkpoint_file, transport &mcarlo, grid_general* grid)
+  void checkpoint(int verbose, std::string checkpoint_file, int i_chk, transport &mcarlo, grid_general* grid)
   {
+    string i_chk_str = std::to_string(i_chk);
+    i_chk_str.insert(i_chk_str.begin(), 5 - i_chk_str.length(), '0');
+    string checkpoint_file_full = checkpoint_file + "_" + i_chk_str + ".h5";
     if (verbose)
     {
-      createFile(checkpoint_file);
+      createFile(checkpoint_file_full);
     }
-    mcarlo.writeCheckpointParticles(checkpoint_file);
-    grid->writeCheckpointZones(checkpoint_file);
-    mcarlo.writeCheckpointSpectra(checkpoint_file);
-    grid->writeCheckpointGrid(checkpoint_file);
+    mcarlo.writeCheckpointParticles(checkpoint_file_full);
+    grid->writeCheckpointZones(checkpoint_file_full);
+    mcarlo.writeCheckpointSpectra(checkpoint_file_full);
+    grid->writeCheckpointGrid(checkpoint_file_full);
   }
 }
 
@@ -100,12 +103,15 @@ int main(int argc, char **argv)
   // Handle restart bookkeeping
   int do_restart = params.getScalar<int>("run_do_restart");
   int do_checkpoint = params.getScalar<int>("run_do_checkpoint");
+  int do_checkpoint_test = params.getScalar<int>("run_do_checkpoint_test");
   std::string restart_file;
-  std::string checkpoint_file;
-  if (do_restart)
+  std::string checkpoint_name_base;
+  if (do_restart) {
     restart_file = params.getScalar<string>("run_restart_file");
+    cout << "# Restarting from " << restart_file << endl;
+  }
   if (do_checkpoint)
-    checkpoint_file = params.getScalar<string>("run_checkpoint_file");
+    checkpoint_name_base = params.getScalar<string>("run_checkpoint_name_base");
 // TODO: complain if old and new code versions aren't the same.
 
   //---------------------------------------------------------------------
@@ -195,7 +201,8 @@ int main(int argc, char **argv)
   double dt_max  = params.getScalar<double>("tstep_max_dt");
   double dt_min  = params.getScalar<double>("tstep_min_dt");
   double dt_del  = params.getScalar<double>("tstep_max_delta");
-  // TODO: read in last time step information if restart. Might need a sedona class to
+  // TODO: read in last time step information if restart. Given current time-
+  // stepping scheme, not strictly necessary Might need a sedona class to
   // do that in a non-annoying way, but that's for another time/branch
 
 
@@ -226,11 +233,11 @@ int main(int argc, char **argv)
     grid->write_plotfile(0,grid->t_now,write_mass_fractions);
   }
 
-  if (do_restart)
+  if ((do_restart) && (do_checkpoint_test))
   {
     // Only one rank needs to create the file.
     // Using the verbose variable as a proxy for this when MPI is used
-    std::string checkpoint_file_init = "check_init.h5";
+    std::string checkpoint_file_init = checkpoint_name_base + "_init.h5";
     if (verbose)
       createFile(checkpoint_file_init);
     mcarlo.writeCheckpointParticles(checkpoint_file_init);
@@ -244,6 +251,7 @@ int main(int argc, char **argv)
 
   // loop over time/iterations. dt at iteration i doesn't depend on dt at
   // iteration i + 1. Not currently checkpointed, but may need to be later.
+  int i_chk = 0;
   double dt, t = grid->t_now;
   for(int it=1; it<=n_steps; it++,t+=dt)
   {
@@ -315,7 +323,8 @@ int main(int argc, char **argv)
         mcarlo.output_spectrum(i_write+1);
 
       if (do_checkpoint) {
-        checkpoint(verbose, checkpoint_file, mcarlo, grid);
+        checkpoint(verbose, checkpoint_name_base, i_chk, mcarlo, grid);
+        i_chk++;
       }
 
       // determine next write out
