@@ -10,7 +10,7 @@ transport_radiative_equilibrium  = 0
 transport_steady_iterate         = 2
 
 -- inner source emission
-core_n_emit      = 1e6
+core_n_emit      = 5e6
 core_radius      = 3.0e13
 core_temperature = 5.0e4
 core_luminosity  = 0 -- set automatically from blackbody T,R

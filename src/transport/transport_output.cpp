@@ -149,6 +149,14 @@ void transport::write_radiation_file(int iw)
   H5LTmake_dataset(file_id,"rosseland_mean",RANK,dims_z,H5T_NATIVE_FLOAT,tz_array);
   delete[] tz_array;
 
+  if (use_ddmc_)
+  {
+    int* tzi_array = new int[grid->n_zones];
+    for (int j=0;j<grid->n_zones;j++) tzi_array[j] = ddmc_use_in_zone_[j];
+    H5LTmake_dataset(file_id,"use_ddmc",RANK,dims_z,H5T_NATIVE_INT,tzi_array);
+    delete[] tzi_array;
+  }
+
   hid_t zone_dir = H5Gcreate1( file_id, "zonedata", 0 );
 
   // loop over zones for wavelength dependence opacities
