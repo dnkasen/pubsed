@@ -28,5 +28,5 @@ gamma_name    = "gamma_spectrum"
 opacity_grey_opacity     = 0.1
 transport_radiative_equilibrium   = 1;
 
-transport_use_ddmc = 1
-transport_ddmc_tau_threshold = 0.00000000000000100000
+transport_use_ddmc = 2
+transport_ddmc_tau_threshold = 3.0
