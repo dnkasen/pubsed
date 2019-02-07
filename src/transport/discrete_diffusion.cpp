@@ -5,7 +5,6 @@
 #include "transport.h"
 #include "radioactive.h"
 #include "physical_constants.h"
-#include "grid_1D_sphere.h"
 
 namespace pc = physical_constants;
 
