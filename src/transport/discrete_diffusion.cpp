@@ -5,6 +5,7 @@
 #include "transport.h"
 #include "radioactive.h"
 #include "physical_constants.h"
+#include "grid_1D_sphere.h"
 
 namespace pc = physical_constants;
 
@@ -117,46 +118,61 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double tstop)
   // initialize particle's timestamp
   double dt_remaining = tstop - p.t;
 
-  // indices of adjacent zones
-  int ii = p.ind;
-  int ip = ii + 1;
-  int im = ii - 1;
-
-  if (ip == nz) ip = ii;
-  if (im < 0)   im = 0;
-
-  double dx;
-  grid->get_zone_size(ii,&dx);
-
-  double dxp1, dxm1;
-  grid->get_zone_size(ip,&dxp1);
-  grid->get_zone_size(im,&dxm1);
-
-  // Gathering gas opacity
-  double sigma_i   = planck_mean_opacity_[ii];
-  double sigma_ip1 = planck_mean_opacity_[ip];
-  double sigma_im1 = planck_mean_opacity_[im];
-
-  double rcoords[3];
-  grid->coordinates(ip,rcoords);
-  double r_p = rcoords[0];
-  grid->coordinates(im,rcoords);
-  double r_m = rcoords[0];
-  if (ii == 0) r_m = 0;
-  double r_0 = 0.5*(r_p + r_m);
-
-  // Compute left/right leakage opacity
-  double sigma_leak_left  = (2.0/3.0/dx) * (1.0 / (sigma_i*dx + sigma_im1*dxm1))*r_m*r_m/r_0/r_0;
-  double sigma_leak_right = (2.0/3.0/dx) * (1.0 / (sigma_i*dx + sigma_ip1*dxp1))*r_p*r_p/r_0/r_0;
-  double sigma_leak_tot   = sigma_leak_left + sigma_leak_right;
-
-
-
-  // While loop to sample
   while (dt_remaining > 0.0)
   {
-    double xi = rangen.uniform();
+    // indices of current and adjacent zones
+    int ii = p.ind;
+    int ip = ii + 1;
+    int im = ii - 1;
 
+    // Boundary zones
+    if (ip == nz) ip = ii;
+    if (im < 0)   im = 0;
+
+    double dx;
+    grid->get_zone_size(ii,&dx);
+
+    double dxp1, dxm1;
+    grid->get_zone_size(ip,&dxp1);
+    grid->get_zone_size(im,&dxm1);
+
+    // Gathering gas opacity
+    // Should use comoving frequency of the particle
+    // for non-grey applications, ok for now.
+    double sigma_i   = planck_mean_opacity_[ii];
+    double sigma_ip1 = planck_mean_opacity_[ip];
+    double sigma_im1 = planck_mean_opacity_[im];
+
+    // Getting radii at zone boundaries and center
+    double rcoords[3];
+    grid->coordinates(ii,rcoords);
+    double r_p = rcoords[0]; // outer edge of zone ii
+    grid->coordinates(im,rcoords);
+    double r_m = rcoords[0]; // inner edge of zone ii
+    if (im == 0) {r_m = 0.0;} // Not sure how to get r_out.min from here
+    double r_0 = 0.5*(r_p + r_m); // zone center
+
+    // Compute left/right leakage opacity
+    // geometric factors for spherical coordinates
+    double Xi, geo_factor;
+    Xi = 1.0 + dx*dx/(12.0*r_0*r_0);
+    geo_factor = r_m*r_m/r_0/r_0/Xi;
+    double sigma_leak_left  = (2.0/3.0/dx) * (1.0 / (sigma_i*dx + sigma_im1*dxm1)) * geo_factor;
+    geo_factor = r_p*r_p/r_0/r_0/Xi;
+    double sigma_leak_right = (2.0/3.0/dx) * (1.0 / (sigma_i*dx + sigma_ip1*dxp1)) * geo_factor;
+
+    // Leakage away from outer boundary of problem domain
+    if (ip == ii)
+    {
+      double lambda_ddmc = 0.7104;
+      sigma_leak_right = (2.0/3.0/dx) * (1.0 / (sigma_i*dx + 2.0*lambda_ddmc)) * geo_factor;
+    }
+    // no left leakage in the innermost zone
+    if (ii == 0) sigma_leak_left = 0.0;
+
+    double sigma_leak_tot = sigma_leak_left + sigma_leak_right;
+
+    double xi = rangen.uniform();
     double d_stay, d_leak;
 
     // Distance until end of time step
@@ -172,16 +188,32 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double tstop)
       #pragma omp atomic
       J_nu_[p.ind][0] += p.e*dt_remaining*pc::c;
 
-      // advect it
       double zone_vel[3], dvds;
       grid->get_velocity(p.ind,p.x,p.D,zone_vel, &dvds);
+
+      // Compute the Dln(rho)/Dt term
+      double vel = sqrt(zone_vel[0]*zone_vel[0] + zone_vel[1]*zone_vel[1] + zone_vel[2]*zone_vel[2]);
+      double v_over_r = vel / p.r();
+      double dlnrhodt = dvds + 2.0*v_over_r; // For homology it boils down to 3*dv/dr 
+
+      // Step 1: no leakage required
+      // Do nothing for particles staying in the zone
+
+      // Step 2: adiabatic loss in comoving frame
+      // transform particle energy p.e to the comoving frame
+      transform_lab_to_comoving(&p);
+
+      // Apply adiabatic loss (assumes small change in Dln(rho)/Dt)
+      p.e *= (1 - dlnrhodt*dt_remaining/3.0);
+
+      // transform back to lab frame for bookkeeping
+      transform_comoving_to_lab(&p);
+
+      // Step 3: advection
       p.x[0] += zone_vel[0]*dt_remaining;
       p.x[1] += zone_vel[1]*dt_remaining;
       p.x[2] += zone_vel[2]*dt_remaining;
       p.ind = grid->get_zone(p.x);
-
-      // adiabatic loss (assumes small change in volume I think)
-      p.e *= (1 - dvds*dt_remaining);
 
       // stay in this zone the remainder of the time step
       p.t += dt_remaining;
@@ -192,39 +224,65 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double tstop)
       double P_leak_left = sigma_leak_left / sigma_leak_tot;
       double xi2 = rangen.uniform();
 
-      double zone_vel[3], dvds;
-      grid->get_velocity(p.ind,p.x,p.D,zone_vel, &dvds);
       double dt_change = d_leak / pc::c;
       // Tally mean intensity
       #pragma omp atomic
       J_nu_[p.ind][0] += p.e*dt_change*pc::c;
 
+      // Step 1: leakage to the neighboring zone
+      double dr;
       if (xi2 <= P_leak_left)  // leak left
       {
         p.ind--;
         double rr = p.r();
-        p.x[0] += -p.x[0]/rr*dx + zone_vel[0]*dt_change;
-        p.x[1] += -p.x[1]/rr*dx + zone_vel[1]*dt_change;
-        p.x[2] += -p.x[2]/rr*dx + zone_vel[2]*dt_change;
+        dr = rr - r_m;
+        dr += rangen.uniform()*dxm1;
+        //dr = dx; // original version
+
+        p.x[0] += -p.x[0]/rr*dr;
+        p.x[1] += -p.x[1]/rr*dr;
+        p.x[2] += -p.x[2]/rr*dr;
+
       }
       else // leak right
       {
         p.ind++;
         double rr = p.r();
-        p.x[0] += p.x[0]/rr*dx + zone_vel[0]*dt_change;
-        p.x[1] += p.x[1]/rr*dx + zone_vel[1]*dt_change;
-        p.x[2] += p.x[2]/rr*dx + zone_vel[2]*dt_change;
+        dr = r_p - rr;
+        dr += rangen.uniform()*dxp1;
+        //dr = dx; // original version
+
+        p.x[0] += p.x[0]/rr*dr;
+        p.x[1] += p.x[1]/rr*dr;
+        p.x[2] += p.x[2]/rr*dr;
+
       }
-      p.ind = grid->get_zone(p.x);
-      if (p.ind == -1) {return absorbed;}
-      if (p.ind == -2) {return escaped;}
 
-      // adiabatic loss (assumes small change in volume I think)
-      p.e *= (1 - dvds*dt_change);
+      // Get zone velocity and velocity gradient
+      double zone_vel[3], dvds;
+      grid->get_velocity(p.ind,p.x,p.D,zone_vel, &dvds);
+
+      // Compute the Dln(rho)/Dt term
+      double vel = sqrt(zone_vel[0]*zone_vel[0] + zone_vel[1]*zone_vel[1] + zone_vel[2]*zone_vel[2]);
+      double v_over_r = vel / p.r();
+      double dlnrhodt = dvds + 2.0*v_over_r;
+
+      // Step 2: adiabatic loss in comoving frame
+      // transform energy and p.D to comoving frame
+      transform_lab_to_comoving(&p);
+
+      // Apply adiabatic loss (assumes small change in Dln(rho)/Dt)
+      p.e *= (1 - dlnrhodt*dt_change/3.0);
+
+      // transform back to lab frame for bookkeeping
+      transform_comoving_to_lab(&p);
+
+      // Step 3: advection
+      p.x[0] += zone_vel[0]*dt_change;
+      p.x[1] += zone_vel[1]*dt_change;
+      p.x[2] += zone_vel[2]*dt_change;
+
       p.t += dt_change;
-
-
-
       dt_remaining -= dt_change;
     }
 
@@ -232,7 +290,6 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double tstop)
     p.ind = grid->get_zone(p.x);
     if (p.ind == -1) {return absorbed;}
     if (p.ind == -2) {return escaped;}
-
   }
 
   return stopped;
