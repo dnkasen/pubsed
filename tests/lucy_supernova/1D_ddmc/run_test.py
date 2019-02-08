@@ -53,7 +53,7 @@ def run_test(pdf="",runcommand=""):
     #plt.yscale('log')
     plt.ylabel('luminosity (erg/s)',size=13)
     plt.xlabel('days since explosion',size=13)
-    if (pdf != ''): plt.savefig()
+    if (pdf != ''): pdf.savefig()
     else:
         plt.ion()
         plt.show()
