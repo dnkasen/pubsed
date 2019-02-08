@@ -20,11 +20,13 @@
 
 #include <string>
 #include <iostream>
+#include <mpi.h>
 
 
 #include "sedona.h"
 #include "zone.h"
 #include "ParameterReader.h"
+#include "h5utils.h"
 
 #include "hdf5.h"
 #include "hdf5_hl.h"
@@ -34,8 +36,16 @@ class grid_general
 
  protected:
 
+  int my_rank;
+  int nproc;
+  int do_restart_;
+
   // fill the grid with data from a model file
   virtual void read_model_file(ParameterReader*) = 0;
+
+  void writeCheckpointGeneralGrid(std::string fname);
+  void readCheckpointGeneralGrid(std::string fname, bool test=false);
+  void testCheckpointGeneralGrid(std::string fname);
 
  public:
 
@@ -48,14 +58,20 @@ class grid_general
 
   // vector of zones
   std::vector<zone> z;
+  std::vector<zone> z_new; // For restart debugging
   int n_zones;
+  int n_zones_new;
 
   double t_now;
+  double t_now_new;
 
   // vector of isotopes to use
   std::vector<int> elems_Z;
+  std::vector<int> elems_Z_new;
   std::vector<int> elems_A;
+  std::vector<int> elems_A_new;
   int n_elems;
+  int n_elems_new;
 
   // mpi reduce quantities
   void reduce_radiation();
@@ -66,6 +82,16 @@ class grid_general
   // output functions
   void write_integrated_quantities(int iw, double tt);
   void write_hdf5_plotfile_zones(hid_t file_id, hsize_t *dims_g, int ndims, double);
+
+  void writeCheckpointZones(std::string fname);
+  void writeScalarZoneProp(std::string fname, std::string fieldname);
+  void writeVectorZoneProp(std::string fname, std::string fieldname);
+
+  void readCheckpointZones(std::string fname, bool test=false);
+  void readScalarZoneProp(std::string fname, std::string fieldname);
+  void readVectorZoneProp(std::string fname, std::string fieldname);
+
+  void testCheckpointZones(std::string fname);
 
   //****** virtual functions (geometry specific)
 
@@ -105,6 +131,12 @@ class grid_general
   virtual void get_zone_size(int, double*)
   {
   }
+
+  /* TODO: MAKE PURE VIRTUAL EVENTUALLY */
+  virtual void writeCheckpointGrid(std::string fname) {};
+  virtual void readCheckpointGrid(std::string fname, bool test=false) {};
+  virtual void testCheckpointGrid(std::string fname) {};
+  virtual void restartGrid(ParameterReader* params) {};
 
 
 };

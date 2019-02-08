@@ -10,6 +10,13 @@ data_fuzzline_file = ""
 -- grid
 grid_type      = "grid_1D_sphere"  -- grid geometry; must match input model
 
+-- job run (i.e., checkpoint/restart) parameters
+run_do_restart              = 0
+run_do_checkpoint           = 0
+run_do_checkpoint_test      = 0
+run_restart_file            = "chk.h5"
+run_checkpoint_name_base    = "chk"
+
 -- default hydro module is none
 hydro_module      = "none"
 hydro_gamma_index = 5.0/3.0
@@ -103,6 +110,7 @@ opacity_compton_scatter_photons = 0;
 line_velocity_width         = 0
 line_profile                = "voigt"
 line_x_extent               = 100
+
 
 -- output spectrum information
 spectrum_name      = "spectrum";

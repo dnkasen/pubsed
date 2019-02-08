@@ -121,6 +121,35 @@ void locate_array::copy(locate_array l)
   for (int i=0;i<l.size();i++) x[i] = l.x[i];
 }
 
+bool locate_array::is_equal(locate_array l, bool complain) {
+  bool equal = true;
+  if (min != l.min) {
+    print();
+    l.print();
+    if (complain) std::cerr << "locate array minima are different" << std::endl;
+    equal = false;
+  }
+  if (do_log_interpolate != l.do_log_interpolate) {
+    if (complain) std::cerr << "locate array do_log_interpolate are different" << std::endl;
+    equal = false;
+  }
+  if (x.size() != l.x.size()) {
+    if (complain) std::cerr << "locate array array sizes are different" << std::endl;
+    equal = false;
+  }
+  for (int i = 0; i < x.size(); i++) {
+    if (x[i] != l.x[i]) {
+      if (complain) std::cerr << "locate array array elements are different" << std::endl;
+      equal = false;
+    }
+  }
+  if (!equal && complain) {
+    print();
+  }
+  return equal;
+}
+
+    
 
 //---------------------------------------------------------
 // locate (return closest index below the value)
@@ -174,8 +203,41 @@ void locate_array::print() const
   for (int i=0;i<x.size();i++)
     printf("%4d %12.4e\n",i,x[i]);
 }
+  
+void locate_array::writeCheckpoint(std::string fname, std::string gname, std::string dset) {
+  hsize_t single_val = 1;
+  hid_t h5file = openH5File(fname);
+  hid_t h5group = openH5Group(h5file, gname);
+  createGroup(h5group, dset);
+  hid_t h5_locatearray_group = openH5Group(h5group, dset);
+  
+  writeVector(h5_locatearray_group, "x", x, H5T_NATIVE_DOUBLE);
 
+  createDataset(h5_locatearray_group, "min", 1, &single_val, H5T_NATIVE_DOUBLE); 
+  writeSimple(h5_locatearray_group, "min", &min, H5T_NATIVE_DOUBLE);
 
+  createDataset(h5_locatearray_group, "do_log_interpolate", 1, &single_val, H5T_NATIVE_INT);
+  writeSimple(h5_locatearray_group, "do_log_interpolate", &do_log_interpolate, H5T_NATIVE_INT);
+  
+  closeH5Group(h5_locatearray_group);
+  closeH5Group(h5group);
+  closeH5File(h5file);
+
+}
+
+void locate_array::readCheckpoint(std::string fname, std::string gname, std::string dset) {
+  hid_t h5file = openH5File(fname);
+  hid_t h5group = openH5Group(h5file, gname);
+  hid_t h5_locatearray_group = openH5Group(h5group, dset);
+
+  readVector(h5_locatearray_group, "x", x, H5T_NATIVE_DOUBLE);
+  readSimple(h5_locatearray_group, "min", &min, H5T_NATIVE_DOUBLE);
+  readSimple(h5_locatearray_group, "do_log_interpolate", &do_log_interpolate, H5T_NATIVE_INT);
+
+  closeH5Group(h5_locatearray_group);
+  closeH5Group(h5group);
+  closeH5File(h5file);
+}
 
 void locate_array::swap(locate_array new_array){
   // swap the vectors

@@ -28,6 +28,24 @@ using std::endl;
 
 
 
+namespace
+{
+  void checkpoint(int verbose, std::string checkpoint_file, int i_chk, transport &mcarlo, grid_general* grid)
+  {
+    string i_chk_str = std::to_string(i_chk);
+    i_chk_str.insert(i_chk_str.begin(), 5 - i_chk_str.length(), '0');
+    string checkpoint_file_full = checkpoint_file + "_" + i_chk_str + ".h5";
+    if (verbose)
+    {
+      createFile(checkpoint_file_full);
+    }
+    mcarlo.writeCheckpointParticles(checkpoint_file_full);
+    grid->writeCheckpointZones(checkpoint_file_full);
+    mcarlo.writeCheckpointSpectra(checkpoint_file_full);
+    grid->writeCheckpointGrid(checkpoint_file_full);
+  }
+}
+
 //--------------------------------------------------------
 // The main code
 //--------------------------------------------------------
@@ -82,11 +100,24 @@ int main(int argc, char **argv)
   if( argc > 1 ) param_file = std::string( argv[ 1 ] );
   ParameterReader params(param_file,verbose);
 
+  // Handle restart bookkeeping
+  int do_restart = params.getScalar<int>("run_do_restart");
+  int do_checkpoint = params.getScalar<int>("run_do_checkpoint");
+  int do_checkpoint_test = params.getScalar<int>("run_do_checkpoint_test");
+  std::string restart_file;
+  std::string checkpoint_name_base;
+  if (do_restart) {
+    restart_file = params.getScalar<string>("run_restart_file");
+    cout << "# Restarting from " << restart_file << endl;
+  }
+  if (do_checkpoint)
+    checkpoint_name_base = params.getScalar<string>("run_checkpoint_name_base");
+// TODO: complain if old and new code versions aren't the same.
 
   //---------------------------------------------------------------------
   // SET UP THE GRID
   //---------------------------------------------------------------------
-  grid_general *grid;
+  grid_general *grid = NULL;
 
   // read the grid type
   string grid_type = params.getScalar<string>("grid_type");
@@ -126,8 +157,9 @@ int main(int argc, char **argv)
 
   // Evolve to start time if homologous
   // by adiabatically expanding or compress rho and T
+  // But this should only happen if there's not a restart
   double t_start = params.getScalar<double>("tstep_time_start");
-  if ((hydro_type == "homologous")&&(t_start > 0))
+  if ((hydro_type == "homologous")&&(t_start > 0) && (not do_restart))
   {
     if (verbose)
     {
@@ -169,6 +201,10 @@ int main(int argc, char **argv)
   double dt_max  = params.getScalar<double>("tstep_max_dt");
   double dt_min  = params.getScalar<double>("tstep_min_dt");
   double dt_del  = params.getScalar<double>("tstep_max_delta");
+  // TODO: read in last time step information if restart. Given current time-
+  // stepping scheme, not strictly necessary Might need a sedona class to
+  // do that in a non-annoying way, but that's for another time/branch
+
 
   // check for steady state iterative calculation
   // or a time dependent calculation
@@ -197,10 +233,25 @@ int main(int argc, char **argv)
     grid->write_plotfile(0,grid->t_now,write_mass_fractions);
   }
 
+  if ((do_restart) && (do_checkpoint_test))
+  {
+    // Only one rank needs to create the file.
+    // Using the verbose variable as a proxy for this when MPI is used
+    std::string checkpoint_file_init = checkpoint_name_base + "_init.h5";
+    if (verbose)
+      createFile(checkpoint_file_init);
+    mcarlo.writeCheckpointParticles(checkpoint_file_init);
+    grid->writeCheckpointZones(checkpoint_file_init);
+    mcarlo.writeCheckpointSpectra(checkpoint_file_init);
+    grid->writeCheckpointGrid(checkpoint_file_init);
+  }
+
   std::cout << std::scientific;
   std::cout << std::setprecision(2);
 
-  // loop over time/iterations
+  // loop over time/iterations. dt at iteration i doesn't depend on dt at
+  // iteration i + 1. Not currently checkpointed, but may need to be later.
+  int i_chk = 0;
   double dt, t = grid->t_now;
   for(int it=1; it<=n_steps; it++,t+=dt)
   {
@@ -270,6 +321,11 @@ int main(int argc, char **argv)
       //write spectrum
       if (use_transport)
         mcarlo.output_spectrum(i_write+1);
+
+      if (do_checkpoint) {
+        checkpoint(verbose, checkpoint_name_base, i_chk, mcarlo, grid);
+        i_chk++;
+      }
 
       // determine next write out
       if ((write_out_log > 0)&&(i_write > 0))

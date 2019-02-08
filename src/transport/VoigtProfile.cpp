@@ -17,6 +17,9 @@ VoigtProfile::VoigtProfile()
   rangen_ = gsl_rng_alloc (TypeR);
 }
 
+VoigtProfile::~VoigtProfile() {
+  gsl_rng_free(rangen_);
+}
 
 void VoigtProfile::setU0(double upass)
 {

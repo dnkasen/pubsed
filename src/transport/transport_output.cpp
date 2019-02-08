@@ -249,3 +249,353 @@ void transport::write_radiation_file(int iw)
   H5Fclose (file_id);
   delete[] tmp_array;
 }
+
+void transport::writeCheckpointParticles(std::string fname) {
+  // Figures out what every rank's offset is going to be in the big particle list
+  int my_n_particles = n_particles();
+  int my_offset;
+  int global_n_particles_total = 0;
+  int* global_n_particles = new int[MPI_nprocs];
+  int* particle_offsets = new int[MPI_nprocs];
+  MPI_Gather(&my_n_particles, 1, MPI_INT, global_n_particles, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  if (MPI_myID == 0) {
+    for (int i = 0; i < MPI_nprocs; i++) {
+      particle_offsets[i] = global_n_particles_total;
+      global_n_particles_total += global_n_particles[i];
+    }
+  }
+  // Rank 0 tells all of the other ranks what their offsets will be
+  MPI_Scatter(particle_offsets, 1, MPI_INT, &my_offset, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&global_n_particles_total, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  // Rank 0 sets up all of the datasets in the H5 file
+  if (MPI_myID == 0) {
+    //createFile(fname);
+    int ndim1 = 1;
+    hsize_t dims1[1] =  {global_n_particles_total};
+    int ndim3 = 2;
+    hsize_t dims3[2] = {global_n_particles_total, 3};
+    createGroup(fname, "particles");
+    createDataset(fname, "particles", "type", ndim1, dims1, H5T_NATIVE_INT);
+    createDataset(fname, "particles", "x", ndim3, dims3, H5T_NATIVE_DOUBLE);
+    createDataset(fname, "particles", "D", ndim3, dims3, H5T_NATIVE_DOUBLE);
+    createDataset(fname, "particles", "ind", ndim1, dims1, H5T_NATIVE_INT);
+    createDataset(fname, "particles", "t", ndim1, dims1, H5T_NATIVE_DOUBLE);
+    createDataset(fname, "particles", "e", ndim1, dims1, H5T_NATIVE_DOUBLE);
+    createDataset(fname, "particles", "nu", ndim1, dims1, H5T_NATIVE_DOUBLE);
+    createDataset(fname, "particles", "gamma", ndim1, dims1, H5T_NATIVE_DOUBLE);
+    createDataset(fname, "particles", "dshift", ndim1, dims1, H5T_NATIVE_DOUBLE);
+    createDataset(fname, "particles", "dvds", ndim1, dims1, H5T_NATIVE_DOUBLE);
+    createDataset(fname, "particles", "fate", ndim1, dims1, H5T_NATIVE_INT);
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+  for (int i = 0; i < MPI_nprocs; i++) {
+    if (i == MPI_myID) {
+      writeParticleProp(fname, "type", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "x", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "D", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "ind", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "t", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "e", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "nu", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "gamma", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "dshift", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "dvds", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "fate", global_n_particles_total, my_offset);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+  delete[] global_n_particles;
+  delete[] particle_offsets;
+}
+
+// Writes out particle data, assuming that the particles group already exists in
+// the hdf5 file named file. The 
+void transport::writeParticleProp(std::string fname, std::string fieldname, int total_particles, int offset) {
+  int n_dims = 1;
+  int n_particles_local = n_particles();
+  int* buffer_i;
+  double* buffer_d;
+  hid_t t = H5T_NATIVE_DOUBLE;
+  if (fieldname == "type") {
+    t = H5T_NATIVE_INT;
+    buffer_i = new int[n_particles_local];
+    for (int i = 0; i < n_particles_local; i++) {
+      buffer_i[i] = particles[i].type;
+    }
+  }
+  else if (fieldname == "x") {
+    n_dims = 2;
+    buffer_d = new double[n_particles_local * 3];
+    for (int i = 0; i < n_particles_local; i++) {
+      buffer_d[i * 3] = particles[i].x[0];
+      buffer_d[i * 3 + 1] = particles[i].x[1];
+      buffer_d[i * 3 + 2] = particles[i].x[2];
+    }
+  }
+  else if (fieldname == "D") {
+    n_dims = 2;
+    buffer_d = new double[n_particles_local * 3];
+    for (int i = 0; i < n_particles_local; i++) {
+      buffer_d[i * 3] = particles[i].D[0];
+      buffer_d[i * 3 + 1] = particles[i].D[1];
+      buffer_d[i * 3 + 2] = particles[i].D[2];
+    }
+  }
+  else if (fieldname == "ind") {
+    t = H5T_NATIVE_INT;
+    buffer_i = new int[n_particles_local];
+    for (int i = 0; i < n_particles_local; i++) {
+      buffer_i[i] = particles[i].ind;
+    }
+  }
+  else if (fieldname == "t") {
+    buffer_d = new double[n_particles_local];
+    for (int i = 0; i < n_particles_local; i++) {
+      buffer_d[i] = particles[i].t;
+    }
+  }
+  else if (fieldname == "e") {
+    buffer_d = new double[n_particles_local];
+    for (int i = 0; i < n_particles_local; i++) {
+      buffer_d[i] = particles[i].e;
+    }
+  }
+  else if (fieldname == "nu") {
+    buffer_d = new double[n_particles_local];
+    for (int i = 0; i < n_particles_local; i++) {
+      buffer_d[i] = particles[i].nu;
+    }
+  }
+  else if (fieldname == "gamma") {
+    buffer_d = new double[n_particles_local];
+    for (int i = 0; i < n_particles_local; i++) {
+      buffer_d[i] = particles[i].gamma;
+    }
+  }
+  else if (fieldname == "dshift") {
+    buffer_d = new double[n_particles_local];
+    for (int i = 0; i < n_particles_local; i++) {
+      buffer_d[i] = particles[i].dshift;
+    }
+  }
+  else if (fieldname == "dvds") {
+    buffer_d = new double[n_particles_local];
+    for (int i = 0; i < n_particles_local; i++) {
+      buffer_d[i] = particles[i].dvds;
+    }
+  }
+  else if (fieldname == "fate") {
+    t = H5T_NATIVE_INT;
+    buffer_i = new int[n_particles_local];
+    for (int i = 0; i < n_particles_local; i++) {
+      buffer_i[i] = particles[i].fate;
+    }
+  }
+  else {
+    std::cerr << "Particle field " << fieldname << " does not exist. Terminating" << std::endl;
+    exit(3);
+  }
+
+  // Because the code will only look at n_dims dimensions worth of measurements, we can always
+  // fill in the whole 2-long arrays. If n_dims == 1, the code will just ignore the second
+  // entries.
+  int start[2] = {offset, 0};
+  int size[2] = {n_particles_local, 3};
+  int total_size[2] = {total_particles, 3};
+
+  if (n_dims != 1 && n_dims != 2) {
+    std::cerr << "Dimension count " << n_dims << " not allowed." <<std::endl;
+    exit(3);
+  }
+  if (t == H5T_NATIVE_INT) {
+    writePatch(fname, "particles", fieldname.c_str(), buffer_i, t, n_dims, start, size, total_size);
+    delete[] buffer_i;
+  }
+  else if (t == H5T_NATIVE_DOUBLE) {
+    writePatch(fname, "particles", fieldname.c_str(), buffer_d, t, n_dims, start, size, total_size);
+    delete[] buffer_d;
+  }
+  else {
+    std::cerr << "HDF5 type is wrong" <<std::endl;
+  }
+}
+
+void transport::writeCheckpointSpectra(std::string fname) {
+  optical_spectrum.writeCheckpointSpectrum(fname, "optical spectrum");
+  gamma_spectrum.writeCheckpointSpectrum(fname, "gamma spectrum");
+}
+
+void transport::readCheckpointParticles(std::string fname, bool test) {
+  /* Get number of particles that are stored in the file */
+  hsize_t global_n_particles_total;
+  for (int rank = 0; rank < MPI_nprocs; rank++) {
+    if (MPI_myID == rank) {
+      getH5dims(fname, "particles", "e", &global_n_particles_total);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+
+  /* Make sure each particle gets "claimed" by one rank */
+  int my_n_particles = floor(global_n_particles_total / (1.0 * MPI_nprocs));
+  int remainder = global_n_particles_total % MPI_nprocs;
+  if (MPI_myID < remainder) {
+    my_n_particles += 1;
+  }
+  particles_new.resize(my_n_particles);
+
+  /* Figure out what each rank's offset will be in the particle array */
+  int my_offset;
+  int* global_n_particles = new int[MPI_nprocs];
+  int* particle_offsets = new int[MPI_nprocs];
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Gather(&my_n_particles, 1, MPI_INT, global_n_particles, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  if (MPI_myID == 0) {
+    particle_offsets[0] = 0;
+    for (int i = 1; i < MPI_nprocs; i++) {
+      particle_offsets[i] = particle_offsets[i - 1] + global_n_particles[i - 1];
+    }
+  }
+  // Rank 0 tells all of the other ranks what their offsets will be
+  MPI_Scatter(particle_offsets, 1, MPI_INT, &my_offset, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  /* Read in all of the quantities */
+  for (int i = 0; i < MPI_nprocs; i++) {
+    if (i == MPI_myID) {
+      readParticleProp(fname, "type", global_n_particles_total, my_offset);
+      readParticleProp(fname, "x", global_n_particles_total, my_offset);
+      readParticleProp(fname, "D", global_n_particles_total, my_offset);
+      readParticleProp(fname, "ind", global_n_particles_total, my_offset);
+      readParticleProp(fname, "t", global_n_particles_total, my_offset);
+      readParticleProp(fname, "e", global_n_particles_total, my_offset);
+      readParticleProp(fname, "nu", global_n_particles_total, my_offset);
+      readParticleProp(fname, "gamma", global_n_particles_total, my_offset);
+      readParticleProp(fname, "dshift", global_n_particles_total, my_offset);
+      readParticleProp(fname, "dvds", global_n_particles_total, my_offset);
+      readParticleProp(fname, "fate", global_n_particles_total, my_offset);
+
+      if (not test) {
+        particles = particles_new;
+      }
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+
+  delete[] global_n_particles;
+  delete[] particle_offsets;
+}
+
+void transport::readParticleProp(std::string fname, std::string fieldname, int total_particles, int offset) {
+  int n_dims = 1;
+  int n_particles_local = n_particles_new();
+  int* buffer_i;
+  double* buffer_d;
+  // Set up patch info
+  int start[2] = {offset, 0};
+  int size[2] = {n_particles_local, 3};
+  int total_size[2] = {total_particles, 3};
+
+  hid_t t = H5T_NATIVE_DOUBLE;
+  if ((fieldname == "type") || (fieldname == "ind") || (fieldname == "fate")) {
+    t = H5T_NATIVE_INT;
+    buffer_i = new int[n_particles_local];
+  }
+  else if ((fieldname == "x") || (fieldname == "D")) {
+    n_dims = 2;
+    buffer_d = new double[n_particles_local * 3];
+  }
+  else if ((fieldname == "t") || (fieldname == "e") || (fieldname == "nu") || (fieldname == "gamma") || (fieldname == "dshift") || (fieldname == "dvds")) {
+    buffer_d = new double[n_particles_local];
+  }
+  else {
+    std::cerr << "Particle field " << fieldname << " does not exist. Terminating" << std::endl;
+    exit(3);
+  }
+
+  if (t == H5T_NATIVE_INT)
+    readPatch(fname, "particles", fieldname.c_str(), buffer_i, t, n_dims, start, size, total_size);
+  else if (t == H5T_NATIVE_DOUBLE)
+    readPatch(fname, "particles", fieldname.c_str(), buffer_d, t, n_dims, start, size, total_size);
+  else {
+    std::cerr << "HDF5 type is wrong" << std::endl;
+    exit(3);
+  }
+
+  if (fieldname == "type") {
+    for (int i = 0; i < n_particles_local; i++) {
+      particles_new[i].type = static_cast<PType>(buffer_i[i]);
+    }
+  }
+  else if (fieldname == "x") {
+    for (int i = 0; i < n_particles_local; i++) {
+      particles_new[i].x[0] = buffer_d[i * 3];
+      particles_new[i].x[1] = buffer_d[i * 3 + 1];
+      particles_new[i].x[2] = buffer_d[i * 3 + 2];
+    }
+  }
+  else if (fieldname == "D") {
+    for (int i = 0; i < n_particles_local; i++) {
+      particles_new[i].D[0] = buffer_d[i * 3];
+      particles_new[i].D[1] = buffer_d[i * 3 + 1];
+      particles_new[i].D[2] = buffer_d[i * 3 + 2];
+    }
+  }
+  else if (fieldname == "ind") {
+    for (int i = 0; i < n_particles_local; i++) {
+      particles_new[i].ind = buffer_i[i];
+    }
+  }
+  else if (fieldname == "t") {
+    for (int i = 0; i < n_particles_local; i++) {
+      particles_new[i].t = buffer_d[i];
+    }
+  }
+  else if (fieldname == "e") {
+    for (int i = 0; i < n_particles_local; i++) {
+      particles_new[i].e = buffer_d[i];
+    }
+  }
+  else if (fieldname == "nu") {
+    for (int i = 0; i < n_particles_local; i++) {
+      particles_new[i].nu = buffer_d[i];
+    }
+  }
+  else if (fieldname == "gamma") {
+    for (int i = 0; i < n_particles_local; i++) {
+      particles_new[i].gamma = buffer_d[i];
+    }
+  }
+  else if (fieldname == "dshift") {
+    for (int i = 0; i < n_particles_local; i++) {
+      particles_new[i].dshift = buffer_d[i];
+    }
+  }
+  else if (fieldname == "dvds") {
+    for (int i = 0; i < n_particles_local; i++) {
+      particles_new[i].dvds = buffer_d[i];
+    }
+  }
+  else if (fieldname == "fate") {
+    for (int i = 0; i < n_particles_local; i++) {
+      particles_new[i].fate = static_cast<ParticleFate>(buffer_i[i]);
+    }
+  }
+  else {
+    std::cerr << "Particle field " << fieldname << " does not exist. Terminating" << std::endl;
+    exit(3);
+  }
+  
+  if (t == H5T_NATIVE_INT)
+    delete[] buffer_i;
+  else if (t == H5T_NATIVE_DOUBLE)
+    delete[] buffer_d;
+  else {
+    std::cerr << "HDF5 type is wrong" << std::endl;
+    exit(3);
+  }
+}
+
+void transport::readCheckpointSpectra(std::string fname, bool test) {
+  optical_spectrum.readCheckpointSpectrum(fname, "optical spectrum");
+  gamma_spectrum.readCheckpointSpectrum(fname, "gamma spectrum");
+}

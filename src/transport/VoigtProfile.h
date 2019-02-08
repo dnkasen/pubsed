@@ -15,6 +15,7 @@ class VoigtProfile
 public:
   
   VoigtProfile();
+  ~VoigtProfile();
   void   setU0(double);
   double getProfile(double,double);
   double sampleU(double,double);

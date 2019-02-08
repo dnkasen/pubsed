@@ -2,6 +2,7 @@
 #define _THREAD_RNG_H
 #include <gsl/gsl_rng.h>
 #include <vector>
+#include <string>
 
 class thread_RNG
 {
@@ -16,6 +17,10 @@ public:
 
   void   init();
   double uniform();
+  ~thread_RNG();
+
+  void writeCheckpointRNG(std::string fname);
+  void readCheckpointRNG(std::string fname);
 };
 
 #endif

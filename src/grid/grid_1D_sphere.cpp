@@ -42,77 +42,31 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
 
   std::size_t found = model_file.find(hdf5_extension);
   if (found!=std::string::npos)
-    {
-      std::cout << "# model file is an hdf5 file (.h5)" << endl;
-      read_hdf5_file(model_file,verbose,0);
-    }
-
+  {
+    std::cout << "# model file is an hdf5 file (.h5)" << endl;
+    read_hdf5_file(model_file,verbose);
+  }
   else
+  {
+    found = model_file.find(mod_extension);
+    if (verbose)
     {
-      found = model_file.find(mod_extension);
       if (found!=std::string::npos)
-	  {
-        if (verbose)
-	       std::cout << "# model file is ASCII format (.mod)" << endl;
-	  }
+        std::cout << "# model file is ASCII format (.mod)" << endl;
       else
-	 {
-	  if (verbose) cerr << "Don't recognize model file format (file extension). Exiting." << endl;
-	  exit(1);
-	 }
-
-
-      std::ifstream infile;
-      infile.open(model_file.c_str());
-      if(infile.fail())
-	{
-	  if (verbose) cerr << "Err: can't read model file: " << model_file << endl;
-	  exit(4);
-	}
-
-      // geometry of model
-      infile >> grid_type;
-      if(grid_type != "1D_sphere")
-	{
-	  if (verbose) cerr << "Err: grid_type param disagrees with the model file" << endl;
-	  exit(4);
-	}
-      if (verbose) {
-	cout << "# model file = " << model_file << "\n";
-	cout << "# Model is a 1D_sphere\n"; }
-
-      // type of system
-      string system;
-      infile >> system;
-
-      // number of zones
-      infile >> n_zones;
-      z.resize(n_zones);
-      r_out.resize(n_zones);
-      vol.resize(n_zones);
-
-      // read zone properties for a supernova remnant
-      if (system == "SNR")
-	read_SNR_file(infile,verbose,1);
-      else if (system == "standard")
-	read_SNR_file(infile,verbose,0);
-      else {
-	if (verbose) cerr << " Don't recognize model type " << system << "; Exiting" << endl;
-	exit(1); }
-
-      infile.close();
+        cerr << "# Don't recognize model file extension, assuming ascii" << endl;
     }
+    read_ascii_file(model_file,verbose);
+  }
 }
 
-void grid_1D_sphere::read_hdf5_file(std::string model_file, int verbose, int snr)
+//------------------------------------------------------------
+//------------------------------------------------------------
+// Read model data from an hdf5 input file
+//------------------------------------------------------------
+//------------------------------------------------------------
+void grid_1D_sphere::read_hdf5_file(std::string model_file, int verbose)
 {
-
-  if (snr)
-    {
-      if (verbose) cerr << " SNR as an hdf5 input file not currently implemented. Exiting" << endl;
-      exit(1);
-    }
-
   // open hdf5 file
   hid_t file_id = H5Fopen(model_file.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   herr_t status;
@@ -171,14 +125,14 @@ void grid_1D_sphere::read_hdf5_file(std::string model_file, int verbose, int snr
   // read erad
   status = H5LTread_dataset_double(file_id,"/erad",tmp);
   if (status < 0)
-    {
+  {
     if (verbose) std::cout << "# Grid warning: Can't find erad. Using gas temperatrure and assuming blackbody radiation field." << endl;
     for (int i=0; i < n_zones; i++) z[i].e_rad = pc::a * pow(z[i].T_gas,4.);
-    }
+  }
   else
-    {
-      for (int i=0; i < n_zones; i++) z[i].e_rad = tmp[i];
-    }
+  {
+    for (int i=0; i < n_zones; i++) z[i].e_rad = tmp[i];
+  }
 
   delete [] tmp;
 
@@ -201,10 +155,10 @@ void grid_1D_sphere::read_hdf5_file(std::string model_file, int verbose, int snr
     // Make sure initial compositions are normalized, and compute mu
     z[i].mu = 0;
     for (int k = 0; k < n_elems; k++)
-      {
-	z[i].X_gas[k] /= norm;
-	z[i].mu += z[i].X_gas[k]*elems_A[k];
-      }
+    {
+      z[i].X_gas[k] /= norm;
+      z[i].mu += z[i].X_gas[k]*elems_A[k];
+    }
   }
   delete [] ctmp;
 
@@ -212,7 +166,7 @@ void grid_1D_sphere::read_hdf5_file(std::string model_file, int verbose, int snr
   H5Fclose (file_id);
 
   for (int i=0; i < n_zones; i++)
-    {
+  {
     // calculate shell volume
     double r0;
     if(i==0) r0 = r_out.min;
@@ -224,8 +178,7 @@ void grid_1D_sphere::read_hdf5_file(std::string model_file, int verbose, int snr
   // print out properties of the model
   if (verbose)
   {
-    if (snr) cout << "#\n####### 1D SNR MODEL ##########\n";
-    else cout << "#\n####### 1D STANDARD MODEL ##########\n";
+    cout << "#\n####### 1D SPHERE STANDARD MODEL ##########\n";
     cout << "# n_x = " << n_zones << endl;
     cout << "# elems (n=" << n_elems << ") ";
     for (int k=0;k<n_elems;k++) cout << elems_Z[k] << "." << elems_A[k] << " ";
@@ -259,8 +212,56 @@ void grid_1D_sphere::read_hdf5_file(std::string model_file, int verbose, int snr
 
 }
 
-void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
+//------------------------------------------------------------
+//------------------------------------------------------------
+// Read model data from an ascii input file
+//------------------------------------------------------------
+//------------------------------------------------------------
+void grid_1D_sphere::read_ascii_file(std::string model_file, int verbose)
 {
+  std::ifstream infile;
+  infile.open(model_file.c_str());
+  if(infile.fail())
+  {
+    if (verbose) cerr << "Err: can't read model file: " << model_file << endl;
+    exit(4);
+  }
+
+  // geometry of model
+  infile >> grid_type;
+  if(grid_type != "1D_sphere")
+  {
+    if (verbose) cerr << "Err: grid_type param disagrees with the model file" << endl;
+    exit(4);
+  }
+  if (verbose)
+  {
+    cout << "# model file = " << model_file << "\n";
+    cout << "# Model is a 1D_sphere\n";
+  }
+
+  // type of system
+  string system;
+  infile >> system;
+
+  // number of zones
+  infile >> n_zones;
+  z.resize(n_zones);
+  r_out.resize(n_zones);
+  vol.resize(n_zones);
+
+  // read style of this model file
+  int snr = 0;
+  if (system == "SNR")
+    snr = 1;
+  else if (system == "standard")
+    snr = 0;
+  else
+  {
+    if (verbose) cerr << " Don't recognize model type " << system << "; Exiting" << endl;
+    exit(1);
+  }
+
   // read header, general properties
   double texp;
   infile >> r_out.min;
@@ -316,10 +317,10 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
     // Make sure initial compositions are normalized, and compute mu
     z[i].mu = 0;
     for (int k = 0; k < n_elems; k++)
-      {
-	z[i].X_gas[k] /= norm;
-	z[i].mu += z[i].X_gas[k]*elems_A[k];
-      }
+    {
+      z[i].X_gas[k] /= norm;
+      z[i].mu += z[i].X_gas[k]*elems_A[k];
+    }
 
     // assume LTE radiation field to start
     z[i].e_rad = pc::a*pow(z[i].T_gas,4);
@@ -371,8 +372,6 @@ void grid_1D_sphere::read_SNR_file(std::ifstream &infile, int verbose, int snr)
   }
 }
 
-
-
 //************************************************************
 // expand the grid
 //************************************************************
@@ -391,6 +390,34 @@ void grid_1D_sphere::expand(double e)
   }
 
 }
+
+
+
+void grid_1D_sphere::restartGrid(ParameterReader* params) {
+  // verbocity
+#ifdef MPI_PARALLEL
+  int my_rank;
+  MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
+  const int verbose = (my_rank == 0);
+#else
+  const int verbose = 1;
+#endif
+  string restart_file = params->getScalar<string>("run_restart_file");
+
+  // geometry of model
+  if(params->getScalar<string>("grid_type") != "grid_1D_sphere")
+  {
+    if (verbose) cerr << "Err: grid_type param disagrees with the model file" << endl;
+    exit(4);
+  }
+  if (verbose) {
+    cout << "# model file = " << restart_file << "\n";
+    cout << "# Model is a 1D_sphere\n"; }
+
+  readCheckpointGrid(restart_file);
+  readCheckpointZones(restart_file);
+}
+
 
 //************************************************************
 // Overly simple search to find zone
@@ -426,8 +453,8 @@ int grid_1D_sphere::get_next_zone(const double *x, const double *D, int i, doubl
   int ind_in = i-1;
   if (i != 0)  r_i = r_out[i-1];
   if (r_core >= r_i) {
-      r_i = r_core;
-      ind_in = -1; }
+    r_i = r_core;
+    ind_in = -1; }
 
 
   double l_in;
@@ -474,15 +501,15 @@ void grid_1D_sphere::write_plotfile(int iw, double tt, int write_mass_fracs)
   fprintf(outfile,"# t = %8.4e ; rmin = %8.4e\n",tt, r_out.min);
   fprintf(outfile, "#  %-12.12s %-15.15s %-15.15s %-15.15s %-15.15s %-15.15s %-15.15s","r", "rho","v", "T_gas", "T_rad", "L_dep_nuc","L_emit_nuc");
   if (write_mass_fracs) // output mass fractions
+  {
+    for (int j =0; j < n_elems; j++)
     {
-      for (int j =0; j < n_elems; j++)
-	{
-	  char elem_id[10];
-	  sprintf(elem_id,"%d.%d",elems_Z[j],elems_A[j]);
-	  fprintf(outfile," %-15.15s",elem_id);
-	}
-
+      char elem_id[10];
+      sprintf(elem_id,"%d.%d",elems_Z[j],elems_A[j]);
+      fprintf(outfile," %-15.15s",elem_id);
     }
+
+  }
   fprintf(outfile,"\n");
 
   for (int i=0;i<n_zones;i++)
@@ -493,10 +520,10 @@ void grid_1D_sphere::write_plotfile(int iw, double tt, int write_mass_fracs)
 
     fprintf(outfile, "%12.8e  %12.8e  %12.8e  %12.8e  %12.8e  %12.8e  %12.8e", r_out[i], z[i].rho, z[i].v[0], z[i].T_gas, T_rad, z[i].L_radio_dep, z[i].L_radio_emit);
     if (write_mass_fracs) // output mass fractions
-      {
-	for (int j =0; j < n_elems; j++)
-	  fprintf(outfile,"  %12.8e", z[i].X_gas[j]);
-      }
+    {
+      for (int j =0; j < n_elems; j++)
+        fprintf(outfile,"  %12.8e", z[i].X_gas[j]);
+    }
     fprintf(outfile,"\n");
   }
 
@@ -545,7 +572,7 @@ double  grid_1D_sphere::zone_volume(const int i) const
 //************************************************************
 // sample a random position within the spherical shell
 //************************************************************
-void grid_1D_sphere::sample_in_zone
+  void grid_1D_sphere::sample_in_zone
 (int i, std::vector<double> ran, double r[3])
 {
   // inner radius of shell
@@ -617,9 +644,9 @@ void grid_1D_sphere::get_radial_edges
   r0 = r_out.min;
   v0 = v_inner_;
 }
-void grid_1D_sphere::set_radial_edges
+  void grid_1D_sphere::set_radial_edges
 (const std::vector<double> r, const double r0,
-const std::vector<double> v, const double v0)
+ const std::vector<double> v, const double v0)
 {
   r_out.min = r0;
   v_inner_ = v0;
@@ -636,4 +663,39 @@ const std::vector<double> v, const double v0)
   }
 
 
+}
+
+void grid_1D_sphere::writeCheckpointGrid(std::string fname) {
+  if (my_rank == 0) {
+    writeCheckpointGeneralGrid(fname);
+    /* Specific to 1D */
+    hsize_t single_val = 1;
+    hsize_t zone_size = n_zones;
+
+    createDataset(fname, "grid", "v_inner", 1, &single_val, H5T_NATIVE_DOUBLE);
+    writeSimple(fname, "grid", "v_inner", &v_inner_, H5T_NATIVE_DOUBLE);
+
+    r_out.writeCheckpoint(fname, "grid", "r_out");
+
+    writeVector(fname, "grid", "vol", vol, H5T_NATIVE_DOUBLE);
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+}
+
+void grid_1D_sphere::readCheckpointGrid(std::string fname, bool test) {
+  for (int rank = 0; rank < nproc; rank++) {
+    if (my_rank == rank) {
+      readCheckpointGeneralGrid(fname, test);
+      /* Specific to 1D */
+      readSimple(fname, "grid", "v_inner", &v_inner_new, H5T_NATIVE_DOUBLE);
+      r_out_new.readCheckpoint(fname, "grid", "r_out");
+      readVector(fname, "grid", "vol", vol_new, H5T_NATIVE_DOUBLE);
+      if (not test) {
+        v_inner_ = v_inner_new;
+        r_out = r_out_new;
+        vol = vol_new;
+      }
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
 }
