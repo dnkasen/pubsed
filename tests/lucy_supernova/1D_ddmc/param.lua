@@ -17,7 +17,7 @@ tstep_min_dt     = 0.0
 tstep_max_delta  = 0.05
 
 -- emission parameters
-particles_n_emit_radioactive = 1e3
+particles_n_emit_radioactive = 1e4
 
 -- output spectrum
 spectrum_time_grid = {-0.5*days,900*days,0.5*days}
@@ -28,5 +28,5 @@ gamma_name    = "gamma_spectrum"
 opacity_grey_opacity     = 0.1
 transport_radiative_equilibrium   = 1;
 
-transport_use_ddmc = 1
-transport_ddmc_tau_threshold = 0.00000000000000100000
+transport_use_ddmc = 2
+transport_ddmc_tau_threshold = 3.0
