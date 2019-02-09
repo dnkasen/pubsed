@@ -30,6 +30,27 @@ using std::endl;
 
 namespace
 {
+  void writeCheckpointMeta(int verbose, std::string checkpoint_file) {
+    if (verbose) {
+      createGroup(checkpoint_file, "meta");
+#ifdef COMPILE_DATETIME
+      std::string datetime_string = std::string(COMPILE_DATETIME);
+      hsize_t datetime_len = datetime_string.length();
+      const char* datetime_c_str = datetime_string.c_str();
+      createDataset(checkpoint_file, "meta", "compile_time", 1, &datetime_len, H5T_C_S1);
+      writeSimple(checkpoint_file, "meta", "compile_time", &datetime_c_str, H5T_C_S1);
+#endif
+
+#ifdef SEDONA_GIT_VERSION
+      std::string version_string = std::string(SEDONA_GIT_VERSION);
+      hsize_t version_len = version_string.length();
+      const char* version_c_str = version_string.c_str();
+      createDataset(checkpoint_file, "meta", "git_version", 1, &version_len, H5T_C_S1);
+      writeSimple(checkpoint_file, "meta", "git_version", &version_c_str, H5T_C_S1);
+#endif
+    }
+  }
+
   void checkpoint(int verbose, std::string checkpoint_file, int i_chk, transport &mcarlo, grid_general* grid)
   {
     string i_chk_str = std::to_string(i_chk);
@@ -39,12 +60,34 @@ namespace
     {
       createFile(checkpoint_file_full);
     }
+    writeCheckpointMeta(verbose, checkpoint_file_full);
     mcarlo.writeCheckpointParticles(checkpoint_file_full);
     grid->writeCheckpointZones(checkpoint_file_full);
     mcarlo.writeCheckpointSpectra(checkpoint_file_full);
     grid->writeCheckpointGrid(checkpoint_file_full);
   }
+  
+  void readCheckpointMeta(std::string checkpoint_file, std::string& datetime_string, std::string& version_string) {
+#ifdef COMPILE_DATETIME
+    hsize_t datetime_len;
+    getH5dims(checkpoint_file, "meta", "compile_time", &datetime_len);
+    char* datetime_c_str = new char[datetime_len];
+    readSimple(checkpoint_file, "meta", "compile_time", datetime_c_str, H5T_C_S1);
+    datetime_string = std::string(datetime_c_str);
+    delete[] datetime_c_str;
+#endif
+
+#ifdef SEDONA_GIT_VERSION
+    hsize_t version_len;
+    getH5dims(checkpoint_file, "meta", "git_version", &version_len);
+    char* version_c_str = new char[version_len];
+    readSimple(checkpoint_file, "meta", "git_version", version_c_str, H5T_C_S1);
+    version_string = std::string(version_c_str);
+    delete[] version_c_str;
+#endif
+  }
 }
+
 
 //--------------------------------------------------------
 // The main code
@@ -109,6 +152,10 @@ int main(int argc, char **argv)
   if (do_restart) {
     restart_file = params.getScalar<string>("run_restart_file");
     cout << "# Restarting from " << restart_file << endl;
+    std::string date_string;
+    std::string version_string;
+    readCheckpointMeta(restart_file, date_string, version_string);
+    cout << date_string << " " << version_string << endl;
   }
   if (do_checkpoint)
     checkpoint_name_base = params.getScalar<string>("run_checkpoint_name_base");
