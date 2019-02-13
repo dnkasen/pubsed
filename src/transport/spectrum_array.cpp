@@ -312,6 +312,13 @@ void spectrum_array::print()
   H5LTmake_dataset(file_id,"mu",RANK,dims_mu,H5T_NATIVE_FLOAT,tmp_array);
   delete[] tmp_array;
 
+  // write phi grid
+  tmp_array = new float[n_phi];
+  hsize_t  dims_phi[RANK]={(hsize_t)n_phi};
+  for (int j=0;j<n_phi;j++) tmp_array[j] = phi_grid[j];
+  H5LTmake_dataset(file_id,"phi",RANK,dims_phi,H5T_NATIVE_FLOAT,tmp_array);
+  delete[] tmp_array;
+
   // write time grid
   int n_t = time_grid.size();
   tmp_array = new float[n_t];
@@ -321,17 +328,31 @@ void spectrum_array::print()
   delete[] tmp_array;
 
   // write fluxes and counts arrays
-  if (n_mu == 1)
+  if (n_mu == 1) && (n_phi == 1)
   {
     const int RANKF = 2;
     hsize_t  dims_flux[RANKF]={(hsize_t)n_t,(hsize_t)n_nu};
     H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
     H5LTmake_dataset(file_id,"click",RANKF,dims_flux,H5T_NATIVE_DOUBLE,click_buffer);
   }
-  else
+  else if (n_phi == 1)
   {
     const int RANKF = 3;
     hsize_t  dims_flux[RANKF]={(hsize_t)n_t,(hsize_t)n_nu,(hsize_t)n_mu};
+    H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
+    H5LTmake_dataset(file_id,"click",RANKF,dims_flux,H5T_NATIVE_DOUBLE,click_buffer);
+  }
+  else if (n_mu == 1)
+  {
+    const int RANKF = 3;
+    hsize_t  dims_flux[RANKF]={(hsize_t)n_t,(hsize_t)n_nu,(hsize_t)n_phi};
+    H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
+    H5LTmake_dataset(file_id,"click",RANKF,dims_flux,H5T_NATIVE_DOUBLE,click_buffer);
+  }
+  else
+  {
+    const int RANKF = 4;
+    hsize_t  dims_flux[RANKF]={(hsize_t)n_t,(hsize_t)n_nu,(hsize_t)n_mu,(hsize_t)n_phi};
     H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
     H5LTmake_dataset(file_id,"click",RANKF,dims_flux,H5T_NATIVE_DOUBLE,click_buffer);
   }
