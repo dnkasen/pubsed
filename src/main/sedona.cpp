@@ -35,19 +35,26 @@ namespace
       createGroup(checkpoint_file, "meta");
 #ifdef COMPILE_DATETIME
       std::string datetime_string = std::string(COMPILE_DATETIME);
-      hsize_t datetime_len = datetime_string.length();
+#else
+      std::string datetime_string = "";
+#endif
+      writeString(checkpoint_file, "meta", "compile_time", datetime_string);
+      /*hsize_t datetime_len = datetime_string.length() + 1;
       const char* datetime_c_str = datetime_string.c_str();
       createDataset(checkpoint_file, "meta", "compile_time", 1, &datetime_len, H5T_C_S1);
-      writeSimple(checkpoint_file, "meta", "compile_time", &datetime_c_str, H5T_C_S1);
-#endif
-
+      writeSimple(checkpoint_file, "meta", "compile_time", (char*) datetime_c_str, H5T_C_S1);
+*/
 #ifdef SEDONA_GIT_VERSION
       std::string version_string = std::string(SEDONA_GIT_VERSION);
-      hsize_t version_len = version_string.length();
+#else
+      std::string version_string = "";
+#endif
+      writeString(checkpoint_file, "meta", "git_version", version_string);
+      /*
+      hsize_t version_len = version_string.length() + 1;
       const char* version_c_str = version_string.c_str();
       createDataset(checkpoint_file, "meta", "git_version", 1, &version_len, H5T_C_S1);
-      writeSimple(checkpoint_file, "meta", "git_version", &version_c_str, H5T_C_S1);
-#endif
+      writeSimple(checkpoint_file, "meta", "git_version", (char*) version_c_str, H5T_C_S1);*/
     }
   }
 
