@@ -215,7 +215,7 @@ int spectrum_array::index(int t, int l, int m, int p)
 void spectrum_array::count(double t, double w, double E, double *D)
 {
   double mu  = D[2];
-  double phi = atan2(D[1],D[0]);
+  double phi = atan2(D[1],D[0]) + pc::pi;
 
   // locate bin number in all dimensions
   int t_bin = time_grid.locate(t);
@@ -328,7 +328,7 @@ void spectrum_array::print()
   delete[] tmp_array;
 
   // write fluxes and counts arrays
-  if (n_mu == 1) && (n_phi == 1)
+  if ( (n_mu == 1) && (n_phi == 1) )
   {
     const int RANKF = 2;
     hsize_t  dims_flux[RANKF]={(hsize_t)n_t,(hsize_t)n_nu};
