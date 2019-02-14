@@ -73,7 +73,6 @@ void transport::step(double dt)
         if (particles[i].type == gammaray)
           gamma_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
       }
-
   }
 
   // Remove escaped and absorbed particles from the particle vector

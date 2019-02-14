@@ -30,4 +30,4 @@ transport_radiative_equilibrium   = 1
 -- checkpoint/restart parameters
 run_do_restart                  = 1
 run_do_checkpoint               = 0
-run_restart_file                = "chk_out.h5"
+run_restart_file                = "chk_00068.h5"
