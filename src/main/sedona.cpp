@@ -39,30 +39,41 @@ namespace
       std::string datetime_string = "";
 #endif
       writeString(checkpoint_file, "meta", "compile_time", datetime_string);
-      /*hsize_t datetime_len = datetime_string.length() + 1;
-      const char* datetime_c_str = datetime_string.c_str();
-      createDataset(checkpoint_file, "meta", "compile_time", 1, &datetime_len, H5T_C_S1);
-      writeSimple(checkpoint_file, "meta", "compile_time", (char*) datetime_c_str, H5T_C_S1);
-*/
+
 #ifdef SEDONA_GIT_VERSION
       std::string version_string = std::string(SEDONA_GIT_VERSION);
 #else
       std::string version_string = "";
 #endif
       writeString(checkpoint_file, "meta", "git_version", version_string);
-      /*
-      hsize_t version_len = version_string.length() + 1;
-      const char* version_c_str = version_string.c_str();
-      createDataset(checkpoint_file, "meta", "git_version", 1, &version_len, H5T_C_S1);
-      writeSimple(checkpoint_file, "meta", "git_version", (char*) version_c_str, H5T_C_S1);*/
     }
   }
 
-  void checkpoint(int verbose, std::string checkpoint_file, int i_chk, transport &mcarlo, grid_general* grid)
-  {
-    string i_chk_str = std::to_string(i_chk);
-    i_chk_str.insert(i_chk_str.begin(), 5 - i_chk_str.length(), '0');
-    string checkpoint_file_full = checkpoint_file + "_" + i_chk_str + ".h5";
+  void readCheckpointMeta(std::string checkpoint_file, std::string& datetime_string_new,
+      std::string& version_string_new) {
+    int my_rank, n_procs;
+#ifdef MPI_PARALLEL
+    MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
+    MPI_Comm_size( MPI_COMM_WORLD, &n_procs);
+#else
+    my_rank = 0;
+    n_procs = 1;
+#endif
+
+    for (int rank = 0; rank < n_procs; rank++) {
+      if (rank == my_rank) {
+        readString(checkpoint_file, "meta", "compile_time", datetime_string_new);
+        readString(checkpoint_file, "meta", "git_version", version_string_new);
+      }
+#ifdef MPI_PARALLEL
+      MPI_Barrier(MPI_COMM_WORLD);
+#endif
+    }
+  }
+
+  void writeCheckpoint(int verbose, std::string checkpoint_file, 
+      string chk_label, transport &mcarlo, grid_general* grid) {
+    string checkpoint_file_full = checkpoint_file + "_" + chk_label + ".h5";
     if (verbose)
     {
       createFile(checkpoint_file_full);
@@ -73,25 +84,12 @@ namespace
     mcarlo.writeCheckpointSpectra(checkpoint_file_full);
     grid->writeCheckpointGrid(checkpoint_file_full);
   }
-  
-  void readCheckpointMeta(std::string checkpoint_file, std::string& datetime_string, std::string& version_string) {
-#ifdef COMPILE_DATETIME
-    hsize_t datetime_len;
-    getH5dims(checkpoint_file, "meta", "compile_time", &datetime_len);
-    char* datetime_c_str = new char[datetime_len];
-    readSimple(checkpoint_file, "meta", "compile_time", datetime_c_str, H5T_C_S1);
-    datetime_string = std::string(datetime_c_str);
-    delete[] datetime_c_str;
-#endif
 
-#ifdef SEDONA_GIT_VERSION
-    hsize_t version_len;
-    getH5dims(checkpoint_file, "meta", "git_version", &version_len);
-    char* version_c_str = new char[version_len];
-    readSimple(checkpoint_file, "meta", "git_version", version_c_str, H5T_C_S1);
-    version_string = std::string(version_c_str);
-    delete[] version_c_str;
-#endif
+  void writeCheckpoint(int verbose, std::string checkpoint_file, int i_chk, transport &mcarlo, grid_general* grid)
+  {
+    string i_chk_str = std::to_string(i_chk);
+    i_chk_str.insert(i_chk_str.begin(), 5 - i_chk_str.length(), '0');
+    writeCheckpoint(verbose, checkpoint_file, i_chk_str, mcarlo, grid);
   }
 }
 
@@ -162,7 +160,8 @@ int main(int argc, char **argv)
     std::string date_string;
     std::string version_string;
     readCheckpointMeta(restart_file, date_string, version_string);
-    cout << date_string << " " << version_string << endl;
+    if (verbose)
+      cout << "# Checkpoint generated from binary: " << date_string << " " << version_string << endl;
   }
   if (do_checkpoint)
     checkpoint_name_base = params.getScalar<string>("run_checkpoint_name_base");
@@ -291,13 +290,7 @@ int main(int argc, char **argv)
   {
     // Only one rank needs to create the file.
     // Using the verbose variable as a proxy for this when MPI is used
-    std::string checkpoint_file_init = checkpoint_name_base + "_init.h5";
-    if (verbose)
-      createFile(checkpoint_file_init);
-    mcarlo.writeCheckpointParticles(checkpoint_file_init);
-    grid->writeCheckpointZones(checkpoint_file_init);
-    mcarlo.writeCheckpointSpectra(checkpoint_file_init);
-    grid->writeCheckpointGrid(checkpoint_file_init);
+    writeCheckpoint(verbose, checkpoint_name_base, "init", mcarlo, grid);
   }
 
   std::cout << std::scientific;
@@ -377,7 +370,7 @@ int main(int argc, char **argv)
         mcarlo.output_spectrum(i_write+1);
 
       if (do_checkpoint) {
-        checkpoint(verbose, checkpoint_name_base, i_chk, mcarlo, grid);
+        writeCheckpoint(verbose, checkpoint_name_base, i_chk, mcarlo, grid);
         i_chk++;
       }
 
@@ -395,6 +388,8 @@ int main(int argc, char **argv)
 
   // print out final spectrum
   if ((use_transport)&&(!steady_iterate))  mcarlo.output_spectrum(-1);
+  if (do_checkpoint)
+    writeCheckpoint(verbose, checkpoint_name_base, "final", mcarlo, grid);
 
   //---------------------------------------------------------------------
   // CALCULATION DONE; WRITE OUT AND FINISH
