@@ -130,13 +130,15 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef SEDONA_GIT_VERSION
+  std::string git_version = std::string(SEDONA_GIT_VERSION);
   if (verbose)
-    std::cout << "# git version " << std::string(SEDONA_GIT_VERSION) << std::endl;
+    std::cout << "# git version " << git_version << std::endl;
 #endif
 
 #ifdef COMPILE_DATETIME
+  std::string compile_time = std::string(COMPILE_DATETIME);
   if (verbose)
-    std::cout << "# compiled on " << std::string(COMPILE_DATETIME) << std::endl;
+    std::cout << "# compiled on " << compile_time << std::endl;
 #endif
 
   //---------------------------------------------------------------------
@@ -157,11 +159,22 @@ int main(int argc, char **argv)
   if (do_restart) {
     restart_file = params.getScalar<string>("run_restart_file");
     cout << "# Restarting from " << restart_file << endl;
-    std::string date_string;
-    std::string version_string;
-    readCheckpointMeta(restart_file, date_string, version_string);
-    if (verbose)
-      cout << "# Checkpoint generated from binary: " << date_string << " " << version_string << endl;
+    std::string compile_time_chk;
+    std::string git_version_chk;
+    readCheckpointMeta(restart_file, compile_time_chk, git_version_chk);
+    if (verbose) {
+      if (git_version != git_version_chk) {
+        cerr << "# WARNING: restarting from file generated from git version " << git_version_chk << endl;
+        cerr << "# Different from current git version " << git_version << endl;
+      }
+      else if (compile_time != compile_time_chk) {
+        cerr << "# WARNING: restarting from file generated from binary compiled at " << compile_time_chk << endl;
+        cerr << "# Different from current binary compile time " << compile_time << endl;
+      }
+      else {
+        cout << "# Restarting from checkpoint file generated from this binary" << endl;
+      }
+    }
   }
   if (do_checkpoint)
     checkpoint_name_base = params.getScalar<string>("run_checkpoint_name_base");
