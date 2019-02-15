@@ -129,14 +129,16 @@ int main(int argc, char **argv)
   clock_t time_start = clock();
 #endif
 
+  std::string git_version = "";
+  std::string compile_time = "";
 #ifdef SEDONA_GIT_VERSION
-  std::string git_version = std::string(SEDONA_GIT_VERSION);
+  git_version = std::string(SEDONA_GIT_VERSION);
   if (verbose)
     std::cout << "# git version " << git_version << std::endl;
 #endif
 
 #ifdef COMPILE_DATETIME
-  std::string compile_time = std::string(COMPILE_DATETIME);
+  compile_time = std::string(COMPILE_DATETIME);
   if (verbose)
     std::cout << "# compiled on " << compile_time << std::endl;
 #endif
