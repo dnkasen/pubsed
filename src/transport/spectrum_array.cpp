@@ -351,7 +351,7 @@ void spectrum_array::print()
   tmp_array = new float[n_t+1];
   hsize_t dims_t_edges[RANK]={(hsize_t)(n_t+1)};
   tmp_array[0] = time_grid.min;
-  for (int j=0;j<n_t;j++) tmp_array[j+1] = time_grid.center(j);
+  for (int j=0;j<n_t;j++) tmp_array[j+1] = time_grid[j];
   H5LTmake_dataset(file_id,"time_edges",RANK,dims_t_edges,H5T_NATIVE_FLOAT,tmp_array);
   delete[] tmp_array;
 
