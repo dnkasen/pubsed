@@ -87,22 +87,23 @@ limits_temp_max = 1e8
 limits_temp_min = 1000
 
 -- opacity calculation defaults
-opacity_grey_opacity        = 0
-opacity_user_defined        = 0
-opacity_epsilon             = 1.0
-opacity_atom_zero_epsilon   = {}
-opacity_electron_scattering = 0
-opacity_line_expansion      = 0
-opacity_fuzz_expansion      = 0
-opacity_bound_free          = 0
-opacity_bound_bound         = 0
-opacity_free_free           = 0
-opacity_use_nlte            = 0
-opacity_atoms_in_nlte       = {}
-opacity_minimum_extinction  = 0
-opacity_maximum_opacity     = 1e40
-opacity_no_scattering       = 0
-dont_decay_composition      = 0
+opacity_smooth_grey_opacity			= 0
+opacity_zone_dependent_grey_opacity	= 0
+opacity_user_defined		        = 0
+opacity_epsilon             		= 1.0
+opacity_atom_zero_epsilon  			= {}
+opacity_electron_scattering 		= 0
+opacity_line_expansion      		= 0
+opacity_fuzz_expansion      		= 0
+opacity_bound_free          		= 0
+opacity_bound_bound         		= 0
+opacity_free_free           		= 0
+opacity_use_nlte            		= 0
+opacity_atoms_in_nlte       		= {}
+opacity_minimum_extinction  		= 0
+opacity_maximum_opacity     		= 1e40
+opacity_no_scattering       		= 0
+dont_decay_composition      		= 0
 
 opacity_compton_scatter_photons = 0;
 
