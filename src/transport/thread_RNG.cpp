@@ -12,7 +12,8 @@
 // initialize the RNG system
 //-----------------------------------------------------------------
 // ASSUMES the number of threads remains constant so it only has to be initialized once
-void thread_RNG::init(){
+void thread_RNG::init()
+{
   int my_mpiID, mpi_nranks;
   MPI_Comm_rank(MPI_COMM_WORLD, &my_mpiID);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_nranks);
@@ -24,13 +25,12 @@ void thread_RNG::init(){
   #pragma omp parallel
   #pragma omp single
   {
-    #ifdef _OPENMP
+#ifdef _OPENMP
     nthreads = omp_get_num_threads();
-    #else
+#else
     nthreads = 1;
-    #endif
+#endif
   }
-  if(my_mpiID==0) printf("# Using %d threads on each MPI rank.\n", nthreads);
   generators.resize(nthreads);
 
   // set generator for rank 0 thread 0
@@ -55,12 +55,13 @@ void thread_RNG::init(){
 //-----------------------------------------------------------------
 // return a uniformily distributed random number (thread safe)
 //-----------------------------------------------------------------
-double thread_RNG::uniform(){
-  #ifdef _OPENMP
+double thread_RNG::uniform()
+{
+#ifdef _OPENMP
   const int my_ompID = omp_get_thread_num();
-  #else 
+#else
   const int my_ompID = 0;
-  #endif
+#endif
 
   return gsl_rng_uniform(generators[my_ompID]);
 }
