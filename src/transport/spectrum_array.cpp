@@ -302,7 +302,7 @@ void spectrum_array::print()
   float* tmp_array = new float[n_nu];
   hsize_t  dims_nu[RANK]={(hsize_t)n_nu};
   for (int j=0;j<n_nu;j++) tmp_array[j] = wave_grid.center(j);
-  H5LTmake_dataset(file_id,"nu_centers",RANK,dims_nu,H5T_NATIVE_FLOAT,tmp_array);
+  H5LTmake_dataset(file_id,"nu",RANK,dims_nu,H5T_NATIVE_FLOAT,tmp_array);
   delete[] tmp_array;
 
   tmp_array = new float[n_nu+1];
@@ -316,7 +316,7 @@ void spectrum_array::print()
   tmp_array = new float[n_mu];
   hsize_t  dims_mu[RANK]={(hsize_t)n_mu};
   for (int j=0;j<n_mu;j++) tmp_array[j] = mu_grid.center(j);
-  H5LTmake_dataset(file_id,"mu_centers",RANK,dims_mu,H5T_NATIVE_FLOAT,tmp_array);
+  H5LTmake_dataset(file_id,"mu",RANK,dims_mu,H5T_NATIVE_FLOAT,tmp_array);
   delete[] tmp_array;
 
   tmp_array = new float[n_mu+1];
@@ -330,7 +330,7 @@ void spectrum_array::print()
   tmp_array = new float[n_phi];
   hsize_t  dims_phi[RANK]={(hsize_t)n_phi};
   for (int j=0;j<n_phi;j++) tmp_array[j] = phi_grid.center(j);
-  H5LTmake_dataset(file_id,"phi_centers",RANK,dims_phi,H5T_NATIVE_FLOAT,tmp_array);
+  H5LTmake_dataset(file_id,"phi",RANK,dims_phi,H5T_NATIVE_FLOAT,tmp_array);
   delete[] tmp_array;
 
   tmp_array = new float[n_phi+1];
@@ -345,7 +345,7 @@ void spectrum_array::print()
   tmp_array = new float[n_t];
   hsize_t dims_t[RANK]={(hsize_t)n_t};
   for (int j=0;j<n_t;j++) tmp_array[j] = time_grid.center(j);
-  H5LTmake_dataset(file_id,"time_centers",RANK,dims_t,H5T_NATIVE_FLOAT,tmp_array);
+  H5LTmake_dataset(file_id,"time",RANK,dims_t,H5T_NATIVE_FLOAT,tmp_array);
   delete[] tmp_array;
 
   tmp_array = new float[n_t+1];
