@@ -67,7 +67,10 @@ void transport::set_opacity(double dt)
     gas_state_.grey_opacity_ = gas_state_.smooth_grey_opacity_ + z->grey_opacity;
 
     // solve for the state
-    if (!gas_state_.grey_opacity_) solve_error = gas_state_.solve_state(J_nu_[i]);
+    // if (!gas_state_.grey_opacity_) solve_error = gas_state_.solve_state(J_nu_[i]);
+    if ( (!gas_state_.smooth_grey_opacity_) && (!gas_state_.use_zone_dependent_grey_opacity_) ){
+      solve_error = gas_state_.solve_state(J_nu_[i]);
+    }
     //gas_state_.print();
 
     if(write_levels) gas_state_.write_levels(i);
