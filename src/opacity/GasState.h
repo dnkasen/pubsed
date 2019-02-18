@@ -51,7 +51,6 @@ class GasState
   int use_bound_free_opacity;
   int use_bound_bound_opacity;
   int use_user_opacity_;
-  // int use_smooth_grey_opacity_;
   int use_zone_dependent_grey_opacity_;
   double line_velocity_width_;
 

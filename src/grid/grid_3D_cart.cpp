@@ -112,7 +112,7 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
   if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find erad" << endl;
   for (int i=0; i < n_zones; i++) z[i].e_rad = tmp[i];
   // read grey opacity if the user defines a zone-specific grey opacity
-  int use_zone_dependent_grey_opacity = params_->getScalar<int>("opacity_zone_dependent_grey_opacity");
+  int use_zone_dependent_grey_opacity = params->getScalar<int>("opacity_zone_dependent_grey_opacity");
   if(use_zone_dependent_grey_opacity != 0){
     status = H5LTread_dataset_double(file_id,"/grey_opacity",tmp);
     if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find grey_opacity" << endl;
