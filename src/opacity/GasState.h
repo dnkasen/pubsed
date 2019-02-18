@@ -51,6 +51,8 @@ class GasState
   int use_bound_free_opacity;
   int use_bound_bound_opacity;
   int use_user_opacity_;
+  // int use_smooth_grey_opacity_;
+  int use_zone_dependent_grey_opacity_;
   double line_velocity_width_;
 
   // calculate means
@@ -66,7 +68,8 @@ class GasState
   // flags for nlte
   int use_nlte_;
 
-  double grey_opacity_;
+  double smooth_grey_opacity_;  // smooth component of the grey opacity that is common to all zones
+  double grey_opacity_;         // total grey opacity that includes the smooth component and the zone-dependent component
   double epsilon_;
   std::vector<int> atom_zero_epsilon_;
 
