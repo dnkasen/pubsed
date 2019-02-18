@@ -19,5 +19,6 @@ lucy_supernova/1D_rwmc
 lucy_supernova/1D_ddmc
 lucy_supernova/1D_checkpoint
 lucy_supernova/2D
+lucy_supernova/3D
 one_zone_rad_eq/grey_IMC
 sod_shock_tube
