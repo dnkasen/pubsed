@@ -15,7 +15,6 @@ void grid_general::init(ParameterReader* params)
 
   // If it's a restart, restart the grid. Otherwise read in the model file
   do_restart_ = params->getScalar<int>("run_do_restart");
-  std::cout << do_restart_ << " REST\n";
   if (do_restart_)
     restartGrid(params);
   else
