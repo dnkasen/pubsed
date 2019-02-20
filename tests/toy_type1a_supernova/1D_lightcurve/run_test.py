@@ -127,7 +127,7 @@ def run_test(pdf="",runcommand=""):
         # check errors
         use = (Llam_c > max(Llam_c)*0.1)
         max_err,mean_err = get_error(Llam,Llam_c,use=use)
-        if (mean_err > 0.1): failure = 2
+        if (mean_err > 0.15): failure = 2
 
         #    plt.xlim(1000,10000)
         #    plt.xlabel('wavelength (angstroms)')
