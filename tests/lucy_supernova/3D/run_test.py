@@ -58,7 +58,7 @@ def run_test(pdf="",runcommand=""):
             use = ((tlc > 3)*(tlc < 55))
             max_err,mean_err = get_error(Lnu[:,0,i,j],Ll1,x=tlc,x_comp=tl1,use = use)
 #        if (max_err > 0.4): failure = 1
-            if (mean_err > 0.1): failure = 1
+            if (mean_err > 0.15): failure = 1
 #            print (mean_err,max_err)
 
     use = ((ts2 > 3)*(ts2 < 55))
