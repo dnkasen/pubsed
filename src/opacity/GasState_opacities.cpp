@@ -27,9 +27,9 @@ void GasState::computeOpacity(std::vector<OpacityType>& abs,
   //-----------------------------------------
   /// if grey opacity, just do simple thing
   //-----------------------------------------
-  if (grey_opacity_ != 0)
+  if (total_grey_opacity_ != 0)
   {
-    double gopac = dens_*grey_opacity_;
+    double gopac = dens_*total_grey_opacity_;
     for (int i=0;i<ns;i++)
     {
       abs[i]  = gopac*epsilon_;

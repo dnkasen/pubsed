@@ -18,6 +18,7 @@ public:
   real e_gas;           // gas pressure
   real p_gas;           // gas pressure
   real T_gas;           // gas temperature
+  real grey_opacity;    // grey opacity (cm^2/g) if the user defines a zone-dependent grey opacity
 
   // composition of gas
   std::vector<real> X_gas;   // mass fractions of elements in zone

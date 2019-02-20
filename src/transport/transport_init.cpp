@@ -134,7 +134,6 @@ void transport::init(ParameterReader* par, grid_general *g)
   std::string atomdata = params_->getScalar<string>("data_atomic_file");
 
   // set gas opacity flags and parameters
-  gas_state_.grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
   gas_state_.use_electron_scattering_opacity
     = params_->getScalar<int>("opacity_electron_scattering");
   gas_state_.use_line_expansion_opacity
@@ -149,6 +148,9 @@ void transport::init(ParameterReader* par, grid_general *g)
     = params_->getScalar<int>("opacity_free_free");
   gas_state_.use_user_opacity_
     = params_->getScalar<int>("opacity_user_defined");
+  gas_state_.smooth_grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
+  gas_state_.use_zone_dependent_grey_opacity_
+    = params_->getScalar<int>("opacity_zone_dependent_grey_opacity");
   double min_ext = params_->getScalar<double>("opacity_minimum_extinction");
   maximum_opacity_ = params_->getScalar<double>("opacity_maximum_opacity");
   gas_state_.set_minimum_extinction(min_ext);
