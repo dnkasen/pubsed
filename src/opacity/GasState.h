@@ -67,8 +67,8 @@ class GasState
   // flags for nlte
   int use_nlte_;
 
-  double smooth_grey_opacity_;  // smooth component of the grey opacity that is common to all zones
-  double grey_opacity_;         // total grey opacity that includes the smooth component and the zone-dependent component
+  double smooth_grey_opacity_;  // smooth component of the grey opacity (cm^2/g) that is the same in all zones
+  double total_grey_opacity_;   // total grey opacity (cm^2/g) that includes the smooth component and the zone-dependent component
   double epsilon_;
   std::vector<int> atom_zero_epsilon_;
 

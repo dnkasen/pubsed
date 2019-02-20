@@ -87,7 +87,7 @@ limits_temp_max = 1e8
 limits_temp_min = 1000
 
 -- opacity calculation defaults
-opacity_smooth_grey_opacity			= 0
+opacity_grey_opacity				= 0
 opacity_zone_dependent_grey_opacity	= 0
 opacity_user_defined		        = 0
 opacity_epsilon             		= 1.0

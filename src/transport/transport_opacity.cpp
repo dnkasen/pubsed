@@ -64,11 +64,10 @@ void transport::set_opacity(double dt)
     }
     gas_state_.set_mass_fractions(X_now);
 
-    gas_state_.grey_opacity_ = gas_state_.smooth_grey_opacity_ + z->grey_opacity;
+    gas_state_.total_grey_opacity_ = gas_state_.smooth_grey_opacity_ + z->grey_opacity;
 
     // solve for the state
     // if (!gas_state_.grey_opacity_) solve_error = gas_state_.solve_state(J_nu_[i]);
-    // if ( (!gas_state_.smooth_grey_opacity_) && (!gas_state_.use_zone_dependent_grey_opacity_) ){
     if ( (gas_state_.smooth_grey_opacity_ == 0) && (gas_state_.use_zone_dependent_grey_opacity_ == 0) ){
       solve_error = gas_state_.solve_state(J_nu_[i]);
     }

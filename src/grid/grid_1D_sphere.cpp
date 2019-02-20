@@ -126,12 +126,25 @@ void grid_1D_sphere::read_hdf5_file(std::string model_file, int verbose)
   status = H5LTread_dataset_double(file_id,"/erad",tmp);
   if (status < 0)
   {
-    if (verbose) std::cout << "# Grid warning: Can't find erad. Using gas temperatrure and assuming blackbody radiation field." << endl;
+    if (verbose) std::cout << "# Grid warning: Can't find erad. Using gas temperature and assuming blackbody radiation field." << endl;
     for (int i=0; i < n_zones; i++) z[i].e_rad = pc::a * pow(z[i].T_gas,4.);
   }
   else
   {
     for (int i=0; i < n_zones; i++) z[i].e_rad = tmp[i];
+  }
+  // read grey opacity if the user defines a zone-dependent grey opacity
+  // int use_zone_dependent_grey_opacity = params->getScalar<int>("opacity_zone_dependent_grey_opacity");
+  // if(use_zone_dependent_grey_opacity != 0){
+  status = H5LTread_dataset_double(file_id,"/grey_opacity",tmp);
+  if (status < 0)
+  {
+    if (verbose) std::cerr << "# Grid warning: Can't find grey_opacity. Setting zone-dependent component of grey opacity to zero." << endl;
+    for (int i=0; i < n_zones; i++) z[i].grey_opacity = 0;
+  }
+  else
+  {
+    for (int i=0; i < n_zones; i++) z[i].grey_opacity = tmp[i];
   }
 
   delete [] tmp;
@@ -326,6 +339,9 @@ void grid_1D_sphere::read_ascii_file(std::string model_file, int verbose)
     z[i].e_rad = pc::a*pow(z[i].T_gas,4);
     // DEBUG - this was left over from something...
     //z[i].e_rad = pc::a* pow(3.4e6,4);
+
+    // assume zone-dependent grey opacity is zero
+    z[i].grey_opacity = 0;
 
     // calculate shell volume
     double r0;
