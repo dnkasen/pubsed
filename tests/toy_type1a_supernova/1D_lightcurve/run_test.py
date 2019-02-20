@@ -57,7 +57,7 @@ def run_test(pdf="",runcommand=""):
     plt.plot(days,bol,color='k',linewidth=3)
 
     # read the comparison data
-    fin = h5py.File('../comparison_files/lightcurve_output.h5','r')
+    fin = h5py.File('comparison_files/lightcurve_output.h5','r')
     nu_c    = np.array(fin['nu'])
     times_c = np.array(fin['time'])
     Lnu_c   = np.array(fin['Lnu'])
@@ -82,9 +82,10 @@ def run_test(pdf="",runcommand=""):
     plt.legend(['sedona output','reference'])
 
 
-#    use = (Llam_ref > max(Llam_ref)*0.1)
-#    max_err,mean_err = get_error(Llam,Llam_ref,use=use)
-#    if (mean_err > 0.1): failure = 1
+    use = (days > 2)
+    max_err,mean_err = get_error(bol,bol_c,use=use)
+    if (mean_err > 0.1): failure = 1
+    if (max_err > 0.2): failure = 1
 
     plt.title('1D toy Ia supernova - bolometric light curve')
 
