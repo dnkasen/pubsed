@@ -2,12 +2,22 @@
 Opacity
 ====================
 
+There are several options for calculating and controlling the opacity
+of the gas in the calculation.
 
------------------------
-Atomic Data Files
------------------------
 
-Atomic data is store in hdf5 files
+Though we generally use the word "opacity", the code actually calculates and stores an extinction coefficient.
+The two are related by
+
+.. math::
+
+  \alpha = \kappa \rho
+
+where
+:math:`\alpha` is the extinction coefficient (units cm:math:`^{-1}`),
+:math:`\kappa` is the opacity (units cm:math:`^{2}` g:math:`^{-1}`),
+and :math:`\rho` is the mass density
+
 
 -----------------------
 Opacity Settings
@@ -21,21 +31,27 @@ Opacity Settings
         * - parameter
           - values
           - definition
-        * - opacity_grey_opacity        
+        * - opacity_grey_opacity
           - <real>
-          - value of grey opacity to use (in cm^2/g). Will overide all other opacity settings
+          - value of grey opacity to use (in cm^2/g). Will override all other opacity settings
         * - opacity_electron_scattering
           - 0 = no | 1 = yes
           - include electron scattering opacity
-        * - opacity_bound_free 
+        * - opacity_bound_free
           - 0 = no | 1 = yes
           - include bound-free (photoionization) opacity
-        * - opacity_free_free 
+        * - opacity_free_free
           - 0 = no | 1 = yes
           - include free-free opacity
-        * - opacity_bound_bound     
+        * - opacity_bound_bound
           - 0 = no | 1 = yes
           - include bound-bound (resolved line) opacity
+        * - opacity_line_expansion
+          - 0 = no | 1 = yes
+          - include binned line expansion opacity
+        * - opacity_fuzz_expansion
+          - 0 = no | 1 = yes
+          - include binned line expansion opacity, taken from a fuzz file
 
 ..
 	opacity_line_expansion      = 0
@@ -48,14 +64,25 @@ Opacity Settings
 	dont_decay_composition      = 0
 
 
-Though we use the word "opacity", the code actually calculates and stores an extinction coefficient.
-The two are related by
 
-.. math::
 
-  \alpha = \kappa \rho
+-----------------------------------
+Grey Opacity
+-----------------------------------
 
-where...
+The grey opacity flags allow the user to specify a simple,
+wavelength-independent opacity. This can be done in two ways.
+
+To set a uniform grey opacity at all points in space, set the parameter::
+
+  opacity_grey_opacity = 0.1
+
+where, in this example, the code will set the
+value :math:`\kappa_{g} = 0.1` cm:math:`^{2}` g:math:`^{-1}`
+to all zones in the model. All other sources of opacity discussed below
+(e.g., free-free, bound-free) will be ignored.
+
+The user can set a spatially varying 
 
 -----------------------------------
 Electron Scattering Opacity
@@ -112,7 +139,7 @@ Line Expansion Opacity
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This approach is selected by setting the runtime parameter::
-  
+
   opacity_line_expansion = 1
 
 This approach bins lines into frequency bins, assuming a homologous flow.
@@ -139,7 +166,7 @@ Fuzz Expansion Opacity
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This approach is selected by setting the runtime parameter::
-  
+
   opacity_fuzz_expansion = 1
 
 The physics here is identical to that of line expansion opacity, it is
@@ -156,4 +183,3 @@ This is how we would treat scattering in strong individual lines like Lyman alph
 -----------------------------------
 LTE and NLTE settings
 -----------------------------------
-
