@@ -49,7 +49,7 @@ int SedonaClass::run(std::string param_file)
 
 int n_threads = 1;
 #ifdef _OPENMP
-  nthreads = omp_get_num_threads();
+  n_threads = omp_get_num_threads();
 #endif
 
   // initial printout
