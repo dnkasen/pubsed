@@ -80,14 +80,12 @@ def run_test(pdf="",runcommand=""):
     plt.ylabel('bolometric luminosity')
     plt.yscale('log')
     plt.legend(['sedona output','reference'])
+    plt.title('1D toy Ia supernova - bolometric light curve')
 
-
-    use = (days > 2)
+    use = (days > 2)*(days < 60)
     max_err,mean_err = get_error(bol,bol_c,use=use)
     if (mean_err > 0.1): failure = 1
-    if (max_err > 0.2): failure = 1
-
-    plt.title('1D toy Ia supernova - bolometric light curve')
+    if (max_err > 0.2):  failure = 1
 
     # add plot to pdf file (or show on screen)
     if (pdf != ''): pdf.savefig()
@@ -128,7 +126,6 @@ def run_test(pdf="",runcommand=""):
         use = (Llam_c > max(Llam_c)*0.1)
         max_err,mean_err = get_error(Llam,Llam_c,use=use)
         if (mean_err > 0.15): failure = 2
-
         #    plt.xlim(1000,10000)
         #    plt.xlabel('wavelength (angstroms)')
         #    plt.ylabel('specific luminoisty (ergs/s/angstrom)')
