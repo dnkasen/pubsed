@@ -425,6 +425,10 @@ void transport::writeCheckpointSpectra(std::string fname) {
   gamma_spectrum.writeCheckpointSpectrum(fname, "gamma spectrum");
 }
 
+void transport::writeCheckpointRNG(std::string fname) {
+  rangen.writeCheckpointRNG(fname);
+}
+
 void transport::readCheckpointParticles(std::string fname, bool test) {
   /* Get number of particles that are stored in the file */
   hsize_t global_n_particles_total;
