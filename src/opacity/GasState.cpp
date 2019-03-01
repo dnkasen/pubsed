@@ -365,7 +365,11 @@ void GasState::print_properties()
   std::cout << "# opacity settings\n";
   std::cout << "#-------------------------------------------------\n";
 
-  if (grey_opacity_ != 0) std::cout << "# grey opacity = " << grey_opacity_ << "\n";
+  if ( (smooth_grey_opacity_ != 0) || (use_zone_dependent_grey_opacity_ != 0) )
+  {
+    std::cout << "# smooth grey opacity             = " << smooth_grey_opacity_ << "\n";
+    std::cout << "# use_zone_dependent_grey_opacity = " << use_zone_dependent_grey_opacity_ << "\n";
+  }
   else
   {
     std::cout << "# use_e_scattering  = " << use_electron_scattering_opacity << "\n";

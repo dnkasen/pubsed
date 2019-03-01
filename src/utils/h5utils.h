@@ -25,6 +25,8 @@ void createDataset(hid_t h5group, std::string dname, int dim, hsize_t* fdims, hi
 void writeSimple(std::string file, std::string group, std::string dset, void* data, hid_t type);
 void writeSimple(hid_t h5grp, std::string dset, void* data, hid_t type);
 
+void writeString(std::string file, std::string group, std::string dset, std::string str_to_write);
+
 // Writes to a chunk of the extant dataset file/group/dset. data is a pointer
 // to a buffer containing the data to be written. type is the HDF5 data type name,
 // e.g. H5T_NATIVE_DOUBLE. dim is the number of dimensions in the dataset.
@@ -77,6 +79,8 @@ void getH5dims(std::string fname, std::string gname, std::string dset, hsize_t* 
 // into the buffer data
 void readSimple(hid_t h5grp, std::string dset, void* data, hid_t type);
 void readSimple(std::string fname, std::string group, std::string dset, void* data, hid_t type);
+
+void readString(std::string fname, std::string group, std::string dset, std::string& str);
 
 template <typename T>
 void readVector(std::string file, std::string group, std::string dset, std::vector<T>& vec, hid_t t) {

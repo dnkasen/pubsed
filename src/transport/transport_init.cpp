@@ -98,6 +98,8 @@ void transport::init(ParameterReader* par, grid_general *g)
   temp_min_value_ = params_->getScalar<double>("limits_temp_min");
   fleck_alpha_ = params_->getScalar<double>("transport_fleck_alpha");
   last_iteration_ = 0;
+  std::string restart_file = params_->getScalar<string>("run_restart_file"); 
+  int do_restart = params_->getScalar<int>("run_do_restart");
 
   // initialize the frequency grid
   std::vector<double> nu_dims = params_->getVector<double>("transport_nu_grid");
@@ -116,20 +118,22 @@ void transport::init(ParameterReader* par, grid_general *g)
      std::cout << "# frequency grid: n = " << nu_grid.size() << "\n";
   }
 
-  // intialize output spectrum
-  std::vector<double>stg = params_->getVector<double>("spectrum_time_grid");
-  std::vector<double>sng = params_->getVector<double>("spectrum_nu_grid");
-  int nmu  = params_->getScalar<int>("spectrum_n_mu");
-  int nphi = params_->getScalar<int>("spectrum_n_phi");
-  optical_spectrum.init(stg,sng,nmu,nphi);
-  std::vector<double>gng = params_->getVector<double>("gamma_nu_grid");
-  gamma_spectrum.init(stg,sng,nmu,nphi);
-
+  if (do_restart)
+    readCheckpointSpectra(restart_file);
+  else {
+    // intialize output spectrum
+    std::vector<double>stg = params_->getVector<double>("spectrum_time_grid");
+    std::vector<double>sng = params_->getVector<double>("spectrum_nu_grid");
+    int nmu  = params_->getScalar<int>("spectrum_n_mu");
+    int nphi = params_->getScalar<int>("spectrum_n_phi");
+    optical_spectrum.init(stg,sng,nmu,nphi);
+    std::vector<double>gng = params_->getVector<double>("gamma_nu_grid");
+    gamma_spectrum.init(stg,sng,nmu,nphi);
+  }
   // setup the GasState class
   std::string atomdata = params_->getScalar<string>("data_atomic_file");
 
   // set gas opacity flags and parameters
-  gas_state_.grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
   gas_state_.use_electron_scattering_opacity
     = params_->getScalar<int>("opacity_electron_scattering");
   gas_state_.use_line_expansion_opacity
@@ -144,6 +148,9 @@ void transport::init(ParameterReader* par, grid_general *g)
     = params_->getScalar<int>("opacity_free_free");
   gas_state_.use_user_opacity_
     = params_->getScalar<int>("opacity_user_defined");
+  gas_state_.smooth_grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
+  gas_state_.use_zone_dependent_grey_opacity_
+    = params_->getScalar<int>("opacity_zone_dependent_grey_opacity");
   double min_ext = params_->getScalar<double>("opacity_minimum_extinction");
   maximum_opacity_ = params_->getScalar<double>("opacity_maximum_opacity");
   gas_state_.set_minimum_extinction(min_ext);
@@ -279,8 +286,12 @@ void transport::init(ParameterReader* par, grid_general *g)
   t_now_ = g->t_now;
 
   // initialize particles
-  int n_parts = params_->getScalar<int>("particles_n_initialize");
-  initialize_particles(n_parts);
+  if (do_restart)
+    readCheckpointParticles(restart_file);
+  else {
+    int n_parts = params_->getScalar<int>("particles_n_initialize");
+    initialize_particles(n_parts);
+  }
 
   compton_scatter_photons_ = params_->getScalar<int>("opacity_compton_scatter_photons");
   if (compton_scatter_photons_)

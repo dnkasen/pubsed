@@ -15,7 +15,9 @@ Sedona6 Users Guide
    code_execution
    radiation_transport
    sources
+   atomic_data
    opacity
+   nlte
    hydrodynamics
    plotting
    all_parameters

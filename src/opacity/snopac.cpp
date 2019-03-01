@@ -95,7 +95,8 @@ verbose = (my_rank == 0);
     = params.getScalar<int>("opacity_bound_bound");
   gas.use_free_free_opacity
     = params.getScalar<int>("opacity_free_free");
-  gas.grey_opacity_ = 0;
+  gas.smooth_grey_opacity_ = 0;
+  gas.use_zone_dependent_grey_opacity_ = 0;
   gas.line_velocity_width_ = params.getScalar<double>("line_velocity_width");
 
   // ------------------------------------------

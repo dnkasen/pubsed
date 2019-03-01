@@ -67,6 +67,19 @@ void writeSimple(hid_t h5grp, std::string dname, void* data, hid_t type){
   H5Dclose(h5dst);
 }
 
+void writeString(std::string file, std::string group, std::string dset, std::string str_to_write) {
+  hid_t h5fil = H5Fopen(file.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+  hid_t h5grp = H5Gopen1(h5fil, group.c_str());
+  // Length of null-terminated string, in bytes
+  hsize_t str_len = str_to_write.length() + 1;
+  const char* c_str = str_to_write.c_str();
+  createDataset(h5grp, dset, 1, &str_len, H5T_C_S1);
+  writeSimple(h5grp, dset, (char*) c_str, H5T_C_S1);
+
+  H5Gclose(h5grp);
+  H5Fclose(h5fil);
+}
+
 void writePatch(std::string file ,std::string group ,std::string dset, void* data, hid_t type, int dim, int* start, int* loc_size, int* glo_size){
   hid_t h5fil = H5Fopen(file.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
   hid_t h5grp = H5Gopen1(h5fil, group.c_str());
@@ -161,6 +174,15 @@ void readSimple(hid_t h5grp, std::string dset, void* data, hid_t type) {
   hid_t h5dst = H5Dopen1(h5grp, dset.c_str());
   H5Dread(h5dst, type, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
   H5Dclose(h5dst);
+}
+
+void readString(std::string fname, std::string group, std::string dset, std::string& str) {
+  hsize_t str_len;
+  getH5dims(fname, group, dset, &str_len);
+  char* c_str = new char[str_len];
+  readSimple(fname, group, dset, c_str, H5T_C_S1);
+  str = std::string(c_str);
+  delete[] c_str;
 }
 
 void readPatch(std::string fname, std::string group, std::string dset, void* data, hid_t type, int dim, int* start, int* loc_size, int* glo_size){

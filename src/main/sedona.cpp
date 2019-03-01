@@ -30,21 +30,69 @@ using std::endl;
 
 namespace
 {
-  void checkpoint(int verbose, std::string checkpoint_file, int i_chk, transport &mcarlo, grid_general* grid)
-  {
-    string i_chk_str = std::to_string(i_chk);
-    i_chk_str.insert(i_chk_str.begin(), 5 - i_chk_str.length(), '0');
-    string checkpoint_file_full = checkpoint_file + "_" + i_chk_str + ".h5";
+  void writeCheckpointMeta(int verbose, std::string checkpoint_file) {
+    if (verbose) {
+      createGroup(checkpoint_file, "meta");
+#ifdef COMPILE_DATETIME
+      std::string datetime_string = std::string(COMPILE_DATETIME);
+#else
+      std::string datetime_string = "";
+#endif
+      writeString(checkpoint_file, "meta", "compile_time", datetime_string);
+
+#ifdef SEDONA_GIT_VERSION
+      std::string version_string = std::string(SEDONA_GIT_VERSION);
+#else
+      std::string version_string = "";
+#endif
+      writeString(checkpoint_file, "meta", "git_version", version_string);
+    }
+  }
+
+  void readCheckpointMeta(std::string checkpoint_file, std::string& datetime_string_new,
+      std::string& version_string_new) {
+    int my_rank, n_procs;
+#ifdef MPI_PARALLEL
+    MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
+    MPI_Comm_size( MPI_COMM_WORLD, &n_procs);
+#else
+    my_rank = 0;
+    n_procs = 1;
+#endif
+
+    for (int rank = 0; rank < n_procs; rank++) {
+      if (rank == my_rank) {
+        readString(checkpoint_file, "meta", "compile_time", datetime_string_new);
+        readString(checkpoint_file, "meta", "git_version", version_string_new);
+      }
+#ifdef MPI_PARALLEL
+      MPI_Barrier(MPI_COMM_WORLD);
+#endif
+    }
+  }
+
+  void writeCheckpoint(int verbose, std::string checkpoint_file, 
+      string chk_label, transport &mcarlo, grid_general* grid) {
+    string checkpoint_file_full = checkpoint_file + "_" + chk_label + ".h5";
     if (verbose)
     {
       createFile(checkpoint_file_full);
     }
+    writeCheckpointMeta(verbose, checkpoint_file_full);
     mcarlo.writeCheckpointParticles(checkpoint_file_full);
     grid->writeCheckpointZones(checkpoint_file_full);
     mcarlo.writeCheckpointSpectra(checkpoint_file_full);
     grid->writeCheckpointGrid(checkpoint_file_full);
   }
+
+  void writeCheckpoint(int verbose, std::string checkpoint_file, int i_chk, transport &mcarlo, grid_general* grid)
+  {
+    string i_chk_str = std::to_string(i_chk);
+    i_chk_str.insert(i_chk_str.begin(), 5 - i_chk_str.length(), '0');
+    writeCheckpoint(verbose, checkpoint_file, i_chk_str, mcarlo, grid);
+  }
 }
+
 
 //--------------------------------------------------------
 // The main code
@@ -81,14 +129,18 @@ int main(int argc, char **argv)
   clock_t time_start = clock();
 #endif
 
+  std::string git_version = "";
+  std::string compile_time = "";
 #ifdef SEDONA_GIT_VERSION
+  git_version = std::string(SEDONA_GIT_VERSION);
   if (verbose)
-    std::cout << "# git version " << std::string(SEDONA_GIT_VERSION) << std::endl;
+    std::cout << "# git version " << git_version << std::endl;
 #endif
 
 #ifdef COMPILE_DATETIME
+  compile_time = std::string(COMPILE_DATETIME);
   if (verbose)
-    std::cout << "# compiled on " << std::string(COMPILE_DATETIME) << std::endl;
+    std::cout << "# compiled on " << compile_time << std::endl;
 #endif
 
   //---------------------------------------------------------------------
@@ -109,6 +161,22 @@ int main(int argc, char **argv)
   if (do_restart) {
     restart_file = params.getScalar<string>("run_restart_file");
     cout << "# Restarting from " << restart_file << endl;
+    std::string compile_time_chk;
+    std::string git_version_chk;
+    readCheckpointMeta(restart_file, compile_time_chk, git_version_chk);
+    if (verbose) {
+      if (git_version != git_version_chk) {
+        cerr << "# WARNING: restarting from file generated from git version " << git_version_chk << endl;
+        cerr << "# Different from current git version " << git_version << endl;
+      }
+      else if (compile_time != compile_time_chk) {
+        cerr << "# WARNING: restarting from file generated from binary compiled at " << compile_time_chk << endl;
+        cerr << "# Different from current binary compile time " << compile_time << endl;
+      }
+      else {
+        cout << "# Restarting from checkpoint file generated from this binary" << endl;
+      }
+    }
   }
   if (do_checkpoint)
     checkpoint_name_base = params.getScalar<string>("run_checkpoint_name_base");
@@ -237,13 +305,7 @@ int main(int argc, char **argv)
   {
     // Only one rank needs to create the file.
     // Using the verbose variable as a proxy for this when MPI is used
-    std::string checkpoint_file_init = checkpoint_name_base + "_init.h5";
-    if (verbose)
-      createFile(checkpoint_file_init);
-    mcarlo.writeCheckpointParticles(checkpoint_file_init);
-    grid->writeCheckpointZones(checkpoint_file_init);
-    mcarlo.writeCheckpointSpectra(checkpoint_file_init);
-    grid->writeCheckpointGrid(checkpoint_file_init);
+    writeCheckpoint(verbose, checkpoint_name_base, "init", mcarlo, grid);
   }
 
   std::cout << std::scientific;
@@ -323,7 +385,7 @@ int main(int argc, char **argv)
         mcarlo.output_spectrum(i_write+1);
 
       if (do_checkpoint) {
-        checkpoint(verbose, checkpoint_name_base, i_chk, mcarlo, grid);
+        writeCheckpoint(verbose, checkpoint_name_base, i_chk, mcarlo, grid);
         i_chk++;
       }
 
@@ -341,6 +403,8 @@ int main(int argc, char **argv)
 
   // print out final spectrum
   if ((use_transport)&&(!steady_iterate))  mcarlo.output_spectrum(-1);
+  if (do_checkpoint)
+    writeCheckpoint(verbose, checkpoint_name_base, "final", mcarlo, grid);
 
   //---------------------------------------------------------------------
   // CALCULATION DONE; WRITE OUT AND FINISH
