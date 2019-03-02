@@ -30,8 +30,10 @@ class Atom:
         self.ion_ground = np.cumsum(ion_ground)
 
         # the ionic species of each level
-        level_i = np.concatenate([i*np.ones_like(s.E) for i, s in enumerate(self.species)])
-        level_i = np.concatenate([level_i, [len(self.species)]])
+        level_i = (float(self.species[0].ion_stage) - 1.) * np.ones_like(self.species[0].E)
+        for spec_index in range(1,len(self.species)):
+            level_i = np.append(level_i, (float(self.species[spec_index].ion_stage) - 1.) * np.ones_like(self.species[spec_index].E) )
+        level_i = np.concatenate([level_i, [float(self.species[-1].ion_stage)]])
         self.level_i = np.array(level_i)
         
         # the energies of each level
