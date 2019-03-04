@@ -38,7 +38,7 @@ AtomicSpecies::AtomicSpecies()
   use_betas_          = 0;
   minimum_extinction_ = 0;
   use_nlte_           = 0;
-  
+
   n_levels_            = 0;
   n_lines_             = 0;
   n_ions_              = 0;
@@ -144,7 +144,7 @@ int AtomicSpecies::solve_nlte(double ne)
 
   // make sure our lte levels aren't too small
   for (int i=0;i<n_levels_;++i)
-    if (levels_[i].n_lte < min_level_pop_) levels_[i].n_lte = min_level_pop_;
+      if (levels_[i].n_lte < min_level_pop_) levels_[i].n_lte = min_level_pop_;
 
   // Calculate all of the transition rates
   set_rates(ne);
@@ -195,10 +195,15 @@ int AtomicSpecies::solve_nlte(double ne)
     double n_nlte = b*levels_[i].n_lte;
 
     // make sure our solved for nlte levels_ aren't too small
-    if (n_nlte < min_level_pop_) n_nlte = min_level_pop_;
 
     levels_[i].n = n_nlte;
     levels_[i].b = b;
+
+    if (n_nlte < min_level_pop_){
+      levels_[i].n = levels_[i].n_lte;
+      levels_[i].b = 1.;
+    }
+
   }
 
   // set the ionization fraction
@@ -232,12 +237,14 @@ void AtomicSpecies::calculate_radiative_rates(std::vector<real> J_nu)
   // recombination is from EQ 3.16 of Rutten, stellar atmospheres
   // recombination rate includes stimulated recombination
   double fac1 = 2/pc::c/pc::c;
+
   int ng = nu_grid_.size();
   for (int i=1;i<ng;++i)
   {
     double nu     = nu_grid_.center(i);
     double E_ergs = pc::h*nu;
     double E_ev   = E_ergs*pc::ergs_to_ev;
+
     double J      = J_nu[i];
     double dnu    = nu_grid_.delta(i);
     for (int j=0;j<n_levels_;++j)
