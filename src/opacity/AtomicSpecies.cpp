@@ -245,9 +245,7 @@ void AtomicSpecies::calculate_radiative_rates(std::vector<real> J_nu)
     double E_ergs = pc::h*nu;
     double E_ev   = E_ergs*pc::ergs_to_ev;
 
-    double J = fac1*pc::h*pow(nu,3)/(exp(E_ev/(pc::k_ev*gas_temp_))-1.);
-
-  //  double J      = J_nu[i];
+    double J      = J_nu[i];
     double dnu    = nu_grid_.delta(i);
     for (int j=0;j<n_levels_;++j)
     {
