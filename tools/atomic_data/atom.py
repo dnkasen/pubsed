@@ -19,6 +19,16 @@ class Atom:
             self.species.append(Species(h5f, group, merge_degenerate,
                                         skip_autoionizing, level_cap))
 
+        if (self.Z == 27):
+            print "COBALT SPECIAL CASE: Use Fe I for Co I"
+            self.species.insert(0,Species(h5f,os.path.join('26','1'),merge_degenerate,
+                                        skip_autoionizing, level_cap))
+
+        if (self.Z == 28):
+            print "NICKEL SPECIAL CASE: Use Fe I for Ni I"
+            self.species.insert(0,Species(h5f,os.path.join('26','1'),merge_degenerate,
+                                        skip_autoionizing, level_cap))
+
         # ionization energies - should convert these to eV
         ion_chi = [s.ion_chi for s in self.species]
         ion_chi += [1.0e8 / inv_cm_to_ev]
