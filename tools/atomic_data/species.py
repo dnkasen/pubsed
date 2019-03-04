@@ -35,6 +35,8 @@ class Species:
         self.nlevels = h5f[species_string].attrs['n_levels']
         self.nlines  = h5f[species_string].attrs['n_lines']
         self.ion_chi = h5f[species_string].attrs['ion_chi']
+
+        self.ion_stage = species_string[species_string.find("/") + 1:]
         
         self.E = h5f[species_string]['level_E'][:]
         self.g = h5f[species_string]['level_g'][:]
