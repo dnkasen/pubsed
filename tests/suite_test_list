@@ -5,6 +5,7 @@ spherical_lightbulb/1D
 spherical_lightbulb/2D
 spherical_lightbulb/3D
 toy_type1a_supernova/1D_spectrum
+toy_type1a_supernova/1D_spectrum_bb
 toy_type1a_supernova/1D_lightcurve
 advected_pulse/mc
 advected_pulse/ddmc
