@@ -20,7 +20,7 @@ public:
   ~thread_RNG();
 
   void writeCheckpointRNG(std::string fname);
-  void readCheckpointRNG(std::string fname);
+  int readCheckpointRNG(std::string fname);
 };
 
 #endif
