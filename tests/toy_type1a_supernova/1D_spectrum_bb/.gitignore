@@ -1,0 +1,5 @@
+*.dat
+*.h5
+sedona6.ex
+!reference_spectrum.dat
+!reference_spectrum.h5

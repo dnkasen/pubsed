@@ -207,18 +207,15 @@ void SedonaClass::setup()
     transport_->init(&params_, grid_);
   }
 
+  // you can immediately write out a checkpoint to test correctness
   if ((do_restart_) && (do_checkpoint_test))
   {
-    // Only one rank needs to create the file.
-    // Using the verbose variable as a proxy for this when MPI is used
     std::string checkpoint_file_init = checkpoint_name_base_ + "_init.h5";
-    if (verbose_)
-    createFile(checkpoint_file_init);
-    transport_->writeCheckpointParticles(checkpoint_file_init);
-    grid_->writeCheckpointZones(checkpoint_file_init);
-    transport_->writeCheckpointSpectra(checkpoint_file_init);
-    grid_->writeCheckpointGrid(checkpoint_file_init);
+    write_checkpoint(checkpoint_file_init);
   }
+
+
+
 }
 
 //-----------------------------------------------------------

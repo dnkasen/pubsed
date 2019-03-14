@@ -86,20 +86,20 @@ void transport::write_levels_to_plotfile(int iw)
       hid_t atom_id_src = H5Gopen(file_id_src,ag,H5P_DEFAULT);
       hid_t atom_id_dest = H5Gcreate1(zone_grp_dest,ag,0);
 
-      float* tmp_ion = new float[this_Z+1];
+      double* tmp_ion = new double[this_Z+1];
       hsize_t dims_ion[RANK]={(hsize_t)(this_Z+1)};
-      
-      H5LTread_dataset_float(atom_id_src,"ion_fraction",tmp_ion);
-      H5LTmake_dataset(atom_id_dest,"ion_fraction",RANK,dims_ion,H5T_NATIVE_FLOAT,tmp_ion);
+
+      H5LTread_dataset_double(atom_id_src,"ion_fraction",tmp_ion);
+      H5LTmake_dataset(atom_id_dest,"ion_fraction",RANK,dims_ion,H5T_NATIVE_DOUBLE,tmp_ion);
 
       int this_nl = gas_state_.atoms[j].n_levels_;
-      float* tmp_level = new float[this_nl];
+      double* tmp_level = new double[this_nl];
       hsize_t dims_level[RANK] = {(hsize_t)this_nl};
-      H5LTread_dataset_float(atom_id_src,"level_fraction",tmp_level);
-      H5LTmake_dataset(atom_id_dest,"level_fraction",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
+      H5LTread_dataset_double(atom_id_src,"level_fraction",tmp_level);
+      H5LTmake_dataset(atom_id_dest,"level_fraction",RANK,dims_level,H5T_NATIVE_DOUBLE,tmp_level);
 
-      H5LTread_dataset_float(atom_id_src,"level_departure",tmp_level);
-      H5LTmake_dataset(atom_id_dest,"level_departure",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
+      H5LTread_dataset_double(atom_id_src,"level_departure",tmp_level);
+      H5LTmake_dataset(atom_id_dest,"level_departure",RANK,dims_level,H5T_NATIVE_DOUBLE,tmp_level);
 
       H5Gclose(atom_id_dest);
       H5Gclose(atom_id_src);
@@ -309,7 +309,7 @@ void transport::writeCheckpointParticles(std::string fname) {
 }
 
 // Writes out particle data, assuming that the particles group already exists in
-// the hdf5 file named file. The 
+// the hdf5 file named file. The
 void transport::writeParticleProp(std::string fname, std::string fieldname, int total_particles, int offset) {
   int n_dims = 1;
   int n_particles_local = n_particles();
@@ -588,7 +588,7 @@ void transport::readParticleProp(std::string fname, std::string fieldname, int t
     std::cerr << "Particle field " << fieldname << " does not exist. Terminating" << std::endl;
     exit(3);
   }
-  
+
   if (t == H5T_NATIVE_INT)
     delete[] buffer_i;
   else if (t == H5T_NATIVE_DOUBLE)

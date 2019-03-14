@@ -429,22 +429,22 @@ void GasState::write_levels(int iz)
     hid_t atom_id = H5Gcreate1(file_id,afile,0);
 
 
-    float* tmp_ion = new float[elem_Z[j]+1];
+    double* tmp_ion = new double[elem_Z[j]+1];
     hsize_t dims_ion[RANK]={(hsize_t)elem_Z[j]+1};
     for(int k=0;k<elem_Z[j]+1;k++)
       tmp_ion[k] = get_ionization_fraction(j,k);
-    H5LTmake_dataset(atom_id,"ion_fraction",RANK,dims_ion,H5T_NATIVE_FLOAT,tmp_ion);
+    H5LTmake_dataset(atom_id,"ion_fraction",RANK,dims_ion,H5T_NATIVE_DOUBLE,tmp_ion);
 
     int this_nl = atoms[j].n_levels_;
-    float* tmp_level = new float[this_nl];
+    double* tmp_level = new double[this_nl];
     hsize_t dims_level[RANK]={(hsize_t)this_nl};
     for(int k=0;k<this_nl;k++)
       tmp_level[k] = get_level_fraction(j,k);
-    H5LTmake_dataset(atom_id,"level_fraction",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
+    H5LTmake_dataset(atom_id,"level_fraction",RANK,dims_level,H5T_NATIVE_DOUBLE,tmp_level);
 
     for(int k=0;k<this_nl;k++)
       tmp_level[k] = get_level_departure(j,k);
-    H5LTmake_dataset(atom_id,"level_departure",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
+    H5LTmake_dataset(atom_id,"level_departure",RANK,dims_level,H5T_NATIVE_DOUBLE,tmp_level);
 
     H5Gclose(atom_id);
     delete[] tmp_level;
