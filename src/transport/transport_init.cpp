@@ -87,8 +87,18 @@ void transport::init(ParameterReader* par, grid_general *g)
 //  std::cout << MPI_myID <<  " " << my_zone_start_ << " " << my_zone_stop_ <<
 //   " " << my_zone_stop_ - my_zone_start_ << "\n";
 
+  std::string restart_file = params_->getScalar<string>("run_restart_file"); 
+  int do_restart = params_->getScalar<int>("run_do_restart");
+
   // setup and seed random number generator
-  rangen.init();
+  if (do_restart) {
+    int status = rangen.readCheckpointRNG(restart_file);
+    if (status != 0) {
+      rangen.init();
+    }
+  }
+  else
+    rangen.init();
 
   // read relevant parameters
   max_total_particles = params_->getScalar<int>("particles_max_total");
@@ -98,8 +108,6 @@ void transport::init(ParameterReader* par, grid_general *g)
   temp_min_value_ = params_->getScalar<double>("limits_temp_min");
   fleck_alpha_ = params_->getScalar<double>("transport_fleck_alpha");
   last_iteration_ = 0;
-  std::string restart_file = params_->getScalar<string>("run_restart_file"); 
-  int do_restart = params_->getScalar<int>("run_do_restart");
 
   // initialize the frequency grid
   std::vector<double> nu_dims = params_->getVector<double>("transport_nu_grid");

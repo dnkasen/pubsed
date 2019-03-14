@@ -265,10 +265,12 @@ class transport
   void writeCheckpointParticles(std::string fname);
   void writeParticleProp(std::string fname, std::string fieldname, int total_particles, int offset);
   void writeCheckpointSpectra(std::string fname);
+  void writeCheckpointRNG(std::string fname);
 
   void readCheckpointParticles(std::string fname, bool test=false);
   void readParticleProp(std::string fname, std::string fieldname, int total_particles, int offset);
   void readCheckpointSpectra(std::string fname, bool test=false);
+  void readCheckpointRNG(std::string fname, bool test=false);
 
   void testCheckpointParticles(std::string fname);
   void testCheckpointSpectrum(std::string fname);

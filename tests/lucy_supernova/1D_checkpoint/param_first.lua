@@ -10,7 +10,7 @@ hydro_module = "homologous"
 -- time stepping
 days = 3600.0*24
 tstep_max_steps  = 1000
-tstep_time_stop  = 20.0*days
+tstep_time_stop  = 70.0*days
 tstep_max_dt     = 0.5*days
 tstep_min_dt     = 0.0
 tstep_max_delta  = 0.05
@@ -30,4 +30,4 @@ transport_radiative_equilibrium   = 1
 -- checkpoint/restart parameters
 run_do_restart                  = 0
 run_do_checkpoint               = 1
-run_checkpoint_file             = "chk_out.h5"
+run_checkpoint_name_base             = "chk"

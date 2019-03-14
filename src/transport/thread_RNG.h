@@ -15,12 +15,12 @@ protected:
   
 public:
 
-  void   init();
+  void   init(bool fix_seed = false, unsigned long int fixed_seed_val = 0);
   double uniform();
   ~thread_RNG();
 
   void writeCheckpointRNG(std::string fname);
-  void readCheckpointRNG(std::string fname);
+  int readCheckpointRNG(std::string fname);
 };
 
 #endif
