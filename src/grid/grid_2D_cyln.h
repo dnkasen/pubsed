@@ -53,7 +53,7 @@ public:
   void readCheckpointGrid(std::string fname, bool test=false);
   void testCheckpointGrid(std::string fname);
 
-  //void restartGrid(ParameterReader* params);
+  void restartGrid(ParameterReader* params);
 };
 
 

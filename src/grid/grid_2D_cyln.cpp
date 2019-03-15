@@ -540,3 +540,28 @@ void grid_2D_cyln::readCheckpointGrid(std::string fname, bool test) {
     MPI_Barrier(MPI_COMM_WORLD);
   }
 }
+
+
+void grid_2D_cyln::restartGrid(ParameterReader* params) {
+#ifdef MPI_PARALLEL
+  int my_rank;
+  MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
+  const int verbose = (my_rank == 0);
+#else
+  const int verbose = 1;
+#endif
+  string restart_file = params->getScalar<string>("run_restart_file");
+
+  // geometry of model
+  if(params->getScalar<string>("grid_type") != "grid_2D_cyln")
+  {
+    if (verbose) cerr << "Err: grid_type param disagrees with the model file" << endl;
+    exit(4);
+  }
+  if (verbose) {
+    cout << "# model file = " << restart_file << "\n";
+    cout << "# Model is a 2D_sphere\n"; }
+
+  readCheckpointGrid(restart_file);
+  readCheckpointZones(restart_file);
+}
