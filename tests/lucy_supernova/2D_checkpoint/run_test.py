@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import h5py
 import sys
-import subprocess
 
 
 def run_test(pdf="",runcommand=""):
@@ -12,16 +11,16 @@ def run_test(pdf="",runcommand=""):
     # clean up old results and run the code
     ###########################################
     if (runcommand != ""):
-        os.system("rm spectrum_* plt_* integrated_quantities.dat")
-        # run first ~half and stop
-        os.system("cp param_first.lua param.lua")
-        print (runcommand)
-        os.system(runcommand)
-        # run second ~half
-        os.system("cp param_last.lua param.lua")
-        os.system(runcommand)
-        os.system("rm param.lua")
-
+    	os.system("rm *_spectrum_* plt_* integrated_quantities.dat chk*")
+    	os.system(runcommand)
+      # run first ~half and stop
+      os.system("cp param_first.lua param.lua")
+      print (runcommand)
+      os.system(runcommand)
+      # run second ~half
+      os.system("cp param_last.lua param.lua")
+      os.system(runcommand)
+      os.system("rm param.lua")
 
     ###########################################
     # compare the output
@@ -30,37 +29,51 @@ def run_test(pdf="",runcommand=""):
     failure = 0
 
     # sedona results
-    ts1,Ls1,c = np.loadtxt('optical_spectrum_final.dat',unpack=1,skiprows=1)
-    ts1 = ts1/3600.0/24.0
-    plt.plot(ts1,Ls1,'o',markeredgecolor='red',markersize=8,markeredgewidth=2,markerfacecolor='none')
+    fin = h5py.File('optical_spectrum_final.h5','r')
+    tlc = np.array(fin['time'])
+    Lnu = np.array(fin['Lnu'])
+    mu  = np.array(fin['mu'])
+    tlc = tlc/3600.0/24.0
+
+    # get and plot angle integrated light curve
+    total_lc = np.zeros(len(tlc))
+    for i in range(len(mu)):
+        total_lc += Lnu[:,0,i]
+    total_lc = total_lc/(1.0*len(mu))
+    plt.plot(tlc,total_lc,'o',markeredgecolor='k',markersize=6,markeredgewidth=2)
+
+    # plot radioactive deposition
     ts2,erad,Ls2,Lnuc = np.loadtxt('integrated_quantities.dat',usecols=[0,1,2,3],unpack=1,skiprows=1)
-    ts2 = ts2/3600.0/24.0
+    ts2= ts2/3600.0/24.0
     plt.plot(ts2,Ls2,'o',markeredgecolor='blue',markersize=8,markeredgewidth=2,markerfacecolor='none')
 
-    # benchmark results
+    # plot benchmark results
     tl1,Ll1 = np.loadtxt('../comparefiles/lucy_lc.dat',unpack=1)
-    plt.plot(tl1,Ll1,color='red',linewidth=3)
+    plt.plot(tl1,Ll1,color='k',linewidth=3)
     tl2,Ll2 = np.loadtxt('../comparefiles/lucy_gr.dat',unpack=1)
     plt.plot(tl2,Ll2,color='blue',linewidth=3)
     plt.ylim(1e40,0.4e44)
 
-    # calculate error
-    use = ((ts1 > 3)*(ts1 < 55))
-    max_err,mean_err = get_error(Ls1,Ll1,x=ts1,x_comp=tl1,use = use)
-    if (max_err > 0.25): failure = 1
-    if (mean_err > 0.1): failure = 1
+    # overplot angle dependent light curves
+    for i in range(len(mu)):
+        plt.plot(tlc,Lnu[:,0,i],'o',markeredgecolor='red',markersize=6,markeredgewidth=2,markerfacecolor='none',alpha=0.2)
+        # calculate error
+        use = ((tlc > 3)*(tlc < 55))
+        max_err,mean_err = get_error(Lnu[:,0,i],Ll1,x=tlc,x_comp=tl1,use = use)
+#        if (max_err > 0.4): failure = 1
+        if (mean_err > 0.1): failure = 1
 
     use = ((ts2 > 3)*(ts2 < 55))
     max_err,mean_err = get_error(Ls2,Ll2,x=ts2,x_comp=tl2,use = use)
     if (max_err > 0.25): failure = 2
     if (mean_err > 0.1): failure = 2
-
-    # confirm that final checkpoint files are identitcal
-    # h5diff_output = subprocess.check_output(["h5diff", "chk_final.h5 chk_restart_final.h5"])
-    # if (h5diff_output): failure = 3
+    
+    # confirm that final checkpoint files are identical
+    #h5diff_output = subprocess.check_output(["h5diff", "chk_final.h5 chk_restart_final.h5"])
+    #if (h5diff_output): failure = 3
 
     ## make plot
-    plt.title('1D Lucy Supernova test - monte carlo')
+    plt.title('2D Lucy Supernova test - monte carlo')
     plt.legend(['sedona LC','sedona GR','lucy LC','lucy GR'])
     plt.xlim(0,55)
     plt.xlabel('luminosity (erg/s)',size=13)
@@ -69,7 +82,7 @@ def run_test(pdf="",runcommand=""):
     else:
         plt.ion()
         plt.show()
-        j = get_input()
+        j = get_input('press any key> ')
 
     return failure
 

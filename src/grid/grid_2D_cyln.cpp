@@ -172,6 +172,7 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
     printf("# radiation energy = %.4e\n",totrad);
     cout << "##############################\n#" << endl;
   }
+  delete [] elem_mass;
 }
 
 
@@ -483,4 +484,84 @@ void grid_2D_cyln::get_velocity(int i, double x[3], double D[3], double v[3], do
   *dvds = dv_dr;  // not quite right, but upper limit
 */
 
+}
+
+void grid_2D_cyln::writeCheckpointGrid(std::string fname) {
+  if (my_rank == 0) {
+    /* Write out geometry-independent quantities */
+    writeCheckpointGeneralGrid(fname);
+    hsize_t single_val = 1;
+    
+    createDataset(fname, "grid", "nx", 1, &single_val, H5T_NATIVE_INT);
+    createDataset(fname, "grid", "nz", 1, &single_val, H5T_NATIVE_INT);
+    createDataset(fname, "grid", "dx", 1, &single_val, H5T_NATIVE_DOUBLE);
+    createDataset(fname, "grid", "dz", 1, &single_val, H5T_NATIVE_DOUBLE);
+    createDataset(fname, "grid", "zcen", 1, &single_val, H5T_NATIVE_DOUBLE);
+
+    writeSimple(fname, "grid", "nx", &nx_, H5T_NATIVE_INT);
+    writeSimple(fname, "grid", "nz", &nz_, H5T_NATIVE_INT);
+    writeSimple(fname, "grid", "dx", &dx_, H5T_NATIVE_DOUBLE);
+    writeSimple(fname, "grid", "dz", &dz_, H5T_NATIVE_DOUBLE);
+    writeSimple(fname, "grid", "zcen", &zcen_, H5T_NATIVE_DOUBLE);
+
+    writeVector(fname, "grid", "index_x", index_x_, H5T_NATIVE_INT);
+    writeVector(fname, "grid", "index_z", index_z_, H5T_NATIVE_INT);
+    writeVector(fname, "grid", "vol", vol_, H5T_NATIVE_DOUBLE);
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+}
+
+void grid_2D_cyln::readCheckpointGrid(std::string fname, bool test) {
+  for (int rank = 0; rank < nproc; rank++) {
+    if (my_rank == rank) {
+      readCheckpointGeneralGrid(fname, test);
+      readSimple(fname, "grid", "nx", &nx_new_, H5T_NATIVE_INT);
+      readSimple(fname, "grid", "nz", &nz_new_, H5T_NATIVE_INT);
+      readSimple(fname, "grid", "dx", &dx_new_, H5T_NATIVE_DOUBLE);
+      readSimple(fname, "grid", "dz", &dz_new_, H5T_NATIVE_DOUBLE);
+      readSimple(fname, "grid", "zcen", &zcen_new_, H5T_NATIVE_DOUBLE);
+
+      readVector(fname, "grid", "index_x", index_x_new_, H5T_NATIVE_INT);
+      readVector(fname, "grid", "index_z", index_z_new_, H5T_NATIVE_INT);
+      readVector(fname, "grid", "vol", vol_new_, H5T_NATIVE_DOUBLE);
+
+      if (not test) {
+        nx_ = nx_new_;
+        nz_ = nz_new_;
+        dx_ = dx_new_;
+        dz_ = dz_new_;
+        zcen_ = zcen_new_;
+
+        index_x_ = index_x_new_;
+        index_z_ = index_z_new_;
+        vol_ = vol_new_;
+      }
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+}
+
+
+void grid_2D_cyln::restartGrid(ParameterReader* params) {
+#ifdef MPI_PARALLEL
+  int my_rank;
+  MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
+  const int verbose = (my_rank == 0);
+#else
+  const int verbose = 1;
+#endif
+  string restart_file = params->getScalar<string>("run_restart_file");
+
+  // geometry of model
+  if(params->getScalar<string>("grid_type") != "grid_2D_cyln")
+  {
+    if (verbose) cerr << "Err: grid_type param disagrees with the model file" << endl;
+    exit(4);
+  }
+  if (verbose) {
+    cout << "# model file = " << restart_file << "\n";
+    cout << "# Model is a 2D_sphere\n"; }
+
+  readCheckpointGrid(restart_file);
+  readCheckpointZones(restart_file);
 }
