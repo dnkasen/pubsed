@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import h5py
 import sys
+import subprocess
 
 
 def run_test(pdf="",runcommand=""):
@@ -53,6 +54,10 @@ def run_test(pdf="",runcommand=""):
     max_err,mean_err = get_error(Ls2,Ll2,x=ts2,x_comp=tl2,use = use)
     if (max_err > 0.25): failure = 2
     if (mean_err > 0.1): failure = 2
+
+    # confirm that final checkpoint files are identitcal
+    h5diff_output = subprocess.check_output(["h5diff", "chk_final.h5 chk_restart_final.h5"])
+    if (h5diff_output): failure = 3
 
     ## make plot
     plt.title('1D Lucy Supernova test - monte carlo')
