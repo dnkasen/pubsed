@@ -12,15 +12,14 @@ def run_test(pdf="",runcommand=""):
     ###########################################
     if (runcommand != ""):
     	os.system("rm *_spectrum_* plt_* integrated_quantities.dat chk*")
-    	os.system(runcommand)
-    # run first ~half and stop
-    os.system("cp param_first.lua param.lua")
-    print (runcommand)
-    os.system(runcommand)
-    # run second ~half
-    os.system("cp param_last.lua param.lua")
-    os.system(runcommand)
-    os.system("rm param.lua")
+        # run first ~half and stop
+        os.system("cp param_first.lua param.lua")
+    #    print (runcommand)
+        os.system(runcommand)
+        # run second ~half
+        os.system("cp param_last.lua param.lua")
+        os.system(runcommand)
+        os.system("rm param.lua")
 
     ###########################################
     # compare the output
