@@ -35,7 +35,6 @@ void thread_RNG::init(bool fix_seed, unsigned long int fixed_seed_val)
 #endif
   }
   generators.resize(nthreads);
-  counters.resize(nthreads);
 
   unsigned long int seed;
   // set generator for rank 0 thread 0
@@ -49,14 +48,12 @@ void thread_RNG::init(bool fix_seed, unsigned long int fixed_seed_val)
   // assign unique RNG to each rank.
   for(int i=0; i<my_mpiID; i++) seed = gsl_rng_get(generators[0]);
   gsl_rng_set(generators[0], seed);
-  counters[0] = 0;
 
   // assign a unique RNG to each thread
   for(int thread=1; thread<nthreads; thread++){
     seed = gsl_rng_get(generators[0]);
     generators[thread] = gsl_rng_alloc(TypeR);
     gsl_rng_set(generators[thread], seed);
-    counters[thread] = 0;
   }
 }
 
@@ -72,7 +69,6 @@ double thread_RNG::uniform()
 #else
   const int my_ompID = 0;
 #endif
-  counters[my_ompID] += 1;
   return gsl_rng_uniform(generators[my_ompID]);
 }
 
@@ -116,7 +112,6 @@ void thread_RNG::writeCheckpointRNG(std::string fname) {
       }
       createDataset(fname, std::string("RNG"), std::to_string(my_mpiID), ndim1, &n_rngs, H5_rng);
       writeSimple(fname, std::string("RNG"), std::to_string(my_mpiID), buffer, H5_rng);
-      writeVector(fname, std::string("RNG"), std::to_string(my_mpiID) + "_count", counters, H5T_NATIVE_INT);
       delete [] buffer;
     }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -157,7 +152,6 @@ int thread_RNG::readCheckpointRNG(std::string fname) {
       getH5dims(fname, std::string("RNG"), std::to_string(my_mpiID), &num_rngs);
       uint8_t* buffer = new uint8_t[num_rngs * rng_size];
       readSimple(fname, std::string("RNG"), std::to_string(my_mpiID), buffer, H5_rng);
-      readVector(fname, std::string("RNG"), std::to_string(my_mpiID) + "_count", counters, H5T_NATIVE_INT);
 
       // set up the stuff that creates the random number generators
       const gsl_rng_type* TypeR = gsl_rng_default;
