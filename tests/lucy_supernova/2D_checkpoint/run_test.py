@@ -12,15 +12,14 @@ def run_test(pdf="",runcommand=""):
     ###########################################
     if (runcommand != ""):
     	os.system("rm *_spectrum_* plt_* integrated_quantities.dat chk*")
-    	os.system(runcommand)
-      # run first ~half and stop
-      os.system("cp param_first.lua param.lua")
-      print (runcommand)
-      os.system(runcommand)
-      # run second ~half
-      os.system("cp param_last.lua param.lua")
-      os.system(runcommand)
-      os.system("rm param.lua")
+        # run first ~half and stop
+        os.system("cp param_first.lua param.lua")
+    #    print (runcommand)
+        os.system(runcommand)
+        # run second ~half
+        os.system("cp param_last.lua param.lua")
+        os.system(runcommand)
+        os.system("rm param.lua")
 
     ###########################################
     # compare the output
@@ -67,7 +66,7 @@ def run_test(pdf="",runcommand=""):
     max_err,mean_err = get_error(Ls2,Ll2,x=ts2,x_comp=tl2,use = use)
     if (max_err > 0.25): failure = 2
     if (mean_err > 0.1): failure = 2
-    
+
     # confirm that final checkpoint files are identical
     #h5diff_output = subprocess.check_output(["h5diff", "chk_final.h5 chk_restart_final.h5"])
     #if (h5diff_output): failure = 3
