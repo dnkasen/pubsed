@@ -12,6 +12,7 @@ protected:
   // OPTIMIZE - to prevent false sharing, make sure all the RNG's are on different cache lines
   // vector of generators
   std::vector<gsl_rng*> generators;
+  std::vector<int> counters;
   
 public:
 
