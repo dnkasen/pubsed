@@ -69,7 +69,6 @@ double thread_RNG::uniform()
 #else
   const int my_ompID = 0;
 #endif
-
   return gsl_rng_uniform(generators[my_ompID]);
 }
 

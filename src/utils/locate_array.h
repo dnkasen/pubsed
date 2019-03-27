@@ -18,7 +18,7 @@ public:
   double min;
 
   // other parameters
-  int do_log_interpolate;
+  int do_log_interpolate = 0;
 
   // constructors
   locate_array()  {}
