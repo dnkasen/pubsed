@@ -394,6 +394,22 @@ void SedonaClass::evolve_system()
   write_checkpoint(checkpoint_name_base_ + "_final.h5");
 }
 
+int SedonaClass::do_checkpoint_now(int chk_force, int it, double t) {
+  int chk_it = do_checkpoint_iteration(it);
+  int chk_wc = do_checkpoint_wallclock();
+  int chk_end = do_checkpoint_before_end();
+  int chk_simt = do_checkpoint_simulation_time(t);
+  int chk_total = chk_it + chk_wc + chk_end + chk_simt + chk_force;
+  return chk_total;
+}
+
+int SedonaClass::do_checkpoint_iteration(int it) {
+  if (chk_it_interval_ <= 0) {
+    return 0;
+  }
+  else
+    return it % chk_it_interval_;
+}
 
 //-----------------------------------------------------------
 // Write a checkpoint file with numbered name
@@ -420,7 +436,6 @@ void SedonaClass::write_checkpoint(std::string checkpoint_file_full)
   transport_->writeCheckpointRNG(checkpoint_file_full);
   grid_->writeCheckpointGrid(checkpoint_file_full);
 }
-
 
 //-----------------------------------------------------------
 // Write meta data re git version, compile time
