@@ -28,7 +28,7 @@ private:
 
   // functions for reading in model files
   void read_ascii_file(std::string, int);
-  void read_hdf5_file(std::string, int);
+  void read_hdf5_file(std::string, ParameterReader*, int);
 
 
 public:
