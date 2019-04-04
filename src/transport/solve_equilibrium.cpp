@@ -44,7 +44,9 @@ double transport::rad_eq_function(int c,double T)
   // total energy absorbed in zone
   //  double E_absorbed = grid->z[c].e_abs; // debug + grid->z[c].L_radio_dep;
   //  double E_absorbed = grid->z[c].e_abs_ff; // debug + grid->z[c].L_radio_dep;
-  double E_absorbed = gas_state_.free_free_heating_rate(T,J_nu_[c]);
+
+  //double E_absorbed = gas_state_.free_free_heating_rate(T,J_nu_[c]); //+ gas_state_.bound_free_heating_rate(T,J_nu_[c]);
+  double E_absorbed = gas_state_.bound_free_heating_rate(T,J_nu_[c]); 
   
   // total energy emitted (to be calculated)
   double E_emitted = 0.;
@@ -70,8 +72,11 @@ double transport::rad_eq_function(int c,double T)
     //Eab += 4.0*pc::pi*kappa_abs*J_nu_[c][i]*dnu;
     }
   */
-  E_emitted= gas_state_.free_free_cooling_rate(T);
-  //std::cout << E_emitted << " " << E_absorbed << "\n";
+  
+  //E_emitted= gas_state_.free_free_cooling_rate(T);// + gas_state_.bound_free_cooling_rate(T);
+  E_emitted = gas_state_.bound_free_cooling_rate(T);
+  
+  std::cout << E_emitted << " " << E_absorbed << "\n";
   // radiative equillibrium condition: "emission equals absorbtion"
   // return to Brent function to iterate this to zero
   return (E_emitted - E_absorbed);

@@ -57,6 +57,93 @@ void AtomicSpecies::bound_free_opacity(std::vector<double>& opac, std::vector<do
   }
 }
 
+void AtomicSpecies::bound_free_opacity_for_cooling(std::vector<double>& emis, double ne, double T)
+{
+  // zero out arrays
+  for (size_t i=0;i<emis.size();++i) {emis[i] = 0;}
+
+  int ng = nu_grid_.size();
+  double kt_ev = pc::k_ev*T;
+  double lam_t   = sqrt(pc::h*pc::h/(2*pc::pi*pc::m_e* pc::k * T));
+
+  std::vector<double> nc_phifac(n_levels_);
+  for (int j=0;j<n_levels_;++j)
+  {
+    int ic = levels_[j].ic;
+    if (ic == -1) continue;
+    double nc = n_dens_*levels_[ic].n;
+    double gl_o_gc = (1.0*levels_[j].g)/(1.0*levels_[ic].g);
+    nc_phifac[j] = nc*gl_o_gc/2. * lam_t * lam_t * lam_t;
+  }
+
+  for (int i=0;i<ng;++i)
+  {
+    double nu    = nu_grid_.center(i);
+    double E     = pc::h*nu*pc::ergs_to_ev;
+    double emis_fac   = 2. * pc::h*nu*nu*nu / pc::c / pc::c;
+
+    for (int j=0;j<n_levels_;++j)
+    {
+      // check if above threshold
+      if (E < levels_[j].E_ion) continue;
+      // check if there is an ionization stage above
+      int ic = levels_[j].ic;
+      if (ic == -1) continue;
+
+      // get extinction coefficient and emissivity
+      double zeta_net = (levels_[j].E_ion - E)/kt_ev;
+      double ezeta_net = exp(zeta_net);
+      double sigma = levels_[j].s_photo.value_at_with_zero_edges(E);
+      emis[i]  += emis_fac *sigma* nc_phifac[j] * ezeta_net; // ne gets multiplied at the end outside this funciton
+    }
+
+  }
+}
+
+void AtomicSpecies::bound_free_opacity_for_heating(std::vector<double>& heat_opac, double ne, double T)
+{
+
+    // zero out arrays
+  for (size_t i=0;i<heat_opac.size();++i) {heat_opac[i] = 0.;}
+  
+  int ng = nu_grid_.size();
+  double kt_ev = pc::k_ev*T;
+  double lam_t   = sqrt(pc::h*pc::h/(2*pc::pi*pc::m_e* pc::k * T));
+
+  std::vector<double> nc_phifac(n_levels_);
+  for (int j=0;j<n_levels_;++j)
+  {
+    int ic = levels_[j].ic;
+    if (ic == -1) continue;
+    double nc = n_dens_*levels_[ic].n;
+    double gl_o_gc = (1.0*levels_[j].g)/(1.0*levels_[ic].g);
+    nc_phifac[j] = nc*gl_o_gc/2. * lam_t * lam_t * lam_t;
+  }
+
+  for (int i=0;i<ng;++i)
+  {
+    heat_opac[i] = 0;
+    double nu    = nu_grid_.center(i);
+    double E     = pc::h*nu*pc::ergs_to_ev;
+
+    for (int j=0;j<n_levels_;++j)
+    {
+      // check if above threshold
+      if (E < levels_[j].E_ion) continue;
+      // check if there is an ionization stage above
+      int ic = levels_[j].ic;
+      if (ic == -1) continue;
+
+      // get extinction coefficient and emissivity
+      double zeta_net = (levels_[j].E_ion - E)/kt_ev;
+      double ezeta_net = exp(zeta_net);
+      double sigma = levels_[j].s_photo.value_at_with_zero_edges(E);
+      heat_opac[i]  += sigma * (n_dens_ * levels_[j].n  - nc_phifac[j] * ne * ezeta_net) * (E - levels_[j].E_ion) * pc::ev_to_ergs; // including this energy difference for each frequency bin is the whole point of this function
+    }
+
+  }
+}
+
 //---------------------------------------------------------
 // calculate the bound-free extinction coefficient
 // (units cm^{-1}) for all levels

@@ -202,6 +202,8 @@ class GasState
   double free_free_heating_rate(double, std::vector<real>);
   double free_free_cooling_rate(double);
   void bound_free_opacity (std::vector<double>&, std::vector<double>&);
+  double bound_free_heating_rate (double, std::vector<real>);
+  double bound_free_cooling_rate(double);
   void bound_bound_opacity(std::vector<double>&, std::vector<double>&);
   void bound_bound_opacity(int, std::vector<double>&, std::vector<double>&);
   void line_expansion_opacity(std::vector<double>&);

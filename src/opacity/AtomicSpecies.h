@@ -143,6 +143,8 @@ public:
 
   // opacities
   void   bound_free_opacity (std::vector<double>&, std::vector<double>&, double);
+  void   bound_free_opacity_for_heating (std::vector<double>&, double,double);
+  void   bound_free_opacity_for_cooling (std::vector<double>&, double,double);
   void   bound_bound_opacity(std::vector<double>&, std::vector<double>&);
 
 
