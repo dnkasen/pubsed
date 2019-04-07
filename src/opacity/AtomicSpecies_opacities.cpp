@@ -94,7 +94,7 @@ void AtomicSpecies::bound_free_opacity_for_cooling(std::vector<double>& emis, do
       double zeta_net = (levels_[j].E_ion - E)/kt_ev;
       double ezeta_net = exp(zeta_net);
       double sigma = levels_[j].s_photo.value_at_with_zero_edges(E);
-      emis[i]  += emis_fac *sigma* nc_phifac[j] * ezeta_net; // ne gets multiplied at the end outside this funciton
+      emis[i]  += emis_fac *sigma* nc_phifac[j] * ezeta_net * (E - levels_[j].E_ion)/E; // ne gets multiplied at the end outside this funciton
     }
 
   }
@@ -122,7 +122,6 @@ void AtomicSpecies::bound_free_opacity_for_heating(std::vector<double>& heat_opa
 
   for (int i=0;i<ng;++i)
   {
-    heat_opac[i] = 0;
     double nu    = nu_grid_.center(i);
     double E     = pc::h*nu*pc::ergs_to_ev;
 

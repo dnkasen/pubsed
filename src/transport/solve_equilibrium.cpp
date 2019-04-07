@@ -17,11 +17,11 @@ void transport::solve_eq_temperature()
     {
       for (int i=my_zone_start_;i<my_zone_stop_;i++)
 	{
+	  double old_Tgas = grid->z[i].T_gas;
 	  if (radiative_eq == 1)
-      grid->z[i].T_gas = temp_brent_method(i);
+	    grid->z[i].T_gas = 0.5 * (old_Tgas + temp_brent_method(i));
 	  else if (radiative_eq == 2)
 	    grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
-
 	  printf("new temperature is %e\n", grid->z[i].T_gas);
 	}
 
@@ -45,9 +45,8 @@ double transport::rad_eq_function(int c,double T)
   //  double E_absorbed = grid->z[c].e_abs; // debug + grid->z[c].L_radio_dep;
   //  double E_absorbed = grid->z[c].e_abs_ff; // debug + grid->z[c].L_radio_dep;
 
-  //double E_absorbed = gas_state_.free_free_heating_rate(T,J_nu_[c]); //+ gas_state_.bound_free_heating_rate(T,J_nu_[c]);
-  double E_absorbed = gas_state_.bound_free_heating_rate(T,J_nu_[c]); 
-  
+  double E_absorbed = gas_state_.free_free_heating_rate(T,J_nu_[c]) + gas_state_.bound_free_heating_rate(T,J_nu_[c]);
+
   // total energy emitted (to be calculated)
   double E_emitted = 0.;
   // Calculate total emission assuming no frequency (grey) opacity
@@ -73,10 +72,10 @@ double transport::rad_eq_function(int c,double T)
     }
   */
   
-  //E_emitted= gas_state_.free_free_cooling_rate(T);// + gas_state_.bound_free_cooling_rate(T);
-  E_emitted = gas_state_.bound_free_cooling_rate(T);
+  E_emitted= gas_state_.free_free_cooling_rate(T) + gas_state_.bound_free_cooling_rate(T);
+  //  E_emitted = gas_state_.bound_free_cooling_rate(T);
   
-  std::cout << E_emitted << " " << E_absorbed << "\n";
+  //std::cout << E_emitted << " " << E_absorbed << "\n";
   // radiative equillibrium condition: "emission equals absorbtion"
   // return to Brent function to iterate this to zero
   return (E_emitted - E_absorbed);

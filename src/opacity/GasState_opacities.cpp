@@ -281,7 +281,7 @@ double GasState::bound_free_heating_rate(double T, std::vector<real> J_nu )
   }
 
   double bf_heating_rate = 0.;
-  
+
   for (int i=0;i<npts;i++)
   {
     double nu = nu_grid_.center(i);
@@ -305,10 +305,10 @@ double GasState::bound_free_cooling_rate(double T)
   total_emis.resize(npts);
   atom_emis.resize(npts);
 
-  int na = atoms.size();
+  for (int i=0;i<npts;i++) {total_emis[i] = 0.; atom_emis[i] = 0.;}
 
   // sum up the bound-free opacity from every atom
-  for (int i=0;i<na;i++)
+  for (int i=0;i<natoms;i++)
   {
     atoms[i].bound_free_opacity_for_cooling(atom_emis,n_elec_,T);
     for (int j=0;j<npts;j++)
