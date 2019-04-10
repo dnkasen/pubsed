@@ -19,7 +19,15 @@ void transport::solve_eq_temperature()
 	{
 	  double old_Tgas = grid->z[i].T_gas;
 	  if (radiative_eq == 1)
-	    grid->z[i].T_gas = 0.5 * (old_Tgas + temp_brent_method(i));
+	    {
+
+	      double new_Tgas =  temp_brent_method(i);
+	      double averaged_T = 0.5 * (old_Tgas + new_Tgas);
+	      if (averaged_T > 1.1 * old_Tgas)  grid->z[i].T_gas = 1.1 * (old_Tgas);
+	      else if (averaged_T < 0.9 * old_Tgas) grid->z[i].T_gas = 0.9 * (old_Tgas) ;
+	      else grid->z[i].T_gas = averaged_T;
+
+	    }
 	  else if (radiative_eq == 2)
 	    grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
 	  printf("new temperature is %e\n", grid->z[i].T_gas);
