@@ -115,7 +115,7 @@ void transport::step(double dt)
   if (radiative_eq)
   {
     tstr = get_system_time();
-    solve_eq_temperature();
+    solve_eq_temperature(dt);
     tend = get_system_time();
     if (verbose) cout << "# Calculated Radiative Equilib (" << (tend-tstr) << " secs) \n";
   }

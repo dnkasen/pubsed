@@ -217,7 +217,7 @@ class transport
   void reduce_Lthermal();
 
   // solve equilibrium temperature
-  void solve_eq_temperature();
+  void solve_eq_temperature(double);
   double rad_eq_function(int,double);
   double temp_brent_method(int);
 
