@@ -139,6 +139,11 @@ void transport::initialize_particles(int init_particles)
     {
       double nu_m = nu_grid.center(j);
       double emis = blackbody_nu(T,nu_m)*nu_grid.delta(j);
+
+      if (nu_m > 2.98e16 && nu_m < 3.02e16)
+	emis = 1.;
+      else
+	emis = 0.;
       emissivity_[i].set_value(j,emis);
     }
     emissivity_[i].normalize();
