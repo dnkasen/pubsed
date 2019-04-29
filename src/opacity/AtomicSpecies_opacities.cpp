@@ -50,7 +50,11 @@ void AtomicSpecies::bound_free_opacity(std::vector<double>& opac, std::vector<do
       double zeta_net = (levels_[j].E_ion - E)/kt_ev;
       double ezeta_net = exp(zeta_net);
       double sigma = levels_[j].s_photo.value_at_with_zero_edges(E);
-      opac[i]  += sigma * (n_dens_ * levels_[j].n  - nc_phifac[j] * ne * ezeta_net);
+      double opac_fac = n_dens_ * levels_[j].n  - nc_phifac[j] * ne * ezeta_net;
+      // kill maser
+      if (opac_fac < 0)
+      	opac_fac = 0.;
+      opac[i]  += sigma * opac_fac;
       emis[i]  += emis_fac *sigma* nc_phifac[j] * ezeta_net; // ne gets multiplied at the end outside this funciton
     }
 
