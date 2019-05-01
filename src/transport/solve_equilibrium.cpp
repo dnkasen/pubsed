@@ -22,15 +22,20 @@ void transport::solve_eq_temperature()
 	    {
 
 	      double new_Tgas =  temp_brent_method(i);
-	      double averaged_T = 0.5 * (old_Tgas + new_Tgas);
-	      if (averaged_T > 1.1 * old_Tgas)  grid->z[i].T_gas = 1.1 * (old_Tgas);
-	      else if (averaged_T < 0.9 * old_Tgas) grid->z[i].T_gas = 0.9 * (old_Tgas) ;
-	      else grid->z[i].T_gas = averaged_T;
+	      //	      double averaged_T = 0.5 * (old_Tgas + new_Tgas);
+	      //	      if (averaged_T > 1.5 * old_Tgas)  grid->z[i].T_gas = 1.5 * (old_Tgas);
+	      //	      else if (averaged_T < 1./1.5 * old_Tgas) grid->z[i].T_gas = 1./1.5 * (old_Tgas) ;
+	      //	      else grid->z[i].T_gas = averaged_T;
+	      grid->z[i].T_gas = new_Tgas;
 
+	      bf_heating[i] = gas_state_.bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+	      ff_heating[i] = gas_state_.free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+	      bf_cooling[i] = gas_state_.bound_free_cooling_rate(grid->z[i].T_gas);
+	      ff_cooling[i] = gas_state_.free_free_cooling_rate(grid->z[i].T_gas);
 	    }
 	  else if (radiative_eq == 2)
 	    grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
-	  printf("new temperature is %e\n", grid->z[i].T_gas);
+	  //	  printf("new temperature is %e\n", grid->z[i].T_gas);
 	}
 
       // mpi reduce the results
@@ -54,6 +59,7 @@ double transport::rad_eq_function(int c,double T)
   //  double E_absorbed = grid->z[c].e_abs_ff; // debug + grid->z[c].L_radio_dep;
 
   double E_absorbed = gas_state_.free_free_heating_rate(T,J_nu_[c]) + gas_state_.bound_free_heating_rate(T,J_nu_[c]);
+  //  double E_absorbed = gas_state_.free_free_heating_rate(T,J_nu_[c]);
 
   // total energy emitted (to be calculated)
   double E_emitted = 0.;
@@ -81,6 +87,7 @@ double transport::rad_eq_function(int c,double T)
   */
   
   E_emitted= gas_state_.free_free_cooling_rate(T) + gas_state_.bound_free_cooling_rate(T);
+  //  E_emitted= gas_state_.free_free_cooling_rate(T);
   //  E_emitted = gas_state_.bound_free_cooling_rate(T);
   
   //std::cout << E_emitted << " " << E_absorbed << "\n";

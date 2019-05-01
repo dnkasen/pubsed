@@ -141,7 +141,11 @@ void AtomicSpecies::bound_free_opacity_for_heating(std::vector<double>& heat_opa
       double zeta_net = (levels_[j].E_ion - E)/kt_ev;
       double ezeta_net = exp(zeta_net);
       double sigma = levels_[j].s_photo.value_at_with_zero_edges(E);
-      heat_opac[i]  += sigma * (n_dens_ * levels_[j].n  - nc_phifac[j] * ne * ezeta_net) * (E - levels_[j].E_ion) * pc::ev_to_ergs; // including this energy difference for each frequency bin is the whole point of this function
+      double opac_fac = n_dens_ * levels_[j].n  - nc_phifac[j] * ne * ezeta_net;
+      if (opac_fac < 0)
+	opac_fac = 0.;
+      
+      heat_opac[i]  += sigma * (opac_fac) * (E - levels_[j].E_ion) * pc::ev_to_ergs; // including this energy difference for each frequency bin is the whole point of this function
     }
 
   }

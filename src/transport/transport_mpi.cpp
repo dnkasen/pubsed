@@ -205,6 +205,40 @@ void transport::reduce_opacities()
   MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
   for (int i=0;i<nz;i++) planck_mean_opacity_[i] = dst_MPI_zones[i];
 
+  
+  for (int i=0;i<nz;i++)
+  {
+    src_MPI_zones[i] = bf_heating[i];
+    dst_MPI_zones[i] = 0.0;
+  }
+  MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  for (int i=0;i<nz;i++) bf_heating[i] = dst_MPI_zones[i];
+
+  for (int i=0;i<nz;i++)
+  {
+    src_MPI_zones[i] = bf_cooling[i];
+    dst_MPI_zones[i] = 0.0;
+  }
+  MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  for (int i=0;i<nz;i++) bf_cooling[i] = dst_MPI_zones[i];
+
+    
+  for (int i=0;i<nz;i++)
+  {
+    src_MPI_zones[i] = ff_heating[i];
+    dst_MPI_zones[i] = 0.0;
+  }
+  MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  for (int i=0;i<nz;i++) ff_heating[i] = dst_MPI_zones[i];
+
+  for (int i=0;i<nz;i++)
+  {
+    src_MPI_zones[i] = ff_cooling[i];
+    dst_MPI_zones[i] = 0.0;
+  }
+  MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  for (int i=0;i<nz;i++) ff_cooling[i] = dst_MPI_zones[i];
+
 #endif
 
 }

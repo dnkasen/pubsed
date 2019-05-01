@@ -147,6 +147,15 @@ void transport::write_radiation_file(int iw)
   H5LTmake_dataset(file_id,"planck_mean",RANK,dims_z,H5T_NATIVE_FLOAT,tz_array);
   for (int j=0;j<grid->n_zones;j++) tz_array[j] = rosseland_mean_opacity_[j];
   H5LTmake_dataset(file_id,"rosseland_mean",RANK,dims_z,H5T_NATIVE_FLOAT,tz_array);
+
+  for (int j=0;j<grid->n_zones;j++) tz_array[j] = bf_heating[j];
+  H5LTmake_dataset(file_id,"bf_heating",RANK,dims_z,H5T_NATIVE_FLOAT,tz_array);
+  for (int j=0;j<grid->n_zones;j++) tz_array[j] = bf_cooling[j];
+  H5LTmake_dataset(file_id,"bf_cooling",RANK,dims_z,H5T_NATIVE_FLOAT,tz_array);
+  for (int j=0;j<grid->n_zones;j++) tz_array[j] = ff_heating[j];
+  H5LTmake_dataset(file_id,"ff_heating",RANK,dims_z,H5T_NATIVE_FLOAT,tz_array);
+  for (int j=0;j<grid->n_zones;j++) tz_array[j] = ff_cooling[j];
+  H5LTmake_dataset(file_id,"ff_cooling",RANK,dims_z,H5T_NATIVE_FLOAT,tz_array);
   delete[] tz_array;
 
   if (use_ddmc_)

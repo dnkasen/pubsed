@@ -141,6 +141,10 @@ class transport
   vector< vector<real> > J_nu_;
   vector<real> compton_opac;
   vector<real> photoion_opac;
+  vector<real> bf_heating;
+  vector<real> bf_cooling;
+  vector<real> ff_heating;
+  vector<real> ff_cooling;
 
   // discrete diffusion probabilities
   vector<real> ddmc_P_up_, ddmc_P_dn_;
