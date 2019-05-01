@@ -22,11 +22,11 @@ void transport::solve_eq_temperature()
 	    {
 
 	      double new_Tgas =  temp_brent_method(i);
-	      //	      double averaged_T = 0.5 * (old_Tgas + new_Tgas);
+	      double averaged_T = 0.5 * (old_Tgas + new_Tgas);
 	      //	      if (averaged_T > 1.5 * old_Tgas)  grid->z[i].T_gas = 1.5 * (old_Tgas);
 	      //	      else if (averaged_T < 1./1.5 * old_Tgas) grid->z[i].T_gas = 1./1.5 * (old_Tgas) ;
 	      //	      else grid->z[i].T_gas = averaged_T;
-	      grid->z[i].T_gas = new_Tgas;
+	      grid->z[i].T_gas = averaged_T;
 
 	      bf_heating[i] = gas_state_.bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
 	      ff_heating[i] = gas_state_.free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
