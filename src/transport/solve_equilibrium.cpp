@@ -10,23 +10,23 @@ namespace pc = physical_constants;
 //-------------------------------------------------------------
 //  Solve for the temperature assuming radiative equilibrium
 //-------------------------------------------------------------
-void transport::solve_eq_temperature()
+void transport::solve_eq_temperature(int i)
 {
   // solve radiative equilibrium temperature
   if (radiative_eq !=3)
     {
-      for (int i=my_zone_start_;i<my_zone_stop_;i++)
-	{
 	  double old_Tgas = grid->z[i].T_gas;
 	  if (radiative_eq == 1)
 	    {
 
 	      double new_Tgas =  temp_brent_method(i);
 	      double averaged_T = 0.5 * (old_Tgas + new_Tgas);
-	      //	      if (averaged_T > 1.5 * old_Tgas)  grid->z[i].T_gas = 1.5 * (old_Tgas);
-	      //	      else if (averaged_T < 1./1.5 * old_Tgas) grid->z[i].T_gas = 1./1.5 * (old_Tgas) ;
-	      //	      else grid->z[i].T_gas = averaged_T;
-	      grid->z[i].T_gas = averaged_T;
+	      if (averaged_T > 1.25 * old_Tgas)  grid->z[i].T_gas = 1.25 * (old_Tgas);
+	      else if (averaged_T < 1./1.25 * old_Tgas) grid->z[i].T_gas = 1./1.25 * (old_Tgas) ;
+	      else grid->z[i].T_gas = averaged_T;
+
+	      //grid->z[i].T_gas = averaged_T;
+	      //grid->z[i].T_gas = new_Tgas;
 
 	      bf_heating[i] = gas_state_.bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
 	      ff_heating[i] = gas_state_.free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
@@ -37,10 +37,8 @@ void transport::solve_eq_temperature()
 	    grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
 	  //	  printf("new temperature is %e\n", grid->z[i].T_gas);
 	}
+  
 
-      // mpi reduce the results
-      reduce_Tgas();
-    }
 
 
 }
@@ -58,6 +56,16 @@ double transport::rad_eq_function(int c,double T)
   //  double E_absorbed = grid->z[c].e_abs; // debug + grid->z[c].L_radio_dep;
   //  double E_absorbed = grid->z[c].e_abs_ff; // debug + grid->z[c].L_radio_dep;
 
+  zone* z = &(grid->z[c]);
+  gas_state_.dens_ = z->rho;
+  gas_state_.temp_ = T;
+
+    int solve_error = 0;
+  
+    if ( (gas_state_.smooth_grey_opacity_ == 0) && (gas_state_.use_zone_dependent_grey_opacity_ == 0) ){
+      solve_error = gas_state_.solve_state(J_nu_[c]);
+    }
+  
   double E_absorbed = gas_state_.free_free_heating_rate(T,J_nu_[c]) + gas_state_.bound_free_heating_rate(T,J_nu_[c]);
   //  double E_absorbed = gas_state_.free_free_heating_rate(T,J_nu_[c]);
 
@@ -87,6 +95,7 @@ double transport::rad_eq_function(int c,double T)
   */
   
   E_emitted= gas_state_.free_free_cooling_rate(T) + gas_state_.bound_free_cooling_rate(T);
+  
   //  E_emitted= gas_state_.free_free_cooling_rate(T);
   //  E_emitted = gas_state_.bound_free_cooling_rate(T);
   

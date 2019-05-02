@@ -1,9 +1,13 @@
 #include <math.h>
 #include <cassert>
+#include <ctime>
 #include "transport.h"
 #include "physical_constants.h"
 #include "radioactive.h"
 
+using std::cout;
+using std::cerr;
+using std::endl;
 namespace pc = physical_constants;
 
 //-----------------------------------------------------------------
@@ -11,6 +15,10 @@ namespace pc = physical_constants;
 //-----------------------------------------------------------------
 void transport::set_opacity(double dt)
 {
+
+  double tend,tstr;
+  double get_system_time(void);
+  
   // tmp vector to hold emissivity
   vector<OpacityType> emis(nu_grid.size());
   vector<OpacityType> scat(nu_grid.size());
@@ -39,7 +47,8 @@ void transport::set_opacity(double dt)
   vector<double> X_now(grid->n_elems);
 
   // loop over my zones to calculate
-  int solve_error = 0;
+
+  tstr = get_system_time();
   for (int i=my_zone_start_;i<my_zone_stop_;i++)
   {
     // pointer to current zone for easy access
@@ -56,7 +65,6 @@ void transport::set_opacity(double dt)
     if (gas_state_.temp_ < temp_min_value_) gas_state_.temp_ = temp_min_value_;
     if (gas_state_.temp_ > temp_max_value_) gas_state_.temp_ = temp_max_value_;
 
-
     // radioactive decay the composition
     for (size_t j=0;j<X_now.size();j++) X_now[j] = z->X_gas[j];
     if (!omit_composition_decay_) {
@@ -66,11 +74,23 @@ void transport::set_opacity(double dt)
 
     gas_state_.total_grey_opacity_ = gas_state_.smooth_grey_opacity_ + z->grey_opacity;
 
+    if (radiative_eq)
+      {
+	solve_eq_temperature(i); // NLTE solution will take place in here
+      }
+    else
+      {
+	int solve_error = 0;
+	if ( (gas_state_.smooth_grey_opacity_ == 0) && (gas_state_.use_zone_dependent_grey_opacity_ == 0) ){
+	  solve_error = gas_state_.solve_state(J_nu_[i]);
+	}
+
+      }
+    
     // solve for the state
     // if (!gas_state_.grey_opacity_) solve_error = gas_state_.solve_state(J_nu_[i]);
-    if ( (gas_state_.smooth_grey_opacity_ == 0) && (gas_state_.use_zone_dependent_grey_opacity_ == 0) ){
-      solve_error = gas_state_.solve_state(J_nu_[i]);
-    }
+
+  
     //gas_state_.print();
 
     if(write_levels) gas_state_.write_levels(i);
@@ -130,8 +150,13 @@ void transport::set_opacity(double dt)
       photo *= pow(pc::m_e_MeV,3.5);
       photoion_opac[i] += ndens*2.0*pc::thomson_cs*photo;
     }
-
   }
+
+  tend = get_system_time();
+  if (verbose) cout << "# Calculated Radiative Equilib (" << (tend-tstr) << " secs) \n";
+  // mpi reduce the results
+  reduce_Tgas();
+
 
   //------------------------------------------------------------
   // Calcuate eps_imc...
@@ -159,12 +184,14 @@ void transport::set_opacity(double dt)
     gas_state_.use_nlte_ = nlte;
     first_step_ = 0;    }
 
+  /*  
   // flag any error
   if (verbose)
   {
     if (solve_error == 1) std::cerr << "# Warning: root not bracketed in n_e solve\n";
     if (solve_error == 2) std::cerr << "# Warning: max iterations hit in n_e solve\n";
   }
+  */
 }
 
 
@@ -232,3 +259,4 @@ double transport::blackbody_nu(double T, double nu)
   double zeta = pc::h*nu/pc::k/T;
   return 2.0*nu*nu*nu*pc::h/pc::c/pc::c/(exp(zeta)-1);
 }
+
