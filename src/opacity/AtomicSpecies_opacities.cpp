@@ -151,6 +151,72 @@ void AtomicSpecies::bound_free_opacity_for_heating(std::vector<double>& heat_opa
   }
 }
 
+double AtomicSpecies::collisional_net_cooling_rate(double ne, double T)
+{
+  
+    double collisional_net_cooling = 0.;
+
+  //  bound-bound collisional transitions
+  for (int l=0;l<n_lines_;l++)
+    {
+      int lu  = lines_[l].lu;
+      int ll  = lines_[l].ll;
+
+      double ndown   = n_dens_ * levels_[ll].n;
+      double nup     = n_dens_ * levels_[lu].n;
+
+      double dE = (levels_[lu].E - levels_[ll].E)*pc::ev_to_ergs;
+
+      double zeta = dE/pc::k/T; // note dE is in ergs
+      double ezeta = exp(zeta);
+
+      double effective_f_lu = 0.;
+      if (lines_[l].f_lu < 1.e-3) effective_f_lu = 1.e-3; // just flooring the oscillator strengths so that forbidden lines can contribute. Should be improved
+      else effective_f_lu = lines_[l].f_lu;
+
+      double C_up = 3.9*pow(zeta,-1.)*pow(T,-1.5) / ezeta * ne * effective_f_lu;
+      if (zeta > 700) C_up = 0.; // be careful about overflow
+      double C_down = 3.9*pow(zeta,-1.)*pow(T,-1.5) * ne * effective_f_lu * levels_[ll].g/levels_[lu].g;
+      
+      collisional_net_cooling += dE * (ndown * C_up - nup * C_down); 
+
+    }
+
+  //bound-free collisional transitions:
+
+    for (int i=0;i<n_levels_;++i)
+      {
+	int ic = levels_[i].ic;
+	if (ic == -1) continue;
+
+	    // ionization potential
+	int istage  = levels_[i].ion;
+	double chi  = (ions_[istage].chi - levels_[i].E) * pc::ev_to_ergs;
+	double zeta = chi/pc::k/T; // note chi is now in ergs
+
+	double nc = n_dens_ * levels_[ic].n;
+	double ni = n_dens_ * levels_[i].n;
+
+	// collisional ionization rate
+	// needs to be multiplied by number of electrons in outer shell
+	double C_ion = 2.7/zeta/zeta*pow(T,-1.5)*exp(-zeta)*ne;
+
+	// collisional recombination rate
+	int gi = levels_[i].g;
+	int gc = levels_[ic].g;
+	double C_rec = 5.59080e-16/zeta/zeta*pow(T,-3)*gi/gc*ne*ne;
+
+	collisional_net_cooling += chi * ( ni * C_ion - nc * C_rec);
+      }
+
+
+
+
+  return collisional_net_cooling;
+
+  
+}
+
 //---------------------------------------------------------
 // calculate the bound-free extinction coefficient
 // (units cm^{-1}) for all levels

@@ -329,6 +329,21 @@ double GasState::bound_free_cooling_rate(double T)
 }
 
 
+double GasState::collisional_net_cooling_rate(double T)
+{
+  int natoms = atoms.size();
+  double cooling_rate = 0.;
+
+  for (int i=0;i<natoms;i++)
+  {
+    cooling_rate += atoms[i].collisional_net_cooling_rate(n_elec_,T);
+  }
+  
+  return cooling_rate;
+
+}
+
+
 
 
 //----------------------------------------------------------------

@@ -286,7 +286,7 @@ void AtomicSpecies::calculate_radiative_rates(std::vector<real> J_nu)
     //std::cout << j << " " << levels_[j].P_ic << " " << levels_[j].R_ci << "\n";
 
   // calculate line J's
-  double x_max = 100;
+  double x_max = 5.;
   double dx    = 0.05;
 
   for (int i=0;i<n_lines_;++i)
@@ -377,10 +377,17 @@ void AtomicSpecies::set_rates(double ne)
 
     double zeta = dE/pc::k/gas_temp_; // note dE is in ergs
     double ezeta = exp(zeta);
-    double C_up = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) / ezeta * ne * lines_[l].f_lu;
+
+    // Rutten section 3.2.5 (page 52) points out that these van Regemorter rates are only valid for permitted dipole transitions, with f_lu in the range 10^-3 to 1. For forbidden lines with smaller f, he says the collisional transition rates "don't drop much below the values typical of permitted lines." That's not a very precise statement, but wee can mock it up by not letting the f_lu factor drop below 10^-3
+
+    double effective_f_lu = 0.;
+    if (lines_[l].f_lu < 1.e-3) effective_f_lu = 1.e-3;
+    else effective_f_lu = lines_[l].f_lu;
+    
+    double C_up = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) / ezeta * ne * effective_f_lu;
     if (zeta > 700) C_up = 0.; // be careful about overflow
 
-    double C_down = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) * ne * lines_[l].f_lu * levels_[ll].g/levels_[lu].g;
+    double C_down = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) * ne * effective_f_lu * levels_[ll].g/levels_[lu].g;
 
     rates_[ll][lu] += C_up;
     rates_[lu][ll] += C_down;

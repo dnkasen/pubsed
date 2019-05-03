@@ -20,13 +20,13 @@ void transport::solve_eq_temperature(int i)
 	    {
 
 	      double new_Tgas =  temp_brent_method(i);
-	      double averaged_T = 0.5 * (old_Tgas + new_Tgas);
-	      if (averaged_T > 1.25 * old_Tgas)  grid->z[i].T_gas = 1.25 * (old_Tgas);
-	      else if (averaged_T < 1./1.25 * old_Tgas) grid->z[i].T_gas = 1./1.25 * (old_Tgas) ;
-	      else grid->z[i].T_gas = averaged_T;
+	      //	      double averaged_T = 0.5 * (old_Tgas + new_Tgas);
+	      //	      if (averaged_T > 1.25 * old_Tgas)  grid->z[i].T_gas = 1.25 * (old_Tgas);
+	      //	      else if (averaged_T < 1./1.25 * old_Tgas) grid->z[i].T_gas = 1./1.25 * (old_Tgas) ;
+	      //	      else grid->z[i].T_gas = averaged_T;
 
-	      //grid->z[i].T_gas = averaged_T;
-	      //grid->z[i].T_gas = new_Tgas;
+	      //	      grid->z[i].T_gas = averaged_T;
+	      grid->z[i].T_gas = new_Tgas;
 
 	      bf_heating[i] = gas_state_.bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
 	      ff_heating[i] = gas_state_.free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
@@ -66,7 +66,7 @@ double transport::rad_eq_function(int c,double T)
       solve_error = gas_state_.solve_state(J_nu_[c]);
     }
   
-  double E_absorbed = gas_state_.free_free_heating_rate(T,J_nu_[c]) + gas_state_.bound_free_heating_rate(T,J_nu_[c]);
+    double E_absorbed = gas_state_.free_free_heating_rate(T,J_nu_[c]) + gas_state_.bound_free_heating_rate(T,J_nu_[c]);
   //  double E_absorbed = gas_state_.free_free_heating_rate(T,J_nu_[c]);
 
   // total energy emitted (to be calculated)
@@ -94,7 +94,7 @@ double transport::rad_eq_function(int c,double T)
     }
   */
   
-  E_emitted= gas_state_.free_free_cooling_rate(T) + gas_state_.bound_free_cooling_rate(T);
+  E_emitted= gas_state_.free_free_cooling_rate(T) + gas_state_.bound_free_cooling_rate(T) + gas_state_.collisional_net_cooling_rate(T);
   
   //  E_emitted= gas_state_.free_free_cooling_rate(T);
   //  E_emitted = gas_state_.bound_free_cooling_rate(T);

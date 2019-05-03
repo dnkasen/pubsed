@@ -92,7 +92,7 @@ private:
 
   double blackbody_nu(double T, double nu);
   double Calculate_Milne(int lev, double temp);
-  void   set_rates(double ne);
+ void   set_rates(double ne);
 
 public:
 
@@ -141,11 +141,12 @@ public:
   double compute_sobolev_tau(int i, double time);
   void   compute_sobolev_taus(double time);
 
-  // opacities
+  // opacities and heating/cooling rates
   void   bound_free_opacity (std::vector<double>&, std::vector<double>&, double);
   void   bound_free_opacity_for_heating (std::vector<double>&, double,double);
-  void   bound_free_opacity_for_cooling (std::vector<double>&, double,double);
   void   bound_bound_opacity(std::vector<double>&, std::vector<double>&);
+  void   bound_free_opacity_for_cooling (std::vector<double>&, double,double);
+  double collisional_net_cooling_rate(double, double);
 
 
   // returns
