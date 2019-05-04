@@ -74,18 +74,38 @@ void transport::set_opacity(double dt)
 
     gas_state_.total_grey_opacity_ = gas_state_.smooth_grey_opacity_ + z->grey_opacity;
 
-    if (radiative_eq)
+    if (first_step_)
       {
-	solve_eq_temperature(i); // NLTE solution will take place in here
+	  zone* z = &(grid->z[i]);
+	  gas_state_.dens_ = z->rho;
+	  gas_state_.temp_ = z->T_gas;
+
+	  int solve_error = 0;
+  
+	  if ( (gas_state_.smooth_grey_opacity_ == 0) && (gas_state_.use_zone_dependent_grey_opacity_ == 0) )
+	    {
+	      solve_error = gas_state_.solve_state(J_nu_[i]);
+	    }
       }
+    
+
     else
       {
-	int solve_error = 0;
-	if ( (gas_state_.smooth_grey_opacity_ == 0) && (gas_state_.use_zone_dependent_grey_opacity_ == 0) ){
-	  solve_error = gas_state_.solve_state(J_nu_[i]);
-	}
 
+	if (radiative_eq)
+	  {
+	    solve_eq_temperature(i); // NLTE solution will take place in here
+	  }
+	else
+	  {
+	    int solve_error = 0;
+	    if ( (gas_state_.smooth_grey_opacity_ == 0) && (gas_state_.use_zone_dependent_grey_opacity_ == 0) ){
+	      solve_error = gas_state_.solve_state(J_nu_[i]);
+	    }
+
+	  }
       }
+
     
     // solve for the state
     // if (!gas_state_.grey_opacity_) solve_error = gas_state_.solve_state(J_nu_[i]);
