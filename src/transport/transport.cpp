@@ -112,15 +112,6 @@ void transport::step(double dt)
   if (verbose) cout << "# Communicated radiation (" << (tend-tstr) << " secs) \n";
 
 
-  // solve for T_gas structure if radiative eq. applied
-  if (radiative_eq)
-  {
-    tstr = get_system_time();
-    solve_eq_temperature(dt);
-    tend = get_system_time();
-    if (verbose) cout << "# Calculated Radiative Equilib (" << (tend-tstr) << " secs) \n";
-  }
-
   // advance time step
   if (!steady_state) t_now_ += dt;
 

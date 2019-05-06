@@ -11,7 +11,7 @@ namespace pc = physical_constants;
 //  Solve for the temperature assuming radiative equilibrium
 //-------------------------------------------------------------
 
-void transport::solve_eq_temperature(int i, double dt)
+void transport::solve_eq_temperature(int i)
 {
 
   // solve radiative equilibrium temperature
@@ -40,16 +40,6 @@ void transport::solve_eq_temperature(int i, double dt)
 	  //	  printf("new temperature is %e\n", grid->z[i].T_gas);
 	}
 
-  // Need to figure out how to get this to work with rad_eq = 1 and compton scattering
-  for (int i=my_zone_start_;i<my_zone_stop_;i++)
-    {
-      double energy_added = grid->z[i].e_abs_compton * dt; // per unit volume
-      double total_energy = 2. * 3./2. * grid->z[i].rho/(pc::m_p) * pc::k * grid->z[i].T_gas + energy_added; // The factor of 2 out front is for protons and electrons
-      grid->z[i].T_gas = total_energy/(2. * 3./2. * grid->z[i].rho/(pc::m_p) * pc::k );
-    }
-
-  
-
 }
 
 
@@ -75,7 +65,7 @@ double transport::rad_eq_function(int c,double T)
       solve_error = gas_state_.solve_state(J_nu_[c]);
     }
   
-    double E_absorbed = gas_state_.free_free_heating_rate(T,J_nu_[c]) + gas_state_.bound_free_heating_rate(T,J_nu_[c]);
+    double E_absorbed = gas_state_.free_free_heating_rate(T,J_nu_[c]) + gas_state_.bound_free_heating_rate(T,J_nu_[c]) +  z->e_abs_compton/2.; // per unit volume; the factor of2 on the compton heating is because roughly half goes into positive ions (will need to determine this more precisely
   //  double E_absorbed = gas_state_.free_free_heating_rate(T,J_nu_[c]);
 
   // total energy emitted (to be calculated)
