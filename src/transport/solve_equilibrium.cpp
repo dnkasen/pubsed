@@ -21,7 +21,7 @@ void transport::solve_eq_temperature(int i)
 	  if (radiative_eq == 1)
 	    {
 
-	      double new_Tgas =  temp_brent_method(i,dt);
+	      double new_Tgas =  temp_brent_method(i);
 	      //	      double averaged_T = 0.5 * (old_Tgas + new_Tgas);
 	      //	      if (averaged_T > 1.25 * old_Tgas)  grid->z[i].T_gas = 1.25 * (old_Tgas);
 	      //	      else if (averaged_T < 1./1.25 * old_Tgas) grid->z[i].T_gas = 1./1.25 * (old_Tgas) ;
