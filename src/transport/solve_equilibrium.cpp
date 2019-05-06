@@ -10,8 +10,10 @@ namespace pc = physical_constants;
 //-------------------------------------------------------------
 //  Solve for the temperature assuming radiative equilibrium
 //-------------------------------------------------------------
-void transport::solve_eq_temperature(int i)
+
+void transport::solve_eq_temperature(int i, double dt)
 {
+
   // solve radiative equilibrium temperature
   if (radiative_eq !=3)
     {
@@ -19,7 +21,7 @@ void transport::solve_eq_temperature(int i)
 	  if (radiative_eq == 1)
 	    {
 
-	      double new_Tgas =  temp_brent_method(i);
+	      double new_Tgas =  temp_brent_method(i,dt);
 	      //	      double averaged_T = 0.5 * (old_Tgas + new_Tgas);
 	      //	      if (averaged_T > 1.25 * old_Tgas)  grid->z[i].T_gas = 1.25 * (old_Tgas);
 	      //	      else if (averaged_T < 1./1.25 * old_Tgas) grid->z[i].T_gas = 1./1.25 * (old_Tgas) ;
@@ -37,9 +39,16 @@ void transport::solve_eq_temperature(int i)
 	    grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
 	  //	  printf("new temperature is %e\n", grid->z[i].T_gas);
 	}
+
+  // Need to figure out how to get this to work with rad_eq = 1 and compton scattering
+  for (int i=my_zone_start_;i<my_zone_stop_;i++)
+    {
+      double energy_added = grid->z[i].e_abs_compton * dt; // per unit volume
+      double total_energy = 2. * 3./2. * grid->z[i].rho/(pc::m_p) * pc::k * grid->z[i].T_gas + energy_added; // The factor of 2 out front is for protons and electrons
+      grid->z[i].T_gas = total_energy/(2. * 3./2. * grid->z[i].rho/(pc::m_p) * pc::k );
+    }
+
   
-
-
 
 }
 

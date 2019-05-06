@@ -21,6 +21,7 @@ void transport::wipe_radiation()
   {
     grid->z[i].e_rad  = 0;
     grid->z[i].e_abs  = 0;
+    grid->z[i].e_abs_compton  = 0;
     grid->z[i].L_radio_dep = 0;
     if (store_Jnu_)
       for (int j=0;j<nu_grid.size();j++)
@@ -353,6 +354,16 @@ void transport::reduce_opacities()
     }
     MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
     for (int i=0;i<nz;i++) grid->z[i].e_abs = dst_MPI_zones[i]/MPI_nprocs;
+
+    for (int i=0;i<nz;i++)
+    {
+      src_MPI_zones[i] = grid->z[i].e_abs_compton;
+      dst_MPI_zones[i] = 0.0;
+    }
+    MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    for (int i=0;i<nz;i++) grid->z[i].e_abs_compton = dst_MPI_zones[i]/MPI_nprocs;
+
+    
     for (int i=0;i<nz;i++)
     {
       src_MPI_zones[i] = grid->z[i].L_radio_dep;
@@ -371,6 +382,7 @@ void transport::reduce_opacities()
   {
     double vol = grid->zone_volume(i);
     grid->z[i].e_abs   /= vol*dt;
+    grid->z[i].e_abs_compton   /= vol*dt;
     grid->z[i].L_radio_dep /= vol*dt;
     grid->z[i].L_radio_emit /= vol;
     grid->z[i].fr_rad /= vol*pc::c*dt;
