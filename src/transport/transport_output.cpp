@@ -159,6 +159,8 @@ void transport::write_radiation_file(int iw)
   H5LTmake_dataset(file_id,"ff_heating",RANK,dims_z,H5T_NATIVE_FLOAT,tz_array);
   for (int j=0;j<grid->n_zones;j++) tz_array[j] = ff_cooling[j];
   H5LTmake_dataset(file_id,"ff_cooling",RANK,dims_z,H5T_NATIVE_FLOAT,tz_array);
+  for (int j=0;j<grid->n_zones;j++) tz_array[j] = coll_cooling[j];
+  H5LTmake_dataset(file_id,"coll_cooling",RANK,dims_z,H5T_NATIVE_FLOAT,tz_array);
   for (int j=0;j<grid->n_zones;j++) tz_array[j] = grid->z[j].e_abs_compton;
   H5LTmake_dataset(file_id,"compton_heating_rate",RANK,dims_z,H5T_NATIVE_FLOAT,tz_array);
   delete[] tz_array;

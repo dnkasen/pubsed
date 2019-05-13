@@ -145,6 +145,7 @@ class transport
   vector<real> bf_cooling;
   vector<real> ff_heating;
   vector<real> ff_cooling;
+  vector<real> coll_cooling;
 
   // discrete diffusion probabilities
   vector<real> ddmc_P_up_, ddmc_P_dn_;

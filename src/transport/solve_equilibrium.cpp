@@ -34,6 +34,7 @@ void transport::solve_eq_temperature(int i)
 	      ff_heating[i] = gas_state_.free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
 	      bf_cooling[i] = gas_state_.bound_free_cooling_rate(grid->z[i].T_gas);
 	      ff_cooling[i] = gas_state_.free_free_cooling_rate(grid->z[i].T_gas);
+	      coll_cooling[i] = gas_state_.collisional_net_cooling_rate(grid->z[i].T_gas);
 	    }
 	  else if (radiative_eq == 2)
 	    grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);

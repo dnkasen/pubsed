@@ -205,6 +205,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   ff_heating.resize(grid->n_zones);
   bf_cooling.resize(grid->n_zones);
   ff_cooling.resize(grid->n_zones);
+  coll_cooling.resize(grid->n_zones);
   
   rosseland_mean_opacity_.resize(grid->n_zones);
   n_grid_variables += 2;
