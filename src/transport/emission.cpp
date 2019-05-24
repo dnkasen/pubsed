@@ -249,39 +249,40 @@ void transport::emit_thermal(double dt)
 
   // calculate the total thermal emisison energy on the grid
   double E_tot = 0;
+  total_n_emit = 0;
+  my_n_emit = 0;
   for (int i=0;i<grid->n_zones;i++)
   {
+
     double vol  = grid->zone_volume(i);
-    //t_emit defined below actually has units of 1/time. This is for comoving frame
-   // double t_emit = planck_mean_opac*pc::c;
-      //comoving frame emission energy. Note that dt * vol is frame invariant
-    double E_zone_emit = grid->z[i].L_thermal*vol*dt * grid->z[i].eps_imc; //pc::a*pow(T_gas,4)*t_emit*dt*vol*grid->z[i].eps_imc;
-    // save the comoving frame thermal emission
-    // you divide by lab frame volume because this is also divided by lab frame time,
-    // and together the vol * dt is frame invariant.
-    //grid->z[i].e_emit = E_emit/vol;
-    //This needs to come after the line where you set e_emit = E_emit/vol ;
-    // you've already accounted for the corresponding effect on the hydro in hydro.cc
-    //E_emit += grid->z[i].Sgam;
-    E_tot += E_zone_emit;
-    zone_emission_cdf_.set_value(i,E_zone_emit);
-  }
-  zone_emission_cdf_.normalize();
 
-  if (E_tot == 0) return;
-  double E_p = E_tot/(1.0*my_n_emit);
+    double E_zone = grid->z[i].L_thermal * dt*vol*grid->z[i].eps_imc;
+    //    double E_zone = grid->z[i].e_rad *vol*grid->z[i].eps_imc;
 
-  // emit particles
-  for (int q=0;q<my_n_emit;q++)
-  {
-    int i = zone_emission_cdf_.sample(rangen.uniform());
-    double t  = t_now_ + dt*rangen.uniform();
-    create_isotropic_particle(i,photon,E_p,t);
+    double E_emit = E_zone;
+
+    E_tot += E_emit;
+
+    double Ep = E_zone * 0.02; // 0.0001
+
+    int n_emit = (int)(E_emit/Ep);
+
+    my_n_emit += n_emit;
+
+    if (n_emit > 0)
+      {
+	for (int q=0;q<n_emit;q++)
+	  {
+	    double t  = t_now_ + dt*rangen.uniform();
+	    create_isotropic_particle(i,photon,Ep,t);
+	  }
+      }
   }
 
   if (verbose) cout << "# E thermal = " << E_tot << " ergs; ";
-  if (verbose) cout << "added " << total_n_emit << " particles ";
+  if (verbose) cout << "added " << my_n_emit * MPI_nprocs << " particles ";
   if (verbose) cout << "(" << my_n_emit << " per MPI proc)\n";
+
 }
 
     // For efficient energy redistribtuion, assign each emitted particle a fraction of the zone's current radiation energy.

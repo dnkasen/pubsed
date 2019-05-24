@@ -17,8 +17,8 @@ void transport::solve_eq_temperature(int i)
   // solve radiative equilibrium temperature
   if (radiative_eq !=3)
     {
-	  double old_Tgas = grid->z[i].T_gas;
-	  if (radiative_eq == 1)
+      double old_Tgas = grid->z[i].T_gas;
+      if (radiative_eq == 1)
 	    {
 
 	      double new_Tgas =  temp_brent_method(i);
@@ -39,7 +39,15 @@ void transport::solve_eq_temperature(int i)
 	  else if (radiative_eq == 2)
 	    grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
 	  //	  printf("new temperature is %e\n", grid->z[i].T_gas);
-	}
+    }
+
+  else
+    {
+      int solve_error = 0;
+      if ( (gas_state_.smooth_grey_opacity_ == 0) && (gas_state_.use_zone_dependent_grey_opacity_ == 0) ){
+      solve_error = gas_state_.solve_state(J_nu_[i]);
+      }
+    } 
 
 }
 

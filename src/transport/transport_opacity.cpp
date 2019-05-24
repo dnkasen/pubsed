@@ -76,9 +76,9 @@ void transport::set_opacity(double dt)
 
     if (first_step_)
       {
-	  zone* z = &(grid->z[i]);
-	  gas_state_.dens_ = z->rho;
-	  gas_state_.temp_ = z->T_gas;
+	//	  zone* z = &(grid->z[i]);
+	// gas_state_.dens_ = z->rho;
+	//	  gas_state_.temp_ = z->T_gas;
 
 	  int solve_error = 0;
   
