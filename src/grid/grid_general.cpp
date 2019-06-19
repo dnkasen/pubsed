@@ -87,7 +87,6 @@ void grid_general::writeCheckpointZones(std::string fname) {
     writeScalarZoneProp(fname, "mu");
     writeScalarZoneProp(fname, "e_rad");
     writeScalarZoneProp(fname, "e_abs");
-    writeScalarZoneProp(fname, "e_abs_compton");
     writeScalarZoneProp(fname, "fx_rad");
     writeScalarZoneProp(fname, "fy_rad");
     writeScalarZoneProp(fname, "fz_rad");

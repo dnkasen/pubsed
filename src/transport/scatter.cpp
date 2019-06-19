@@ -250,9 +250,7 @@ void transport::compton_scatter_photon(particle *p)
   transform_comoving_to_lab(p);
 
   double E_final = p->e;
-
-  // Energy absobred by *electrons*
-  zone->e_abs_compton +=  (E_initial - E_final);
+  
 }
 
 

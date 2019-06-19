@@ -86,6 +86,13 @@ output_write_mass_fractions       = 0
 limits_temp_max = 1e8
 limits_temp_min = 1000
 
+-- options for handling temperature solve
+
+solve_coupled_gas_state_temperature = 0
+update_gas_temperature              = 1
+set_gas_temp_to_rad_temp            = 0
+
+
 -- opacity calculation defaults
 opacity_grey_opacity				= 0
 opacity_zone_dependent_grey_opacity	= 0
@@ -100,6 +107,8 @@ opacity_bound_bound         		= 0
 opacity_free_free           		= 0
 opacity_use_nlte            		= 0
 opacity_atoms_in_nlte       		= {}
+opacity_use_collisions_nlte           	= 1 -- only matters if use_nlte == 1
+opacity_no_ground_recomb                = 0
 opacity_minimum_extinction  		= 0
 opacity_maximum_opacity     		= 1e40
 opacity_no_scattering       		= 0

@@ -78,6 +78,10 @@ class transport
   int    omit_composition_decay_;
   int    compton_scatter_photons_;
   double fleck_alpha_;
+  int solve_coupled_gas_state_temperature_;
+  int set_gas_temp_to_rad_temp_;
+  int update_gas_temperature_;
+  
 
   // current time in simulation
   double t_now_;
@@ -141,6 +145,8 @@ class transport
   vector< vector<real> > J_nu_;
   vector<real> compton_opac;
   vector<real> photoion_opac;
+
+  // the following are only resized and used if gas_state_.use_nlte_ is set to 1
   vector<real> bf_heating;
   vector<real> bf_cooling;
   vector<real> ff_heating;
@@ -222,9 +228,11 @@ class transport
   void reduce_Lthermal();
 
   // solve equilibrium temperature
-  void solve_eq_temperature(int);
-  double rad_eq_function(int,double);
-  double temp_brent_method(int);
+  int solve_state_and_temperature(int); // calls gas state solve from within interative solution for tempreature. For now, temperature solve is always based on radiative equilibrium
+  void solve_eq_temperature(); 
+  double rad_eq_function_LTE(int,double,int, int &);
+  double rad_eq_function_NLTE(int,double,int, int &);  
+  double temp_brent_method(int,int, int &);
 
  public:
 

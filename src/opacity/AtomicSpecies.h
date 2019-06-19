@@ -109,6 +109,7 @@ public:
   int use_betas_;               // include escape probabilites in nlte
   int no_ground_recomb_;        // suppress recombinations to ground
   bool use_nlte_;               // treat this atom in nlte or not
+  int use_collisions_nlte_;    // use collisional transitions in NLTE solve and heating/cooling
 
   // atomic data structs
   int n_ions_;             // Number of ionic stages considered

@@ -27,7 +27,6 @@ public:
   // radiation quantities
   real e_rad;      // radiation energy density  (ergs/cm^3) in lab frame
   real e_abs;      // radiation energy deposition density rate (ergs/cm^3/s)
-  real e_abs_compton;      // radiation energy deposition density rate (ergs/cm^3/s)
   real fx_rad;     // radiation x-force in lab frame
   real fy_rad;     // radiation y-force in lab frame
   real fz_rad;     // radiation z-force in lab frame

@@ -32,10 +32,7 @@ void transport::step(double dt)
   double get_system_time(void);
 
   // calculate the opacities
-  tstr = get_system_time();
   set_opacity(dt); // need to pass dt for computing implicit monte carlo factors
-  tend = get_system_time();
-  if (verbose) cout << "# Calculated opacities   (" << (tend-tstr) << " secs) \n";
 
   // mpi combine the opacities calculated
   tstr = get_system_time();
@@ -110,6 +107,14 @@ void transport::step(double dt)
   reduce_radiation(dt);
   tend = get_system_time();
   if (verbose) cout << "# Communicated radiation (" << (tend-tstr) << " secs) \n";
+
+  if (update_gas_temperature_ && solve_coupled_gas_state_temperature_ == 0)
+  {
+    tstr = get_system_time();
+    solve_eq_temperature();
+    tend = get_system_time();
+    if (verbose) cout << "# Calculated temperature asssuming radiative equilib (" << (tend-tstr) << " secs) \n";
+  }
 
 
   // advance time step

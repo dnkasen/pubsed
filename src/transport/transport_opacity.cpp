@@ -18,7 +18,7 @@ void transport::set_opacity(double dt)
 
   double tend,tstr;
   double get_system_time(void);
-  
+
   // tmp vector to hold emissivity
   vector<OpacityType> emis(nu_grid.size());
   vector<OpacityType> scat(nu_grid.size());
@@ -47,7 +47,16 @@ void transport::set_opacity(double dt)
   vector<double> X_now(grid->n_elems);
 
   // loop over my zones to calculate
+  int solve_error = 0;
 
+  if (verbose)
+    {
+      if (solve_coupled_gas_state_temperature_)
+	{
+	  printf("# Solving coupled equations for gas state and temperature\n");
+	}
+    }
+  
   tstr = get_system_time();
   for (int i=my_zone_start_;i<my_zone_stop_;i++)
   {
@@ -80,37 +89,36 @@ void transport::set_opacity(double dt)
 	  gas_state_.dens_ = z->rho;
 	  gas_state_.temp_ = z->T_gas;
 
-	  int solve_error = 0;
-  
 	  if ( (gas_state_.smooth_grey_opacity_ == 0) && (gas_state_.use_zone_dependent_grey_opacity_ == 0) )
 	    {
-	      solve_error = gas_state_.solve_state(J_nu_[i]);
+	      solve_error = gas_state_.solve_state();   // always do LTE on first step, without updating temperature
 	    }
       }
-    
 
     else
       {
-
-	if (radiative_eq)
+	if (solve_coupled_gas_state_temperature_)
 	  {
-	    solve_eq_temperature(i); // NLTE solution will take place in here
+	    solve_error = solve_state_and_temperature(i); // NLTE solution will take place in here.
 	  }
+
 	else
 	  {
-	    int solve_error = 0;
-	    if ( (gas_state_.smooth_grey_opacity_ == 0) && (gas_state_.use_zone_dependent_grey_opacity_ == 0) ){
-	      solve_error = gas_state_.solve_state(J_nu_[i]);
-	    }
-
+	    if (gas_state_.use_nlte_)
+	      solve_error = gas_state_.solve_state(J_nu_[i]); // just to remind you that J_nu is used here
+	    else
+	      solve_error = gas_state_.solve_state();
 	  }
+	    
+      }
+    
+    // flag any error
+    if (verbose)
+      {
+	if (solve_error == 1) std::cerr << "# Warning: root not bracketed in n_e solve\n";
+	if (solve_error == 2) std::cerr << "# Warning: max iterations hit in n_e solve\n";
       }
 
-    
-    // solve for the state
-    // if (!gas_state_.grey_opacity_) solve_error = gas_state_.solve_state(J_nu_[i]);
-
-  
     //gas_state_.print();
 
     if(write_levels) gas_state_.write_levels(i);
@@ -170,13 +178,14 @@ void transport::set_opacity(double dt)
       photo *= pow(pc::m_e_MeV,3.5);
       photoion_opac[i] += ndens*2.0*pc::thomson_cs*photo;
     }
+
+
   }
-
   tend = get_system_time();
-  if (verbose) cout << "# Calculated Radiative Equilib (" << (tend-tstr) << " secs) \n";
-  // mpi reduce the results
-  reduce_Tgas();
+  if (verbose) cout << "# Calculated opacities   (" << (tend-tstr) << " secs) \n";
 
+  if (solve_coupled_gas_state_temperature_)
+    reduce_Tgas();
 
   //------------------------------------------------------------
   // Calcuate eps_imc...
@@ -201,22 +210,27 @@ void transport::set_opacity(double dt)
 	f_imc = 0.;
        
        grid->z[i].eps_imc = 1.0/(1.0 + f_imc);
-    }
+   }
   }
+
+      
+
 
   // turn nlte back on after first step, if wanted
   if (first_step_) {
     gas_state_.use_nlte_ = nlte;
     first_step_ = 0;    }
 
-  /*  
-  // flag any error
-  if (verbose)
-  {
-    if (solve_error == 1) std::cerr << "# Warning: root not bracketed in n_e solve\n";
-    if (solve_error == 2) std::cerr << "# Warning: max iterations hit in n_e solve\n";
-  }
-  */
+
+  if (update_gas_temperature_ && solve_coupled_gas_state_temperature_ == 0) // Putting this at the end here to best replicate the flow of previous versions of the code, which performed a temeprature solve if radiative_eq == 1 *after* computing opacities and eps_imc.
+      {
+	tstr = get_system_time();
+	solve_eq_temperature();
+	tend = get_system_time();
+	if (verbose) cout << "# Calculated temperature asssuming radiative equilib (" << (tend-tstr) << " secs) \n";
+	reduce_Tgas();
+      }
+  
 }
 
 

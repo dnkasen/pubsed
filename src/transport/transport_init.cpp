@@ -107,8 +107,48 @@ void transport::init(ParameterReader* par, grid_general *g)
   temp_max_value_ = params_->getScalar<double>("limits_temp_max");
   temp_min_value_ = params_->getScalar<double>("limits_temp_min");
   fleck_alpha_ = params_->getScalar<double>("transport_fleck_alpha");
+  solve_coupled_gas_state_temperature_ = params_->getScalar<int>("solve_coupled_gas_state_temperature");
+  update_gas_temperature_ = params_->getScalar<int>("update_gas_temperature");
+  set_gas_temp_to_rad_temp_ = params_->getScalar<int>("set_gas_temp_to_rad_temp");
   last_iteration_ = 0;
 
+
+  // set dependent parameters, check for conflicts
+
+  if (radiative_eq != 0)
+    {
+      if (update_gas_temperature_ == 0 )
+	{
+	  cerr << "# ERROR: radiative equilibrium turned on, update_gas_temperature_ cannot  be zero\n";
+	  exit(1);
+	}
+      if (set_gas_temp_to_rad_temp_ == 1)
+	{
+	  cerr << "# ERROR: radiative equilibrium turned on, set_gas_temp_to_rad_temp_ cannot be zero.\n";
+	  exit(1);
+	}
+
+      update_gas_temperature_ = 1;
+      set_gas_temp_to_rad_temp_ = 0;
+      
+    }
+
+    if (solve_coupled_gas_state_temperature_ == 1)
+    {
+      if (update_gas_temperature_ == 0 )
+	{
+	  cerr << "# ERROR: Cannot simultaneously set solve_coupled_gas_state_temperature_ to 1 and upaaate_gas_temperature_ to 0\n";
+	  exit(1);
+	}
+
+      if (set_gas_temp_to_rad_temp_ == 1)
+	{
+	  cout << "# WARNING: set_gas_temp_to_rad_temp_ is set to 1, so this will overridde anything more detailed that might result from setting solve_coupled_gas_state_temp_ to 1\n";
+	}
+
+      update_gas_temperature_ = 1;
+    }
+  
   // initialize the frequency grid
   std::vector<double> nu_dims = params_->getVector<double>("transport_nu_grid");
   if ((nu_dims.size() != 4)&&(nu_dims.size() != 3)) {
@@ -167,6 +207,8 @@ void transport::init(ParameterReader* par, grid_general *g)
 
   // set non-lte settings
   int use_nlte = params_->getScalar<int>("opacity_use_nlte");
+  gas_state_.use_collisions_nlte_ = params_->getScalar<int>("opacity_use_collisions_nlte");
+  gas_state_.no_ground_recomb = params_->getScalar<int>("opacity_no_ground_recomb");
   gas_state_.initialize(atomdata,grid->elems_Z,grid->elems_A,nu_grid);
   gas_state_.set_atoms_in_nlte(params_->getVector<int>("opacity_atoms_in_nlte"));
 
@@ -201,11 +243,14 @@ void transport::init(ParameterReader* par, grid_general *g)
   // allocate memory for opacity/emissivity variables
   planck_mean_opacity_.resize(grid->n_zones);
 
-  bf_heating.resize(grid->n_zones);
-  ff_heating.resize(grid->n_zones);
-  bf_cooling.resize(grid->n_zones);
-  ff_cooling.resize(grid->n_zones);
-  coll_cooling.resize(grid->n_zones);
+  if (use_nlte)
+    {
+      bf_heating.resize(grid->n_zones);
+      ff_heating.resize(grid->n_zones);
+      bf_cooling.resize(grid->n_zones);
+      ff_cooling.resize(grid->n_zones);
+      coll_cooling.resize(grid->n_zones);
+    }
   
   rosseland_mean_opacity_.resize(grid->n_zones);
   n_grid_variables += 2;

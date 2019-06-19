@@ -383,14 +383,18 @@ void AtomicSpecies::set_rates(double ne)
     double effective_f_lu = 0.;
     if (lines_[l].f_lu < 1.e-3) effective_f_lu = 1.e-3;
     else effective_f_lu = lines_[l].f_lu;
-    
-    double C_up = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) / ezeta * ne * effective_f_lu;
-    if (zeta > 700) C_up = 0.; // be careful about overflow
 
-    double C_down = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) * ne * effective_f_lu * levels_[ll].g/levels_[lu].g;
+    if (use_collisions_nlte_)
+      {
+	printf("collisions\n");
+	double C_up = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) / ezeta * ne * effective_f_lu;
+	if (zeta > 700) C_up = 0.; // be careful about overflow
 
-    rates_[ll][lu] += C_up;
-    rates_[lu][ll] += C_down;
+	double C_down = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) * ne * effective_f_lu * levels_[ll].g/levels_[lu].g;
+
+	rates_[ll][lu] += C_up;
+        rates_[lu][ll] += C_down;
+      }
 
   }
 
@@ -410,21 +414,26 @@ void AtomicSpecies::set_rates(double ne)
 
     // collisional ionization rate
     // needs to be multiplied by number of electrons in outer shell
-    double C_ion = 2.7/zeta/zeta*pow(gas_temp_,-1.5)*exp(-zeta)*ne;
-    rates_[i][ic] += C_ion;
+    if (use_collisions_nlte_)
+      {
+	printf("collisions!\n");
+	double C_ion = 2.7/zeta/zeta*pow(gas_temp_,-1.5)*exp(-zeta)*ne;
+	rates_[i][ic] += C_ion;
 
-    // collisional recombination rate
-    int gi = levels_[i].g;
-    int gc = levels_[ic].g;
-    double C_rec = 5.59080e-16/zeta/zeta*pow(gas_temp_,-3)*gi/gc*ne*ne;
-    rates_[ic][i] += C_rec;
-
-    // radiative recombination rate (debug)
-    //double R_rec = ne*levels_[i].a_rec.value_at(T);
-    //// suppress recombinations to ground
-    //if (no_ground_recomb) if (levels_[i].E == 0) R_rec = 0;
+	// collisional recombination rate
+	int gi = levels_[i].g;
+	int gc = levels_[ic].g;
+	double C_rec = 5.59080e-16/zeta/zeta*pow(gas_temp_,-3)*gi/gc*ne*ne;
+	rates_[ic][i] += C_rec;
+      }
 
     // photoionization and radiative recombination
+
+    //// suppress recombinations to ground
+    if (no_ground_recomb_)
+      {
+	if (levels_[i].E == 0) levels_[i].R_ci = 0.;
+      }
     rates_[ic][i] += levels_[i].R_ci*ne;
     rates_[i][ic] += levels_[i].P_ic;
 

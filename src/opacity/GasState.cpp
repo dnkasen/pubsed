@@ -91,9 +91,16 @@ void GasState::set_atoms_in_nlte
   for (int i=0;i<useatoms.size();++i)
   {
     for (int j=0;j<atoms.size();++j)
-      if (elem_Z[j] == useatoms[i])
-        atoms[j].set_use_nlte();
+      {
+	if (elem_Z[j] == useatoms[i])
+	  {
+	    atoms[j].set_use_nlte();
+	    atoms[j].use_collisions_nlte_ = use_collisions_nlte_;
+	  }
+      }
   }
+
+  
 }
 
 //-----------------------------------------------------------------
@@ -372,14 +379,15 @@ void GasState::print_properties()
   }
   else
   {
-    std::cout << "# use_e_scattering  = " << use_electron_scattering_opacity << "\n";
-    std::cout << "# use_free_free     = " << use_free_free_opacity << "\n";
-    std::cout << "# use_bound_free    = " << use_bound_free_opacity << "\n";
-    std::cout << "# use_bound_bound   = " << use_bound_bound_opacity << "\n";
-    std::cout << "# use_line_exp      = " << use_line_expansion_opacity << "\n";
-    std::cout << "# use_fuzz_exp      = " << use_fuzz_expansion_opacity << "\n";
+    std::cout << "# use_e_scattering    = " << use_electron_scattering_opacity << "\n";
+    std::cout << "# use_free_free       = " << use_free_free_opacity << "\n";
+    std::cout << "# use_bound_free      = " << use_bound_free_opacity << "\n";
+    std::cout << "# use_bound_bound     = " << use_bound_bound_opacity << "\n";
+    std::cout << "# use_line_exp        = " << use_line_expansion_opacity << "\n";
+    std::cout << "# use_fuzz_exp        = " << use_fuzz_expansion_opacity << "\n";
 
-    std::cout << "# use_nlte          = " << use_nlte_ << "\n";
+    std::cout << "# use_nlte            = " << use_nlte_ << "\n";
+    std::cout << "# use_collisions_nlte = " << use_collisions_nlte_ << "\n";
     if (use_nlte_)
     {
       int n_in_nlte = 0;
