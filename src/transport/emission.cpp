@@ -131,13 +131,7 @@ void transport::initialize_particles(int init_particles)
   for (int i=0;i<grid->n_zones;i++)
   {
     double T = grid->z[i].T_gas;
-
-    double E_zone = 0.;
-
-    if (grid->z[i].rho > 1.78e-12)
-      {
-	E_zone = 0.0001 * grid->z[i].e_rad*grid->zone_volume(i);
-      }
+    double E_zone = grid->z[i].e_rad*grid->zone_volume(i);
     zone_emission_cdf_.set_value(i,E_zone);
     E_sum += E_zone;
     // setup blackbody emissivity for initialization
@@ -261,12 +255,7 @@ void transport::emit_thermal(double dt)
     //t_emit defined below actually has units of 1/time. This is for comoving frame
    // double t_emit = planck_mean_opac*pc::c;
       //comoving frame emission energy. Note that dt * vol is frame invariant
-
-    double E_zone_emit = 0.;
-
-    if ( grid->z[i].rho  > 1.78e-12)
-      {
-	E_zone_emit = 0.0001 * grid->z[i].L_thermal*vol*dt * grid->z[i].eps_imc; //pc::a*pow(T_gas,4)*t_emit*dt*vol*grid->z[i].eps_imc;
+    double E_zone_emit = grid->z[i].L_thermal*vol*dt * grid->z[i].eps_imc; //pc::a*pow(T_gas,4)*t_emit*dt*vol*grid->z[i].eps_imc;
     // save the comoving frame thermal emission
     // you divide by lab frame volume because this is also divided by lab frame time,
     // and together the vol * dt is frame invariant.
@@ -274,7 +263,6 @@ void transport::emit_thermal(double dt)
     //This needs to come after the line where you set e_emit = E_emit/vol ;
     // you've already accounted for the corresponding effect on the hydro in hydro.cc
     //E_emit += grid->z[i].Sgam;
-      }
     E_tot += E_zone_emit;
     zone_emission_cdf_.set_value(i,E_zone_emit);
   }
