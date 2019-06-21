@@ -82,7 +82,7 @@ double transport::rad_eq_function_LTE(int c,double T, int solve_flag, int & solv
   
   if (solve_flag)
     {
-	solve_error = gas_state_.solve_state(J_nu_[c]);
+	solve_error = gas_state_.solve_state();
     }
   // total energy absorbed in zone
   double E_absorbed = grid->z[c].e_abs; // debug + grid->z[c].L_radio_dep;

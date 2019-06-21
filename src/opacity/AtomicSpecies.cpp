@@ -386,7 +386,6 @@ void AtomicSpecies::set_rates(double ne)
 
     if (use_collisions_nlte_)
       {
-	printf("collisions\n");
 	double C_up = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) / ezeta * ne * effective_f_lu;
 	if (zeta > 700) C_up = 0.; // be careful about overflow
 
@@ -416,7 +415,6 @@ void AtomicSpecies::set_rates(double ne)
     // needs to be multiplied by number of electrons in outer shell
     if (use_collisions_nlte_)
       {
-	printf("collisions!\n");
 	double C_ion = 2.7/zeta/zeta*pow(gas_temp_,-1.5)*exp(-zeta)*ne;
 	rates_[i][ic] += C_ion;
 
