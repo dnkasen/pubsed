@@ -59,9 +59,11 @@ void transport::solve_eq_temperature()
 	  }
 	
 	}
-
+      
       
     }
+
+  reduce_Tgas();
 }
 
 

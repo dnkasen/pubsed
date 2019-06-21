@@ -104,9 +104,7 @@ void transport::set_opacity(double dt)
 
 	else
 	  {
-	    if (gas_state_.use_nlte_)
-	      solve_error = gas_state_.solve_state(J_nu_[i]); // just to remind you that J_nu is used here
-	    else
+	    if ( (gas_state_.smooth_grey_opacity_ == 0) && (gas_state_.use_zone_dependent_grey_opacity_ == 0) )
 	      solve_error = gas_state_.solve_state();
 	  }
 	    
@@ -181,11 +179,14 @@ void transport::set_opacity(double dt)
 
 
   }
+  if (solve_coupled_gas_state_temperature_)
+    {
+      reduce_Tgas();
+    }
+
   tend = get_system_time();
   if (verbose) cout << "# Calculated opacities   (" << (tend-tstr) << " secs) \n";
 
-  if (solve_coupled_gas_state_temperature_)
-    reduce_Tgas();
 
   //------------------------------------------------------------
   // Calcuate eps_imc...
@@ -228,7 +229,6 @@ void transport::set_opacity(double dt)
 	solve_eq_temperature();
 	tend = get_system_time();
 	if (verbose) cout << "# Calculated temperature asssuming radiative equilib (" << (tend-tstr) << " secs) \n";
-	reduce_Tgas();
       }
   
 }

@@ -137,14 +137,22 @@ void transport::init(ParameterReader* par, grid_general *g)
     {
       if (update_gas_temperature_ == 0 )
 	{
-	  cerr << "# ERROR: Cannot simultaneously set solve_coupled_gas_state_temperature_ to 1 and upaaate_gas_temperature_ to 0\n";
+	  cerr << "# ERROR: Cannot simultaneously set solve_coupled_gas_state_temperature_ to 1 and update_gas_temperature_ to 0\n";
 	  exit(1);
 	}
+
+      if ((gas_state_.smooth_grey_opacity_ == 1) || (gas_state_.use_zone_dependent_grey_opacity_ == 1) )
+	{
+	  cerr << "# ERROR: Cannot simultaneously set solve_coupled_gas_state_temperature_ to 1 and use grey opacity\n";
+	  exit(1);
+	}
+	    
 
       if (set_gas_temp_to_rad_temp_ == 1)
 	{
 	  cout << "# WARNING: set_gas_temp_to_rad_temp_ is set to 1, so this will overridde anything more detailed that might result from setting solve_coupled_gas_state_temp_ to 1\n";
 	}
+
 
       update_gas_temperature_ = 1;
     }
