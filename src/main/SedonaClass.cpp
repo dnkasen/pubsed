@@ -124,6 +124,7 @@ void SedonaClass::setup()
   chk_end_time_buffer_ = params_.getScalar<double>("run_chk_end_time_buffer");
   chk_wallclock_time_total_ = params_.getScalar<double>("run_chk_wallclock_time_total");
   int do_checkpoint_test = params_.getScalar<int>("run_do_checkpoint_test");
+  i_chk_ = params_.getScalar<int>("run_chk_number_start");
 
   std::string restart_file;
   if (do_restart_)
@@ -308,7 +309,6 @@ void SedonaClass::evolve_system()
   std::cout << std::setprecision(2);
   // loop over time/iterations. dt at iteration i doesn't depend on dt at
   // iteration i + 1. Not currently checkpointed, but may need to be later.
-  int i_chk_ = 0;
   t_ = grid_->t_now;
   it_ = 1;
   while (it_ <= n_steps)
