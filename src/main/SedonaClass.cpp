@@ -314,6 +314,7 @@ void SedonaClass::evolve_system()
   while (it_ <= n_steps)
   //for(int it=1; it<=n_steps; it++,t+=dt_)
   {
+    start_step_wt_ = get_timer();
     // get this time step
     if (!steady_iterate)
     {
@@ -414,7 +415,6 @@ int SedonaClass::do_checkpoint_now(int chk_force) {
   int chk_end = do_checkpoint_before_end();
   int chk_simt = do_checkpoint_simulation_time();
   int chk_total = chk_it + chk_wc + chk_end + chk_simt + chk_force;
-  std::cerr << chk_total << std::endl;
   return chk_total;
 }
 
@@ -425,7 +425,6 @@ int SedonaClass::do_checkpoint_iteration() {
   else
   {
     if (it_ >= last_chk_it_ + chk_it_interval_) {
-      std::cerr << "chk it" << std::endl;
       return 1;
     }
   }
@@ -440,7 +439,6 @@ int SedonaClass::do_checkpoint_wallclock() {
   {
     double curr_time = get_timer();
     if (curr_time >= last_chk_wt_ + chk_wt_interval_) {
-      std::cerr << "chk wt" << std::endl;
       return 1;
     }
   }
@@ -448,15 +446,19 @@ int SedonaClass::do_checkpoint_wallclock() {
 }
 
 int SedonaClass::do_checkpoint_before_end() {
-  if (chk_wallclock_time_total_ <= 0) {
+  if ((chk_wallclock_time_total_ <= 0) || (chk_end_time_buffer_ == 0)) {
     return 0;
   }
   else
   {
     double curr_time = get_timer();
-    if ((curr_time + chk_end_time_buffer_ * dt_) > chk_wallclock_time_total_)
-      std::cerr << "chk end" << std::endl;
+    double last_step = curr_time - start_step_wt_;
+    if ((curr_time + chk_end_time_buffer_ * last_step) > chk_wallclock_time_total_)
+    {
+      std::cerr << curr_time << " " << chk_end_time_buffer_ << " " << last_step << std::endl;
+      std::cerr << curr_time + chk_end_time_buffer_ * last_step << " " << chk_wallclock_time_total_ << std::endl;
       return 1;
+    }
   }
   return 0;
 }
@@ -468,7 +470,6 @@ int SedonaClass::do_checkpoint_simulation_time() {
   else
   {
     if (t_ >= last_chk_simt_ + chk_simt_interval_) {
-      std::cerr << "chk simt" << std::endl;
       return 1;
     }
   }
@@ -491,8 +492,11 @@ void SedonaClass::write_checkpoint(int i_chk_)
 //-----------------------------------------------------------
 void SedonaClass::write_checkpoint(std::string checkpoint_file_full)
 {
-  if (verbose_)
+  if (verbose_) {
+    cout << "# writing checkpoint file " << checkpoint_file_full;
+    cout << " at time " << t_ << endl;
     createFile(checkpoint_file_full);
+  }
   write_checkpoint_meta(checkpoint_file_full);
   transport_->writeCheckpointParticles(checkpoint_file_full);
   grid_->writeCheckpointZones(checkpoint_file_full);

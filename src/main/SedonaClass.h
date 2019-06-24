@@ -35,6 +35,7 @@ private:
   int last_chk_it_;
   double last_chk_wt_;
   double last_chk_simt_;
+  double start_step_wt_;
 
   int chk_it_interval_;
   double chk_wt_interval_;
