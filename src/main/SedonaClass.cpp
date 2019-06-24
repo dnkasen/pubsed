@@ -328,7 +328,7 @@ void SedonaClass::evolve_system()
       if (steady_iterate) cout << "# ITERATION: " << it << ";  t = " << t << "\t";
       else cout << "# TSTEP #" << it << " ; t = " << t << " sec (" << t/3600/24.0 << " days); dt = " << dt;
       cout << endl;
-      cout << "# particles on grid = " << transport_->n_particles() << endl;
+      if (use_transport_) cout << "# particles on grid = " << transport_->n_particles() << endl;
     }
 
     // do hydro step
