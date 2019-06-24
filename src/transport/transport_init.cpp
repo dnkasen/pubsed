@@ -108,7 +108,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   temp_min_value_ = params_->getScalar<double>("limits_temp_min");
   fleck_alpha_ = params_->getScalar<double>("transport_fleck_alpha");
   solve_coupled_gas_state_temperature_ = params_->getScalar<int>("solve_coupled_gas_state_temperature");
-  update_gas_temperature_ = params_->getScalar<int>("update_gas_temperature");
+  skip_gas_temp_update_during_transport_ = params_->getScalar<int>("skip_gas_temp_update_during_transport");
   set_gas_temp_to_rad_temp_ = params_->getScalar<int>("set_gas_temp_to_rad_temp");
   last_iteration_ = 0;
 
@@ -117,27 +117,24 @@ void transport::init(ParameterReader* par, grid_general *g)
 
   if (radiative_eq != 0)
     {
-      if (update_gas_temperature_ == 0 )
+      if (skip_gas_temp_update_during_transport_ == 1 )
 	{
-	  cerr << "# ERROR: radiative equilibrium turned on, update_gas_temperature_ cannot  be zero\n";
+	  cerr << "# ERROR: radiative equilibrium turned on, skip_gas_temp_update_during_transport cannot be set to one\n";
 	  exit(1);
 	}
       if (set_gas_temp_to_rad_temp_ == 1)
 	{
-	  cerr << "# ERROR: radiative equilibrium turned on, set_gas_temp_to_rad_temp_ cannot be zero.\n";
+	  cerr << "# ERROR: radiative equilibrium turned on, set_gas_temp_to_rad_temp_ cannot be ssete to 1.\n";
 	  exit(1);
 	}
-
-      update_gas_temperature_ = 1;
-      set_gas_temp_to_rad_temp_ = 0;
       
     }
 
     if (solve_coupled_gas_state_temperature_ == 1)
     {
-      if (update_gas_temperature_ == 0 )
+      if (skip_gas_temp_update_during_transport_ == 1 )
 	{
-	  cerr << "# ERROR: Cannot simultaneously set solve_coupled_gas_state_temperature_ to 1 and update_gas_temperature_ to 0\n";
+	  cerr << "# ERROR: Cannot simultaneously set solve_coupled_gas_state_temperature_ to 1 and skip_gas_temp_update_during_transport_ to 1\n";
 	  exit(1);
 	}
 
@@ -153,8 +150,6 @@ void transport::init(ParameterReader* par, grid_general *g)
 	  cout << "# WARNING: set_gas_temp_to_rad_temp_ is set to 1, so this will overridde anything more detailed that might result from setting solve_coupled_gas_state_temp_ to 1\n";
 	}
 
-
-      update_gas_temperature_ = 1;
     }
   
   // initialize the frequency grid

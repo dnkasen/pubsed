@@ -89,8 +89,8 @@ limits_temp_min = 1000
 -- options for handling temperature solve
 
 solve_coupled_gas_state_temperature = 0
-update_gas_temperature              = 1
 set_gas_temp_to_rad_temp            = 0
+skip_gas_temp_update_during_transport   = 0
 
 
 -- opacity calculation defaults

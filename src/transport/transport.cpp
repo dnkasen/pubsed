@@ -108,12 +108,12 @@ void transport::step(double dt)
   tend = get_system_time();
   if (verbose) cout << "# Communicated radiation (" << (tend-tstr) << " secs) \n";
 
-  if (update_gas_temperature_ && solve_coupled_gas_state_temperature_ == 0)
+  if (skip_gas_temp_update_during_transport_ == 0 && solve_coupled_gas_state_temperature_ == 0)
   {
     tstr = get_system_time();
     solve_eq_temperature();
     tend = get_system_time();
-    if (verbose) cout << "# Calculated temperature asssuming radiative equilib (" << (tend-tstr) << " secs) \n";
+    if (verbose) cout << "# Calculated temperature (" << (tend-tstr) << " secs) \n";
   }
 
 

@@ -216,22 +216,11 @@ void transport::set_opacity(double dt)
    }
   }
 
-      
-
 
   // turn nlte back on after first step, if wanted
   if (first_step_) {
     gas_state_.use_nlte_ = nlte;
     first_step_ = 0;    }
-
-
-  if (update_gas_temperature_ && solve_coupled_gas_state_temperature_ == 0) // Putting this at the end here to best replicate the flow of previous versions of the code, which performed a temeprature solve if radiative_eq == 1 *after* computing opacities and eps_imc.
-      {
-	tstr = get_system_time();
-	solve_eq_temperature();
-	tend = get_system_time();
-	if (verbose) cout << "# Calculated temperature asssuming radiative equilib (" << (tend-tstr) << " secs) \n";
-      }
   
 }
 

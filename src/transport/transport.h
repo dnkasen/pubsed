@@ -80,7 +80,7 @@ class transport
   double fleck_alpha_;
   int solve_coupled_gas_state_temperature_;
   int set_gas_temp_to_rad_temp_;
-  int update_gas_temperature_;
+  int skip_gas_temp_update_during_transport_;
   
 
   // current time in simulation
