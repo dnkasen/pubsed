@@ -119,12 +119,12 @@ void transport::init(ParameterReader* par, grid_general *g)
     {
       if (skip_gas_temp_update_during_transport_ == 1 )
 	{
-	  cerr << "# ERROR: radiative equilibrium turned on, skip_gas_temp_update_during_transport cannot be set to one\n";
+	  cerr << "# ERROR: radiative equilibrium turned on, skip_gas_temp_update_during_transport cannot be set to 1\n";
 	  exit(1);
 	}
       if (set_gas_temp_to_rad_temp_ == 1)
 	{
-	  cerr << "# ERROR: radiative equilibrium turned on, set_gas_temp_to_rad_temp_ cannot be ssete to 1.\n";
+	  cerr << "# ERROR: radiative equilibrium turned on, set_gas_temp_to_rad_temp_ cannot be set to 1.\n";
 	  exit(1);
 	}
       
@@ -138,19 +138,21 @@ void transport::init(ParameterReader* par, grid_general *g)
 	  exit(1);
 	}
 
-      if ((gas_state_.smooth_grey_opacity_ == 1) || (gas_state_.use_zone_dependent_grey_opacity_ == 1) )
-	{
-	  cerr << "# ERROR: Cannot simultaneously set solve_coupled_gas_state_temperature_ to 1 and use grey opacity\n";
-	  exit(1);
-	}
-	    
-
       if (set_gas_temp_to_rad_temp_ == 1)
 	{
-	  cout << "# WARNING: set_gas_temp_to_rad_temp_ is set to 1, so this will overridde anything more detailed that might result from setting solve_coupled_gas_state_temp_ to 1\n";
+	  cout << "# WARNING: set_gas_temp_to_rad_temp_ is set to 1, so this will override anything more detailed that might result from setting solve_coupled_gas_state_temp_ to 1\n";
 	}
 
     }
+
+    if (skip_gas_temp_update_during_transport_ == 1 && set_gas_temp_to_rad_temp_ == 1)
+      {
+
+	  cerr << "# ERROR: Cannot simultaneously set skip_gas_temp_update_during_transport_ to 1 and set_gas_temp_to_rad_temp_ == 1\n";
+	  exit(1);
+      }
+    
+
   
   // initialize the frequency grid
   std::vector<double> nu_dims = params_->getVector<double>("transport_nu_grid");
