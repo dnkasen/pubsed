@@ -32,6 +32,22 @@ private:
   int use_hydro_;
   std::string checkpoint_name_base_;
 
+  int last_chk_it_;
+  double last_chk_wt_;
+  double last_chk_simt_;
+
+  int chk_it_interval_;
+  double chk_wt_interval_;
+  double chk_simt_interval_;
+  double chk_end_time_;
+  double chk_end_time_buffer_;
+  double chk_wallclock_time_total_;
+
+  int it_;
+  double t_;
+  double dt_;
+  int i_chk_;
+
 #ifdef MPI_PARALLEL
   double timer_start_;
 #else
@@ -43,6 +59,12 @@ private:
   void evolve_to_start();
   void evolve_system();
   void finish();
+
+  int do_checkpoint_now(int chk_force = 0);
+  int do_checkpoint_iteration();
+  int do_checkpoint_wallclock();
+  int do_checkpoint_before_end();
+  int do_checkpoint_simulation_time();
 
   // write a checkpoint file with numbered name
   void write_checkpoint(int i_chk);
