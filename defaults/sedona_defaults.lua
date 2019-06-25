@@ -19,7 +19,6 @@ run_checkpoint_name_base    = "chk"
 run_chk_it_interval         = 0
 run_chk_wt_interval         = 0. 
 run_chk_simt_interval       = 0.
-run_chk_end_time            = 0.
 run_chk_end_time_buffer     = 1.1
 run_chk_wallclock_time_total = 0.
 run_chk_number_start        = 0 -- number of first checkpoint file
