@@ -97,8 +97,8 @@ int AtomicSpecies::solve_lte(double ne)
   double fac = 2/ne/pow(lt,1.5);
 
   // calculate saha ratios
-  ions_[0].frac = 1.0;
-  double norm  = 1.0;
+  ions_[0].frac = 1.;
+  double norm  = 1.;
   for (int i=1;i<n_ions_;++i)
   {
     // calculate the ratio of i to i-1
@@ -110,9 +110,21 @@ int AtomicSpecies::solve_lte(double ne)
 
     // check for ridiculously small numbers
     if (ne < 1e-50) ions_[i].frac = 0;
-    norm += ions_[i].frac;
+
+    // Normalize
+    norm = 0;
+    for (int j=0; j<=i; j++) {
+      norm += ions_[j].frac;
+    }
+    for (int j=0; j<=i; j++) {
+      ions_[j].frac = ions_[j].frac / norm;
+    }
   }
-  // renormalize ionization fractions_
+  // renormalize ionization fractions
+  norm = 0.;
+  for (int i=0;i<n_ions_; i++) {
+      norm += ions_[i].frac;
+    }
   for (int i=0;i<n_ions_;++i) ions_[i].frac = ions_[i].frac/norm;
 
   // calculate level densities (bolztmann factors)
