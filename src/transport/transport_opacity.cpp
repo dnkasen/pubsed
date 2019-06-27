@@ -51,7 +51,7 @@ void transport::set_opacity(double dt)
 
   if (verbose)
     {
-      if (solve_coupled_gas_state_temperature_)
+      if (solve_coupled_gas_state_temperature_ && first_step_ == 0)
 	{
 	  printf("# Solving coupled equations for gas state and temperature\n");
 	}
@@ -181,7 +181,7 @@ void transport::set_opacity(double dt)
 
 
   }
-  if (solve_coupled_gas_state_temperature_)
+  if (solve_coupled_gas_state_temperature_ && first_step_ == 0)
     {
       reduce_Tgas();
     }
@@ -216,11 +216,11 @@ void transport::set_opacity(double dt)
    }
   }
 
-
-  // turn nlte back on after first step, if wanted
+    // turn nlte back on after first step, if wanted
   if (first_step_) {
     gas_state_.use_nlte_ = nlte;
-    first_step_ = 0;    }
+  }
+
   
 }
 

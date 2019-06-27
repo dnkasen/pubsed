@@ -13,6 +13,10 @@ namespace pc = physical_constants;
 
 int transport::solve_state_and_temperature(int i)
 {
+
+  vector<OpacityType> emis(nu_grid.size());
+  vector<OpacityType> scat(nu_grid.size());
+  emis.assign(emis.size(),0.0);
   
   int solve_error = 0;
   if (set_gas_temp_to_rad_temp_ == 1)
@@ -22,6 +26,17 @@ int transport::solve_state_and_temperature(int i)
     }
   else
     {
+      // do an initial solve?
+
+        zone* z = &(grid->z[i]);
+	gas_state_.dens_ = z->rho;
+	gas_state_.temp_ = z->T_gas;
+	solve_error = gas_state_.solve_state();
+
+	gas_state_.computeOpacity(abs_opacity_[i],scat,emis);
+
+
+      
       grid->z[i].T_gas = temp_brent_method(i,1,solve_error); // gas_state solve will happen in here. The solve error is for the gas_state solve
 
         if (gas_state_.use_nlte_)
@@ -79,20 +94,38 @@ double transport::rad_eq_function_LTE(int c,double T, int solve_flag, int & solv
   zone* z = &(grid->z[c]);
   gas_state_.dens_ = z->rho;
   gas_state_.temp_ = T;
-  
+
+
+  vector<OpacityType> emis(nu_grid.size());
+  vector<OpacityType> scat(nu_grid.size());
+  emis.assign(emis.size(),0.0);
   if (solve_flag)
     {
-	solve_error = gas_state_.solve_state();
+      //      solve_error = gas_state_.solve_state();
+      gas_state_.computeOpacity(abs_opacity_[c],scat,emis);
     }
+
+
+  
   // total energy absorbed in zone
-  double E_absorbed = grid->z[c].e_abs; // debug + grid->z[c].L_radio_dep;
+
+  //  double E_absorbed = grid->z[c].e_abs; // debug + grid->z[c].L_radio_dep;
+  double E_absorbed = 0.;
   // total energy emitted (to be calculated)
   double E_emitted = 0.;
+
+  if (solve_flag == 0) 
+    {
+      E_absorbed = grid->z[c].e_abs;
+    }
 
   // Calculate total emission assuming no frequency (grey) opacity
   if (nu_grid.size() == 1)
   {
     E_emitted = 4.0*pc::pi*abs_opacity_[c][0]*pc::sb/pc::pi*pow(T,4);
+
+    if (solve_flag && solve_error == 0)
+      E_absorbed = pc::c *abs_opacity_[c][0] * grid->z[c].e_rad;
   }
   // integrate emisison over frequency (angle
   // integration gives the 4*PI) to get total
@@ -106,11 +139,12 @@ double transport::rad_eq_function_LTE(int c,double T, int solve_flag, int & solv
     double B_nu = blackbody_nu(T,nu);
     double kappa_abs = abs_opacity_[c][i];
     E_emitted += 4.0*pc::pi*kappa_abs*B_nu*dnu;
-    //Eab += 4.0*pc::pi*kappa_abs*J_nu_[c][i]*dnu;
+    if (solve_flag == 1)
+      E_absorbed += 4.0*pc::pi*kappa_abs*J_nu_[c][i]*dnu;
   }
   //if (verbose) std::cout << c << " " << E_emitted << " " << Eab << " " << grid->z[c].e_abs << " " << grid->z[c].L_radio_dep << "\n";
 
-  //std::cout << E_emitted << " " << E_absorbed << "\n";
+  //  std::cout << E_emitted << " " << E_absorbed << "\n";
   // radiative equillibrium condition: "emission equals absorbtion"
   // return to Brent function to iterate this to zero
   return (E_emitted - E_absorbed);
@@ -144,7 +178,6 @@ double transport::rad_eq_function_NLTE(int c,double T, int solve_flag, int &solv
 
   if (gas_state_.use_collisions_nlte_)
     {
-      printf("collisions\n");
       E_emitted += gas_state_.collisional_net_cooling_rate(T);
     }
   
