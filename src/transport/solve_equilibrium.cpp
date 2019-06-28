@@ -17,44 +17,46 @@ int transport::solve_state_and_temperature(int i)
   vector<OpacityType> emis(nu_grid.size());
   vector<OpacityType> scat(nu_grid.size());
   emis.assign(emis.size(),0.0);
-  
+
   int solve_error = 0;
+
+  // Simple option to set gas temp based on radiation energy density
   if (set_gas_temp_to_rad_temp_ == 1)
-    {
-      grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
-      return 0;
-    }
+  {
+    grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
+    return 0;
+  }
+  // Otherwise set gas temperature from balancing heating-cooling
   else
-    {
-
-
-        zone* z = &(grid->z[i]);
+  {
+    zone* z = &(grid->z[i]);
 	gas_state_.dens_ = z->rho;
 	gas_state_.temp_ = z->T_gas;
 
-	// do an initial solve
+	// do an initial solve of the gas state
 	solve_error = gas_state_.solve_state();
 	gas_state_.computeOpacity(abs_opacity_[i],scat,emis);
-      
-      grid->z[i].T_gas = temp_brent_method(i,1,solve_error); // gas_state solve may also happen here
 
-      if (gas_state_.use_nlte_ ==0)
+    // Calculate equilibrium temperature.
+    // Additional gas_state solve may also happen here
+    grid->z[i].T_gas = temp_brent_method(i,1,solve_error);
+
+    if (gas_state_.use_nlte_ == 0)
 	{
 	  // do a final solve
 	  solve_error = gas_state_.solve_state();
 	}
 
-        if (gas_state_.use_nlte_)
-	  {
-	    bf_heating[i] = gas_state_.bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
-	    ff_heating[i] = gas_state_.free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
-	    bf_cooling[i] = gas_state_.bound_free_cooling_rate(grid->z[i].T_gas);
-	    ff_cooling[i] = gas_state_.free_free_cooling_rate(grid->z[i].T_gas);
-	    coll_cooling[i] = gas_state_.collisional_net_cooling_rate(grid->z[i].T_gas);
-	  }
-      return solve_error;
-    }
-
+    if (gas_state_.use_nlte_)
+	{
+	  bf_heating[i] = gas_state_.bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+	  ff_heating[i] = gas_state_.free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+	  bf_cooling[i] = gas_state_.bound_free_cooling_rate(grid->z[i].T_gas);
+	  ff_cooling[i] = gas_state_.free_free_cooling_rate(grid->z[i].T_gas);
+	  coll_cooling[i] = gas_state_.collisional_net_cooling_rate(grid->z[i].T_gas);
+	}
+    return solve_error;
+  }
 
 }
 
@@ -62,27 +64,25 @@ void transport::solve_eq_temperature()
 {
   int solve_error = 0;
   for (int i=my_zone_start_;i<my_zone_stop_;i++)
-    {
-      if (set_gas_temp_to_rad_temp_ == 1)
-	grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
-      else
+  {
+    if (set_gas_temp_to_rad_temp_ == 1)
+	  grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
+    else
 	{
-	  grid->z[i].T_gas = temp_brent_method(i,0,solve_error); // solve_error won't be updated here because that's for the gas_state solve which isn't happening here
+      // solve_error won't be updated here because that's for the gas_state solve which isn't happening here
+	  grid->z[i].T_gas = temp_brent_method(i,0,solve_error);
 
 	  if (gas_state_.use_nlte_)
-	    {
-	      bf_heating[i] = gas_state_.bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
-	      ff_heating[i] = gas_state_.free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
-	      bf_cooling[i] = gas_state_.bound_free_cooling_rate(grid->z[i].T_gas);
-	      ff_cooling[i] = gas_state_.free_free_cooling_rate(grid->z[i].T_gas);
-	      coll_cooling[i] = gas_state_.collisional_net_cooling_rate(grid->z[i].T_gas);
+	  {
+	    bf_heating[i] = gas_state_.bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+	    ff_heating[i] = gas_state_.free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+	    bf_cooling[i] = gas_state_.bound_free_cooling_rate(grid->z[i].T_gas);
+	    ff_cooling[i] = gas_state_.free_free_cooling_rate(grid->z[i].T_gas);
+	    coll_cooling[i] = gas_state_.collisional_net_cooling_rate(grid->z[i].T_gas);
 	  }
-	
-	}
-      
-      
-    }
 
+	}
+  }
   reduce_Tgas();
 }
 
@@ -91,38 +91,48 @@ void transport::solve_eq_temperature()
 // This is the function that expresses radiative equillibrium
 // in a cell (i.e. E_absorbed = E_emitted).  It is used in
 // The Brent solver below to determine the temperature such
-// that RadEq holds
-//**************************************************************/
+// that radiative equilibrium holds
+//
+// This LTE version assumes the cooling emission is just given
+// by Kirchofs law: j_nu = k_abs*B_nu where k_abs is the absorptive
+// opacity and B_nu the Planck function.  This is integrated
+// over frequency to get the total cooling radiative
+//
+// The NLTE version below carries out a more detailed
+// treatment of the cooling rate based on microphysics
+//
+// solve_flag = 0 use the old opacities kappa(T_old) to
+//              compute emission rates
+//            = 1 recalculate the opacities kappa(T_new) to
+//              compute emission rates
+//
+//************************************************************/
 double transport::rad_eq_function_LTE(int c,double T, int solve_flag, int & solve_error)
 {
-
   zone* z = &(grid->z[c]);
   gas_state_.dens_ = z->rho;
   gas_state_.temp_ = T;
 
-
+  // helper variables need for call (will not be used)
   vector<OpacityType> emis(nu_grid.size());
   vector<OpacityType> scat(nu_grid.size());
   emis.assign(emis.size(),0.0);
+
+  // recalculate opacities based on current T if desired
   if (solve_flag)
-    {
-      //      solve_error = gas_state_.solve_state();
-      gas_state_.computeOpacity(abs_opacity_[c],scat,emis);
-    }
+  {
+    // solve_error = gas_state_.solve_state();
+    gas_state_.computeOpacity(abs_opacity_[c],scat,emis);
+  }
 
-
-  
-  // total energy absorbed in zone
-
-  //  double E_absorbed = grid->z[c].e_abs; // debug + grid->z[c].L_radio_dep;
-  double E_absorbed = 0.;
   // total energy emitted (to be calculated)
   double E_emitted = 0.;
 
-  if (solve_flag == 0) 
-    {
-      E_absorbed = grid->z[c].e_abs;
-    }
+  // total energy absorbed in zone
+  double E_absorbed = 0.;
+  // if not solve_flag, use the absorption rate estimated during transport
+  if (solve_flag == 0)
+    E_absorbed = grid->z[c].e_abs;
 
   // Calculate total emission assuming no frequency (grey) opacity
   if (nu_grid.size() == 1)
@@ -132,6 +142,7 @@ double transport::rad_eq_function_LTE(int c,double T, int solve_flag, int & solv
     if (solve_flag && solve_error == 0)
       E_absorbed = pc::c *abs_opacity_[c][0] * grid->z[c].e_rad;
   }
+
   // integrate emisison over frequency (angle
   // integration gives the 4*PI) to get total
   // ergs/sec/cm^3 radition emitted. Opacities are
@@ -147,49 +158,60 @@ double transport::rad_eq_function_LTE(int c,double T, int solve_flag, int & solv
     if (solve_flag == 1)
       E_absorbed += 4.0*pc::pi*kappa_abs*J_nu_[c][i]*dnu;
   }
-  //if (verbose) std::cout << c << " " << E_emitted << " " << Eab << " " << grid->z[c].e_abs << " " << grid->z[c].L_radio_dep << "\n";
 
-  //  std::cout << E_emitted << " " << E_absorbed << "\n";
   // radiative equillibrium condition: "emission equals absorbtion"
   // return to Brent function to iterate this to zero
   return (E_emitted - E_absorbed);
-  
-
 }
 
 
+//***************************************************************/
+// This is the function that expresses radiative equillibrium
+// in a cell (i.e. E_absorbed = E_emitted).  It is used in
+// The Brent solver below to determine the temperature such
+// that radiative equilibrium holds
+//
+// The NLTE version below carries out a more detailed
+// treatment of the cooling rate than the NLTE one above
+//
+// solve_flag = 0 use the old opacities kappa(T_old) to
+//              compute emission rates
+//            = 1 recalculate the opacities kappa(T_new) to
+//              compute emission rates
+//
+//************************************************************/
 double transport::rad_eq_function_NLTE(int c,double T, int solve_flag, int &solve_error)
 {
 
   zone* z = &(grid->z[c]);
   gas_state_.dens_ = z->rho;
   gas_state_.temp_ = T;
-  
+
+  // make sure grey_opacity is not being used
   if ( (gas_state_.smooth_grey_opacity_ == 1) || (gas_state_.use_zone_dependent_grey_opacity_ == 1) )
-      {
+  {
 	std::cerr << "# ERROR: NLTE solve should not be used with grey opacity\n";
 	exit(1);
-      }
-      
-  if (solve_flag)
-    {
-	solve_error = gas_state_.solve_state(J_nu_[c]);
-    }
-  
-  double E_absorbed = gas_state_.free_free_heating_rate(T,J_nu_[c]) + gas_state_.bound_free_heating_rate(T,J_nu_[c]) ;
+  }
 
-      // total energy emitted (to be calculated)
-  double E_emitted =  E_emitted= gas_state_.free_free_cooling_rate(T) + gas_state_.bound_free_cooling_rate(T);
+  // if flag set, recompute the entire NLTE problem for this iteration
+  if (solve_flag)
+	solve_error = gas_state_.solve_state(J_nu_[c]);
+
+  // total energy absorbed
+  double E_absorbed = gas_state_.free_free_heating_rate(T,J_nu_[c]) +
+        gas_state_.bound_free_heating_rate(T,J_nu_[c]) ;
+
+  // total energy emitted
+  double E_emitted =  E_emitted= gas_state_.free_free_cooling_rate(T) +
+        gas_state_.bound_free_cooling_rate(T);
 
   if (gas_state_.use_collisions_nlte_)
-    {
       E_emitted += gas_state_.collisional_net_cooling_rate(T);
-    }
-  
-    //std::cout << E_emitted << " " << E_absorbed << "\n";
-    // radiative equillibrium condition: "emission equals absorbtion"
-    // return to Brent function to iterate this to zero
-    return (E_emitted - E_absorbed);
+
+  // radiative equillibrium condition: "emission equals absorbtion"
+  // return to Brent function to iterate this to zero
+  return (E_emitted - E_absorbed);
 }
 
 
@@ -221,12 +243,12 @@ double transport::temp_brent_method(int cell, int solve_flag, int &solve_error)
       fa=rad_eq_function_LTE(cell,a,solve_flag,solve_error);
       fb=rad_eq_function_LTE(cell,b,solve_flag,solve_error);
     }
-  else 
+  else
     {
       fa=rad_eq_function_NLTE(cell,a,solve_flag,solve_error);
       fb=rad_eq_function_NLTE(cell,b,solve_flag,solve_error);
     }
-    
+
   double fc,p,q,r,s,tol1,xm;
 
   //if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0))
