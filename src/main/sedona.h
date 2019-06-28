@@ -6,6 +6,7 @@
 typedef double real;
 typedef double  OpacityType;
 
+#define DEFAULT_PARAM_FILE_NAME "param.lua"
 #define MPI_PARALLEL 1
 
 #define Max_MPI_Blocksize 1000000

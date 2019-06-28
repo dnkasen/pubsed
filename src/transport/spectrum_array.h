@@ -13,6 +13,8 @@ class spectrum_array {
  
 private:
 
+  // MPI
+  int nproc, my_rank;
   // spectrum name
   char name[1000];
 
@@ -41,7 +43,7 @@ public:
   // Initialize
   void init(std::vector<double>,std::vector<double>,int,int);
   void set_name(std::string);
-
+  
   // Count a packets
   void count(double t, double w, double E, double *D);
 
@@ -54,6 +56,11 @@ public:
 
   // Print out
   void print();
+
+  void writeCheckpointSpectrum(std::string fname, std::string spectrum_name);
+  void readCheckpointSpectrum(std::string fname, std::string n);
+
+  bool is_equal(spectrum_array sa, bool complain);
 };
 
 #endif

@@ -82,6 +82,108 @@ void spectrum_array::init(std::vector<double> t, std::vector<double> w,
   wipe();
 }
 
+void spectrum_array::writeCheckpointSpectrum(std::string fname, std::string spectrum_name) {
+  MPI_average();
+  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+  if (my_rank == 0) {
+    createGroup(fname, spectrum_name);
+    time_grid.writeCheckpoint(fname, spectrum_name, "time_grid");
+    wave_grid.writeCheckpoint(fname, spectrum_name, "wave_grid");
+    mu_grid.writeCheckpoint(fname, spectrum_name, "mu_grid");
+    phi_grid.writeCheckpoint(fname, spectrum_name, "phi_grid");
+
+    writeVector(fname, spectrum_name, "flux", flux, H5T_NATIVE_DOUBLE);
+    writeVector(fname, spectrum_name, "click", click, H5T_NATIVE_DOUBLE);
+
+    hsize_t single_val = 1;
+    hsize_t name_len = 1000;
+    createDataset(fname, spectrum_name, "n_elements", 1, &single_val, H5T_NATIVE_INT);
+    writeSimple(fname, spectrum_name, "n_elements", &n_elements, H5T_NATIVE_INT);
+
+    createDataset(fname, spectrum_name, "name", 1, &name_len, H5T_C_S1);
+    writeSimple(fname, spectrum_name, "name", name, H5T_C_S1);
+    createDataset(fname, spectrum_name, "a1", 1, &single_val, H5T_NATIVE_INT);
+    writeSimple(fname, spectrum_name, "a1", &a1, H5T_NATIVE_INT);
+    createDataset(fname, spectrum_name, "a2", 1, &single_val, H5T_NATIVE_INT);
+    writeSimple(fname, spectrum_name, "a2", &a2, H5T_NATIVE_INT);
+    createDataset(fname, spectrum_name, "a3", 1, &single_val, H5T_NATIVE_INT);
+    writeSimple(fname, spectrum_name, "a3", &a3, H5T_NATIVE_INT);
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+}
+
+void spectrum_array::readCheckpointSpectrum(std::string fname, std::string n) {
+  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+  for (int rank = 0; rank < nproc; rank++) {
+    if (rank == my_rank) {
+      time_grid.readCheckpoint(fname, n, "time_grid");
+      wave_grid.readCheckpoint(fname, n, "wave_grid");
+      mu_grid.readCheckpoint(fname, n, "mu_grid");
+      phi_grid.readCheckpoint(fname, n, "phi_grid");
+
+      readVector(fname, n, "flux", flux, H5T_NATIVE_DOUBLE);
+      readVector(fname, n, "click", click, H5T_NATIVE_DOUBLE);
+      readSimple(fname, n, "name", name, H5T_C_S1);
+      readSimple(fname, n, "n_elements", &n_elements, H5T_NATIVE_INT);
+      readSimple(fname, n, "a1", &a1, H5T_NATIVE_INT);
+      readSimple(fname, n, "a2", &a2, H5T_NATIVE_INT);
+      readSimple(fname, n, "a3", &a3, H5T_NATIVE_INT);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+}
+
+bool spectrum_array::is_equal(spectrum_array sa, bool complain) {
+  bool equal = true;
+  if (not time_grid.is_equal(sa.time_grid, complain)) {
+    if (complain) std::cerr << "spectrum array time grids are different" << std::endl;
+    equal = false;
+  }
+  if (not wave_grid.is_equal(sa.wave_grid, complain)) {
+    if (complain) std::cerr << "spectrum array wave grids are different" << std::endl;
+    equal = false;
+  }
+  if (not mu_grid.is_equal(sa.mu_grid, complain)) {
+    if (complain) std::cerr << "spectrum array mu grids are different" << std::endl;
+    equal = false;
+  }
+  if (not phi_grid.is_equal(sa.phi_grid, complain)) {
+    if (complain) std::cerr << "spectrum array phi grids are different" << std::endl;
+    equal = false;
+  }
+  if (flux != sa.flux) {
+    if (complain) std::cerr << "flux vectors are different" << std::endl;
+    equal = false;
+  }
+  if (click != sa.click) {
+    if (complain) std::cerr << "click vectors are different" << std::endl;
+    equal = false;
+  }
+  if (n_elements != sa.n_elements) {
+    if (complain) std::cerr << "n_elements are different" << std::endl;
+    equal = false;
+  }
+  if (a1 != sa.a1) {
+    if (complain) std::cerr << "a1 are different" << std::endl;
+    equal = false;
+  }
+  if (a2 != sa.a2) {
+    if (complain) std::cerr << "a2 are different" << std::endl;
+    equal = false;
+  }
+  if (a3 != sa.a3) {
+    if (complain) std::cerr << "a3 are different" << std::endl;
+    equal = false;
+  }
+  if (std::string(name) != std::string(sa.name)) {
+    if (complain) std::cerr << "names are different" << std::endl;
+    equal = false;
+  }
+  return equal;
+}
+
 
 //--------------------------------------------------------------
 // Functional procedure: Wipe
@@ -113,7 +215,7 @@ int spectrum_array::index(int t, int l, int m, int p)
 void spectrum_array::count(double t, double w, double E, double *D)
 {
   double mu  = D[2];
-  double phi = atan2(D[1],D[0]);
+  double phi = atan2(D[1],D[0]) + pc::pi;
 
   // locate bin number in all dimensions
   int t_bin = time_grid.locate(t);
@@ -203,11 +305,39 @@ void spectrum_array::print()
   H5LTmake_dataset(file_id,"nu",RANK,dims_nu,H5T_NATIVE_FLOAT,tmp_array);
   delete[] tmp_array;
 
+  tmp_array = new float[n_nu+1];
+  hsize_t  dims_nu_edges[RANK]={(hsize_t)(n_nu+1)};
+  tmp_array[0] = wave_grid.min;
+  for (int j=0;j<n_nu;j++) tmp_array[j+1] = wave_grid[j];
+  H5LTmake_dataset(file_id,"nu_edges",RANK,dims_nu_edges,H5T_NATIVE_FLOAT,tmp_array);
+  delete[] tmp_array;
+
   // write mu grid
   tmp_array = new float[n_mu];
   hsize_t  dims_mu[RANK]={(hsize_t)n_mu};
-  for (int j=0;j<n_mu;j++) tmp_array[j] = mu_grid[j];
+  for (int j=0;j<n_mu;j++) tmp_array[j] = mu_grid.center(j);
   H5LTmake_dataset(file_id,"mu",RANK,dims_mu,H5T_NATIVE_FLOAT,tmp_array);
+  delete[] tmp_array;
+
+  tmp_array = new float[n_mu+1];
+  hsize_t  dims_mu_edges[RANK]={(hsize_t)(n_mu+1)};
+  tmp_array[0] = mu_grid.min;
+  for (int j=0;j<n_mu;j++) tmp_array[j+1] = mu_grid[j];
+  H5LTmake_dataset(file_id,"mu_edges",RANK,dims_mu_edges,H5T_NATIVE_FLOAT,tmp_array);
+  delete[] tmp_array;
+
+  // write phi grid
+  tmp_array = new float[n_phi];
+  hsize_t  dims_phi[RANK]={(hsize_t)n_phi};
+  for (int j=0;j<n_phi;j++) tmp_array[j] = phi_grid.center(j);
+  H5LTmake_dataset(file_id,"phi",RANK,dims_phi,H5T_NATIVE_FLOAT,tmp_array);
+  delete[] tmp_array;
+
+  tmp_array = new float[n_phi+1];
+  hsize_t  dims_phi_edges[RANK]={(hsize_t)(n_phi+1)};
+  tmp_array[0] = phi_grid.min;
+  for (int j=0;j<n_phi;j++) tmp_array[j+1] = phi_grid[j];
+  H5LTmake_dataset(file_id,"phi_edges",RANK,dims_phi_edges,H5T_NATIVE_FLOAT,tmp_array);
   delete[] tmp_array;
 
   // write time grid
@@ -218,18 +348,39 @@ void spectrum_array::print()
   H5LTmake_dataset(file_id,"time",RANK,dims_t,H5T_NATIVE_FLOAT,tmp_array);
   delete[] tmp_array;
 
+  tmp_array = new float[n_t+1];
+  hsize_t dims_t_edges[RANK]={(hsize_t)(n_t+1)};
+  tmp_array[0] = time_grid.min;
+  for (int j=0;j<n_t;j++) tmp_array[j+1] = time_grid[j];
+  H5LTmake_dataset(file_id,"time_edges",RANK,dims_t_edges,H5T_NATIVE_FLOAT,tmp_array);
+  delete[] tmp_array;
+
   // write fluxes and counts arrays
-  if (n_mu == 1)
+  if ( (n_mu == 1) && (n_phi == 1) )
   {
     const int RANKF = 2;
     hsize_t  dims_flux[RANKF]={(hsize_t)n_t,(hsize_t)n_nu};
     H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
     H5LTmake_dataset(file_id,"click",RANKF,dims_flux,H5T_NATIVE_DOUBLE,click_buffer);
   }
-  else
+  else if (n_phi == 1)
   {
     const int RANKF = 3;
     hsize_t  dims_flux[RANKF]={(hsize_t)n_t,(hsize_t)n_nu,(hsize_t)n_mu};
+    H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
+    H5LTmake_dataset(file_id,"click",RANKF,dims_flux,H5T_NATIVE_DOUBLE,click_buffer);
+  }
+  else if (n_mu == 1)
+  {
+    const int RANKF = 3;
+    hsize_t  dims_flux[RANKF]={(hsize_t)n_t,(hsize_t)n_nu,(hsize_t)n_phi};
+    H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
+    H5LTmake_dataset(file_id,"click",RANKF,dims_flux,H5T_NATIVE_DOUBLE,click_buffer);
+  }
+  else
+  {
+    const int RANKF = 4;
+    hsize_t  dims_flux[RANKF]={(hsize_t)n_t,(hsize_t)n_nu,(hsize_t)n_mu,(hsize_t)n_phi};
     H5LTmake_dataset(file_id,"Lnu",RANKF,dims_flux,H5T_NATIVE_DOUBLE,darray);
     H5LTmake_dataset(file_id,"click",RANKF,dims_flux,H5T_NATIVE_DOUBLE,click_buffer);
   }

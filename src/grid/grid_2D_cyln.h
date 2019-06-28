@@ -26,6 +26,15 @@ private:
   // store precomputed zone volumes
   std::vector<double> vol_; 
 
+  /* For testing */
+  int    nx_new_, nz_new_;
+  double dx_new_, dz_new_; 
+  double zcen_new_   ; 
+
+  std::vector<int> index_x_new_;
+  std::vector<int> index_z_new_;
+
+  std::vector<double> vol_new_; 
 public:
 
   // required functions
@@ -40,6 +49,11 @@ public:
   void    coordinates(int i,double r[3]) {
     r[0] = 0; r[1] = 0; r[2] = 0;}
 
+  void writeCheckpointGrid(std::string fname);
+  void readCheckpointGrid(std::string fname, bool test=false);
+  void testCheckpointGrid(std::string fname);
+
+  void restartGrid(ParameterReader* params);
 };
 
 

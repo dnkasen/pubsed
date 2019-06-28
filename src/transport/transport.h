@@ -4,6 +4,7 @@
 #include <vector>
 #include <list>
 
+#include <string>
 
 #include "particle.h"
 #include "grid_general.h"
@@ -15,6 +16,7 @@
 #include "ParameterReader.h"
 #include "VoigtProfile.h"
 #include "sedona.h"
+#include "h5utils.h"
 
 #ifdef MPI_PARALLEL
 #include <mpi.h>
@@ -43,6 +45,7 @@ class transport
 
   // arrays of particles
   std::vector<particle> particles;
+  std::vector<particle> particles_new; // For debugging checkpointing
   int max_total_particles;
 
   // gas class for opacities
@@ -104,7 +107,9 @@ class transport
 
   // class to hold output spectrum
   spectrum_array optical_spectrum;
+  spectrum_array optical_spectrum_new;
   spectrum_array gamma_spectrum;
+  spectrum_array gamma_spectrum_new;
 
   // random number generator
   mutable thread_RNG rangen;
@@ -246,6 +251,7 @@ class transport
 
   // return
   int n_particles() { return particles.size(); }
+  int n_particles_new() { return particles_new.size(); }
 
   // finalize and output spectra
   void output_spectrum();
@@ -256,6 +262,18 @@ class transport
   void write_radiation_file(int);
   void wipe_spectra();
 
+  void writeCheckpointParticles(std::string fname);
+  void writeParticleProp(std::string fname, std::string fieldname, int total_particles, int offset);
+  void writeCheckpointSpectra(std::string fname);
+  void writeCheckpointRNG(std::string fname);
+
+  void readCheckpointParticles(std::string fname, bool test=false);
+  void readParticleProp(std::string fname, std::string fieldname, int total_particles, int offset);
+  void readCheckpointSpectra(std::string fname, bool test=false);
+  void readCheckpointRNG(std::string fname, bool test=false);
+
+  void testCheckpointParticles(std::string fname);
+  void testCheckpointSpectrum(std::string fname);
 };
 
 

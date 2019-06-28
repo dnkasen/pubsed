@@ -38,11 +38,10 @@ void hydro_1D_lagrangian::init(ParameterReader *params, grid_general *g)
 
   // handle conflicting input
   if (boundary_outflow_ == 1 && boundary_rigid_outer_wall_ == 1)
-    {
-      printf("WARNING!!! Hydro outer boundary cannot be simultaneously outflow and outer wall! Setting to outflow\n");
-      boundary_rigid_outer_wall_ = 1;
-    }
-
+  {
+    printf("WARNING!!! Hydro outer boundary cannot be simultaneously outflow and outer wall! Setting to outflow\n");
+    boundary_rigid_outer_wall_ = 1;
+  }
 
   grid->get_radial_edges(r_out_,r_min_,v_out_,v_min_);
   v_min_ = params->getScalar<double>("hydro_v_piston");
@@ -70,12 +69,10 @@ void hydro_1D_lagrangian::init(ParameterReader *params, grid_general *g)
     // gas pressure EOS
     grid->z[i].p_gas = pc::k*grid->z[i].rho/(mean_particle_mass_ * pc::m_p)*grid->z[i].T_gas;
 
-    // add in bomb
-
+    // add in bomb thermal energy
     if (r_out_[i] <= 3*r_bomb && E_bomb > 0.)
-     {
+    {
       grid->z[i].p_gas += p_bomb*exp(-r_out_[i]*r_out_[i]/r_bomb/r_bomb);
-
       //assuming radiation pressure dominates and T_gas = T_r
       grid->z[i].T_gas = pow(3.0*grid->z[i].p_gas/pc::a,0.25);
     }
@@ -112,7 +109,6 @@ double hydro_1D_lagrangian::get_time_step()
   	double dt = cfl_*dr/v;
     if (dt < tstep) z0 = i;
   	if (dt < tstep) tstep = dt;
-
   }
   //  std::cout << z0 << " " << tstep << "\n";
   return tstep;
@@ -122,6 +118,16 @@ double hydro_1D_lagrangian::get_time_step()
 
 void hydro_1D_lagrangian::step(double dt)
 {
+
+  // add mass to inner zone
+  //grid->z[0].mass  += Mdot*dt;
+  //grid->z[0].e_gas += Mdot*e_add*dt;
+  // recalculate density/pressure
+
+  // split inner zone if it's too big
+ // if (r_out_[0] > r_core_*1.10)
+
+
   // -----------------------------------------------------
   // update the velocities
   // -----------------------------------------------------
@@ -132,10 +138,10 @@ void hydro_1D_lagrangian::step(double dt)
     int z1, z2;
     if (nz_ == 1) {z1 = i; z2 = i;}
     else
-      {
-        if (i < nz_-1) { z1 = i; z2 = i+1;} // note that this will not work if there is only one zone
-        else {z1 = i-1; z2 = i;}
-      }
+    {
+      if (i < nz_-1) { z1 = i; z2 = i+1;} // note that this will not work if there is only one zone
+      else {z1 = i-1; z2 = i;}
+    }
 
     // gas pressure and viscosity gradiant (times -1)
     double dp = grid->z[z1].p_gas - grid->z[z2].p_gas;
@@ -160,28 +166,19 @@ void hydro_1D_lagrangian::step(double dt)
       accel += -1*msum*pc::G/r_out_[i]/r_out_[i];
     }
 
-   // acceleration from transport flux
+   // acceleration from radiation flux
    if (use_transport_)
-   {
      accel += grid->z[i].fr_rad/grid->z[i].rho;
- //      // zone[z].f_rad = zone[z].f_rad/zone[z].rho/C_LIGHT;
- //      // radiation pressure gradiant in diffusion regime
- //      //if (use_transport) //&&(zone[z].tau > tau_diffuse))
- //      // dp += (zone[z1].E_dif/3.0 - zone[z2].E_dif/3.0);
-    }
 
    // override accleration of outer zone boundary if using rigid wall
    if (i == nz_-1 && boundary_rigid_outer_wall_)
-     {
        accel = 0.;
-     }
 
     // update velocities and boudnaries
     v_out_[i] += accel*dt;
-
     r_out_[i] += v_out_[i]*dt;
 
-
+    // accrete (i.e. destroy) zones below accretion radius
     if (r_out_[i] <= r_accrete_)
     {
       std::cout << "accreted " << i << "\n";
@@ -197,10 +194,8 @@ void hydro_1D_lagrangian::step(double dt)
         M_center_ += mass_[i];
         z_start_ = i+1;
         std::cout << "accreted " << i << "\n";
-
       }
     }
-
 
   }
   r_min_ += v_min_*dt;
@@ -230,9 +225,9 @@ void hydro_1D_lagrangian::step(double dt)
     // add in energy from radiation
     // not implicit yet
     if (use_transport_)
-      {
-	eden_[i] += (grid->z[i].e_abs  - grid->z[i].L_thermal * grid->z[i].eps_imc)*dt/new_rho; // e_abs already has eps_imc factor included
-      }
+    {
+	     eden_[i] += (grid->z[i].e_abs  - grid->z[i].L_thermal * grid->z[i].eps_imc)*dt/new_rho; // e_abs already has eps_imc factor included
+    }
 
 // zvec[i].enrg = (zvec_old[i].enrg - 0.5 *
   //      (zvec_old[i].press + zvec[i].visc + zvec_old[i].visc) * rhofac)
@@ -268,7 +263,7 @@ void hydro_1D_lagrangian::step(double dt)
     // radiation pressure EOS
     //grid->z[i].T_gas  = pow(3.0*p_gas/pc::a,0.25);
     // gas pressure EOS
-    grid->z[i].T_gas = p_gas/(pc::k*grid->z[i].rho/mean_particle_mass_/pc::m_p); 
+    grid->z[i].T_gas = p_gas/(pc::k*grid->z[i].rho/mean_particle_mass_/pc::m_p);
 
     visq_[i] = new_q;
 
@@ -306,8 +301,6 @@ void hydro_1D_lagrangian::step(double dt)
     time_write_ = time_;
     output.close();
   }
-
-
 }
 
 

@@ -10,6 +10,13 @@ data_fuzzline_file = ""
 -- grid
 grid_type      = "grid_1D_sphere"  -- grid geometry; must match input model
 
+-- job run (i.e., checkpoint/restart) parameters
+run_do_restart              = 0
+run_do_checkpoint           = 0
+run_do_checkpoint_test      = 0
+run_restart_file            = "chk.h5"
+run_checkpoint_name_base    = "chk"
+
 -- default hydro module is none
 hydro_module      = "none"
 hydro_gamma_index = 5.0/3.0
@@ -80,22 +87,23 @@ limits_temp_max = 1e8
 limits_temp_min = 1000
 
 -- opacity calculation defaults
-opacity_grey_opacity        = 0
-opacity_user_defined        = 0
-opacity_epsilon             = 1.0
-opacity_atom_zero_epsilon   = {}
-opacity_electron_scattering = 0
-opacity_line_expansion      = 0
-opacity_fuzz_expansion      = 0
-opacity_bound_free          = 0
-opacity_bound_bound         = 0
-opacity_free_free           = 0
-opacity_use_nlte            = 0
-opacity_atoms_in_nlte       = {}
-opacity_minimum_extinction  = 0
-opacity_maximum_opacity     = 1e40
-opacity_no_scattering       = 0
-dont_decay_composition      = 0
+opacity_grey_opacity				= 0
+opacity_zone_dependent_grey_opacity	= 0
+opacity_user_defined		        = 0
+opacity_epsilon             		= 1.0
+opacity_atom_zero_epsilon  			= {}
+opacity_electron_scattering 		= 0
+opacity_line_expansion      		= 0
+opacity_fuzz_expansion      		= 0
+opacity_bound_free          		= 0
+opacity_bound_bound         		= 0
+opacity_free_free           		= 0
+opacity_use_nlte            		= 0
+opacity_atoms_in_nlte       		= {}
+opacity_minimum_extinction  		= 0
+opacity_maximum_opacity     		= 1e40
+opacity_no_scattering       		= 0
+dont_decay_composition      		= 0
 
 opacity_compton_scatter_photons = 0;
 
@@ -103,6 +111,7 @@ opacity_compton_scatter_photons = 0;
 line_velocity_width         = 0
 line_profile                = "voigt"
 line_x_extent               = 100
+
 
 -- output spectrum information
 spectrum_name      = "spectrum";

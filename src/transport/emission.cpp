@@ -152,8 +152,6 @@ void transport::initialize_particles(int init_particles)
     int i = zone_emission_cdf_.sample(rangen.uniform());
     create_isotropic_particle(i,photon,Ep,t_now_);
   }
-
-
 }
 
 

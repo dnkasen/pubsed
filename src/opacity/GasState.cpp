@@ -4,6 +4,7 @@
 #include "GasState.h"
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 
 #ifdef MPI_PARALLEL
 #include "mpi.h"
@@ -364,7 +365,11 @@ void GasState::print_properties()
   std::cout << "# opacity settings\n";
   std::cout << "#-------------------------------------------------\n";
 
-  if (grey_opacity_ != 0) std::cout << "# grey opacity = " << grey_opacity_ << "\n";
+  if ( (smooth_grey_opacity_ != 0) || (use_zone_dependent_grey_opacity_ != 0) )
+  {
+    std::cout << "# smooth grey opacity             = " << smooth_grey_opacity_ << "\n";
+    std::cout << "# use_zone_dependent_grey_opacity = " << use_zone_dependent_grey_opacity_ << "\n";
+  }
   else
   {
     std::cout << "# use_e_scattering  = " << use_electron_scattering_opacity << "\n";
@@ -424,22 +429,22 @@ void GasState::write_levels(int iz)
     hid_t atom_id = H5Gcreate1(file_id,afile,0);
 
 
-    float* tmp_ion = new float[elem_Z[j]+1];
+    double* tmp_ion = new double[elem_Z[j]+1];
     hsize_t dims_ion[RANK]={(hsize_t)elem_Z[j]+1};
     for(int k=0;k<elem_Z[j]+1;k++)
       tmp_ion[k] = get_ionization_fraction(j,k);
-    H5LTmake_dataset(atom_id,"ion_fraction",RANK,dims_ion,H5T_NATIVE_FLOAT,tmp_ion);
+    H5LTmake_dataset(atom_id,"ion_fraction",RANK,dims_ion,H5T_NATIVE_DOUBLE,tmp_ion);
 
     int this_nl = atoms[j].n_levels_;
-    float* tmp_level = new float[this_nl];
+    double* tmp_level = new double[this_nl];
     hsize_t dims_level[RANK]={(hsize_t)this_nl};
     for(int k=0;k<this_nl;k++)
       tmp_level[k] = get_level_fraction(j,k);
-    H5LTmake_dataset(atom_id,"level_fraction",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
+    H5LTmake_dataset(atom_id,"level_fraction",RANK,dims_level,H5T_NATIVE_DOUBLE,tmp_level);
 
     for(int k=0;k<this_nl;k++)
       tmp_level[k] = get_level_departure(j,k);
-    H5LTmake_dataset(atom_id,"level_departure",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
+    H5LTmake_dataset(atom_id,"level_departure",RANK,dims_level,H5T_NATIVE_DOUBLE,tmp_level);
 
     H5Gclose(atom_id);
     delete[] tmp_level;
@@ -447,4 +452,53 @@ void GasState::write_levels(int iz)
   }
   H5Fclose(file_id);
 
+}
+
+std::string format_with_commas(long int value)
+{
+    std::string numWithCommas = std::to_string(value);
+    int insertPosition = numWithCommas.length() - 3;
+    while (insertPosition > 0)
+    {
+        numWithCommas.insert(insertPosition, ",");
+        insertPosition-=3;
+    }
+    return numWithCommas;
+}
+
+void GasState::print_memory_footprint()
+{
+    long int n_tot_lines  = 0;
+    long int n_tot_levels = 0;
+    for (int i=0;i<atoms.size();i++)
+    {
+        n_tot_lines  += atoms[i].n_lines_;
+        n_tot_levels += atoms[i].n_levels_;
+    }
+    long int size_line = sizeof(AtomicLine);
+    long int size_level = sizeof(AtomicLevel);
+
+    long int tot_line  = size_line*n_tot_lines;
+    long int tot_level = size_level*n_tot_levels;
+    long int total = tot_line + tot_level;
+
+    std::cout << "#-----------------------------------------------------|\n";
+    std::cout << std::setw(10) << "#  data   |";
+    std::cout << std::setw(15) << " number |";
+    std::cout << std::setw( 12) << " each (B) |";
+    std::cout << std::setw( 18) << " total (B) |\n";
+    std::cout << "#-----------------------------------------------------|\n";
+    std::cout << std::setw(10) << "# lines   |";
+    std::cout << std::setw(15) << format_with_commas(n_tot_lines) + " |";
+    std::cout << std::setw(12) << format_with_commas(size_line) + " |";
+    std::cout << std::setw(18) << format_with_commas(tot_line) + " |\n";
+    std::cout << std::setw(10) << "# levels  |";
+    std::cout << std::setw(15) << format_with_commas(n_tot_levels) + " |";
+    std::cout << std::setw(12) << format_with_commas(size_level) + " |";
+    std::cout << std::setw(18) << format_with_commas(tot_level) + " |\n";
+    std::cout << std::setw(10) << "# total   |";
+    std::cout << std::setw(15) <<  " |";
+    std::cout << std::setw(12) <<  " |";
+    std::cout << std::setw(18) << format_with_commas(total) + " |\n";
+    std::cout << "#-----------------------------------------------------|\n";
 }

@@ -47,7 +47,7 @@ def run_test(pdf="",runcommand=""):
     if (mean_err > 0.1): failure = 2
 
     ## make plot
-    plt.title
+    plt.title('1D Lucy Supernova test - DDMC')
     plt.legend(['sedona LC','sedona GR','lucy LC','lucy GR'])
     plt.xlim(0,55)
     plt.xlabel('luminosity (erg/s)',size=13)
@@ -56,7 +56,7 @@ def run_test(pdf="",runcommand=""):
     else:
         plt.ion()
         plt.show()
-        j = get_input('Press any key to continue >')
+        j = raw_input()
 
     return failure
 
@@ -110,22 +110,4 @@ def get_error(a,b,x=[],x_comp=[],use=[]):
 
     return max_err,mean_err
 
-#-----------------------------------------
-# little function to just plot up and
-# compare results. Assumes code has
-# already been run and output files
-# are present
-#----------------------------------------
-if __name__=='__main__':
-
-    # Default to Python 3's input()
-    get_input = input
-    # If this is Python 2, use raw_input()
-    if sys.version_info[:2] <= (2, 7):
-        get_input = raw_input
-
-    status = run_test('')
-    if (status == 0):
-        print ('SUCCESS')
-    else:
-        print ('FAILURE, code = ' + str(status))
+if __name__=='__main__': run_test('')

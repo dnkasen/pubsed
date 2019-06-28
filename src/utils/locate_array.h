@@ -3,8 +3,11 @@
 
 #include <vector>
 #include <math.h>
+#include <hdf5.h>
 #include <limits>
 #include <iostream>
+
+#include "h5utils.h"
 
 class locate_array {
 
@@ -15,7 +18,7 @@ public:
   double min;
 
   // other parameters
-  int do_log_interpolate;
+  int do_log_interpolate = 0;
 
   // constructors
   locate_array()  {}
@@ -36,6 +39,9 @@ public:
   double  operator[] (const int i) const {return x[i];};
   double& operator[] (const int i)       {return x[i];};
   void resize(int i) {x.resize(i);};
+
+  // equality
+  bool is_equal(locate_array l, bool complain);
 
   // center of the bin left of nu_i
   double center(const int i) const{
@@ -67,6 +73,9 @@ public:
 
   double sample(const int, const double) const;
   void   print() const;
+
+  void writeCheckpoint(std::string fname, std::string gname, std::string dset);
+  void readCheckpoint(std::string fname, std::string gname, std::string dset);
 
   //---------------------------------------------------------
 // Linear Interpolation of a passed array
@@ -151,6 +160,18 @@ T value_at(const double xval, const std::vector<T>& y) const
   int ind = locate_within_bounds(xval);
   return value_at(xval,y,ind);
 }
+
+template<typename T>
+T value_at_with_zero_edges(const double xval, const std::vector<T>& y) const
+{
+  if (xval < min) return 0;
+  if (xval > x.back()) return 0;
+  int ind = locate_within_bounds(xval);
+  return value_at(xval,y,ind);
+}
+
+
+
 
 template<typename T>
 T value_at(const double xval, const std::vector<T>& y,int ind) const

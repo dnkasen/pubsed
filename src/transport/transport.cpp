@@ -73,7 +73,6 @@ void transport::step(double dt)
         if (particles[i].type == gammaray)
           gamma_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
       }
-
   }
 
   // Remove escaped and absorbed particles from the particle vector
@@ -335,10 +334,11 @@ ParticleFate transport::propagate_monte_carlo(particle &p, double tstop)
     zone->fy_rad += this_E*dshift*continuum_opac_cmf*p.D[1] * dshift;
     #pragma omp atomic
     zone->fz_rad += this_E*dshift*continuum_opac_cmf*p.D[2] * dshift;
-
-     double rr = sqrt(p.x[0]*p.x[0] + p.x[1]*p.x[1] + p.x[2]*p.x[2]);
-     double xdotD = p.x[0]*p.D[0] + p.x[1]*p.D[1] + p.x[2]*p.D[2];
-     zone->fr_rad += this_E*dshift*continuum_opac_cmf*xdotD/rr * dshift;
+    // radial radiation force
+    double rr = sqrt(p.x[0]*p.x[0] + p.x[1]*p.x[1] + p.x[2]*p.x[2]);
+    double xdotD = p.x[0]*p.D[0] + p.x[1]*p.D[1] + p.x[2]*p.D[2];
+    #pragma omp atomic
+    zone->fr_rad += this_E*dshift*continuum_opac_cmf*xdotD/rr * dshift;
 
     // move particle the distance
     p.x[0] += this_d*p.D[0];

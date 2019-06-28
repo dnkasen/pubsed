@@ -8,6 +8,7 @@
 #include <cassert>
 #include <list>
 #include <algorithm>
+#include <iomanip>
 
 #include "transport.h"
 #include "ParameterReader.h"
@@ -17,6 +18,21 @@ using std::cout;
 using std::cerr;
 using std::endl;
 namespace pc = physical_constants;
+
+namespace
+{
+  std::string format_with_commas(long int value)
+  {
+    std::string numWithCommas = std::to_string(value);
+    int insertPosition = numWithCommas.length() - 3;
+    while (insertPosition > 0)
+    {
+        numWithCommas.insert(insertPosition, ",");
+        insertPosition-=3;
+    }
+    return numWithCommas;
+  }
+}
 
 
 //----------------------------------------------------------------------------
@@ -40,6 +56,10 @@ void transport::init(ParameterReader* par, grid_general *g)
 #endif
   verbose = (MPI_myID==0);
 
+  // counts of memory being allocated
+  int n_grid_variables = 0;
+  int n_freq_variables = 0;
+
   // determine my zones to work on
   int nz = grid->n_zones;
   int blocks = floor(nz/MPI_nprocs);
@@ -62,12 +82,23 @@ void transport::init(ParameterReader* par, grid_general *g)
   dst_MPI_block = new double[Max_MPI_Blocksize];
   src_MPI_zones = new double[nz];
   dst_MPI_zones = new double[nz];
+  n_grid_variables += 2;
 
 //  std::cout << MPI_myID <<  " " << my_zone_start_ << " " << my_zone_stop_ <<
 //   " " << my_zone_stop_ - my_zone_start_ << "\n";
 
+  std::string restart_file = params_->getScalar<string>("run_restart_file"); 
+  int do_restart = params_->getScalar<int>("run_do_restart");
+
   // setup and seed random number generator
-  rangen.init();
+  if (do_restart) {
+    int status = rangen.readCheckpointRNG(restart_file);
+    if (status != 0) {
+      rangen.init();
+    }
+  }
+  else
+    rangen.init();
 
   // read relevant parameters
   max_total_particles = params_->getScalar<int>("particles_max_total");
@@ -95,20 +126,22 @@ void transport::init(ParameterReader* par, grid_general *g)
      std::cout << "# frequency grid: n = " << nu_grid.size() << "\n";
   }
 
-  // intialize output spectrum
-  std::vector<double>stg = params_->getVector<double>("spectrum_time_grid");
-  std::vector<double>sng = params_->getVector<double>("spectrum_nu_grid");
-  int nmu  = params_->getScalar<int>("spectrum_n_mu");
-  int nphi = params_->getScalar<int>("spectrum_n_phi");
-  optical_spectrum.init(stg,sng,nmu,nphi);
-  std::vector<double>gng = params_->getVector<double>("gamma_nu_grid");
-  gamma_spectrum.init(stg,sng,nmu,nphi);
-
+  if (do_restart)
+    readCheckpointSpectra(restart_file);
+  else {
+    // intialize output spectrum
+    std::vector<double>stg = params_->getVector<double>("spectrum_time_grid");
+    std::vector<double>sng = params_->getVector<double>("spectrum_nu_grid");
+    int nmu  = params_->getScalar<int>("spectrum_n_mu");
+    int nphi = params_->getScalar<int>("spectrum_n_phi");
+    optical_spectrum.init(stg,sng,nmu,nphi);
+    std::vector<double>gng = params_->getVector<double>("gamma_nu_grid");
+    gamma_spectrum.init(stg,sng,nmu,nphi);
+  }
   // setup the GasState class
   std::string atomdata = params_->getScalar<string>("data_atomic_file");
 
   // set gas opacity flags and parameters
-  gas_state_.grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
   gas_state_.use_electron_scattering_opacity
     = params_->getScalar<int>("opacity_electron_scattering");
   gas_state_.use_line_expansion_opacity
@@ -123,13 +156,14 @@ void transport::init(ParameterReader* par, grid_general *g)
     = params_->getScalar<int>("opacity_free_free");
   gas_state_.use_user_opacity_
     = params_->getScalar<int>("opacity_user_defined");
+  gas_state_.smooth_grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
+  gas_state_.use_zone_dependent_grey_opacity_
+    = params_->getScalar<int>("opacity_zone_dependent_grey_opacity");
   double min_ext = params_->getScalar<double>("opacity_minimum_extinction");
   maximum_opacity_ = params_->getScalar<double>("opacity_maximum_opacity");
   gas_state_.set_minimum_extinction(min_ext);
   gas_state_.atom_zero_epsilon_ = params_->getVector<int>("opacity_atom_zero_epsilon");
   gas_state_.epsilon_           = params_->getScalar<double>("opacity_epsilon");
-
-
 
   // set non-lte settings
   int use_nlte = params_->getScalar<int>("opacity_use_nlte");
@@ -165,12 +199,17 @@ void transport::init(ParameterReader* par, grid_general *g)
     std::cerr << "WARNING: not storing Jnu while using NLTE; Bad idea!\n";
 
   // allocate memory for opacity/emissivity variables
+  planck_mean_opacity_.resize(grid->n_zones);
+  rosseland_mean_opacity_.resize(grid->n_zones);
+  n_grid_variables += 2;
+
   abs_opacity_.resize(grid->n_zones);
   if (!omit_scattering_) scat_opacity_.resize(grid->n_zones);
   emissivity_.resize(grid->n_zones);
   J_nu_.resize(grid->n_zones);
-  planck_mean_opacity_.resize(grid->n_zones);
-  rosseland_mean_opacity_.resize(grid->n_zones);
+  n_freq_variables += 2;
+  if (!omit_scattering_) n_freq_variables +=1;
+  if (store_Jnu_) n_freq_variables += 1;
 
   for (int i=0; i<grid->n_zones;  i++)
   {
@@ -183,10 +222,10 @@ void transport::init(ParameterReader* par, grid_general *g)
     // allocate scattering opacity
     if (!omit_scattering_)
     {
-      try {
-        scat_opacity_[i].resize(nu_grid.size()); }
-     catch (std::bad_alloc const&) {
-        cerr << "Memory allocation fail!" << std::endl; }
+        try {
+            scat_opacity_[i].resize(nu_grid.size()); }
+        catch (std::bad_alloc const&) {
+            cerr << "Memory allocation fail!" << std::endl; }
     }
 
     // allocate emissivity
@@ -194,12 +233,15 @@ void transport::init(ParameterReader* par, grid_general *g)
 
     // allocate Jnu (radiation field)
     if (store_Jnu_)
+    {
       J_nu_[i].resize(nu_grid.size());
+    }
     else
       J_nu_[i].resize(1);
   }
   compton_opac.resize(grid->n_zones);
   photoion_opac.resize(grid->n_zones);
+  n_grid_variables += 2;
 
   // setup emissivity weight  -- debug
   emissivity_weight_.resize(nu_grid.size());
@@ -227,6 +269,7 @@ void transport::init(ParameterReader* par, grid_general *g)
    ddmc_P_abs_.resize(grid->n_zones);
    ddmc_P_stay_.resize(grid->n_zones);
    ddmc_use_in_zone_.resize(grid->n_zones);
+   n_grid_variables += 6;
 
    if(use_ddmc_ == 3)
      setup_RandomWalk();
@@ -239,6 +282,7 @@ void transport::init(ParameterReader* par, grid_general *g)
 
   // allocate space for emission distribution function across zones
   zone_emission_cdf_.resize(grid->n_zones);
+  n_grid_variables += 1;
 
   // read pamaeters for core emission and setup
   setup_core_emission();
@@ -250,13 +294,60 @@ void transport::init(ParameterReader* par, grid_general *g)
   t_now_ = g->t_now;
 
   // initialize particles
-  int n_parts = params_->getScalar<int>("particles_n_initialize");
-  initialize_particles(n_parts);
+  if (do_restart)
+    readCheckpointParticles(restart_file);
+  else {
+    int n_parts = params_->getScalar<int>("particles_n_initialize");
+    initialize_particles(n_parts);
+  }
 
   compton_scatter_photons_ = params_->getScalar<int>("opacity_compton_scatter_photons");
   if (compton_scatter_photons_)
     setup_MB_cdf(0.,5.,512); // in non-dimensional velocity units
+
+  // print out memory footprint
+  if (verbose)
+  {
+    long int nz = grid->n_zones;
+    long int nfreq = nu_grid.size()*grid->n_zones;
+    long int osize = sizeof(OpacityType);
+
+    std::cout << std::endl;
+    std::cout << "#-----------  Memory usage for transport data ";
+    std::cout << " ----------- |" << std::endl;
+    std::cout << "#---------------------------------------------------------|";
+    std::cout << std::endl;
+    std::cout << std::setw(10) << "#  data   |";
+    std::cout << std::setw(9) << " # vars |";
+    std::cout << std::setw(12) << " # pts |";
+    std::cout << std::setw(9) << " each(B)|";
+    std::cout << std::setw(18) << " total (B) |";
+    std::cout << std::endl;
+    std::cout << "#---------------------------------------------------------|";
+    std::cout << std::endl;
+    std::cout << std::setw(10) << "# zone    |";
+    std::cout << std::setw(9) << format_with_commas(n_grid_variables) + " |";
+    std::cout << std::setw(12) << format_with_commas(nz) + " |";
+    std::cout << std::setw(9) << format_with_commas(sizeof(double)) + " |";
+    std::cout << std::setw(18) << format_with_commas(n_grid_variables*nz*sizeof(double)) + " |";;
+    std::cout << std::endl;
+    std::cout << std::setw(10) << "# freq    |";
+    std::cout << std::setw(9) << format_with_commas(n_freq_variables) + " |";
+    std::cout << std::setw(12) << format_with_commas(nfreq) + " |";
+    std::cout << std::setw(9) << format_with_commas(osize) + " |";
+    std::cout << std::setw(18) << format_with_commas(n_freq_variables*nfreq*osize) +  " |";;
+    std::cout << std::endl;
+    std::cout << "#---------------------------------------------------------|";
+    std::cout << std::endl;
+
+    gas_state_.print_memory_footprint();
+    std::cout << std::endl;
+    }
+
+
 }
+
+
 
 
 void transport::setup_MB_cdf(double min_v, double max_v, int num_v)

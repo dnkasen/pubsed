@@ -5,6 +5,8 @@ spherical_lightbulb/1D
 spherical_lightbulb/2D
 spherical_lightbulb/3D
 toy_type1a_supernova/1D_spectrum
+toy_type1a_supernova/1D_spectrum_bb
+toy_type1a_supernova/1D_lightcurve
 advected_pulse/mc
 advected_pulse/ddmc
 adiabatic_expansion/mc
@@ -16,6 +18,10 @@ one_zone_NLTE/optically_thick_solar
 2level_nlte
 lucy_supernova/1D
 lucy_supernova/1D_rwmc
+lucy_supernova/1D_ddmc
+lucy_supernova/1D_checkpoint
 lucy_supernova/2D
+lucy_supernova/2D_checkpoint
+lucy_supernova/3D
 one_zone_rad_eq/grey_IMC
 sod_shock_tube

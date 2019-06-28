@@ -38,7 +38,7 @@ AtomicSpecies::AtomicSpecies()
   use_betas_          = 0;
   minimum_extinction_ = 0;
   use_nlte_           = 0;
-  
+
   n_levels_            = 0;
   n_lines_             = 0;
   n_ions_              = 0;
@@ -97,8 +97,8 @@ int AtomicSpecies::solve_lte(double ne)
   double fac = 2/ne/pow(lt,1.5);
 
   // calculate saha ratios
-  ions_[0].frac = 1.0;
-  double norm  = 1.0;
+  ions_[0].frac = 1.;
+  double norm  = 1.;
   for (int i=1;i<n_ions_;++i)
   {
     // calculate the ratio of i to i-1
@@ -110,9 +110,21 @@ int AtomicSpecies::solve_lte(double ne)
 
     // check for ridiculously small numbers
     if (ne < 1e-50) ions_[i].frac = 0;
-    norm += ions_[i].frac;
+
+    // Normalize
+    norm = 0;
+    for (int j=0; j<=i; j++) {
+      norm += ions_[j].frac;
+    }
+    for (int j=0; j<=i; j++) {
+      ions_[j].frac = ions_[j].frac / norm;
+    }
   }
-  // renormalize ionization fractions_
+  // renormalize ionization fractions
+  norm = 0.;
+  for (int i=0;i<n_ions_; i++) {
+      norm += ions_[i].frac;
+    }
   for (int i=0;i<n_ions_;++i) ions_[i].frac = ions_[i].frac/norm;
 
   // calculate level densities (bolztmann factors)
@@ -144,7 +156,7 @@ int AtomicSpecies::solve_nlte(double ne)
 
   // make sure our lte levels aren't too small
   for (int i=0;i<n_levels_;++i)
-    if (levels_[i].n_lte < min_level_pop_) levels_[i].n_lte = min_level_pop_;
+      if (levels_[i].n_lte < min_level_pop_) levels_[i].n_lte = min_level_pop_;
 
   // Calculate all of the transition rates
   set_rates(ne);
@@ -195,10 +207,15 @@ int AtomicSpecies::solve_nlte(double ne)
     double n_nlte = b*levels_[i].n_lte;
 
     // make sure our solved for nlte levels_ aren't too small
-    if (n_nlte < min_level_pop_) n_nlte = min_level_pop_;
 
     levels_[i].n = n_nlte;
     levels_[i].b = b;
+
+    if (n_nlte < min_level_pop_){
+      levels_[i].n = levels_[i].n_lte;
+      levels_[i].b = 1.;
+    }
+
   }
 
   // set the ionization fraction
@@ -232,12 +249,14 @@ void AtomicSpecies::calculate_radiative_rates(std::vector<real> J_nu)
   // recombination is from EQ 3.16 of Rutten, stellar atmospheres
   // recombination rate includes stimulated recombination
   double fac1 = 2/pc::c/pc::c;
+
   int ng = nu_grid_.size();
   for (int i=1;i<ng;++i)
   {
     double nu     = nu_grid_.center(i);
     double E_ergs = pc::h*nu;
     double E_ev   = E_ergs*pc::ergs_to_ev;
+
     double J      = J_nu[i];
     double dnu    = nu_grid_.delta(i);
     for (int j=0;j<n_levels_;++j)
