@@ -162,6 +162,18 @@ T value_at(const double xval, const std::vector<T>& y) const
 }
 
 template<typename T>
+T value_at_with_zero_edges(const double xval, const std::vector<T>& y) const
+{
+  if (xval < min) return 0;
+  if (xval > x.back()) return 0;
+  int ind = locate_within_bounds(xval);
+  return value_at(xval,y,ind);
+}
+
+
+
+
+template<typename T>
 T value_at(const double xval, const std::vector<T>& y,int ind) const
 {
   if ((ind >= y.size()) || (ind < 0)) {
