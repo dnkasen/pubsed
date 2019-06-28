@@ -71,9 +71,9 @@ int n_threads = 1;
   if (verbose_)
     cout << "# Setup Done: took " << get_timer() << " seconds" << endl;
 
-  last_chk_it_ = 0;
-  last_chk_wt_ = 0;
-  last_chk_simt_ = 0;
+  last_chk_timestep_ = 0;
+  last_chk_walltime_ = 0;
+  last_chk_simtime_ = 0;
 
   // evolve the entire system in time (or iteration)
   evolve_system();
@@ -118,11 +118,11 @@ void SedonaClass::setup()
   // Handle restart bookkeeping
   do_restart_ = params_.getScalar<int>("run_do_restart");
   do_checkpoint_ = params_.getScalar<int>("run_do_checkpoint");
-  chk_it_interval_ = params_.getScalar<int>("run_chk_it_interval");
-  chk_wt_interval_ = params_.getScalar<double>("run_chk_wt_interval");
-  chk_simt_interval_ = params_.getScalar<double>("run_chk_simt_interval");
-  chk_end_time_buffer_ = params_.getScalar<double>("run_chk_end_time_buffer");
-  chk_wallclock_time_total_ = params_.getScalar<double>("run_chk_wallclock_time_total");
+  chk_timestep_interval_ = params_.getScalar<int>("run_chk_timestep_interval");
+  chk_walltime_interval_ = params_.getScalar<double>("run_chk_walltime_interval");
+  chk_simtime_interval_ = params_.getScalar<double>("run_chk_simtime_interval");
+  chk_walltime_max_buffer_ = params_.getScalar<double>("run_chk_walltime_max_buffer");
+  chk_walltime_max_ = params_.getScalar<double>("run_chk_walltime_max");
   int do_checkpoint_test = params_.getScalar<int>("run_do_checkpoint_test");
   i_chk_ = params_.getScalar<int>("run_chk_number_start");
 
@@ -410,35 +410,35 @@ void SedonaClass::evolve_system()
 }
 
 int SedonaClass::do_checkpoint_now(int chk_force) {
-  int chk_it = do_checkpoint_iteration();
-  int chk_wc = do_checkpoint_wallclock();
+  int chk_timestep = do_checkpoint_iteration();
+  int chk_walltime = do_checkpoint_walltime();
   int chk_end = do_checkpoint_before_end();
-  int chk_simt = do_checkpoint_simulation_time();
-  int chk_total = chk_it + chk_wc + chk_end + chk_simt + chk_force;
+  int chk_simtime = do_checkpoint_simulation_time();
+  int chk_total = chk_timestep + chk_walltime + chk_end + chk_simtime + chk_force;
   return chk_total;
 }
 
 int SedonaClass::do_checkpoint_iteration() {
-  if (chk_it_interval_ <= 0) {
+  if (chk_timestep_interval_ <= 0) {
     return 0;
   }
   else
   {
-    if (it_ >= last_chk_it_ + chk_it_interval_) {
+    if (it_ >= last_chk_timestep_ + chk_timestep_interval_) {
       return 1;
     }
   }
   return 0;
 }
 
-int SedonaClass::do_checkpoint_wallclock() {
-  if (chk_wt_interval_ <= 0) {
+int SedonaClass::do_checkpoint_walltime() {
+  if (chk_walltime_interval_ <= 0) {
     return 0;
   }
   else
   {
     double curr_time = get_timer();
-    if (curr_time >= last_chk_wt_ + chk_wt_interval_) {
+    if (curr_time >= last_chk_walltime_ + chk_walltime_interval_) {
       return 1;
     }
   }
@@ -446,17 +446,15 @@ int SedonaClass::do_checkpoint_wallclock() {
 }
 
 int SedonaClass::do_checkpoint_before_end() {
-  if ((chk_wallclock_time_total_ <= 0) || (chk_end_time_buffer_ == 0)) {
+  if ((chk_walltime_max_ <= 0) || (chk_walltime_max_buffer_ == 0)) {
     return 0;
   }
   else
   {
     double curr_time = get_timer();
     double last_step = curr_time - start_step_wt_;
-    if ((curr_time + chk_end_time_buffer_ * last_step) > chk_wallclock_time_total_)
+    if ((curr_time + chk_walltime_max_buffer_ * last_step) > chk_walltime_max_)
     {
-      std::cerr << curr_time << " " << chk_end_time_buffer_ << " " << last_step << std::endl;
-      std::cerr << curr_time + chk_end_time_buffer_ * last_step << " " << chk_wallclock_time_total_ << std::endl;
       return 1;
     }
   }
@@ -464,12 +462,12 @@ int SedonaClass::do_checkpoint_before_end() {
 }
 
 int SedonaClass::do_checkpoint_simulation_time() {
-  if (chk_simt_interval_ <= 0) {
+  if (chk_simtime_interval_ <= 0) {
     return 0;
   }
   else
   {
-    if (t_ >= last_chk_simt_ + chk_simt_interval_) {
+    if (t_ >= last_chk_simtime_ + chk_simtime_interval_) {
       return 1;
     }
   }
@@ -503,9 +501,9 @@ void SedonaClass::write_checkpoint(std::string checkpoint_file_full)
   transport_->writeCheckpointSpectra(checkpoint_file_full);
   transport_->writeCheckpointRNG(checkpoint_file_full);
   grid_->writeCheckpointGrid(checkpoint_file_full);
-  last_chk_it_ = it_;
-  last_chk_wt_ = get_timer();
-  last_chk_simt_ = t_;
+  last_chk_timestep_ = it_;
+  last_chk_walltime_ = get_timer();
+  last_chk_simtime_ = t_;
 }
 
 //-----------------------------------------------------------

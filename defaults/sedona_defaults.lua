@@ -16,11 +16,11 @@ run_do_checkpoint           = 0
 run_do_checkpoint_test      = 0
 run_restart_file            = "chk.h5"
 run_checkpoint_name_base    = "chk"
-run_chk_it_interval         = 0
-run_chk_wt_interval         = 0. 
-run_chk_simt_interval       = 0.
-run_chk_end_time_buffer     = 1.1
-run_chk_wallclock_time_total = 0.
+run_chk_timestep_interval   = 0
+run_chk_walltime_interval   = 0. 
+run_chk_simtime_interval    = 0.
+run_chk_walltime_max_buffer = 0.
+run_chk_walltime_max       = 0.
 run_chk_number_start        = 0 -- number of first checkpoint file
 
 -- default hydro module is none
