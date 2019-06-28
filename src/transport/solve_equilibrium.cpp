@@ -26,18 +26,23 @@ int transport::solve_state_and_temperature(int i)
     }
   else
     {
-      // do an initial solve?
+
 
         zone* z = &(grid->z[i]);
 	gas_state_.dens_ = z->rho;
 	gas_state_.temp_ = z->T_gas;
+
+	// do an initial solve
 	solve_error = gas_state_.solve_state();
-
 	gas_state_.computeOpacity(abs_opacity_[i],scat,emis);
-
-
       
-      grid->z[i].T_gas = temp_brent_method(i,1,solve_error); // gas_state solve will happen in here. The solve error is for the gas_state solve
+      grid->z[i].T_gas = temp_brent_method(i,1,solve_error); // gas_state solve may also happen here
+
+      if (gas_state_.use_nlte_ ==0)
+	{
+	  // do a final solve
+	  solve_error = gas_state_.solve_state();
+	}
 
         if (gas_state_.use_nlte_)
 	  {

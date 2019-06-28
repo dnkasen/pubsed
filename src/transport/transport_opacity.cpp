@@ -99,7 +99,7 @@ void transport::set_opacity(double dt)
       {
 	if (solve_coupled_gas_state_temperature_)
 	  {
-	    solve_error = solve_state_and_temperature(i); // NLTE solution will take place in here.
+	    solve_error = solve_state_and_temperature(i); // gas state solution (LTE or NLTE) solution will also take place in here.
 	  }
 
 	else
