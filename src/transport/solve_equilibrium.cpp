@@ -33,9 +33,12 @@ int transport::solve_state_and_temperature(int i)
 	gas_state_.dens_ = z->rho;
 	gas_state_.temp_ = z->T_gas;
 
-	// do an initial solve of the gas state
-	solve_error = gas_state_.solve_state();
-	gas_state_.computeOpacity(abs_opacity_[i],scat,emis);
+	// For LTE, do an initial solve of the gas state
+	if (gas_state_.use_nlte_ == 0)
+	  {
+	    solve_error = gas_state_.solve_state();
+	    gas_state_.computeOpacity(abs_opacity_[i],scat,emis);
+	  }
 
     // Calculate equilibrium temperature.
     // Additional gas_state solve may also happen here
@@ -43,7 +46,7 @@ int transport::solve_state_and_temperature(int i)
 
     if (gas_state_.use_nlte_ == 0)
 	{
-	  // do a final solve
+	  // For LTE, do a final solve
 	  solve_error = gas_state_.solve_state();
 	}
 
