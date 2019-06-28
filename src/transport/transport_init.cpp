@@ -87,7 +87,7 @@ void transport::init(ParameterReader* par, grid_general *g)
 //  std::cout << MPI_myID <<  " " << my_zone_start_ << " " << my_zone_stop_ <<
 //   " " << my_zone_stop_ - my_zone_start_ << "\n";
 
-  std::string restart_file = params_->getScalar<string>("run_restart_file"); 
+  std::string restart_file = params_->getScalar<string>("run_restart_file");
   int do_restart = params_->getScalar<int>("run_do_restart");
 
   // setup and seed random number generator
@@ -113,47 +113,42 @@ void transport::init(ParameterReader* par, grid_general *g)
   last_iteration_ = 0;
 
 
-  // set dependent parameters, check for conflicts
-
+  // set temperature control parameters, check for conflicts
   if (radiative_eq != 0)
+  {
+    if (skip_gas_temp_update_during_transport_ == 1 )
     {
-      if (skip_gas_temp_update_during_transport_ == 1 )
-	{
 	  cerr << "# ERROR: radiative equilibrium turned on, skip_gas_temp_update_during_transport cannot be set to 1\n";
 	  exit(1);
 	}
-      if (set_gas_temp_to_rad_temp_ == 1)
+    if (set_gas_temp_to_rad_temp_ == 1)
 	{
 	  cerr << "# ERROR: radiative equilibrium turned on, set_gas_temp_to_rad_temp_ cannot be set to 1.\n";
 	  exit(1);
-	}
-      
     }
+  }
 
-    if (solve_coupled_gas_state_temperature_ == 1)
+  if (solve_coupled_gas_state_temperature_ == 1)
+  {
+    if (skip_gas_temp_update_during_transport_ == 1 )
     {
-      if (skip_gas_temp_update_during_transport_ == 1 )
-	{
 	  cerr << "# ERROR: Cannot simultaneously set solve_coupled_gas_state_temperature_ to 1 and skip_gas_temp_update_during_transport_ to 1\n";
 	  exit(1);
 	}
 
-      if (set_gas_temp_to_rad_temp_ == 1)
+    if (set_gas_temp_to_rad_temp_ == 1)
 	{
 	  cout << "# WARNING: set_gas_temp_to_rad_temp_ is set to 1, so this will override anything more detailed that might result from setting solve_coupled_gas_state_temp_ to 1\n";
 	}
+  }
 
-    }
+  if (skip_gas_temp_update_during_transport_ == 1 && set_gas_temp_to_rad_temp_ == 1)
+  {
+	cerr << "# ERROR: Cannot simultaneously set skip_gas_temp_update_during_transport_ to 1 and set_gas_temp_to_rad_temp_ == 1\n";
+	exit(1);
+  }
 
-    if (skip_gas_temp_update_during_transport_ == 1 && set_gas_temp_to_rad_temp_ == 1)
-      {
 
-	  cerr << "# ERROR: Cannot simultaneously set skip_gas_temp_update_during_transport_ to 1 and set_gas_temp_to_rad_temp_ == 1\n";
-	  exit(1);
-      }
-    
-
-  
   // initialize the frequency grid
   std::vector<double> nu_dims = params_->getVector<double>("transport_nu_grid");
   if ((nu_dims.size() != 4)&&(nu_dims.size() != 3)) {
@@ -249,14 +244,14 @@ void transport::init(ParameterReader* par, grid_general *g)
   planck_mean_opacity_.resize(grid->n_zones);
 
   if (use_nlte)
-    {
-      bf_heating.resize(grid->n_zones);
-      ff_heating.resize(grid->n_zones);
-      bf_cooling.resize(grid->n_zones);
-      ff_cooling.resize(grid->n_zones);
-      coll_cooling.resize(grid->n_zones);
-    }
-  
+  {
+    bf_heating.resize(grid->n_zones);
+    ff_heating.resize(grid->n_zones);
+    bf_cooling.resize(grid->n_zones);
+    ff_cooling.resize(grid->n_zones);
+    coll_cooling.resize(grid->n_zones);
+  }
+
   rosseland_mean_opacity_.resize(grid->n_zones);
   n_grid_variables += 2;
 

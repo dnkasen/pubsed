@@ -239,59 +239,56 @@ void transport::reduce_opacities()
   for (int i=0;i<nz;i++) grid->z[i].T_gas = dst_MPI_zones[i];
 
  if (params_->getScalar<int>("opacity_use_nlte"))
-   {
+ {
+    for (int i=my_zone_start_;i<my_zone_stop_;i++)
+    {
+	  src_MPI_zones[i] = bf_heating[i];
+	  dst_MPI_zones[i] = 0.0;
+    }
 
-     for (int i=my_zone_start_;i<my_zone_stop_;i++)
-       {
-	 src_MPI_zones[i] = bf_heating[i];
-	 dst_MPI_zones[i] = 0.0;
-       } 
+    MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    for (int i=0;i<nz;i++) bf_heating[i] = dst_MPI_zones[i];
 
-     MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-     for (int i=0;i<nz;i++) bf_heating[i] = dst_MPI_zones[i];
+    for (int i=my_zone_start_;i<my_zone_stop_;i++)
+    {
+	   src_MPI_zones[i] = bf_cooling[i];
+	   dst_MPI_zones[i] = 0.0;
+    }
 
+    MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    for (int i=0;i<nz;i++) bf_cooling[i] = dst_MPI_zones[i];
 
-     for (int i=my_zone_start_;i<my_zone_stop_;i++)
-       {
-	 src_MPI_zones[i] = bf_cooling[i];
-	 dst_MPI_zones[i] = 0.0;
-       } 
+    for (int i=my_zone_start_;i<my_zone_stop_;i++)
+    {
+	  src_MPI_zones[i] = ff_heating[i];
+	  dst_MPI_zones[i] = 0.0;
+    }
 
-     MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-     for (int i=0;i<nz;i++) bf_cooling[i] = dst_MPI_zones[i];
+    MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    for (int i=0;i<nz;i++) ff_heating[i] = dst_MPI_zones[i];
 
-     for (int i=my_zone_start_;i<my_zone_stop_;i++)
-       {
-	 src_MPI_zones[i] = ff_heating[i];
-	 dst_MPI_zones[i] = 0.0;
-       } 
+    for (int i=my_zone_start_;i<my_zone_stop_;i++)
+    {
+	  src_MPI_zones[i] = ff_cooling[i];
+	  dst_MPI_zones[i] = 0.0;
+    }
 
-     MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-     for (int i=0;i<nz;i++) ff_heating[i] = dst_MPI_zones[i];
+    MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    for (int i=0;i<nz;i++) ff_cooling[i] = dst_MPI_zones[i];
 
+    for (int i=my_zone_start_;i<my_zone_stop_;i++)
+    {
+	  src_MPI_zones[i] = coll_cooling[i];
+	  dst_MPI_zones[i] = 0.0;
+    }
 
-     for (int i=my_zone_start_;i<my_zone_stop_;i++)
-       {
-	 src_MPI_zones[i] = ff_cooling[i];
-	 dst_MPI_zones[i] = 0.0;
-       } 
+    MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    for (int i=0;i<nz;i++) coll_cooling[i] = dst_MPI_zones[i];
+  }
 
-     MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-     for (int i=0;i<nz;i++) ff_cooling[i] = dst_MPI_zones[i];
-
-     for (int i=my_zone_start_;i<my_zone_stop_;i++)
-       {
-	 src_MPI_zones[i] = coll_cooling[i];
-	 dst_MPI_zones[i] = 0.0;
-       } 
-
-     MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-     for (int i=0;i<nz;i++) coll_cooling[i] = dst_MPI_zones[i];
-   }
-  
 
 #endif
- }
+}
 
  void transport::reduce_Lthermal()
  {
@@ -373,7 +370,7 @@ void transport::reduce_opacities()
     MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
     for (int i=0;i<nz;i++) grid->z[i].e_abs = dst_MPI_zones[i]/MPI_nprocs;
 
-    
+
     for (int i=0;i<nz;i++)
     {
       src_MPI_zones[i] = grid->z[i].L_radio_dep;

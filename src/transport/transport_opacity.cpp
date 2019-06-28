@@ -46,17 +46,13 @@ void transport::set_opacity(double dt)
   radioactive radio;
   vector<double> X_now(grid->n_elems);
 
+  if (verbose)
+    if (solve_coupled_gas_state_temperature_ && first_step_ == 0)
+	  printf("# Solving coupled equations for gas state and temperature\n");
+
+
   // loop over my zones to calculate
   int solve_error = 0;
-
-  if (verbose)
-    {
-      if (solve_coupled_gas_state_temperature_ && first_step_ == 0)
-	{
-	  printf("# Solving coupled equations for gas state and temperature\n");
-	}
-    }
-  
   tstr = get_system_time();
   for (int i=my_zone_start_;i<my_zone_stop_;i++)
   {
@@ -64,7 +60,7 @@ void transport::set_opacity(double dt)
     zone* z = &(grid->z[i]);
 
     //------------------------------------------------------
-    // optical photon opacities
+    // calculate optical photon opacities
     //------------------------------------------------------
 
     // set up the state of the gas in this zone
@@ -84,43 +80,43 @@ void transport::set_opacity(double dt)
     gas_state_.total_grey_opacity_ = gas_state_.smooth_grey_opacity_ + z->grey_opacity;
 
     if (first_step_)
-      {
+    {
 	  zone* z = &(grid->z[i]);
 	  gas_state_.dens_ = z->rho;
 	  gas_state_.temp_ = z->T_gas;
 
 	  if ( (gas_state_.smooth_grey_opacity_ == 0) && (gas_state_.use_zone_dependent_grey_opacity_ == 0) )
-	    {
-	      solve_error = gas_state_.solve_state();   // always do LTE on first step, without updating temperature
-	    }
-      }
+	  {
+        // always do LTE on first step, without updating temperature
+	    solve_error = gas_state_.solve_state();
+	  }
+    }
 
     else
-      {
-	if (solve_coupled_gas_state_temperature_)
+    {
+	  if (solve_coupled_gas_state_temperature_)
 	  {
-	    solve_error = solve_state_and_temperature(i); // gas state solution (LTE or NLTE) solution will also take place in here.
+        // gas state solution (LTE or NLTE) solution as well as radiative
+        // equilibrium temperature solve will happen here
+	    solve_error = solve_state_and_temperature(i);
 	  }
 
-	else
+	  else
 	  {
-	    if ( (gas_state_.smooth_grey_opacity_ == 0) && (gas_state_.use_zone_dependent_grey_opacity_ == 0) )
-	      {
-		solve_error = gas_state_.solve_state(J_nu_[i]);
-	      }
+	    if ( (gas_state_.smooth_grey_opacity_ == 0) && (gas_state_.use_zone_dependent_grey_opacity_ == 0) ) {
+		  solve_error = gas_state_.solve_state(J_nu_[i]); }
 	  }
-	    
-      }
-    
+
+    }
+
     // flag any error
     if (verbose)
-      {
-	if (solve_error == 1) std::cerr << "# Warning: root not bracketed in n_e solve\n";
-	if (solve_error == 2) std::cerr << "# Warning: max iterations hit in n_e solve\n";
-      }
+    {
+	  if (solve_error == 1) std::cerr << "# Warning: root not bracketed in n_e solve\n";
+	  if (solve_error == 2) std::cerr << "# Warning: max iterations hit in n_e solve\n";
+    }
 
     //gas_state_.print();
-
     if(write_levels) gas_state_.write_levels(i);
 
     // calculate the opacities/emissivities
@@ -181,17 +177,15 @@ void transport::set_opacity(double dt)
 
 
   }
-  if (solve_coupled_gas_state_temperature_ && first_step_ == 0)
-    {
-      reduce_Tgas();
-    }
+  if (solve_coupled_gas_state_temperature_ && first_step_ == 0) {
+      reduce_Tgas(); }
 
   tend = get_system_time();
   if (verbose) cout << "# Calculated opacities   (" << (tend-tstr) << " secs) \n";
 
 
   //------------------------------------------------------------
-  // Calcuate eps_imc...
+  // Calcuate implicit MC parameter eps_imc
   //------------------------------------------------------------
   for (int i=0;i<grid->n_zones;i++)
   {
@@ -210,18 +204,17 @@ void transport::set_opacity(double dt)
 
       // make sure to avoid divide by zero if fleck alpha is zero and not computing e_gas through hydro
       if (fleck_alpha_ == 0)
-	f_imc = 0.;
-       
-       grid->z[i].eps_imc = 1.0/(1.0 + f_imc);
-   }
+	    f_imc = 0.;
+
+      grid->z[i].eps_imc = 1.0/(1.0 + f_imc);
+    }
   }
 
-    // turn nlte back on after first step, if wanted
+  // turn nlte back on after first step, if wanted
   if (first_step_) {
     gas_state_.use_nlte_ = nlte;
   }
 
-  
 }
 
 
@@ -289,4 +282,3 @@ double transport::blackbody_nu(double T, double nu)
   double zeta = pc::h*nu/pc::k/T;
   return 2.0*nu*nu*nu*pc::h/pc::c/pc::c/(exp(zeta)-1);
 }
-
