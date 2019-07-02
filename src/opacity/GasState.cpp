@@ -198,7 +198,7 @@ int GasState::solve_state(std::vector<real> J_nu)
   }
 
   double max_ne = 100*dens_/(A_mu*pc::m_p);
-  double min_ne = 1e-30*dens_/(A_mu*pc::m_p);;
+  double min_ne = 1e-10*dens_/(A_mu*pc::m_p);;
   double tol    = 1e-3;
   solve_error_  = 0;
   n_elec_ = ne_brent_method(min_ne,max_ne,tol,J_nu);
