@@ -71,6 +71,10 @@ int n_threads = 1;
   if (verbose_)
     cout << "# Setup Done: took " << get_timer() << " seconds" << endl;
 
+  last_chk_timestep_ = 0;
+  last_chk_walltime_ = 0;
+  last_chk_simtime_ = 0;
+
   // evolve the entire system in time (or iteration)
   evolve_system();
 
@@ -114,7 +118,13 @@ void SedonaClass::setup()
   // Handle restart bookkeeping
   do_restart_ = params_.getScalar<int>("run_do_restart");
   do_checkpoint_ = params_.getScalar<int>("run_do_checkpoint");
+  chk_timestep_interval_ = params_.getScalar<int>("run_chk_timestep_interval");
+  chk_walltime_interval_ = params_.getScalar<double>("run_chk_walltime_interval");
+  chk_simtime_interval_ = params_.getScalar<double>("run_chk_simtime_interval");
+  chk_walltime_max_buffer_ = params_.getScalar<double>("run_chk_walltime_max_buffer");
+  chk_walltime_max_ = params_.getScalar<double>("run_chk_walltime_max");
   int do_checkpoint_test = params_.getScalar<int>("run_do_checkpoint_test");
+  i_chk_ = params_.getScalar<int>("run_chk_number_start");
 
   std::string restart_file;
   if (do_restart_)
@@ -299,40 +309,42 @@ void SedonaClass::evolve_system()
   std::cout << std::setprecision(2);
   // loop over time/iterations. dt at iteration i doesn't depend on dt at
   // iteration i + 1. Not currently checkpointed, but may need to be later.
-  int i_chk = 0;
-  double dt, t = grid_->t_now;
-  for(int it=1; it<=n_steps; it++,t+=dt)
+  t_ = grid_->t_now;
+  it_ = 1;
+  while (it_ <= n_steps)
+  //for(int it=1; it<=n_steps; it++,t+=dt_)
   {
+    start_step_wt_ = get_timer();
     // get this time step
     if (!steady_iterate)
     {
-      dt = dt_max;
+      dt_ = dt_max;
       if (use_hydro_)
       {
         double dt_hydro = hydro_->get_time_step();
-        if (dt_hydro < dt) dt = dt_hydro;
+        if (dt_hydro < dt_) dt_ = dt_hydro;
       }
-      if ((dt_del > 0)&&(t > 0)) if (dt > t*dt_del) dt = t*dt_del;
-      if (dt < dt_min) dt =  dt_min;
+      if ((dt_del > 0)&&(t_ > 0)) if (dt_ > t_*dt_del) dt_ = t_*dt_del;
+      if (dt_ < dt_min) dt_ =  dt_min;
     }
     else
     {
-      dt = 0;
-      if (it == n_steps) transport_->set_last_iteration_flag();
+      dt_ = 0;
+      if (it_ == n_steps) transport_->set_last_iteration_flag();
     }
 
     // printout basic time step information
     if (verbose_)
     {
       cout << "#-------------------------------------------" << endl;
-      if (steady_iterate) cout << "# ITERATION: " << it << ";  t = " << t << "\t";
-      else cout << "# TSTEP #" << it << " ; t = " << t << " sec (" << t/3600/24.0 << " days); dt = " << dt;
+      if (steady_iterate) cout << "# ITERATION: " << it_ << ";  t = " << t_ << "\t";
+      else cout << "# TSTEP #" << it_ << " ; t = " << t_ << " sec (" << t_/3600/24.0 << " days); dt = " << dt_;
       cout << endl;
       cout << "# particles on grid = " << transport_->n_particles() << endl;
     }
 
     // do hydro step
-    if (use_hydro_) hydro_->step(dt);
+    if (use_hydro_) hydro_->step(dt_);
 
     if (steady_iterate)	transport_->wipe_spectra();
 
@@ -340,19 +352,19 @@ void SedonaClass::evolve_system()
     if (use_transport_)
     {
       transport_->write_levels = 0;
-      if(((t>=next_write_out)||(steady_iterate))&&write_levels)
+      if(((t_>=next_write_out)||(steady_iterate))&&write_levels)
       transport_->write_levels = 1;
 
-      transport_->step(dt);
+      transport_->step(dt_);
       // print out spectrum if an iterative calc
-      if (steady_iterate) transport_->output_spectrum(it);
+      if (steady_iterate) transport_->output_spectrum(it_);
     }
 
     // writeout output files when appropriate
-    if ((t >= next_write_out)||(steady_iterate))
+    if ((t_ >= next_write_out)||(steady_iterate))
     {
-      double t_write = t + dt;
-      if (steady_iterate) t_write = t;
+      double t_write = t_ + dt_;
+      if (steady_iterate) t_write = t_;
 
       // write out what we want
       if (verbose_)
@@ -370,11 +382,6 @@ void SedonaClass::evolve_system()
       if (use_transport_)
         transport_->output_spectrum(i_write+1);
 
-      if (do_checkpoint_)
-      {
-        write_checkpoint(i_chk);
-        i_chk++;
-      }
 
       // determine next write out
       if ((write_out_log > 0)&&(i_write > 0))
@@ -384,8 +391,16 @@ void SedonaClass::evolve_system()
       i_write++;
     }
 
+    if ((do_checkpoint_) && (do_checkpoint_now()))
+    {
+      write_checkpoint(i_chk_);
+      i_chk_++;
+    }
+
     // check for end
-    if ((!steady_iterate)&&(t > t_stop)) break;
+    if ((!steady_iterate)&&(t_ > t_stop)) break;
+    it_++;
+    t_ += dt_;
   }
 
   // print out final spectrum
@@ -394,13 +409,77 @@ void SedonaClass::evolve_system()
   write_checkpoint(checkpoint_name_base_ + "_final.h5");
 }
 
+int SedonaClass::do_checkpoint_now(int chk_force) {
+  int chk_timestep = do_checkpoint_iteration();
+  int chk_walltime = do_checkpoint_walltime();
+  int chk_end = do_checkpoint_before_end();
+  int chk_simtime = do_checkpoint_simulation_time();
+  int chk_total = chk_timestep + chk_walltime + chk_end + chk_simtime + chk_force;
+  return chk_total;
+}
+
+int SedonaClass::do_checkpoint_iteration() {
+  if (chk_timestep_interval_ <= 0) {
+    return 0;
+  }
+  else
+  {
+    if (it_ >= last_chk_timestep_ + chk_timestep_interval_) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+int SedonaClass::do_checkpoint_walltime() {
+  if (chk_walltime_interval_ <= 0) {
+    return 0;
+  }
+  else
+  {
+    double curr_time = get_timer();
+    if (curr_time >= last_chk_walltime_ + chk_walltime_interval_) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+int SedonaClass::do_checkpoint_before_end() {
+  if ((chk_walltime_max_ <= 0) || (chk_walltime_max_buffer_ == 0)) {
+    return 0;
+  }
+  else
+  {
+    double curr_time = get_timer();
+    double last_step = curr_time - start_step_wt_;
+    if ((curr_time + chk_walltime_max_buffer_ * last_step) > chk_walltime_max_)
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+int SedonaClass::do_checkpoint_simulation_time() {
+  if (chk_simtime_interval_ <= 0) {
+    return 0;
+  }
+  else
+  {
+    if (t_ >= last_chk_simtime_ + chk_simtime_interval_) {
+      return 1;
+    }
+  }
+  return 0;
+}
 
 //-----------------------------------------------------------
 // Write a checkpoint file with numbered name
 //-----------------------------------------------------------
-void SedonaClass::write_checkpoint(int i_chk)
+void SedonaClass::write_checkpoint(int i_chk_)
 {
-  string i_chk_str = std::to_string(i_chk);
+  string i_chk_str = std::to_string(i_chk_);
   i_chk_str.insert(i_chk_str.begin(), 5 - i_chk_str.length(), '0');
   string checkpoint_file_full = checkpoint_name_base_ + "_" + i_chk_str + ".h5";
   write_checkpoint(checkpoint_file_full);
@@ -411,16 +490,21 @@ void SedonaClass::write_checkpoint(int i_chk)
 //-----------------------------------------------------------
 void SedonaClass::write_checkpoint(std::string checkpoint_file_full)
 {
-  if (verbose_)
+  if (verbose_) {
+    cout << "# writing checkpoint file " << checkpoint_file_full;
+    cout << " at time " << t_ << endl;
     createFile(checkpoint_file_full);
+  }
   write_checkpoint_meta(checkpoint_file_full);
   transport_->writeCheckpointParticles(checkpoint_file_full);
   grid_->writeCheckpointZones(checkpoint_file_full);
   transport_->writeCheckpointSpectra(checkpoint_file_full);
   transport_->writeCheckpointRNG(checkpoint_file_full);
   grid_->writeCheckpointGrid(checkpoint_file_full);
+  last_chk_timestep_ = it_;
+  last_chk_walltime_ = get_timer();
+  last_chk_simtime_ = t_;
 }
-
 
 //-----------------------------------------------------------
 // Write meta data re git version, compile time
