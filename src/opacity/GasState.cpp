@@ -91,16 +91,16 @@ void GasState::set_atoms_in_nlte
   for (int i=0;i<useatoms.size();++i)
   {
     for (int j=0;j<atoms.size();++j)
-      {
-	if (elem_Z[j] == useatoms[i])
-	  {
-	    atoms[j].set_use_nlte();
-	    atoms[j].use_collisions_nlte_ = use_collisions_nlte_;
-	  }
-      }
+    {
+	    if (elem_Z[j] == useatoms[i])
+	    {
+	      atoms[j].set_use_nlte();
+	      atoms[j].use_collisions_nlte_ = use_collisions_nlte_;
+	    }
+    }
   }
 
-  
+
 }
 
 //-----------------------------------------------------------------

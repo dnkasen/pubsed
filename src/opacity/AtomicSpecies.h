@@ -92,7 +92,7 @@ private:
 
   double blackbody_nu(double T, double nu);
   double Calculate_Milne(int lev, double temp);
- void   set_rates(double ne);
+  void   set_rates(double ne);
 
 public:
 
