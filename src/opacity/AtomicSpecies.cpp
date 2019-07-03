@@ -393,7 +393,7 @@ void AtomicSpecies::set_rates(double ne)
     {
 	    double C_up = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) / ezeta * ne * effective_f_lu;
       // be careful about possible overflow
-      if (zeta > 700) C_up = 0.
+      if (zeta > 700) C_up = 0;
 
 	    double C_down = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) * ne * effective_f_lu * levels_[ll].g/levels_[lu].g;
 
