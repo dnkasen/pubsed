@@ -154,6 +154,12 @@ void hydro_1D_lagrangian::step(double dt)
     // radial element
     double dr1 = get_dr(z1);
     double dr2 = get_dr(z2);
+    if (dr1<0) {
+      std::cout << "ERROR: r_out_[" << z1 << "] < r_out_[" << z1-1 << "]; decrease minimum time step size" << "\n";
+    }
+    if (dr2<0) {
+      std::cout << "ERROR: r_out_[" << z2 << "] < r_out_[" << z2-1 << "]; decrease minimum time step size" << "\n";
+    }
     double rhomean = 0.5*(grid->z[z2].rho*dr2 + grid->z[z1].rho*dr1);
 
     // acceleration from pressure/visc gradients

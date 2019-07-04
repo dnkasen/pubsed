@@ -130,7 +130,7 @@ bool locate_array::is_equal(locate_array l, bool complain) {
     equal = false;
   }
   if (do_log_interpolate != l.do_log_interpolate) {
-    if (complain) std::cerr << "locate array do_log_interpolate are different" << std::endl;
+    if (complain) std::cerr << "locate array do_log_interpolate are different" << do_log_interpolate << " " << l.do_log_interpolate << std::endl;
     equal = false;
   }
   if (x.size() != l.x.size()) {
@@ -215,7 +215,6 @@ void locate_array::writeCheckpoint(std::string fname, std::string gname, std::st
 
   createDataset(h5_locatearray_group, "min", 1, &single_val, H5T_NATIVE_DOUBLE); 
   writeSimple(h5_locatearray_group, "min", &min, H5T_NATIVE_DOUBLE);
-
   createDataset(h5_locatearray_group, "do_log_interpolate", 1, &single_val, H5T_NATIVE_INT);
   writeSimple(h5_locatearray_group, "do_log_interpolate", &do_log_interpolate, H5T_NATIVE_INT);
   
