@@ -199,10 +199,22 @@ ParticleFate transport::propagate(particle &p, double dt)
   while (fate == moving)
   {
     // check if we are in DDMC zone
+    // Generalized to be particle- and frequency-dependent
     int in_ddmc_zone = 0;
     if (use_ddmc_)
-      if ((ddmc_use_in_zone_[p.ind])&&(p.type == photon))
-        in_ddmc_zone = 1;
+    {
+       double sigma_i, dshift, eps_i;
+       int i_nu;
+       dshift = dshift_lab_to_comoving(&p);
+       i_nu = get_opacity(p,dshift,sigma_i,eps_i);
+
+       double dr;
+       grid->get_zone_size(p.ind,&dr);
+
+       double ztau = sigma_i * dr;
+       if ((ztau > ddmc_tau_) && (p.type == photon)) in_ddmc_zone = 1;
+       //if ((ddmc_use_in_zone_[p.ind]) && (p.type == photon)) in_ddmc_zone = 1;
+    }
 
     if (in_ddmc_zone){
       if(use_ddmc_ == 1)
@@ -241,14 +253,20 @@ ParticleFate transport::propagate_monte_carlo(particle &p, double tstop)
     zone *zone = &(grid->z[p.ind]);
 
     // check if we have moved into a DDMC zone
+    // Instead of using ddmc_use_in_zone_[p.ind] as in the gray case,
+    // it is generalized to be particle- and frequency-dependent.
     if (use_ddmc_)
-      if ((ddmc_use_in_zone_[p.ind])&&(p.type == photon))
+    {
+      int i_nu;
+      double dshift = dshift_lab_to_comoving(&p);
+      double sigma_i, dr, eps_i;
+      i_nu = get_opacity(p,dshift,sigma_i,eps_i);
+      grid->get_zone_size(p.ind,&dr);
+      double ztau = sigma_i * dr;
+      //if ((ddmc_use_in_zone_[p.ind]) && (p.type == photon))
+      if ((ztau > ddmc_tau_) && (p.type == photon))
         return moving;
-
-    // printout for debug
-    //std::cout << " p = " << sqrt(p.x[0]*p.x[0] + p.x[1]*p.x[1]);
-    //std::cout << " x = " << p.x[0] << " y = " << p.x[1] << "; z = " << p.x[2]"\n";
-    //std::cout << "D = " << p.D[0] << ", " << p.D[1] << ", " << p.D[2] << "\n";
+    }
 
     // get distance and index to the next zone boundary
     double d_bn = 0;
@@ -256,6 +274,22 @@ ParticleFate transport::propagate_monte_carlo(particle &p, double tstop)
 
     // determine the doppler shift from comoving to lab
     double dshift = dshift_lab_to_comoving(&p);
+
+    // Check whether the neighbor is a DDMC zone
+    bool new_cell_ddmc = false;
+    double sigma_i, eps_i, dr;
+    if (use_ddmc_ && (new_ind >=0))
+    {
+       int old_ind = p.ind;
+       p.ind = new_ind;
+       int i_nu = get_opacity(p,dshift,sigma_i,eps_i);
+       grid->get_zone_size(p.ind,&dr);
+       p.ind = old_ind;
+
+       double ztau = sigma_i * dr;
+       if ((ztau > ddmc_tau_) && (p.type == photon)) new_cell_ddmc = true;
+       //if ((ddmc_use_in_zone_[new_ind]) && (p.type == photon)) new_cell_ddmc = true;
+    }
 
     // get continuum opacity and absorption fraction (epsilon)
     double continuum_opac_cmf,eps_absorb_cmf;
@@ -385,7 +419,130 @@ ParticleFate transport::propagate_monte_carlo(particle &p, double tstop)
         }
       }
       // just another cell
-      else p.ind = new_ind;
+      //else p.ind = new_ind;
+      // Interfacing with DDMC zones, allowing IMC-to-DDMC conversion
+      // If the neighbor is in DDMC, there is a probability the particle
+      // gets converted into DDMC. If the particle is not converted,
+      // it is returned to the MC region.
+      else
+      {
+        // gather information for neighboring zone
+        int ip = p.ind + 1;
+        int im = p.ind - 1;
+
+        int nz = grid->n_zones;
+        if (ip == nz) ip = p.ind;
+        if (im < 0)   im = 0;
+
+        if (use_ddmc_ && new_cell_ddmc && \
+            (new_ind != p.ind))
+        {
+
+          // Getting radii at zone boundaries and center
+          double rcoords[3];
+          grid->coordinates(p.ind,rcoords);
+          double r_p = rcoords[0]; // outer edge of zone ii
+          grid->coordinates(im,rcoords);
+          double r_m = rcoords[0]; // inner edge of zone ii
+          if (p.ind == 0) {grid->get_r_out_min(&r_m);} // Getting r_out.min
+
+          double r_interface, r_0;
+          if (new_ind == ip)
+          {
+            r_interface = r_p;
+            r_0 = r_interface + 0.5*dr;
+          }
+          else if (new_ind == im)
+          {
+            r_interface = r_m;
+            r_0 = r_interface - 0.5*dr;
+          }
+          else std::cerr << "transport.cpp: Unknown boundary crossing type!  "\
+                         << new_ind << " " << im << " " << ip  << std::endl;
+
+          // Compute IMC-to-DDMC conversion probability
+          transform_lab_to_comoving(&p);
+          double rr = p.r();
+          // co-moving frame velocity vector
+          double mu = (p.x[0]*p.D[0] + p.x[1]*p.D[1] + p.x[2]*p.D[2]) / rr;
+          mu = fabs(mu); // get normal
+
+          double k_p = planck_mean_opacity_[new_ind];
+          double Xi, geo_factor;
+          Xi = 1.0 + dr*dr/(12.0*r_0*r_0);
+          geo_factor = r_interface*r_interface/r_0/r_0/Xi;
+          double p_convert;
+          // Asymptotic diffusion limit
+          p_convert = 4.0 * (1.0 + 1.5*mu) / (3.0*sigma_i*dr + 6.0*0.7104);
+          // Alternative formalism in Densmore, Evans, and Buksas (2008)
+          //p_convert = 4.0 * (0.91 + 1.635*mu) / (3.0*sigma_i*dr + 6.0*0.7104);
+
+          double xi = rangen.uniform();
+          std::vector<double> rand;
+          rand.push_back(rangen.uniform());
+          rand.push_back(rangen.uniform());
+          rand.push_back(rangen.uniform());
+          double new_r[3];
+          double ddmc_sml_push = 1.0e-8;
+
+          if (xi <= p_convert) // converted to DDMC
+          {
+            p.ind = new_ind;
+
+            grid->sample_in_zone(p.ind,rand,new_r);
+            p.x[0] = new_r[0];
+            p.x[1] = new_r[1];
+            p.x[2] = new_r[2];
+
+            return moving; // no longer transport with MC
+          }
+          else // returned to original MC zone
+          {
+            grid->sample_in_zone(p.ind,rand,new_r);
+            p.x[0] = new_r[0];
+            p.x[1] = new_r[1];
+            p.x[2] = new_r[2];
+
+            double dr;
+            if (new_ind == ip)
+            {
+              dr = r_interface - p.r();
+              dr *= (1.0-ddmc_sml_push);
+
+              p.x[0] += p.x[0]/p.r()*dr;
+              p.x[1] += p.x[1]/p.r()*dr;
+              p.x[2] += p.x[2]/p.r()*dr;
+            }
+            else if (new_ind == im)
+            {
+              dr = p.r() - r_interface;
+              dr *= (1.0-ddmc_sml_push);
+              p.x[0] -= p.x[0]/p.r()*dr;
+              p.x[1] -= p.x[1]/p.r()*dr;
+              p.x[2] -= p.x[2]/p.r()*dr;
+            }
+
+            // emit from blackbody face in comoving frame
+            sample_dir_from_blackbody_surface(&p);
+
+            // make sure the particle moves away from the zone face
+            double mu = (p.x[0]*p.D[0] + p.x[1]*p.D[1] + p.x[2]*p.D[2]) / p.r();
+            if (new_ind == ip)  // returned from i+1 zone
+            {
+              if (mu > 0.0)
+                {p.D[0] = -p.D[0]; p.D[1] = -p.D[1]; p.D[2] = -p.D[2];}
+            }
+            else if (new_ind == im)  // returned from i-1 zone
+            {
+              if (mu < 0.0)
+                {p.D[0] = -p.D[0]; p.D[1] = -p.D[1]; p.D[2] = -p.D[2];}
+            }
+          }
+
+          transform_comoving_to_lab(&p);
+        }
+        else p.ind = new_ind; // not using DDMC or not a DDMC neighbor
+      }
     }
 
     // ---------------------------------
