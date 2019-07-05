@@ -110,14 +110,24 @@ ParticleFate transport::discrete_diffuse_IMD(particle &p, double dt)
 // ------------------------------------------------------
 ParticleFate transport::discrete_diffuse_DDMC(particle &p, double tstop)
 {
+  enum ParticleEvent {scatter, boundary, tstep};
+  ParticleEvent event;
+
+  ParticleFate fate = moving;
+
+  // Constant for interfacing MC and DDMC
+  double lambda_ddmc = 0.7104;
+  double ddmc_sml_push = 1.0e-8;
+
   // pointer to current zone
   zone *zone = &(grid->z[p.ind]);
   int nz = grid->n_zones;
 
   // initialize particle's timestamp
   double dt_remaining = tstop - p.t;
+  double dt_hydro = tstop - t_now_;
 
-  while (dt_remaining > 0.0)
+  while (fate == moving)
   {
     // indices of current and adjacent zones
     int ii = p.ind;
@@ -135,12 +145,26 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double tstop)
     grid->get_zone_size(ip,&dxp1);
     grid->get_zone_size(im,&dxm1);
 
-    // Gathering gas opacity
-    // Should use comoving frequency of the particle
-    // for non-grey applications, ok for now.
-    double sigma_i   = planck_mean_opacity_[ii];
-    double sigma_ip1 = planck_mean_opacity_[ip];
-    double sigma_im1 = planck_mean_opacity_[im];
+    // Use comoving nu to get the total/transport opacity, (abs + scat).
+    // The Planck mean could be used for tallying energy absorption,
+    // but use actual nu-dependent opacity for leakage opacity calculation.
+    double k_p = planck_mean_opacity_[ii];
+    double sigma_i, sigma_im1, sigma_ip1;
+
+    int i_nu;
+    double dshift, eps_i_cmf, eps_ip1_cmf, eps_im1_cmf;
+    dshift = dshift_lab_to_comoving(&p);
+    i_nu = get_opacity(p,dshift,sigma_i,eps_i_cmf);
+    // Sorry about this super hacky way of getting neighbor's opacities
+    p.ind = ip;
+    i_nu = get_opacity(p,dshift,sigma_ip1,eps_ip1_cmf);
+    p.ind = im;
+    i_nu = get_opacity(p,dshift,sigma_im1,eps_im1_cmf);
+    p.ind = ii; // set it back to original index
+
+    // return if no long a DDMC particle
+    double ztau = sigma_i * dx;
+    if (ztau <= ddmc_tau_) {return moving;}
 
     // Getting radii at zone boundaries and center
     double rcoords[3];
@@ -148,24 +172,32 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double tstop)
     double r_p = rcoords[0]; // outer edge of zone ii
     grid->coordinates(im,rcoords);
     double r_m = rcoords[0]; // inner edge of zone ii
-    if (im == 0) {r_m = 0.0;} // Not sure how to get r_out.min from here
+    if (ii == 0) {grid->get_r_out_min(&r_m);}
     double r_0 = 0.5*(r_p + r_m); // zone center
 
-    // Compute left/right leakage opacity
+    // Compute left/right leakage opacity, including the
     // geometric factors for spherical coordinates
     double Xi, geo_factor;
     Xi = 1.0 + dx*dx/(12.0*r_0*r_0);
     geo_factor = r_m*r_m/r_0/r_0/Xi;
-    double sigma_leak_left  = (2.0/3.0/dx) * (1.0 / (sigma_i*dx + sigma_im1*dxm1)) * geo_factor;
+    double tau_im1 = sigma_im1*dxm1;
+    int ddmc_on_im1 = 1;
+    if (tau_im1 <= ddmc_tau_) ddmc_on_im1 = 0;
+    double sigma_leak_left;
+    if (ddmc_on_im1) sigma_leak_left  = (2.0/3.0/dx) * (1.0 / (sigma_i*dx + sigma_im1*dxm1)) * geo_factor;
+    else sigma_leak_left  = (2.0/3.0/dx) * (1.0 / (sigma_i*dx + 2.0*lambda_ddmc)) * geo_factor;
+
     geo_factor = r_p*r_p/r_0/r_0/Xi;
-    double sigma_leak_right = (2.0/3.0/dx) * (1.0 / (sigma_i*dx + sigma_ip1*dxp1)) * geo_factor;
+    double tau_ip1 = sigma_ip1*dxp1;
+    int ddmc_on_ip1 = 1;
+    if (tau_ip1 <= ddmc_tau_) ddmc_on_ip1 = 0;
+    double sigma_leak_right;
+    if (ddmc_on_ip1) sigma_leak_right = (2.0/3.0/dx) * (1.0 / (sigma_i*dx + sigma_ip1*dxp1)) * geo_factor;
+    else sigma_leak_right = (2.0/3.0/dx) * (1.0 / (sigma_i*dx + 2.0*lambda_ddmc)) * geo_factor;
 
     // Leakage away from outer boundary of problem domain
     if (ip == ii)
-    {
-      double lambda_ddmc = 0.7104;
-      sigma_leak_right = (2.0/3.0/dx) * (1.0 / (sigma_i*dx + 2.0*lambda_ddmc)) * geo_factor;
-    }
+      {sigma_leak_right = (2.0/3.0/dx) * (1.0 / (sigma_i*dx + 2.0*lambda_ddmc)) * geo_factor;}
     // no left leakage in the innermost zone
     if (ii == 0) sigma_leak_left = 0.0;
 
@@ -173,6 +205,7 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double tstop)
 
     double xi = rangen.uniform();
     double d_stay, d_leak;
+    bool leaked2imc = false;
 
     // Distance until end of time step
     d_stay = pc::c * dt_remaining;
@@ -180,118 +213,179 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double tstop)
     // Distance to leakage event
     d_leak = -log(xi) / (sigma_leak_left + sigma_leak_right);
 
-    // Perform the event with a smaller distance
-    if (d_stay < d_leak)  // Stay in current zone
+    // In non-grey RT, we also need to account for physical and
+    // effective scattering that could change the particle's frequency.
+    double d_sc, k_es_inelastic;
+
+    if (nu_grid.size() == 1) // no extra scattering for grey case
+      {d_sc = std::numeric_limits<double>::infinity();}
+    else  // non-grey case
     {
-      // Tally mean intensity
-      #pragma omp atomic
-      J_nu_[p.ind][0] += p.e*dt_remaining*pc::c;
-
-      double zone_vel[3], dvds;
-      grid->get_velocity(p.ind,p.x,p.D,zone_vel, &dvds);
-
-      // Compute the Dln(rho)/Dt term
-      double vel = sqrt(zone_vel[0]*zone_vel[0] + zone_vel[1]*zone_vel[1] + zone_vel[2]*zone_vel[2]);
-      double v_over_r = vel / p.r();
-      double dlnrhodt = dvds + 2.0*v_over_r; // For homology it boils down to 3*dv/dr 
-
-      // Step 1: no leakage required
-      // Do nothing for particles staying in the zone
-
-      // Step 2: adiabatic loss in comoving frame
-      // transform particle energy p.e to the comoving frame
-      transform_lab_to_comoving(&p);
-
-      // Apply adiabatic loss (assumes small change in Dln(rho)/Dt)
-      p.e *= (1 - dlnrhodt*dt_remaining/3.0);
-
-      // transform back to lab frame for bookkeeping
-      transform_comoving_to_lab(&p);
-
-      // Step 3: advection
-      p.x[0] += zone_vel[0]*dt_remaining;
-      p.x[1] += zone_vel[1]*dt_remaining;
-      p.x[2] += zone_vel[2]*dt_remaining;
-      p.ind = grid->get_zone(p.x);
-
-      // stay in this zone the remainder of the time step
-      p.t += dt_remaining;
-      dt_remaining = -1.0;
+      double tau_r = -1.0*log(rangen.uniform());
+      if (eps_i_cmf > 0.0)
+      {
+        k_es_inelastic = sigma_i*eps_i_cmf;
+        // setting elastic_frac from emissivity_
+        dshift = dshift_lab_to_comoving(&p);
+        i_nu = get_opacity(p,dshift,sigma_i,eps_i_cmf);
+        // emissivity_ has been normalized in transport_opacity.cpp
+        double elastic_frac = emissivity_[p.ind].get_value(i_nu);
+        double inelastic_frac = 1.0 - elastic_frac;
+        k_es_inelastic *= inelastic_frac;
+        d_sc = tau_r / k_es_inelastic;
+        if (d_sc < 0.0) std::cout << "Negative d_sc!" << std::endl;
+      }
+      else
+      {d_sc = std::numeric_limits<double>::infinity();}
     }
-    else // Leak to adjacent zone
+    // find out which event actually happens (one with shortest distance)
+    double this_d, this_dt;
+    if ((d_sc < d_leak) && (d_sc < d_stay))
+      {event = scatter;    this_d = d_sc;}
+    else if (d_leak < d_stay)
+      {event = boundary;   this_d = d_leak;}
+    else
+      {event = tstep;      this_d = d_stay;}
+    this_dt = this_d / pc::c;
+    p.t += this_dt;
+    dt_remaining -= this_dt;
+
+    // tally the contribution of zone's radiation energy
+    // only one factor of dshift above because opacity is in cmf,
+    // just need to covert p.e from lab to cmf.
+    #pragma omp atomic
+    J_nu_[p.ind][0] += p.e*this_d;
+    #pragma omp atomic
+    grid->z[p.ind].e_abs  += (p.e*dshift)*this_d*sigma_i*eps_i_cmf;
+
+    // Perform the event with a smaller distance
+    if (event == scatter)  // effective scattering
+    {
+      // Ensure the effective scattering is inelastic
+      int now_i_nu = i_nu;
+      while (now_i_nu == i_nu)
+      {
+        fate = do_scatter(&p,1.0);
+        dshift = dshift_lab_to_comoving(&p);
+        now_i_nu = get_opacity(p,dshift,sigma_i,eps_i_cmf);
+      }
+    }
+    else if (event == tstep)  // Stay in current zone
+    {
+      // stay in this zone the remainder of the time step
+      dt_remaining = -1.0;
+      fate = stopped;
+    }
+    else if (event == boundary) // Leak to adjacent zone
     {
       double P_leak_left = sigma_leak_left / sigma_leak_tot;
       double xi2 = rangen.uniform();
 
-      double dt_change = d_leak / pc::c;
-      // Tally mean intensity
-      #pragma omp atomic
-      J_nu_[p.ind][0] += p.e*dt_change*pc::c;
-
       // Step 1: leakage to the neighboring zone
       double dr;
+      double mu, phi, smu;
+
       if (xi2 <= P_leak_left)  // leak left
       {
         p.ind--;
         double rr = p.r();
         dr = rr - r_m;
-        dr += rangen.uniform()*dxm1;
-        //dr = dx; // original version
+        if (ddmc_on_im1) dr += rangen.uniform()*dxm1;
+        else dr *= (1.0 + ddmc_sml_push);
+        //dr += rangen.uniform()*dxm1;
 
-        p.x[0] += -p.x[0]/rr*dr;
-        p.x[1] += -p.x[1]/rr*dr;
-        p.x[2] += -p.x[2]/rr*dr;
+        p.x[0] -= p.x[0]/rr*dr;
+        p.x[1] -= p.x[1]/rr*dr;
+        p.x[2] -= p.x[2]/rr*dr;
 
+        if (!ddmc_on_im1)
+        {
+          // need to place the particle at the interface
+          rr = p.r();
+          dr = r_m - rr;
+          dr *= (1.0-ddmc_sml_push);
+          leaked2imc = true;
+
+          // Sample velocity from face of blackbody
+          // in case of DDMC-to-IMC leakage
+          transform_lab_to_comoving(&p);
+          sample_dir_from_blackbody_surface(&p);
+
+          mu = (p.x[0]*p.D[0] + p.x[1]*p.D[1] + p.x[2]*p.D[2]) / p.r();
+          if (mu > 0.0)  // make sure it points toward -ve radial direction
+            {p.D[0] = -p.D[0]; p.D[1] = -p.D[1]; p.D[2] = -p.D[2];}
+
+          //return moving;
+          transform_comoving_to_lab(&p);
+        }
       }
       else // leak right
       {
         p.ind++;
         double rr = p.r();
         dr = r_p - rr;
-        dr += rangen.uniform()*dxp1;
-        //dr = dx; // original version
+        if (ddmc_on_ip1) dr += rangen.uniform()*dxp1;
+        else dr *= (1.0 + ddmc_sml_push);
+        //dr += rangen.uniform()*dxp1;
 
         p.x[0] += p.x[0]/rr*dr;
         p.x[1] += p.x[1]/rr*dr;
         p.x[2] += p.x[2]/rr*dr;
 
+        if (!ddmc_on_ip1)
+        {
+          rr = p.r();
+          dr = rr - r_p;
+          dr *= (1.0-ddmc_sml_push);
+          leaked2imc = true;
+
+          // Sample velocity from face of blackbody
+          // in case of DDMC-to-IMC leakage
+          transform_lab_to_comoving(&p);
+          sample_dir_from_blackbody_surface(&p);
+
+          mu = (p.x[0]*p.D[0] + p.x[1]*p.D[1] + p.x[2]*p.D[2]) / p.r();
+          if (mu < 0.0)  // make sure it points towards +ve radial direction
+           {p.D[0] = -p.D[0]; p.D[1] = -p.D[1]; p.D[2] = -p.D[2];}
+          //return moving;
+          transform_comoving_to_lab(&p);
+        }
       }
+    }  // end (event == boundary)
 
-      // Get zone velocity and velocity gradient
-      double zone_vel[3], dvds;
-      grid->get_velocity(p.ind,p.x,p.D,zone_vel, &dvds);
+    // Get zone velocity and velocity gradient
+    double zone_vel[3], dvds;
+    grid->get_velocity(p.ind,p.x,p.D,zone_vel, &dvds);
 
-      // Compute the Dln(rho)/Dt term
-      double vel = sqrt(zone_vel[0]*zone_vel[0] + zone_vel[1]*zone_vel[1] + zone_vel[2]*zone_vel[2]);
-      double v_over_r = vel / p.r();
-      double dlnrhodt = dvds + 2.0*v_over_r;
+    // Compute the Dln(rho)/Dt term
+    double vel = sqrt(zone_vel[0]*zone_vel[0] + zone_vel[1]*zone_vel[1] + zone_vel[2]*zone_vel[2]);
+    double v_over_r = vel / p.r();
+    double dlnrhodt = dvds + 2.0*v_over_r; // For homology it boils down to 3*dv/dr
+    double doppler_shift_ddmc = (1.0 - dlnrhodt*this_dt/3.0);
 
-      // Step 2: adiabatic loss in comoving frame
-      // transform energy and p.D to comoving frame
-      transform_lab_to_comoving(&p);
+    // Step 2: adiabatic loss in comoving frame
+    // Apply adiabatic loss (assumes small change in Dln(rho)/Dt)
+    transform_lab_to_comoving(&p);
+    p.e *= doppler_shift_ddmc;
+    p.nu *= doppler_shift_ddmc;
+    transform_comoving_to_lab(&p);
 
-      // Apply adiabatic loss (assumes small change in Dln(rho)/Dt)
-      p.e *= (1 - dlnrhodt*dt_change/3.0);
-
-      // transform back to lab frame for bookkeeping
-      transform_comoving_to_lab(&p);
-
-      // Step 3: advection
-      p.x[0] += zone_vel[0]*dt_change;
-      p.x[1] += zone_vel[1]*dt_change;
-      p.x[2] += zone_vel[2]*dt_change;
-
-      p.t += dt_change;
-      dt_remaining -= dt_change;
+    // Step 3: advection for particles left in DDMC zones
+    if (!leaked2imc)
+    {
+      p.x[0] += zone_vel[0]*this_dt;
+      p.x[1] += zone_vel[1]*this_dt;
+      p.x[2] += zone_vel[2]*this_dt;
     }
 
     // determine current zone and check for escape
     p.ind = grid->get_zone(p.x);
-    if (p.ind == -1) {return absorbed;}
-    if (p.ind == -2) {return escaped;}
-  }
+    if (p.ind == -1) {fate = absorbed;}
+    if (p.ind == -2) {fate = escaped;}
 
-  return stopped;
+  }  // end while(fate == moving)
+
+  return fate;
 }
 
 // ------------------------------------------------------
@@ -471,6 +565,7 @@ void transport::compute_diffusion_probabilities(double dt)
 {
   int nz = grid->n_zones;
 
+  double dtau_ddmc = 0.0, dtau_mc = 0.0;
   for (int i=0;i<nz;i++)
   {
     double dx;
@@ -480,6 +575,10 @@ void transport::compute_diffusion_probabilities(double dt)
     double ztau = planck_mean_opacity_[i]*dx;
     if (ztau > ddmc_tau_) ddmc_use_in_zone_[i] = 1;
     else ddmc_use_in_zone_[i] = 0;
+
+    // Accumulating tau in mc and ddmc regions
+    if (ztau > ddmc_tau_) dtau_ddmc+= ztau;
+    else dtau_mc += ztau;
 
     // indices of adjacent zones
     int ip = i+1;
@@ -526,5 +625,47 @@ void transport::compute_diffusion_probabilities(double dt)
 
     //std::cout <<   ddmc_P_up_[i] << "\t" <<   ddmc_P_dn_[i] << "\t" << ddmc_P_adv_[i] << "\t" << ddmc_P_abs_[i] << "\t" << ddmc_P_stay_[i] << "\n";
   }
+  if (MPI_myID == 0)
+  {
+    std::cout << "# Integrated tau in DDMC regions: " << dtau_ddmc << std::endl;
+    std::cout << "# Integrated tau in MC regions: " << dtau_mc << std::endl;
+  }
 }
 
+// Sample particle's direction from the face of a blackbody,
+// which has a normal component proportional to sqrt(rand()).
+void transport::sample_dir_from_blackbody_surface(particle* p)
+{
+  double v1, v2, v3;
+  double mu, phi, smu;
+  mu = sqrt(rangen.uniform()); // using sqrt(rand)
+  phi = 2.0*pc::pi*rangen.uniform();
+  smu = sqrt(1.0 - mu*mu);
+
+  v1 = smu*cos(phi);
+  v2 = smu*sin(phi);
+  v3 = mu;
+
+  double r1, r2, r3, sintheta, costheta;
+  // unit r_hat vector of the particle
+  r1 = p->x[0] / p->r();
+  r2 = p->x[1] / p->r();
+  r3 = p->x[2] / p->r();
+  costheta = r3;
+  sintheta = sqrt(1 - costheta*costheta);
+
+  double v1p, v2p, v3p;
+  // rotate the direction vector to the particle's location
+  // Rodrigues' rotation formula
+  v1p = v1*costheta + r1*v3*sintheta - r2*(1.0-costheta)*(-r2*v1 + r1*v2);
+  v2p = v2*costheta + r2*v3*sintheta - r1*(1.0-costheta)*(-r2*v1 + r1*v2);
+  v3p = v3*costheta - (r1*v1+r2*v2)*sintheta;
+  double norm = sqrt(v1p*v1p + v2p*v2p + v3p*v3p);
+  v1p /= norm; // renormalize
+  v2p /= norm;
+  v3p /= norm;
+
+  p->D[0] = v1p;
+  p->D[1] = v2p;
+  p->D[2] = v3p;
+}
