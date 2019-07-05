@@ -56,6 +56,9 @@ class grid_general
   // descrption of grid type
   std::string grid_type;
 
+  // storing the style of input file
+  bool is_snr_system;
+
   // vector of zones
   std::vector<zone> z;
   std::vector<zone> z_new; // For restart debugging
@@ -131,6 +134,9 @@ class grid_general
   virtual void get_zone_size(int, double*)
   {
   }
+
+  virtual void get_r_out_min(double*)
+  {}
 
   /* TODO: MAKE PURE VIRTUAL EVENTUALLY */
   virtual void writeCheckpointGrid(std::string fname) {};
