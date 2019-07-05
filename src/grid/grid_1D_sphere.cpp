@@ -276,6 +276,14 @@ void grid_1D_sphere::read_ascii_file(std::string model_file, int verbose)
     exit(1);
   }
 
+  // Saving the model file style
+  // This is to allow the proper grid::expand in homology:
+  // Case 'standard': r(t) = r(0) + v*t
+  // Case 'SNR': r(t) = v*t
+  // This makes a difference for IIP applications
+  is_snr_system = false;
+  if (snr == 1) is_snr_system = true;
+
   // read header, general properties
   double texp;
   infile >> r_out.min;
@@ -394,8 +402,17 @@ void grid_1D_sphere::read_ascii_file(std::string model_file, int verbose)
 //************************************************************
 void grid_1D_sphere::expand(double e)
 {
-  for (int i=0;i<n_zones;i++) r_out[i] *= e;
-  r_out.min *=e;
+  if (is_snr_system)
+  {
+    for (int i=0;i<n_zones;i++) r_out[i] *= e;
+    r_out.min *=e;
+  }
+  else
+  { // with 'standard' style assume the input e to be dt
+    double dt = e;
+    for (int i=0;i<n_zones;i++) r_out[i] += z[i].v[0]*dt;
+    r_out.min += v_inner_*dt;
+  }
 
   // recalculate shell volume
   for (int i=0;i<n_zones;i++)
