@@ -108,7 +108,7 @@ void transport::step(double dt)
   tend = get_system_time();
   if (verbose) cout << "# Communicated radiation (" << (tend-tstr) << " secs) \n";
 
-  if ((skip_gas_temp_update_during_transport_ == 0 && solve_coupled_gas_state_temperature_ == 0))
+  if ((fix_Tgas_during_transport_ == 0 && solve_Tgas_with_updated_opacities_ == 0))
   {
     tstr = get_system_time();
     solve_eq_temperature();

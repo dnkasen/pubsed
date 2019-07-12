@@ -21,7 +21,7 @@ int transport::solve_state_and_temperature(int i)
   int solve_error = 0;
 
   // Simple option to set gas temp based on radiation energy density
-  if (set_gas_temp_to_rad_temp_ == 1)
+  if (set_Tgas_to_Trad_ == 1)
   {
     grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
     return 0;
@@ -30,34 +30,34 @@ int transport::solve_state_and_temperature(int i)
   else
   {
     zone* z = &(grid->z[i]);
-	gas_state_.dens_ = z->rho;
-	gas_state_.temp_ = z->T_gas;
+    gas_state_.dens_ = z->rho;
+    gas_state_.temp_ = z->T_gas;
 
-	// For LTE, do an initial solve of the gas state
-	if (gas_state_.use_nlte_ == 0)
-	  {
-	    solve_error = gas_state_.solve_state();
-	    gas_state_.computeOpacity(abs_opacity_[i],scat,emis);
-	  }
+    // For LTE, do an initial solve of the gas state
+    if (gas_state_.use_nlte_ == 0)
+    {
+      solve_error = gas_state_.solve_state();
+      gas_state_.computeOpacity(abs_opacity_[i],scat,emis);
+    }
 
     // Calculate equilibrium temperature.
     // Additional gas_state solve may also happen here
     grid->z[i].T_gas = temp_brent_method(i,1,solve_error);
 
     if (gas_state_.use_nlte_ == 0)
-	{
-	  // For LTE, do a final solve
-	  solve_error = gas_state_.solve_state();
-	}
+    {
+      // For LTE, do a final solve
+      solve_error = gas_state_.solve_state();
+    }
 
     if (gas_state_.use_nlte_)
-	{
-	  bf_heating[i] = gas_state_.bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
-	  ff_heating[i] = gas_state_.free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
-	  bf_cooling[i] = gas_state_.bound_free_cooling_rate(grid->z[i].T_gas);
-	  ff_cooling[i] = gas_state_.free_free_cooling_rate(grid->z[i].T_gas);
-	  coll_cooling[i] = gas_state_.collisional_net_cooling_rate(grid->z[i].T_gas);
-	}
+    {
+      bf_heating[i] = gas_state_.bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+      ff_heating[i] = gas_state_.free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+      bf_cooling[i] = gas_state_.bound_free_cooling_rate(grid->z[i].T_gas);
+      ff_cooling[i] = gas_state_.free_free_cooling_rate(grid->z[i].T_gas);
+     coll_cooling[i] = gas_state_.collisional_net_cooling_rate(grid->z[i].T_gas);
+    }
     return solve_error;
   }
 
@@ -68,15 +68,15 @@ void transport::solve_eq_temperature()
   int solve_error = 0;
   for (int i=my_zone_start_;i<my_zone_stop_;i++)
   {
-    if (set_gas_temp_to_rad_temp_ == 1)
-	  grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
+    if (set_Tgas_to_Trad_ == 1)
+    grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
     else
-	{
+  {
       // solve_error won't be updated here because that's for the gas_state solve which isn't happening here
-	  grid->z[i].T_gas = temp_brent_method(i,0,solve_error);
+     grid->z[i].T_gas = temp_brent_method(i,0,solve_error);
 
 	  if (gas_state_.use_nlte_)
-	  {
+    {
 	    bf_heating[i] = gas_state_.bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
 	    ff_heating[i] = gas_state_.free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
 	    bf_cooling[i] = gas_state_.bound_free_cooling_rate(grid->z[i].T_gas);

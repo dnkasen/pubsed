@@ -47,7 +47,7 @@ void transport::set_opacity(double dt)
   vector<double> X_now(grid->n_elems);
 
   if (verbose)
-    if (solve_coupled_gas_state_temperature_ && first_step_ == 0)
+    if (solve_Tgas_with_updated_opacities_ && first_step_ == 0)
 	  printf("# Solving coupled equations for gas state and temperature\n");
 
 
@@ -94,8 +94,8 @@ void transport::set_opacity(double dt)
 
     else
     {
-	  if (solve_coupled_gas_state_temperature_)
-	  {
+    if (solve_Tgas_with_updated_opacities_)
+    {
         // gas state solution (LTE or NLTE) solution as well as radiative
         // equilibrium temperature solve will happen here
 	    solve_error = solve_state_and_temperature(i);
@@ -177,7 +177,7 @@ void transport::set_opacity(double dt)
 
 
   }
-  if (solve_coupled_gas_state_temperature_ && first_step_ == 0) {
+  if (solve_Tgas_with_updated_opacities_ && first_step_ == 0) {
       reduce_Tgas(); }
 
   tend = get_system_time();

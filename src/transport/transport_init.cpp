@@ -107,44 +107,44 @@ void transport::init(ParameterReader* par, grid_general *g)
   temp_max_value_ = params_->getScalar<double>("limits_temp_max");
   temp_min_value_ = params_->getScalar<double>("limits_temp_min");
   fleck_alpha_ = params_->getScalar<double>("transport_fleck_alpha");
-  solve_coupled_gas_state_temperature_ = params_->getScalar<int>("solve_coupled_gas_state_temperature");
-  skip_gas_temp_update_during_transport_ = params_->getScalar<int>("skip_gas_temp_update_during_transport");
-  set_gas_temp_to_rad_temp_ = params_->getScalar<int>("set_gas_temp_to_rad_temp");
+  solve_Tgas_with_updated_opacities_ = params_->getScalar<int>("transport_solve_Tgas_with_updated_opacities");
+  fix_Tgas_during_transport_ = params_->getScalar<int>("transport_fix_Tgas_during_transport");
+  set_Tgas_to_Trad_ = params_->getScalar<int>("transport_set_Tgas_to_Trad");
   last_iteration_ = 0;
 
 
   // set temperature control parameters, check for conflicts
   if (radiative_eq != 0)
   {
-    if (skip_gas_temp_update_during_transport_ == 1 )
+    if (fix_Tgas_during_transport_ == 1 )
     {
 	  cerr << "# ERROR: radiative equilibrium turned on, skip_gas_temp_update_during_transport cannot be set to 1\n";
 	  exit(1);
 	}
-    if (set_gas_temp_to_rad_temp_ == 1)
+    if (set_Tgas_to_Trad_ == 1)
 	{
-	  cerr << "# ERROR: radiative equilibrium turned on, set_gas_temp_to_rad_temp_ cannot be set to 1.\n";
+	  cerr << "# ERROR: radiative equilibrium turned on, set_Tgas_to_Trad_ cannot be set to 1.\n";
 	  exit(1);
     }
   }
 
-  if (solve_coupled_gas_state_temperature_ == 1)
+  if (solve_Tgas_with_updated_opacities_ == 1)
   {
-    if (skip_gas_temp_update_during_transport_ == 1 )
+    if (fix_Tgas_during_transport_ == 1 )
     {
-	  cerr << "# ERROR: Cannot simultaneously set solve_coupled_gas_state_temperature_ to 1 and skip_gas_temp_update_during_transport_ to 1\n";
+	  cerr << "# ERROR: Cannot simultaneously set solve_Tgas_with_updated_opacities_ to 1 and fix_Tgas_during_transport_ to 1\n";
 	  exit(1);
 	}
 
-    if (set_gas_temp_to_rad_temp_ == 1)
+    if (set_Tgas_to_Trad_ == 1)
 	{
-	  cout << "# WARNING: set_gas_temp_to_rad_temp_ is set to 1, so this will override anything more detailed that might result from setting solve_coupled_gas_state_temp_ to 1\n";
+	  cout << "# WARNING: set_Tgas_to_Trad_ is set to 1, so this will override anything more detailed that might result from setting solve_coupled_gas_state_temp_ to 1\n";
 	}
   }
 
-  if (skip_gas_temp_update_during_transport_ == 1 && set_gas_temp_to_rad_temp_ == 1)
+  if (fix_Tgas_during_transport_ == 1 && set_Tgas_to_Trad_ == 1)
   {
-	cerr << "# ERROR: Cannot simultaneously set skip_gas_temp_update_during_transport_ to 1 and set_gas_temp_to_rad_temp_ == 1\n";
+	cerr << "# ERROR: Cannot simultaneously set fix_Tgas_during_transport_ to 1 and set_Tgas_to_Trad_ == 1\n";
 	exit(1);
   }
 

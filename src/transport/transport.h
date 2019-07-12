@@ -78,10 +78,10 @@ class transport
   int    omit_composition_decay_;
   int    compton_scatter_photons_;
   double fleck_alpha_;
-  int solve_coupled_gas_state_temperature_;
-  int set_gas_temp_to_rad_temp_;
-  int skip_gas_temp_update_during_transport_;
-  
+  int    solve_Tgas_with_updated_opacities_;
+  int    set_Tgas_to_Trad_;
+  int    fix_Tgas_during_transport_;
+
 
   // current time in simulation
   double t_now_;
@@ -229,9 +229,9 @@ class transport
 
   // solve equilibrium temperature
   int solve_state_and_temperature(int); // calls gas state solve from within interative solution for tempreature. For now, temperature solve is always based on radiative equilibrium
-  void solve_eq_temperature(); 
+  void solve_eq_temperature();
   double rad_eq_function_LTE(int,double,int, int &);
-  double rad_eq_function_NLTE(int,double,int, int &);  
+  double rad_eq_function_NLTE(int,double,int, int &);
   double temp_brent_method(int,int, int &);
 
  public:
