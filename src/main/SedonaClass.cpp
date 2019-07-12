@@ -90,8 +90,8 @@ int n_threads = 1;
 
   // Clean up
   delete grid_;
-  delete hydro_;
-  delete transport_;
+  if (use_hydro_) delete hydro_;
+  if (use_transport_) delete transport_;
   return 0;
 }
 
