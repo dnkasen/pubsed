@@ -544,7 +544,7 @@ double GasState::get_planck_mean
 		double Bnu  = 2.0*nu*nu*nu*pc::h/pc::c/pc::c/(exp(zeta)-1);
 		if (isnan(Bnu)) Bnu = 0;
 		double W = Bnu*nu_grid_.delta(i);
-		mean += W*(abs[i] + scat[i]);
+		mean += W*(abs[i]);
 		norm += W;
 	}
 	mean = mean/norm;

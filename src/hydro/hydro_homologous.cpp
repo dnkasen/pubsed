@@ -28,10 +28,31 @@ void hydro_homologous::step(double dt)
 {
   double e = (grid->t_now+dt)/grid->t_now;
 
-  for (int i=0;i<grid->n_zones;i++) 
-    grid->z[i].rho = grid->z[i].rho/e/e/e;
-  grid->expand(e);
-  
+  if (grid->is_snr_system)
+  {
+    for (int i=0;i<grid->n_zones;i++)
+      grid->z[i].rho = grid->z[i].rho/e/e/e;
+    grid->expand(e);
+  }
+  else
+  {
+    // get cell mass
+    for (int i=0;i<grid->n_zones;i++)
+    {
+      double vol  = grid->zone_volume(i);
+      grid->z[i].rho = grid->z[i].rho * vol;
+    }
+    // expand grid, compute new cell volume
+    grid->expand(dt);
+
+    // update density with new zone volume
+    for (int i=0;i<grid->n_zones;i++)
+    {
+      double vol  = grid->zone_volume(i);
+      grid->z[i].rho = grid->z[i].rho / vol;
+    }
+  }
+
   grid->t_now += dt;
 }
 

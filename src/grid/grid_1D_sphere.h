@@ -68,6 +68,10 @@ public:
   }
 
 
+  virtual void get_r_out_min(double *rmin)
+  {
+    *rmin = r_out.min;
+  }
 
 };
 
