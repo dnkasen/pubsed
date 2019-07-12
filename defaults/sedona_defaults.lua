@@ -48,7 +48,7 @@ transport_fleck_alpha            = 0
 
 -- options for handling temperature solve
 transport_solve_Tgas_with_updated_opacities = 0
-transport fix_Tgas_during_transport         = 0
+transport_fix_Tgas_during_transport         = 0
 transport_set_Tgas_to_Trad                  = 0
 
 -- inner source emission = none
