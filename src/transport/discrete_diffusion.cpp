@@ -388,6 +388,132 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double tstop)
   return fate;
 }
 
+
+// ------------------------------------------------------
+// Interfacing with DDMC zones, allowing IMC-to-DDMC conversion
+// If the neighbor is in DDMC, there is a probability the particle
+// gets converted into DDMC. If the particle is not converted,
+// it is returned to the MC region.
+// ------------------------------------------------------
+int transport::move_across_DDMC_interface(particle &p, int new_ind, double sigma_i)
+{
+  // gather information for neighboring zone
+  int ip = p.ind + 1;
+  int im = p.ind - 1;
+
+  int nz = grid->n_zones;
+  if (ip == nz) ip = p.ind;
+  if (im < 0)   im = 0;
+
+  double dr;
+  grid->get_zone_size(p.ind,&dr);
+
+  // Getting radii at zone boundaries and center
+  double rcoords[3];
+  grid->coordinates(p.ind,rcoords);
+  double r_p = rcoords[0]; // outer edge of zone ii
+  grid->coordinates(im,rcoords);
+  double r_m = rcoords[0]; // inner edge of zone ii
+  if (p.ind == 0) {grid->get_r_out_min(&r_m);} // Getting r_out.min
+
+  double r_interface, r_0;
+  if (new_ind == ip)
+  {
+    r_interface = r_p;
+    r_0 = r_interface + 0.5*dr;
+  }
+  else if (new_ind == im)
+  {
+    r_interface = r_m;
+    r_0 = r_interface - 0.5*dr;
+  }
+  else std::cerr << "transport.cpp: Unknown boundary crossing type!  "\
+                   << new_ind << " " << im << " " << ip  << std::endl;
+
+  // Compute IMC-to-DDMC conversion probability
+  transform_lab_to_comoving(&p);
+  double rr = p.r();
+  // co-moving frame velocity vector
+  double mu = (p.x[0]*p.D[0] + p.x[1]*p.D[1] + p.x[2]*p.D[2]) / rr;
+  mu = fabs(mu); // get normal
+
+  double k_p = planck_mean_opacity_[new_ind];
+  double Xi, geo_factor;
+  Xi = 1.0 + dr*dr/(12.0*r_0*r_0);
+  geo_factor = r_interface*r_interface/r_0/r_0/Xi;
+  double p_convert;
+  // Asymptotic diffusion limit
+  p_convert = 4.0 * (1.0 + 1.5*mu) / (3.0*sigma_i*dr + 6.0*0.7104);
+  // Alternative formalism in Densmore, Evans, and Buksas (2008)
+  //p_convert = 4.0 * (0.91 + 1.635*mu) / (3.0*sigma_i*dr + 6.0*0.7104);
+
+  double xi = rangen.uniform();
+  std::vector<double> rand;
+  rand.push_back(rangen.uniform());
+  rand.push_back(rangen.uniform());
+  rand.push_back(rangen.uniform());
+  double new_r[3];
+  double ddmc_sml_push = 1.0e-8;
+
+  if (xi <= p_convert) // converted to DDMC
+  {
+    p.ind = new_ind;
+
+    grid->sample_in_zone(p.ind,rand,new_r);
+    p.x[0] = new_r[0];
+    p.x[1] = new_r[1];
+    p.x[2] = new_r[2];
+
+    return 1; // no longer transport with MC
+  }
+  else // returned to original MC zone
+  {
+    grid->sample_in_zone(p.ind,rand,new_r);
+    p.x[0] = new_r[0];
+    p.x[1] = new_r[1];
+    p.x[2] = new_r[2];
+
+    double dr;
+    if (new_ind == ip)
+    {
+      dr = r_interface - p.r();
+      dr *= (1.0-ddmc_sml_push);
+
+      p.x[0] += p.x[0]/p.r()*dr;
+      p.x[1] += p.x[1]/p.r()*dr;
+      p.x[2] += p.x[2]/p.r()*dr;
+    }
+    else if (new_ind == im)
+    {
+      dr = p.r() - r_interface;
+      dr *= (1.0-ddmc_sml_push);
+      p.x[0] -= p.x[0]/p.r()*dr;
+      p.x[1] -= p.x[1]/p.r()*dr;
+      p.x[2] -= p.x[2]/p.r()*dr;
+    }
+
+    // emit from blackbody face in comoving frame
+    sample_dir_from_blackbody_surface(&p);
+
+    // make sure the particle moves away from the zone face
+    double mu = (p.x[0]*p.D[0] + p.x[1]*p.D[1] + p.x[2]*p.D[2]) / p.r();
+    if (new_ind == ip)  // returned from i+1 zone
+    {
+      if (mu > 0.0)
+        {p.D[0] = -p.D[0]; p.D[1] = -p.D[1]; p.D[2] = -p.D[2];}
+    }
+    else if (new_ind == im)  // returned from i-1 zone
+    {
+      if (mu < 0.0)
+        {p.D[0] = -p.D[0]; p.D[1] = -p.D[1]; p.D[2] = -p.D[2];}
+    }
+  }
+
+  transform_comoving_to_lab(&p);
+  return 0;
+}
+
+
 // ------------------------------------------------------
 // Propagate a particle using the
 // Random Walk Monte Carlo approach.
