@@ -298,7 +298,7 @@ void AtomicSpecies::calculate_radiative_rates(std::vector<real> J_nu)
     //std::cout << j << " " << levels_[j].P_ic << " " << levels_[j].R_ci << "\n";
 
   // calculate line J's
-  double x_max = 100;
+  double x_max = 5.;
   double dx    = 0.05;
 
   for (int i=0;i<n_lines_;++i)
@@ -389,13 +389,29 @@ void AtomicSpecies::set_rates(double ne)
 
     double zeta = dE/pc::k/gas_temp_; // note dE is in ergs
     double ezeta = exp(zeta);
-    double C_up = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) / ezeta * ne * lines_[l].f_lu;
-    if (zeta > 700) C_up = 0.; // be careful about overflow
 
-    double C_down = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) * ne * lines_[l].f_lu * levels_[ll].g/levels_[lu].g;
+    // Rutten section 3.2.5 (page 52) points out that these van Regemorter
+    // rates are only valid for permitted dipole transitions, with f_lu in the
+    // range 10^-3 to 1. For forbidden lines with smaller f, he says the
+    // collisional transition rates "don't drop much below the values typical
+    // of permitted lines." That's not a very precise statement, but we can
+    // mock it up by not letting the f_lu factor drop below 10^-3
 
-    rates_[ll][lu] += C_up;
-    rates_[lu][ll] += C_down;
+    double effective_f_lu = 0.;
+    if (lines_[l].f_lu < 1.e-3) effective_f_lu = 1.e-3;
+    else effective_f_lu = lines_[l].f_lu;
+
+    if (use_collisions_nlte_)
+    {
+	    double C_up = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) / ezeta * ne * effective_f_lu;
+      // be careful about possible overflow
+      if (zeta > 700) C_up = 0;
+
+	    double C_down = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) * ne * effective_f_lu * levels_[ll].g/levels_[lu].g;
+
+	    rates_[ll][lu] += C_up;
+      rates_[lu][ll] += C_down;
+    }
 
   }
 
@@ -415,21 +431,25 @@ void AtomicSpecies::set_rates(double ne)
 
     // collisional ionization rate
     // needs to be multiplied by number of electrons in outer shell
-    double C_ion = 2.7/zeta/zeta*pow(gas_temp_,-1.5)*exp(-zeta)*ne;
-    rates_[i][ic] += C_ion;
+    if (use_collisions_nlte_)
+    {
+	    double C_ion = 2.7/zeta/zeta*pow(gas_temp_,-1.5)*exp(-zeta)*ne;
+	    rates_[i][ic] += C_ion;
 
-    // collisional recombination rate
-    int gi = levels_[i].g;
-    int gc = levels_[ic].g;
-    double C_rec = 5.59080e-16/zeta/zeta*pow(gas_temp_,-3)*gi/gc*ne*ne;
-    rates_[ic][i] += C_rec;
-
-    // radiative recombination rate (debug)
-    //double R_rec = ne*levels_[i].a_rec.value_at(T);
-    //// suppress recombinations to ground
-    //if (no_ground_recomb) if (levels_[i].E == 0) R_rec = 0;
+	    // collisional recombination rate
+	    int gi = levels_[i].g;
+	    int gc = levels_[ic].g;
+	    double C_rec = 5.59080e-16/zeta/zeta*pow(gas_temp_,-3)*gi/gc*ne*ne;
+	    rates_[ic][i] += C_rec;
+    }
 
     // photoionization and radiative recombination
+
+    // suppress recombinations to ground
+    if (no_ground_recomb_)
+    {
+	     if (levels_[i].E == 0) levels_[i].R_ci = 0.;
+    }
     rates_[ic][i] += levels_[i].R_ci*ne;
     rates_[i][ic] += levels_[i].P_ic;
 

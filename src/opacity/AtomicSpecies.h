@@ -109,6 +109,7 @@ public:
   int use_betas_;               // include escape probabilites in nlte
   int no_ground_recomb_;        // suppress recombinations to ground
   bool use_nlte_;               // treat this atom in nlte or not
+  int use_collisions_nlte_;    // use collisional transitions in NLTE solve and heating/cooling
 
   // atomic data structs
   int n_ions_;             // Number of ionic stages considered
@@ -141,9 +142,12 @@ public:
   double compute_sobolev_tau(int i, double time);
   void   compute_sobolev_taus(double time);
 
-  // opacities
+  // opacities and heating/cooling rates
   void   bound_free_opacity (std::vector<double>&, std::vector<double>&, double);
+  void   bound_free_opacity_for_heating (std::vector<double>&, double,double);
   void   bound_bound_opacity(std::vector<double>&, std::vector<double>&);
+  void   bound_free_opacity_for_cooling (std::vector<double>&, double,double);
+  double collisional_net_cooling_rate(double, double);
 
 
   // returns

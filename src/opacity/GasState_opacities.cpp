@@ -14,7 +14,6 @@ void GasState::computeOpacity(std::vector<OpacityType>& abs,
 {
 
 
-
   int ns = nu_grid_.size();
   std::vector<double> opac, aopac, emis;
   opac.resize(ns);
@@ -181,8 +180,170 @@ void GasState::free_free_opacity(std::vector<double>& opac, std::vector<double>&
     opac[i] = fac/nu/nu/nu*(1 - ezeta);
     emis[i] = opac[i]*bb;
   }
+}
+
+
+double GasState::free_free_cooling_rate(double T)
+{
+  int npts   = nu_grid_.size();
+  int natoms = atoms.size();
+
+  // calculate sum of n_ion*Z**2
+  double fac = 0;
+  for (int i=0;i<natoms;i++)
+  {
+    double Z_eff_sq = 0;
+    for (int j=0;j<atoms[i].n_ions_;j++)
+      Z_eff_sq += atoms[i].ionization_fraction(j)*j*j;
+
+    double n_ion = mass_frac[i]*dens_/(elem_A[i]*pc::m_p);
+    fac += n_ion*Z_eff_sq;
+  }
+  // multiply by overall constants
+  fac *= 3.7e8*pow(T,-0.5)*n_elec_;
+
+  double ff_cooling_rate = 0.;
+  // multiply by frequency dependence
+  for (int i=0;i<npts;i++)
+  {
+    double nu = nu_grid_.center(i);
+    double ezeta = exp(-1.0*pc::h*nu/pc::k/T);
+    double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(1.0/ezeta-1);
+    double opac = fac/nu/nu/nu*(1 - ezeta);
+    double emis = opac*bb;
+
+    ff_cooling_rate += emis * nu_grid_.delta(i);
+  }
+
+  ff_cooling_rate *= 4. * pc::pi;
+
+  return ff_cooling_rate;
 
 }
+
+double GasState::free_free_heating_rate(double T, std::vector<real> J_nu )
+{
+
+  int npts   = nu_grid_.size();
+  int natoms = atoms.size();
+
+  // calculate sum of n_ion*Z**2
+  double fac = 0.;
+  for (int i=0;i<natoms;i++)
+  {
+    double Z_eff_sq = 0;
+    for (int j=0;j<atoms[i].n_ions_;j++)
+      Z_eff_sq += atoms[i].ionization_fraction(j)*j*j;
+
+    double n_ion = mass_frac[i]*dens_/(elem_A[i]*pc::m_p);
+    fac += n_ion*Z_eff_sq;
+  }
+  // multiply by overall constants
+  fac *= 3.7e8*pow(T,-0.5)*n_elec_;
+
+  double ff_heating_rate = 0.;
+  // multiply by frequency dependence
+  for (int i=0;i<npts;i++)
+  {
+    double nu = nu_grid_.center(i);
+    double ezeta = exp(-1.0*pc::h*nu/pc::k/T);
+    double opac = fac/nu/nu/nu*(1 - ezeta);
+
+    ff_heating_rate += opac * J_nu[i] * nu_grid_.delta(i);
+  }
+
+  ff_heating_rate *= 4. * pc::pi;
+
+  return ff_heating_rate;
+
+}
+
+
+double GasState::bound_free_heating_rate(double T, std::vector<real> J_nu )
+{
+  int npts = nu_grid_.size();
+  int natoms = atoms.size();
+
+  std::vector<double> total_heat_opac, atom_heat_opac;
+  total_heat_opac.resize(npts);
+  atom_heat_opac.resize(npts);
+
+  for (int i=0;i<npts;i++) {total_heat_opac[i] = 0.; atom_heat_opac[i] = 0.;}
+
+  // sum up the bound-free opacity from every atom
+  for (int i=0;i<natoms;i++)
+  {
+    atoms[i].bound_free_opacity_for_heating(atom_heat_opac,n_elec_, T);
+    for (int j=0;j<npts;j++)
+    {
+      total_heat_opac[j] += atom_heat_opac[j];
+    }
+  }
+
+  double bf_heating_rate = 0.;
+
+  for (int i=0;i<npts;i++)
+  {
+    double nu = nu_grid_.center(i);
+    bf_heating_rate += total_heat_opac[i] * J_nu[i] /(pc::h * nu) * nu_grid_.delta(i);
+  }
+
+  bf_heating_rate *= 4. * pc::pi;
+
+  return bf_heating_rate;
+
+  
+}
+
+double GasState::bound_free_cooling_rate(double T)
+{
+
+  int npts = nu_grid_.size();
+  int natoms = atoms.size();
+
+  std::vector<double> total_emis, atom_emis;
+  total_emis.resize(npts);
+  atom_emis.resize(npts);
+
+  for (int i=0;i<npts;i++) {total_emis[i] = 0.; atom_emis[i] = 0.;}
+
+  // sum up the bound-free opacity from every atom
+  for (int i=0;i<natoms;i++)
+  {
+    atoms[i].bound_free_opacity_for_cooling(atom_emis,n_elec_,T);
+    for (int j=0;j<npts;j++)
+    {
+      total_emis[j] += atom_emis[j];
+
+    }
+  }
+  double bf_cooling_rate = 0.;
+  for (int i=0;i<npts;i++)
+  {
+    bf_cooling_rate += total_emis[i] * nu_grid_.delta(i);
+  }
+
+  bf_cooling_rate *= 4. * pc::pi * n_elec_;
+
+  return bf_cooling_rate;
+}
+
+
+double GasState::collisional_net_cooling_rate(double T)
+{
+  int natoms = atoms.size();
+  double cooling_rate = 0.;
+
+  for (int i=0;i<natoms;i++)
+  {
+    cooling_rate += atoms[i].collisional_net_cooling_rate(n_elec_,T);
+  }
+  
+  return cooling_rate;
+
+}
+
+
 
 
 //----------------------------------------------------------------

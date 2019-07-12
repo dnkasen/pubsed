@@ -87,7 +87,7 @@ void transport::init(ParameterReader* par, grid_general *g)
 //  std::cout << MPI_myID <<  " " << my_zone_start_ << " " << my_zone_stop_ <<
 //   " " << my_zone_stop_ - my_zone_start_ << "\n";
 
-  std::string restart_file = params_->getScalar<string>("run_restart_file"); 
+  std::string restart_file = params_->getScalar<string>("run_restart_file");
   int do_restart = params_->getScalar<int>("run_do_restart");
 
   // setup and seed random number generator
@@ -107,7 +107,47 @@ void transport::init(ParameterReader* par, grid_general *g)
   temp_max_value_ = params_->getScalar<double>("limits_temp_max");
   temp_min_value_ = params_->getScalar<double>("limits_temp_min");
   fleck_alpha_ = params_->getScalar<double>("transport_fleck_alpha");
+  solve_Tgas_with_updated_opacities_ = params_->getScalar<int>("transport_solve_Tgas_with_updated_opacities");
+  fix_Tgas_during_transport_ = params_->getScalar<int>("transport_fix_Tgas_during_transport");
+  set_Tgas_to_Trad_ = params_->getScalar<int>("transport_set_Tgas_to_Trad");
   last_iteration_ = 0;
+
+
+  // set temperature control parameters, check for conflicts
+  if (radiative_eq != 0)
+  {
+    if (fix_Tgas_during_transport_ == 1 )
+    {
+	  cerr << "# ERROR: radiative equilibrium turned on, skip_gas_temp_update_during_transport cannot be set to 1\n";
+	  exit(1);
+	}
+    if (set_Tgas_to_Trad_ == 1)
+	{
+	  cerr << "# ERROR: radiative equilibrium turned on, set_Tgas_to_Trad_ cannot be set to 1.\n";
+	  exit(1);
+    }
+  }
+
+  if (solve_Tgas_with_updated_opacities_ == 1)
+  {
+    if (fix_Tgas_during_transport_ == 1 )
+    {
+	  cerr << "# ERROR: Cannot simultaneously set solve_Tgas_with_updated_opacities_ to 1 and fix_Tgas_during_transport_ to 1\n";
+	  exit(1);
+	}
+
+    if (set_Tgas_to_Trad_ == 1)
+	{
+	  cout << "# WARNING: set_Tgas_to_Trad_ is set to 1, so this will override anything more detailed that might result from setting solve_coupled_gas_state_temp_ to 1\n";
+	}
+  }
+
+  if (fix_Tgas_during_transport_ == 1 && set_Tgas_to_Trad_ == 1)
+  {
+	cerr << "# ERROR: Cannot simultaneously set fix_Tgas_during_transport_ to 1 and set_Tgas_to_Trad_ == 1\n";
+	exit(1);
+  }
+
 
   // initialize the frequency grid
   std::vector<double> nu_dims = params_->getVector<double>("transport_nu_grid");
@@ -167,6 +207,8 @@ void transport::init(ParameterReader* par, grid_general *g)
 
   // set non-lte settings
   int use_nlte = params_->getScalar<int>("opacity_use_nlte");
+  gas_state_.use_collisions_nlte_ = params_->getScalar<int>("opacity_use_collisions_nlte");
+  gas_state_.no_ground_recomb = params_->getScalar<int>("opacity_no_ground_recomb");
   gas_state_.initialize(atomdata,grid->elems_Z,grid->elems_A,nu_grid);
   gas_state_.set_atoms_in_nlte(params_->getVector<int>("opacity_atoms_in_nlte"));
 
@@ -200,6 +242,16 @@ void transport::init(ParameterReader* par, grid_general *g)
 
   // allocate memory for opacity/emissivity variables
   planck_mean_opacity_.resize(grid->n_zones);
+
+  if (use_nlte)
+  {
+    bf_heating.resize(grid->n_zones);
+    ff_heating.resize(grid->n_zones);
+    bf_cooling.resize(grid->n_zones);
+    ff_cooling.resize(grid->n_zones);
+    coll_cooling.resize(grid->n_zones);
+  }
+
   rosseland_mean_opacity_.resize(grid->n_zones);
   n_grid_variables += 2;
 

@@ -171,6 +171,8 @@ void transport::compton_scatter_photon(particle *p)
 
   assert(p->ind >= 0);
 
+  double E_initial = p->e;
+
   transform_lab_to_comoving(p);
 
   zone *zone = &(grid->z[p->ind]);
@@ -246,6 +248,9 @@ void transport::compton_scatter_photon(particle *p)
 
   // lorentz transform back to lab frame
   transform_comoving_to_lab(p);
+
+  double E_final = p->e;
+  
 }
 
 

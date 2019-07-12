@@ -40,7 +40,7 @@ hydro_boundary_outflow = 1
 hydro_boundary_rigid_outer_wall = 0
 
 
--- default nu_grid is nothing
+-- default nu_grid is single frequency
 transport_module = "monte_carlo"
 transport_nu_grid  = {1,1,1}
 transport_radiative_equilibrium  = 0
@@ -51,6 +51,11 @@ transport_store_Jnu              = 1
 transport_use_ddmc               = 0
 transport_ddmc_tau_threshold     = 100
 transport_fleck_alpha            = 0
+
+-- options for handling temperature solve
+transport_solve_Tgas_with_updated_opacities = 0
+transport_fix_Tgas_during_transport         = 0
+transport_set_Tgas_to_Trad                  = 0
 
 -- inner source emission = none
 core_n_emit           = 0
@@ -92,6 +97,9 @@ output_write_mass_fractions       = 0
 limits_temp_max = 1e8
 limits_temp_min = 1000
 
+
+
+
 -- opacity calculation defaults
 opacity_grey_opacity				= 0
 opacity_zone_dependent_grey_opacity	= 0
@@ -106,6 +114,8 @@ opacity_bound_bound         		= 0
 opacity_free_free           		= 0
 opacity_use_nlte            		= 0
 opacity_atoms_in_nlte       		= {}
+opacity_use_collisions_nlte           	= 1 -- only matters if use_nlte == 1
+opacity_no_ground_recomb                = 0
 opacity_minimum_extinction  		= 0
 opacity_maximum_opacity     		= 1e40
 opacity_no_scattering       		= 0

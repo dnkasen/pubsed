@@ -66,6 +66,7 @@ class GasState
 
   // flags for nlte
   int use_nlte_;
+  int use_collisions_nlte_;
 
   double smooth_grey_opacity_;  // smooth component of the grey opacity (cm^2/g) that is the same in all zones
   double total_grey_opacity_;   // total grey opacity (cm^2/g) that includes the smooth component and the zone-dependent component
@@ -199,7 +200,12 @@ class GasState
 		      std::vector<OpacityType>&);
   double electron_scattering_opacity();
   void free_free_opacity  (std::vector<double>&, std::vector<double>&);
+  double free_free_heating_rate(double, std::vector<real>);
+  double free_free_cooling_rate(double);
   void bound_free_opacity (std::vector<double>&, std::vector<double>&);
+  double bound_free_heating_rate (double, std::vector<real>);
+  double bound_free_cooling_rate(double);
+  double collisional_net_cooling_rate(double);
   void bound_bound_opacity(std::vector<double>&, std::vector<double>&);
   void bound_bound_opacity(int, std::vector<double>&, std::vector<double>&);
   void line_expansion_opacity(std::vector<double>&);
