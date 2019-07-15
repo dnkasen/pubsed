@@ -281,8 +281,11 @@ void grid_1D_sphere::read_ascii_file(std::string model_file, int verbose)
   // Case 'standard': r(t) = r(0) + v*t
   // Case 'SNR': r(t) = v*t
   // This makes a difference for IIP applications
-  is_snr_system = false;
-  if (snr == 1) is_snr_system = true;
+  // debug -- the non snr case produces unwanted behavior at this time
+  // so commented out - need to figure out how to do this properly
+    is_snr_system = true;
+ // is_snr_system = false;
+ //if (snr == 1) is_snr_system = true;
 
   // read header, general properties
   double texp;
