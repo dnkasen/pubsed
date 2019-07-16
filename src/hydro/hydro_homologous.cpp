@@ -28,30 +28,35 @@ void hydro_homologous::step(double dt)
 {
   double e = (grid->t_now+dt)/grid->t_now;
 
-  if (grid->is_snr_system)
-  {
+
+  //if (grid->is_snr_system)
+  //{
     for (int i=0;i<grid->n_zones;i++)
       grid->z[i].rho = grid->z[i].rho/e/e/e;
     grid->expand(e);
-  }
-  else
-  {
-    // get cell mass
-    for (int i=0;i<grid->n_zones;i++)
-    {
-      double vol  = grid->zone_volume(i);
-      grid->z[i].rho = grid->z[i].rho * vol;
-    }
-    // expand grid, compute new cell volume
-    grid->expand(dt);
+  //}
 
-    // update density with new zone volume
-    for (int i=0;i<grid->n_zones;i++)
-    {
-      double vol  = grid->zone_volume(i);
-      grid->z[i].rho = grid->z[i].rho / vol;
-    }
-  }
+  // this was put in to handle supernova with non-negligible
+  // initial radius -- i.e., r = R_0 + vt
+  // it breaks things so commented out
+  // else
+  // {
+  //   // get cell mass
+  //   for (int i=0;i<grid->n_zones;i++)
+  //   {
+  //     double vol  = grid->zone_volume(i);
+  //     grid->z[i].rho = grid->z[i].rho * vol;
+  //   }
+  //   // expand grid, compute new cell volume
+  //   grid->expand(dt);
+  //
+  //   // update density with new zone volume
+  //   for (int i=0;i<grid->n_zones;i++)
+  //   {
+  //     double vol  = grid->zone_volume(i);
+  //     grid->z[i].rho = grid->z[i].rho / vol;
+  //   }
+  // }
 
   grid->t_now += dt;
 }
@@ -106,7 +111,7 @@ void hydro_homologous::evolve_to_start(double t_start, int force_rproc)
     dt = 1e99;
     for (int i=0;i<grid->n_zones;i++)
     {
-      eps_nuc = 
+      eps_nuc =
         radio.decay(grid->elems_Z,grid->elems_A,grid->z[i].X_gas,grid->t_now,&gfrac,force_rproc);
       u_old = pc::a*pow(grid->z[i].T_gas,4)/grid->z[i].rho;
 
@@ -134,7 +139,7 @@ void hydro_homologous::evolve_to_start(double t_start, int force_rproc)
     grid->expand(e);
 
     // If we made it to t_start, exit the loop
-    if ( fabs(grid->t_now-t_start)/t_start < time_tol ) 
+    if ( fabs(grid->t_now-t_start)/t_start < time_tol )
     {
       grid->t_now = t_start; // Make it exact
       break;
