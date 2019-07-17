@@ -45,7 +45,7 @@ def run_test(pdf="",runcommand=""):
     plt.plot(lam,Llam,color='k',lw=2)
 
     # plot the comparison spectrum
-    nu,Lnu = np.loadtxt('reference_spectrum.dat',unpack=True,skiprows=1,usecols=[0,1])
+    nu,Lnu = np.loadtxt('reference_solution/spectrum_5.dat',unpack=True,skiprows=1,usecols=[0,1])
     lam = 3e10/nu*1e8
     Llam_ref = Lnu*nu/lam
     plt.plot(lam,Llam_ref,color='r',lw=2)
