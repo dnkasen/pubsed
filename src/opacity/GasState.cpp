@@ -44,35 +44,37 @@ void GasState::initialize
   verbose_ = 1;
 #endif
 
+  // copy the frequency grid
+  nu_grid_.copy(ng);
+
   for (size_t i=0;i<e.size();++i) elem_Z.push_back(e[i]);
   for (size_t i=0;i<e.size();++i) elem_A.push_back(A[i]);
   mass_frac.resize(e.size());
 
-  // copy the nugrid
-  nu_grid_.copy(ng);
-
   // set passed variables
-  atomfile_ = af;
+  atomdata_file_ = af;
 
   // check if atomfile is there
-  std::ifstream afile(atomfile_);
+  std::ifstream afile(atomdata_file_);
   if (!afile)
   {
     if (verbose_)
-      std::cerr << "Can't open atom datafile " << atomfile_ << "; exiting" << std::endl;
+      std::cerr << "Can't open atom datafile " << atomdata_file_ << "; exiting" << std::endl;
     exit(1);
   }
   afile.close();
 
   // read in the atom data
+  atomic_data_ = new AtomicData[1];
+  atomic_data_->initialize(atomdata_file_,ng);
   atoms.resize(elem_Z.size());
-  int level_id = 0;
   for (size_t i=0;i<atoms.size();++i)
   {
-    int error = atoms[i].initialize(atomfile_, elem_Z[i],ng,level_id);
+    int error = atomic_data_->read_atomic_data(elem_Z[i]);
     if ((error)&&(verbose_))
       std::cerr << "# ERROR: incomplete data for atom Z=" << elem_Z[i] <<
-	" in file " << atomfile_ << std::endl;
+        " in file " << atomdata_file_ << std::endl;
+    atoms[i].initialize(elem_Z[i],atomic_data_);
   }
  }
 
@@ -134,11 +136,11 @@ void GasState::set_mass_fractions(std::vector<double> x)
 // read fuzz lines from a file
 // input:
 // std::string fuzzfile: name of hdf5 file with fuzz data
+// The lines will only be read for atoms that have
+// already had data read in
 //-----------------------------------------------------------
 int GasState::read_fuzzfile(std::string fuzzfile)
 {
-  int n_tot = 0;
-
   // check if fuzzfile exists
   FILE *fin = fopen(fuzzfile.c_str(),"r");
   if ((fin == NULL)&&(verbose_)&&(fuzzfile != ""))
@@ -146,9 +148,8 @@ int GasState::read_fuzzfile(std::string fuzzfile)
     << fuzzfile << std::endl;
   if (fin == NULL) return 0;
 
-  for (size_t i=0;i<atoms.size();++i)
-    n_tot += atoms[i].read_fuzzfile(fuzzfile);
-  return n_tot;
+  int n_lines = atomic_data_->read_fuzzfile_data(fuzzfile);
+  return n_lines;
 }
 
 
@@ -228,7 +229,7 @@ double GasState::charge_conservation(double ne,std::vector<real> J_nu)
       atoms[i].solve_lte(ne);
 
     // total electron donation from this atomic species
-    f += dens_*mass_frac[i]/(elem_A[i]*pc::m_p)*atoms[i].get_ion_frac();
+    f += dens_*mass_frac[i]/(elem_A[i]*pc::m_p)*atoms[i].get_net_ion_fraction();
   }
 
   // total ionization density minus electron density should equal zero
@@ -355,7 +356,7 @@ void GasState::print_properties()
 {
 
   std::cout << "#-------------------------------------------------\n";
-  std::cout << "# atomic data from: " << atomfile_ << "\n";
+  std::cout << "# atomic data from: " << atomdata_file_ << "\n";
   std::cout << "#--------------------------------------------------\n";
   std::cout << "#  Z    n_ions  n_levels  n_lines  n_fuzz_lines\n";
   std::cout << "#-------------------------------------------------\n";
@@ -415,9 +416,9 @@ void GasState::print()
   std::cout << "# temp = " << temp_ << "\n";
   std::cout << "# A_mu = " << A_mu << "\n";
   for (size_t i=0;i<elem_Z.size();++i)
-    printf("%4d %12.4e %12.4e\n",elem_Z[i],mass_frac[i],atoms[i].get_ion_frac());
-  //for (size_t i=0;i<elem_Z.size();++i)
-  //  atoms[i].print();
+    printf("%4d %12.4e %12.4e\n",elem_Z[i],mass_frac[i],atoms[i].get_net_ion_fraction());
+  for (size_t i=0;i<elem_Z.size();++i)
+    atoms[i].print();
 }
 
 

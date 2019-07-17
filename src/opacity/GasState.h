@@ -19,7 +19,6 @@ class GasState
   locate_array nu_grid_;
   int verbose_;
   int solve_error_;
-  std::string atomfile_;
 
   // global list of all levels of all atoms
   std::vector <int> globalLevelList_atom_;
@@ -33,7 +32,9 @@ class GasState
   std::vector<int>           elem_A;  // vector of element atomic weights
   std::vector<AtomicSpecies>  atoms;  // vector of atoms
 
-
+  // pointer to stored atomic data
+  AtomicData *atomic_data_;
+  std::string atomdata_file_;    // filename for data
 
   double dens_;                  // total mass density (g cm^-3)
   double n_elec_;                // electron number density (cm^-3)
@@ -138,6 +139,17 @@ class GasState
   int solve_state(std::vector<real>);
   int solve_state();
 
+
+  // basic setting of properties
+  void set_density(double d) {
+    dens_ = d;
+  }
+  void set_temperature(double T) {
+    temp_ = T;
+  }
+  void set_time(double t) {
+    time_ = t;
+  }
 
   //***********************************************************
   // RETURN BASIC DATA

@@ -31,34 +31,6 @@ using namespace std;
 
 namespace pc = physical_constants;
 
-AtomicSpecies::AtomicSpecies()
-{
-  e_gamma_            = 0;
-  no_ground_recomb_   = 0;
-  use_betas_          = 0;
-  minimum_extinction_ = 0;
-  use_nlte_           = 0;
-
-  n_levels_            = 0;
-  n_lines_             = 0;
-  n_ions_              = 0;
-
-  levels_             = NULL;
-  lines_              = NULL;
-  ions_               = NULL;
-  // debug -- I hard coded this for now...
-  min_level_pop_ = 1e-30;
-}
-
-AtomicSpecies::~AtomicSpecies() {
-  if (levels_ != NULL)
-    delete[] levels_;
-  if (lines_ != NULL)
-    delete[] lines_;
-  if (ions_ != NULL)
-    delete[] ions_;
-}
-
 //-------------------------------------------------------
 // solve for the state of the atom
 // determining ionization and level populations
@@ -83,13 +55,15 @@ int AtomicSpecies::solve_state(double ne)
 //-------------------------------------------------------
 int AtomicSpecies::solve_lte(double ne)
 {
-
-  // calculate partition functions
-  for (int i=0;i<n_ions_;++i) ions_[i].part = 0;
+  // loop over level to calculate partition functions
+  for (int i=0;i<n_ions_;++i) ion_part_[i] = 0;
   for (int i=0;i<n_levels_;++i)
   {
-    levels_[i].n = levels_[i].g*exp(-levels_[i].E/pc::k_ev/gas_temp_);
-    ions_[levels_[i].ion].part += levels_[i].n;
+    double E = adata_->get_lev_E(i);
+    int    g = adata_->get_lev_g(i);
+    int  ion = adata_->get_lev_ion(i);
+    lev_n_[i] = g*exp(-E/pc::k_ev/gas_temp_);
+    ion_part_[ion] += lev_n_[i];
   }
 
   // thermal debroglie wavelength, lam_t**3
@@ -97,52 +71,57 @@ int AtomicSpecies::solve_lte(double ne)
   double fac = 2/ne/pow(lt,1.5);
 
   // calculate saha ratios
-  ions_[0].frac = 1.;
+  ion_frac_[0] = 1.;
   double norm  = 1.;
   for (int i=1;i<n_ions_;++i)
   {
     // calculate the ratio of i to i-1
-    double saha = exp(-1.0*ions_[i-1].chi/pc::k_ev/gas_temp_);
-    saha = saha*(ions_[i].part/ions_[i-1].part)*fac;
+    double chi  = adata_->get_ion_chi(i-1);
+    double saha = exp(-1.0*chi/pc::k_ev/gas_temp_);
+    saha = saha*(ion_part_[i]/ion_part_[i-1])*fac;
 
     // set relative ionization fraction
-    ions_[i].frac = saha*ions_[i-1].frac;
+    ion_frac_[i] = saha*ion_frac_[i-1];
 
     // check for ridiculously small numbers
-    if (ne < 1e-50) ions_[i].frac = 0;
+    if (ne < 1e-50) ion_frac_[i] = 0;
 
-    // Normalize
+    // ReNormalize to keep numbers reasonable
     norm = 0;
     for (int j=0; j<=i; j++) {
-      norm += ions_[j].frac;
+      norm += ion_frac_[j];
     }
     for (int j=0; j<=i; j++) {
-      ions_[j].frac = ions_[j].frac / norm;
+      ion_frac_[j] = ion_frac_[j] / norm;
     }
   }
   // renormalize ionization fractions
   norm = 0.;
-  for (int i=0;i<n_ions_; i++) {
-      norm += ions_[i].frac;
-    }
-  for (int i=0;i<n_ions_;++i) ions_[i].frac = ions_[i].frac/norm;
+  for (int i=0;i<n_ions_; i++)
+      norm += ion_frac_[i];
+  for (int i=0;i<n_ions_;++i) ion_frac_[i] = ion_frac_[i];
 
   // calculate level densities (bolztmann factors)
   for (int i=0;i<n_levels_;++i)
   {
-    double E = levels_[i].E;
-    int    g = levels_[i].g;
-    double Z = ions_[levels_[i].ion].part;
-    double f = ions_[levels_[i].ion].frac;
-    levels_[i].n = f*g*exp(-E/pc::k_ev/gas_temp_)/Z;
-    levels_[i].n_lte = levels_[i].n;
-    levels_[i].b = 1;
+    double E = adata_->get_lev_E(i);
+    int    g = adata_->get_lev_g(i);
+    int  ion = adata_->get_lev_ion(i);
+    double Z = ion_part_[ion];
+    double f = ion_frac_[ion];
+    lev_n_[i]   = f*g*exp(-E/pc::k_ev/gas_temp_)/Z;
+
+    // make sure our LTE level pops aren't too small
+    if (lev_n_[i] < min_level_pop_)
+      lev_n_[i] = min_level_pop_;
+    // record the LTE population value
+    lev_lte_[i] = lev_n_[i];
   }
 
   // this should return != 0 if failure really
   return 0;
-
 }
+
 
 //-------------------------------------------------------
 // solve for non-LTE level populations and
@@ -153,10 +132,6 @@ int AtomicSpecies::solve_nlte(double ne)
 {
   // initialize with LTE populations
   solve_lte(ne);
-
-  // make sure our lte levels aren't too small
-  for (int i=0;i<n_levels_;++i)
-      if (levels_[i].n_lte < min_level_pop_) levels_[i].n_lte = min_level_pop_;
 
   // Calculate all of the transition rates
   set_rates(ne);
@@ -185,7 +160,7 @@ int AtomicSpecies::solve_nlte(double ne)
 
   // last row expresses number conservation
   for (int i=0;i<n_levels_;++i)
-    gsl_matrix_set(M_nlte_,n_levels_-1,i,levels_[i].n_lte);
+    gsl_matrix_set(M_nlte_,n_levels_-1,i,lev_lte_[i]);
   gsl_vector_set(b_nlte_,n_levels_-1,1.0);
 
     //printf("----\n");
@@ -204,30 +179,21 @@ int AtomicSpecies::solve_nlte(double ne)
   for (int i=0;i<n_levels_;++i)
   {
     double b = gsl_vector_get(x_nlte_,i);
-    double n_nlte = b*levels_[i].n_lte;
-
-    // make sure our solved for nlte levels_ aren't too small
-
-    levels_[i].n = n_nlte;
-    levels_[i].b = b;
-
-    if (n_nlte < min_level_pop_){
-      levels_[i].n = levels_[i].n_lte;
-      levels_[i].b = 1.;
-    }
-
+    lev_n_[i] = b*lev_lte_[i];
+    if (lev_n_[i] < min_level_pop_)
+      lev_n_[i] = min_level_pop_;
   }
 
   // set the ionization fraction
   for (int i=0;i<n_ions_;++i)
-    ions_[i].frac = 0;
+    ion_frac_[i] = 0;
   for (int i=0;i<n_levels_;++i)
-    ions_[levels_[i].ion].frac += levels_[i].n;
+    ion_frac_[adata_->get_lev_ion(i)] += lev_n_[i];
 
   // this should return != 0 if failure really
   return 0;
-}
 
+}
 
 //-------------------------------------------------------
 // integrate up the radiation field over  lines
@@ -236,12 +202,11 @@ int AtomicSpecies::solve_nlte(double ne)
 //-------------------------------------------------------
 void AtomicSpecies::calculate_radiative_rates(std::vector<real> J_nu)
 {
-
   // zero out recombination/photoionization rates
   for (int j=0;j<n_levels_;++j)
   {
-    levels_[j].P_ic = 0;
-    levels_[j].R_ci = 0;
+    lev_Pic_[j] = 0;
+    lev_Rci_[j] = 0;
   }
 
   // calculate photoionization/recombination rates
@@ -261,18 +226,18 @@ void AtomicSpecies::calculate_radiative_rates(std::vector<real> J_nu)
     double dnu    = nu_grid_.delta(i);
     for (int j=0;j<n_levels_;++j)
     {
-      int ic = levels_[j].ic;
+      int ic = adata_->get_lev_ic(j);
       if (ic == -1) continue;
-      double chi = levels_[j].E_ion;
+      double chi = adata_->get_lev_Eion(j);
       if (E_ev < chi) continue;
 
       // photoionization term
-      double sigma = levels_[j].s_photo.value_at_with_zero_edges(E_ev);
+      double sigma = adata_->get_lev_photo_cs(j,E_ev);
       double Jterm = sigma*J/E_ergs;
-      levels_[j].P_ic += Jterm*dnu;
+      lev_Pic_[j] += Jterm*dnu;
 
       // recombination term
-      levels_[j].R_ci += (sigma*fac1*nu*nu + Jterm)*exp(-1.0*(E_ev - chi)/pc::k_ev/gas_temp_)*dnu;
+      lev_Rci_[j] += (sigma*fac1*nu*nu + Jterm)*exp(-1.0*(E_ev - chi)/pc::k_ev/gas_temp_)*dnu;
 
     }
   }
@@ -282,16 +247,14 @@ void AtomicSpecies::calculate_radiative_rates(std::vector<real> J_nu)
   double saha_fac = lam_t*lam_t*lam_t/2.0;
   for (int j=0;j<n_levels_;++j)
   {
-    int ic = levels_[j].ic;
+    int ic = adata_->get_lev_ic(j);
     if (ic == -1) continue;
-    double gl_o_gc = (1.0*levels_[j].g)/(1.0*levels_[ic].g);
-    levels_[j].P_ic *= 4*pc::pi;
-    levels_[j].R_ci *= 4*pc::pi*gl_o_gc*saha_fac;
-
-//    std::cout << "Pic = " << levels_[j].P_ic << " ; R_ci " << levels_[j].R_ci << "\n";
-
+    double gl_o_gc = (1.0*adata_->get_lev_g(j))/(1.0*adata_->get_lev_g(ic));
+    lev_Pic_[j] *= 4*pc::pi;
+    lev_Rci_[j] *= 4*pc::pi*gl_o_gc*saha_fac;
   }
 
+  // printing out for debug
   //for (int j=0;j<n_levels_;++j)
    // if (levels_[j].ic != -1)
     //  levels_[j].R_ci = 2.58e-13;
@@ -303,12 +266,12 @@ void AtomicSpecies::calculate_radiative_rates(std::vector<real> J_nu)
 
   for (int i=0;i<n_lines_;++i)
   {
-    double nu0 = lines_[i].nu;
+    double nu0 = adata_->get_line_nu(i);
       double sum  = 0;
     double J0   = 0;
 
     double nu_d    = nu0*line_beta_dop_;
-    double gamma   = lines_[i].A_ul;
+    double gamma   = adata_->get_line_A(i);
     double a_voigt = gamma/4/pc::pi/nu_d;
 
     for (double x=-1*x_max;x<=x_max;x+=dx)
@@ -319,7 +282,7 @@ void AtomicSpecies::calculate_radiative_rates(std::vector<real> J_nu)
       sum += 0.5*(J1 + J0)*dx;
       J0 = J1;
     }
-    lines_[i].J = sum;
+    line_J_[i] = sum;
   }
 }
 
@@ -338,18 +301,17 @@ void AtomicSpecies::set_rates(double ne)
   // ------------------------------------------------
   // radiative bound-bound transitions
   // ------------------------------------------------
-
   for (int l=0;l<n_lines_;l++)
   {
-    int lu     = lines_[l].lu;
-    int ll     = lines_[l].ll;
+    int ll       = adata_->get_line_l(l);
+    int lu       = adata_->get_line_u(l);
 
     // spontaneous dexcitation + stimulated emission
-    double R_ul = lines_[l].B_ul*lines_[l].J + lines_[l].A_ul;
-    double R_lu = lines_[l].B_lu*lines_[l].J;
+    double R_ul = adata_->get_line_Bul(l)*line_J_[l] + adata_->get_line_A(l);
+    double R_lu = adata_->get_line_Blu(l)*line_J_[l];
 
     // check for transition between degenerate levels_
-    if (lines_[l].nu == 0)
+    if (adata_->get_line_nu(l) == 0)
       { R_ul = 0; R_lu = 0;}
 
     // add into rates
@@ -361,18 +323,23 @@ void AtomicSpecies::set_rates(double ne)
   }
 
   double norm = 0;
-  for (int l=0;l<n_lines_;l++) norm   += lines_[l].f_lu;
+  for (int l=0;l<n_lines_;l++) norm   += adata_->get_line_f(l);
 
   for (int l=0;l<n_lines_;l++)
   {
-    int lu  = lines_[l].lu;
-    int ll  = lines_[l].ll;
+    int ll       = adata_->get_line_l(l);
+    int lu       = adata_->get_line_u(l);
+    int gl       = adata_->get_lev_g(ll);
+    int gu       = adata_->get_lev_g(lu);
+    double El    = adata_->get_lev_E(ll);
+    double Eu    = adata_->get_lev_E(lu);
+    double f_lu  = adata_->get_line_f(l);
+
 
     // ------------------------------------------------
     // non-thermal (radioactive) bound-bound transitions
     // ------------------------------------------------
-
-    double dE = (levels_[lu].E - levels_[ll].E)*pc::ev_to_ergs;
+    double dE = (Eu - El)*pc::ev_to_ergs;
     double R_lu = e_gamma_/n_dens_/dE; //*(lines_[l].f_lu/norm);
     if (dE == 0) R_lu = 0;
     if (ll != 0) R_lu = 0;
@@ -398,8 +365,8 @@ void AtomicSpecies::set_rates(double ne)
     // mock it up by not letting the f_lu factor drop below 10^-3
 
     double effective_f_lu = 0.;
-    if (lines_[l].f_lu < 1.e-3) effective_f_lu = 1.e-3;
-    else effective_f_lu = lines_[l].f_lu;
+    if (f_lu < 1.e-3) effective_f_lu = 1.e-3;
+    else effective_f_lu = f_lu;
 
     if (use_collisions_nlte_)
     {
@@ -407,12 +374,11 @@ void AtomicSpecies::set_rates(double ne)
       // be careful about possible overflow
       if (zeta > 700) C_up = 0;
 
-	    double C_down = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) * ne * effective_f_lu * levels_[ll].g/levels_[lu].g;
+	    double C_down = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) * ne * effective_f_lu * gl/gu;
 
 	    rates_[ll][lu] += C_up;
       rates_[lu][ll] += C_down;
     }
-
   }
 
 
@@ -421,12 +387,12 @@ void AtomicSpecies::set_rates(double ne)
   // ------------------------------------------------
   for (int i=0;i<n_levels_;++i)
   {
-    int ic = levels_[i].ic;
+    int ic = adata_->get_lev_ic(i);
     if (ic == -1) continue;
 
     // ionization potential
-    int istage  = levels_[i].ion;
-    double chi  = ions_[istage].chi - levels_[i].E;
+    int istage  = adata_->get_lev_ion(i);
+    double chi  = adata_->get_ion_chi(istage)- adata_->get_lev_E(i);
     double zeta = chi/pc::k_ev/gas_temp_;
 
     // collisional ionization rate
@@ -437,8 +403,8 @@ void AtomicSpecies::set_rates(double ne)
 	    rates_[i][ic] += C_ion;
 
 	    // collisional recombination rate
-	    int gi = levels_[i].g;
-	    int gc = levels_[ic].g;
+	    int gi = adata_->get_lev_g(i);
+	    int gc = adata_->get_lev_g(ic);
 	    double C_rec = 5.59080e-16/zeta/zeta*pow(gas_temp_,-3)*gi/gc*ne*ne;
 	    rates_[ic][i] += C_rec;
     }
@@ -448,10 +414,10 @@ void AtomicSpecies::set_rates(double ne)
     // suppress recombinations to ground
     if (no_ground_recomb_)
     {
-	     if (levels_[i].E == 0) levels_[i].R_ci = 0.;
+	     if (adata_->get_lev_E(i) == 0) lev_Rci_[i] = 0.;
     }
-    rates_[ic][i] += levels_[i].R_ci*ne;
-    rates_[i][ic] += levels_[i].P_ic;
+    rates_[ic][i] += lev_Rci_[i]*ne;
+    rates_[i][ic] += lev_Pic_[i];
 
     //printf("pc::pi: %d %d %e\n",i,ic,levels_[i].P_ic);
     //printf("CI: %d %d %e %e\n",i,ic,C_rec,C_ion);
@@ -462,7 +428,7 @@ void AtomicSpecies::set_rates(double ne)
   // (becuase we will solve for depature coeffs)
   for (int i=0;i<n_levels_;++i)
       for (int j=0;j<n_levels_;++j)
-        rates_[i][j] *= levels_[i].n_lte;
+        rates_[i][j] *= lev_lte_[i];
 
   // print out rates if you so like
   //printf("------- rates ----------\n");
@@ -478,115 +444,8 @@ void AtomicSpecies::set_rates(double ne)
 }
 
 
-double AtomicSpecies::get_ion_frac()
-{
-  double x = 0;
-  for (int i=0;i<n_levels_;++i)
-    x += levels_[i].n*levels_[i].ion;
-  return x;
-}
 
 
-
-double AtomicSpecies::Calculate_Milne(int lev, double temp)
-{
-  // Maxwell-Bolztmann constants
-  double v_MB = sqrt(2*pc::k*temp/pc::m_e);
-  double MB_A = 4/sqrt(pc::pi)*pow(v_MB,-3);
-  double MB_B = pc::m_e/pc::k/2.0/temp;
-  double milne_fac = pow(pc::h/pc::c/pc::m_e,2);
-
-  // starting values
-  double sum   = 0;
-  double nu_t  = levels_[lev].E_ion*pc::ev_to_ergs/pc::h;
-  double nu    = nu_t;
-  double vel   = 0;
-  double fMB   = 0;
-  double sigma = 0;
-  double coef  = 0;
-  double old_vel  = vel;
-  double old_coef = coef;
-
-  // integrate over velocity/frequency
-  for (int i=1;i<levels_[lev].s_photo.size();++i)
-  {
-    // recombination cross-section
-    double E = levels_[lev].s_photo.x[i];
-    double S = levels_[lev].s_photo.y[i];
-    nu       = E*pc::ev_to_ergs/pc::h;
-    vel      = sqrt(2*pc::h*(nu - nu_t)/pc::m_e);
-    if (nu < nu_t) vel = 0;
-    fMB   = MB_A*vel*vel*exp(-MB_B*vel*vel);
-    sigma = milne_fac*S*nu*nu/vel/vel;
-    coef  = vel*sigma*fMB;
-
-    // integrate
-    sum += 0.5*(coef + old_coef)*(vel - old_vel);
-    // store old values
-    old_vel  = vel;
-    old_coef = coef;
-  }
-
-  // ionize to state
-  int ic = levels_[lev].ic;
-  if (ic == -1) return 0;
-
-  // return value
-  //return levels_[lev].g/levels_[ic].g*sum;
-  return (1.0*levels_[lev].g)/(1.0*levels_[ic].g)*sum;
-}
-
-
-void AtomicSpecies::print()
-{
-
-  cout << "--------------------- ions; n = " << n_ions_ << " ---------------------\n";
-  cout << "# ion \t part \t frac \t chi (eV)\n";
-  cout << "#---------------------------------------------------------------\n";
-
-
-  for (int i=0;i<n_ions_;++i)
-    cout << "#   "<<  ions_[i].stage << "\t" << ions_[i].part << "\t" << ions_[i].frac
-	 << "\t" << ions_[i].chi << endl;
-
-
-  cout << "\n";
-  cout << "--------------------------------------------------------------------\n";
-  cout << "--------------------levels; n = " << n_levels_ << "------------------------\n";
-  cout << "# lev   ion     E_ex        g      pop          b_i       ion_to\n";
-  cout << "#---------------------------------------------------------------\n";
-
-  for (int i=0;i<n_levels_;++i)
-  {
-    printf("%5d %4d %12.3e %5d %12.3e %12.3e %5d\n",
-	   levels_[i].globalID,levels_[i].ion,
-	   levels_[i].E,levels_[i].g,levels_[i].n,
-	   levels_[i].b,levels_[i].ic);
-  }
-
-  printf("\n--- line data\n");
-
-  for (int i=0;i<n_lines_;++i)
-  {
-    printf("%8d %4d %4d %12.3e %12.3e %12.3e %12.3e %12.3e\n",
-    	   i,lines_[i].ll,lines_[i].lu,lines_[i].nu,lines_[i].f_lu,
-    	   lines_[i].A_ul,lines_[i].B_ul,lines_[i].B_lu);
-  }
-
-  printf("\n--- line optical depths\n");
-
-  for (int i=0;i<n_lines_;++i)
-  {
-    int    ll = lines_[i].ll;
-    double nl = levels_[ll].n;
-
-    printf("%8d %4d %4d %12.3e %12.3e %12.3e\n",
-    	   i,lines_[i].ll,lines_[i].lu,lines_[i].nu,
-	   lines_[i].tau,nl);
-  }
-
-
-}
 
 //-----------------------------------------------------------------
 // calculate planck function in frequency units

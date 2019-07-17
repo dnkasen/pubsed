@@ -11,65 +11,7 @@
 #include "locate_array.h"
 #include "sedona.h"
 #include "VoigtProfile.h"
-
-
-struct fuzz_line_structure
-{
-  int n_lines;
-  std::vector<double> nu;
-  std::vector<double> El;
-  std::vector<double> gf;
-  std::vector<int>   ion;
-  std::vector<int>   bin;
-};
-
-
-struct AtomicIon
-{
-  int stage;          // ionization stage (0 = neutral, 1 = +, etc..)
-  int ground;         // index of ground state level
-  double chi;         // ionization energy, in eV
-  double part;        // partition function
-  double frac;        // fractional abundance
-};
-
-struct AtomicLine
-{
-  int lu,ll;           // index of upper/lower level
-  double nu;           // rest frequency (Hz)
-  double f_lu;         // oscillator strength
-  double A_ul;         // Einstein A coeficient
-  double B_ul;         // Einstein B coeficient
-  double B_lu;         // Einstein B coeficient
-  double J;            // radiation field in line
-  double tau;          // sobolev optical depth
-  double etau;         // exponential of soblev optical depth
-  double beta;         // sobolev escape probability
-  int    bin;          // index of the nu grid bin
-};
-
-struct AtomicLevel
-{
-  int   globalID;       // global id
-  int  ion;             // ionization state (0 = neutral)
-  int   ic;             // index of level we ionize to (-1 if none)
-  int    g;             // statistical weight
-  double E;             // excitation energy above ground (in eV)
-  double E_ion;         // energy to ionize (in eV)
-  double n;             // level population fraction
-  double n_lte;         // lte level population
-  double b;             // nlte departure coefficient
-
-  //  ivector photo         // photoionization cross-section vector
-  double  P_ic;            // rate of photoionization from this level
-  double  R_ci;            // radiative recombination rate to this level
-
-  // photoionization cross-section as a function of wavelength
-  xy_array s_photo;
-  // recombination coefficient as a function of temperature
-  xy_array a_rec;
-
-};
+#include "AtomicData.h"
 
 
 class AtomicSpecies
@@ -84,8 +26,12 @@ private:
   gsl_vector *x_nlte_;
   gsl_permutation *p_nlte_;
 
+
   // frequency bin array
   locate_array nu_grid_;
+
+  // pointer to atomic data holder
+  IndividualAtomData *adata_;
 
   // Voigt profile class
   VoigtProfile voigt_profile_;
@@ -95,6 +41,7 @@ private:
   void   set_rates(double ne);
 
 public:
+
 
 
   int atomic_number;      // Atomic number of atom
@@ -111,19 +58,22 @@ public:
   bool use_nlte_;               // treat this atom in nlte or not
   int use_collisions_nlte_;    // use collisional transitions in NLTE solve and heating/cooling
 
-  // atomic data structs
+  // atomic state values
   int n_ions_;             // Number of ionic stages considered
   int n_levels_;           // number of energy levels
   int n_lines_;            // number of line transitions
-  AtomicLevel *levels_;       // array of level data
-  AtomicLine  *lines_;        // array of line data
-  AtomicIon    *ions_;        // array of ion data
 
-  fuzz_line_structure fuzz_lines; // vector of fuzz lines
+  std::vector<double> ion_part_;    // ion partition function
+  std::vector<double> ion_frac_;    // ion fraction
+  std::vector<double> lev_n_;       // level number population
+  std::vector<double> lev_lte_;     // level LTE number population
+  std::vector<double> lev_Pic_;     // photoionization rate from level
+  std::vector<double> lev_Rci_;     // recombination rate to level
+  std::vector<double> line_J_;      // line radiation field
 
   // Constructor and Init
   AtomicSpecies();
-  int initialize(std::string, int, locate_array, int&);
+  int initialize(int, AtomicData*);
   int set_use_nlte();
   int read_fuzzfile(std::string);
 
@@ -144,41 +94,51 @@ public:
 
   // opacities and heating/cooling rates
   void   bound_free_opacity (std::vector<double>&, std::vector<double>&, double);
+  void   bound_free_opacity_general (std::vector<double>&, std::vector<double>&, double, double, int);
   void   bound_free_opacity_for_heating (std::vector<double>&, double,double);
-  void   bound_bound_opacity(std::vector<double>&, std::vector<double>&);
   void   bound_free_opacity_for_cooling (std::vector<double>&, double,double);
   double collisional_net_cooling_rate(double, double);
-
+  void   bound_bound_opacity(std::vector<double>&, std::vector<double>&);
+  void   line_expansion_opacity(std::vector<double>&,double);
+  void   fuzzline_expansion_opacity(std::vector<double>& opac, double time);
 
   // returns
   int get_n_fuzz_lines()
   {
-    return fuzz_lines.n_lines;
+    return adata_->get_n_fuzz_lines();
   }
 
   double partition(int ion)
   {
     for (int i = 0;i < n_ions_; i++)
-      if (ion == ions_[i].stage) return ions_[i].part;
+      if (ion == adata_->ions_[i].stage) return ion_part_[i];
     return -1;
   }
 
   double ionization_fraction(int ion)
   {
     for (int i=0;i<n_ions_; i++)
-      if (ion == ions_[i].stage) return ions_[i].frac;
+      if (ion == adata_->ions_[i].stage) return ion_frac_[i];
     return 0;
- }
+  }
+
+  double get_net_ion_fraction()
+  {
+    double x = 0;
+    for (int i=0;i<n_levels_;++i)
+      x += lev_n_[i]*adata_->get_lev_ion(i);
+    return x;
+  }
 
   double level_fraction(int lev)
   {
     if (lev >= n_levels_) return 0;
-    return levels_[lev].n;
+    return lev_n_[lev];
   }
   double level_depature(int lev)
   {
     if (lev >= n_levels_) return 0;
-    return levels_[lev].b;
+    return lev_n_[lev]/lev_lte_[lev];
   }
 
 

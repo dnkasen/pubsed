@@ -292,7 +292,7 @@ double GasState::bound_free_heating_rate(double T, std::vector<real> J_nu )
 
   return bf_heating_rate;
 
-  
+
 }
 
 double GasState::bound_free_cooling_rate(double T)
@@ -338,7 +338,7 @@ double GasState::collisional_net_cooling_rate(double T)
   {
     cooling_rate += atoms[i].collisional_net_cooling_rate(n_elec_,T);
   }
-  
+
   return cooling_rate;
 
 }
@@ -421,29 +421,20 @@ void GasState::bound_bound_opacity(int iatom, std::vector<double>& opac, std::ve
 //----------------------------------------------------------------
 void GasState::line_expansion_opacity(std::vector<double>& opac)
 {
-  // zero out opacity array
-  std::fill(opac.begin(),opac.end(),0);
+	int ng = nu_grid_.size();
+	int na = atoms.size();
 
-  int na = atoms.size();
+	// zero out opacity array
+	std::fill(opac.begin(),opac.end(),0);
 
-  // loop over atoms
-  for (int i=0;i<na;i++)
-  {
-    //compute line sobolev taus
-    atoms[i].compute_sobolev_taus(time_);
-
-    // loop over all lines
-    for (int j=0;j<atoms[i].n_lines_;j++)
-    {
-      // add in this line to the sum
-      double etau = atoms[i].lines_[j].etau;
-      opac[atoms[i].lines_[j].bin] += (1 - etau);
-    }
-  }
-
-  // renormalize opacity array
-  for (size_t i=0;i<opac.size();i++)
-    opac[i] = opac[i]*nu_grid_.center(i)/nu_grid_.delta(i)/pc::c/time_;
+  // Add in contribution of every atom
+	std::vector<double> atom_opac(ng);
+	for (int i=0;i<na;i++)
+	{
+	  atoms[i].line_expansion_opacity(atom_opac, time_);
+		for (size_t j=0;j<ng;++j)
+			opac[j] += atom_opac[j];
+	}
 }
 
 //----------------------------------------------------------------
@@ -456,62 +447,62 @@ void GasState::line_expansion_opacity(std::vector<double>& opac)
 //----------------------------------------------------------------
 void GasState::fuzz_expansion_opacity(std::vector<double>& opac, std::vector<double>& aopac)
 {
-  double exp_min = 1e-6;
-  double exp_max = 100;
-
-  // zero out opacity arrays
-  for (size_t i=0;i<opac.size();i++)
-  {
-    opac[i]  = 0;
-    aopac[i] = 0;
-  }
-
-  // loop over atoms
-  for (size_t i=0;i<atoms.size();i++)
-  {
-    double this_eps = epsilon_;
-    for (unsigned int k=0;k<atom_zero_epsilon_.size();k++)
-      if (atom_zero_epsilon_[k] == atoms[i].atomic_number)
-        this_eps = 0;
-
-    // loop over lines in atom
-    for (int j=0;j<atoms[i].fuzz_lines.n_lines;j++)
-    {
-      int   ion = atoms[i].fuzz_lines.ion[j];
-      double gf = atoms[i].fuzz_lines.gf[j];
-      double El = atoms[i].fuzz_lines.El[j];
-      double nu = atoms[i].fuzz_lines.nu[j];
-
-      // get sobolev tau
-      double n_dens = mass_frac[i]*dens_/(elem_A[i]*pc::m_p);
-      double nion   = n_dens*atoms[i].ionization_fraction(ion);
-
-      double nl = nion*exp(-1.0*El/pc::k_ev/temp_)/atoms[i].partition(ion);
-      double lam = pc::c/nu;
-      double stim_cor = (1 - exp(-pc::h*nu/pc::k/temp_));
-      double tau = pc::sigma_tot*lam*nl*gf*stim_cor*time_;
-
-      // effeciently calculate exponential of tau
-      double etau;
-      if (tau < exp_min)      etau = 1 - tau;
-      else if (tau > exp_max) etau = 0;
-      else                    etau = exp(-tau);
-
-      // add in this line to the sum
-      int bin = atoms[i].fuzz_lines.bin[j];
-
-      opac[bin]  += (1-this_eps)*(1 - etau);
-      aopac[bin] += this_eps*(1 - etau);
-
-    }
-  }
-
-  // renormalize opacity array
-  for (size_t i=0;i<opac.size();i++)
-  {
-    opac[i]  = opac[i]*nu_grid_.center(i)/nu_grid_.delta(i)/pc::c/time_;
-    aopac[i] = aopac[i]*nu_grid_.center(i)/nu_grid_.delta(i)/pc::c/time_;
-  }
+  // double exp_min = 1e-6;
+  // double exp_max = 100;
+	//
+  // // zero out opacity arrays
+  // for (size_t i=0;i<opac.size();i++)
+  // {
+  //   opac[i]  = 0;
+  //   aopac[i] = 0;
+  // }
+	//
+  // // loop over atoms
+  // for (size_t i=0;i<atoms.size();i++)
+  // {
+  //   double this_eps = epsilon_;
+  //   for (unsigned int k=0;k<atom_zero_epsilon_.size();k++)
+  //     if (atom_zero_epsilon_[k] == atoms[i].atomic_number)
+  //       this_eps = 0;
+	//
+  //   // loop over lines in atom
+  //   for (int j=0;j<atoms[i].fuzz_lines.n_lines;j++)
+  //   {
+  //     int   ion = atoms[i].fuzz_lines.ion[j];
+  //     double gf = atoms[i].fuzz_lines.gf[j];
+  //     double El = atoms[i].fuzz_lines.El[j];
+  //     double nu = atoms[i].fuzz_lines.nu[j];
+	//
+  //     // get sobolev tau
+  //     double n_dens = mass_frac[i]*dens_/(elem_A[i]*pc::m_p);
+  //     double nion   = n_dens*atoms[i].ionization_fraction(ion);
+	//
+  //     double nl = nion*exp(-1.0*El/pc::k_ev/temp_)/atoms[i].partition(ion);
+  //     double lam = pc::c/nu;
+  //     double stim_cor = (1 - exp(-pc::h*nu/pc::k/temp_));
+  //     double tau = pc::sigma_tot*lam*nl*gf*stim_cor*time_;
+	//
+  //     // effeciently calculate exponential of tau
+  //     double etau;
+  //     if (tau < exp_min)      etau = 1 - tau;
+  //     else if (tau > exp_max) etau = 0;
+  //     else                    etau = exp(-tau);
+	//
+  //     // add in this line to the sum
+  //     int bin = atoms[i].fuzz_lines.bin[j];
+	//
+  //     opac[bin]  += (1-this_eps)*(1 - etau);
+  //     aopac[bin] += this_eps*(1 - etau);
+	//
+  //   }
+  // }
+	//
+  // // renormalize opacity array
+  // for (size_t i=0;i<opac.size();i++)
+  // {
+  //   opac[i]  = opac[i]*nu_grid_.center(i)/nu_grid_.delta(i)/pc::c/time_;
+  //   aopac[i] = aopac[i]*nu_grid_.center(i)/nu_grid_.delta(i)/pc::c/time_;
+  // }
 }
 
 //----------------------------------------------------------------

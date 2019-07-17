@@ -5,236 +5,198 @@
 
 namespace pc = physical_constants;
 
+//---------------------------------------------------------
+// calculate the bound-free extinction coefficient
+// (units cm^{-1}) and emissivity from a sum over all
+// atomic levels.  Uses current gas_temp_
+// Results are put into opac and emis vectors
+// passed the free electron density ne
+//---------------------------------------------------------
+void AtomicSpecies::bound_free_opacity
+(std::vector<double>& opac, std::vector<double>& emis, double ne)
+{
+  bound_free_opacity_general(opac,emis,ne,gas_temp_,0);
+}
+
+//---------------------------------------------------------
+// calculate the bound-free emissivity for the purposees
+// of calculating cooling.
+// Results are put into emis vector
+// passed the free electron density ne and temperature T
+//---------------------------------------------------------
+void AtomicSpecies::bound_free_opacity_for_cooling
+(std::vector<double>& emis, double ne, double T)
+{
+  // a place holder
+  std::vector<double> opac;
+  bound_free_opacity_general(opac,emis,ne,T,1);
+}
+
+//---------------------------------------------------------
+// calculate the bound-free opacity for the purposees
+// of calculating heating.
+// Results are put into opac vector
+// passed the free electron density ne and temperature T
+//---------------------------------------------------------
+void AtomicSpecies::bound_free_opacity_for_heating
+(std::vector<double>& opac, double ne, double T)
+{
+  // a place holder
+  std::vector<double> emis;
+  bound_free_opacity_general(opac,emis,ne,T,2);
+}
 
 
 //---------------------------------------------------------
 // calculate the bound-free extinction coefficient
-// (units cm^{-1}) for all levels
+// and emissivity from a sum over all atomic levels
+// The coolheat flag provides different options
+//   coolheat = 0  (calculate straight ahead opacity emissivity)
+//   coolheat = 1  (calculate emissivity for cooling)
+//   coolheat = 2  (calculate opacity for heating)
 //---------------------------------------------------------
-void AtomicSpecies::bound_free_opacity(std::vector<double>& opac, std::vector<double>& emis, double ne)
+void AtomicSpecies::bound_free_opacity_general
+(std::vector<double>& opac, std::vector<double>& emis, double ne, double T, int coolheat)
 {
   // zero out arrays
-  for (size_t i=0;i<opac.size();++i) {opac[i] = 0; emis[i] = 0;}
+  for (size_t i=0;i<opac.size();++i)
+  {
+    if ((coolheat == 0)||(coolheat == 2))
+      opac[i] = 0;
+    if ((coolheat == 0)||(coolheat == 1))
+      emis[i] = 0;
+  }
 
   int ng = nu_grid_.size();
-  double kt_ev = pc::k_ev*gas_temp_;
-  double lam_t   = sqrt(pc::h*pc::h/(2*pc::pi*pc::m_e* pc::k * gas_temp_));
+  double kt_ev = pc::k_ev*T;
+  double lam_t   = sqrt(pc::h*pc::h/(2*pc::pi*pc::m_e* pc::k * T));
 
   std::vector<double> nc_phifac(n_levels_);
   for (int j=0;j<n_levels_;++j)
   {
-    int ic = levels_[j].ic;
+    int ic = adata_->get_lev_ic(j);
     if (ic == -1) continue;
-    double nc = n_dens_*levels_[ic].n;
-    double gl_o_gc = (1.0*levels_[j].g)/(1.0*levels_[ic].g);
-    double E_t = levels_[j].E_ion;
+    double nc = n_dens_*lev_n_[ic];
+    int gl = adata_->get_lev_g(j);
+    int gc = adata_->get_lev_g(ic);
+    double gl_o_gc = (1.0*gl)/(1.0*gc);
     nc_phifac[j] = nc*gl_o_gc/2. * lam_t * lam_t * lam_t;
   }
 
+  // loop over and set opac/emis for each frequency
   for (int i=0;i<ng;++i)
   {
-    opac[i] = 0;
     double nu    = nu_grid_.center(i);
     double E     = pc::h*nu*pc::ergs_to_ev;
     double emis_fac   = 2. * pc::h*nu*nu*nu / pc::c / pc::c;
 
+    // summing the contribution of every level
     for (int j=0;j<n_levels_;++j)
     {
-      // check if above threshold
-      if (E < levels_[j].E_ion) continue;
-      // check if there is an ionization stage above
-      int ic = levels_[j].ic;
+      // check if above threshold and ionization state above
+      double Eion = adata_->get_lev_Eion(j);
+      int ic = adata_->get_lev_ic(j);
       if (ic == -1) continue;
+      if (E < Eion) continue;
 
       // get extinction coefficient and emissivity
-      double zeta_net = (levels_[j].E_ion - E)/kt_ev;
+      double zeta_net = (Eion - E)/kt_ev;
       double ezeta_net = exp(zeta_net);
-      double sigma = levels_[j].s_photo.value_at_with_zero_edges(E);
-      double opac_fac = n_dens_ * levels_[j].n  - nc_phifac[j] * ne * ezeta_net;
+      double sigma = adata_->get_lev_photo_cs(j,E);
+      double opac_fac = n_dens_ * lev_n_[j]  - nc_phifac[j] * ne * ezeta_net;
       // kill maser
       if (opac_fac < 0)
       	opac_fac = 0.;
-      opac[i]  += sigma * opac_fac;
 
-      // ne will get multiplied to the emissivity outside this function
-      if (levels_[j].E == 0)
-	    {
-	      if (no_ground_recomb_ == 0)
-	        emis[i]  += emis_fac *sigma* nc_phifac[j] * ezeta_net;
-	    }
-      else
-	    {
-	       emis[i]  += emis_fac *sigma* nc_phifac[j] * ezeta_net;
-	    }
+      // store opacity (with extra factor if wanted for heating)
+      if (coolheat == 0)
+        opac[i] += sigma * opac_fac;
+      else if (coolheat == 2)
+        opac[i] += sigma * (opac_fac) * (E - Eion) * pc::ev_to_ergs;
+
+      // store emissivity (don't add in ground lev if flag set)
+      if ((adata_->get_lev_E(j) == 0)&&(no_ground_recomb_))
+        continue;
+
+      if (coolheat == 0)
+	      emis[i]  += emis_fac *sigma* nc_phifac[j] * ezeta_net;
+      else if (coolheat == 1)
+        emis[i]  += emis_fac *sigma* nc_phifac[j] * ezeta_net * (E - Eion)/E;
     }
+
   }
 }
 
-void AtomicSpecies::bound_free_opacity_for_cooling(std::vector<double>& emis, double ne, double T)
-{
-  // zero out arrays
-  for (size_t i=0;i<emis.size();++i) {emis[i] = 0;}
-
-  int ng = nu_grid_.size();
-  double kt_ev = pc::k_ev*T;
-  double lam_t   = sqrt(pc::h*pc::h/(2*pc::pi*pc::m_e* pc::k * T));
-
-  std::vector<double> nc_phifac(n_levels_);
-  for (int j=0;j<n_levels_;++j)
-  {
-    int ic = levels_[j].ic;
-    if (ic == -1) continue;
-    double nc = n_dens_*levels_[ic].n;
-    double gl_o_gc = (1.0*levels_[j].g)/(1.0*levels_[ic].g);
-    nc_phifac[j] = nc*gl_o_gc/2. * lam_t * lam_t * lam_t;
-  }
-
-  for (int i=0;i<ng;++i)
-  {
-    double nu    = nu_grid_.center(i);
-    double E     = pc::h*nu*pc::ergs_to_ev;
-    double emis_fac   = 2. * pc::h*nu*nu*nu / pc::c / pc::c;
-
-    for (int j=0;j<n_levels_;++j)
-    {
-      // check if above threshold
-      if (E < levels_[j].E_ion) continue;
-      // check if there is an ionization stage above
-      int ic = levels_[j].ic;
-      if (ic == -1) continue;
-
-      // get extinction coefficient and emissivity
-      double zeta_net = (levels_[j].E_ion - E)/kt_ev;
-      double ezeta_net = exp(zeta_net);
-      double sigma = levels_[j].s_photo.value_at_with_zero_edges(E);
-
-      // ne will get multiplied to the emissivity outside this function
-      if (levels_[j].E == 0)
-	    {
-	      if (no_ground_recomb_ == 0)
-	    	  emis[i]  += emis_fac *sigma* nc_phifac[j] * ezeta_net * (E - levels_[j].E_ion)/E;
-	    }
-      else
-	    {
-	      emis[i]  += emis_fac *sigma* nc_phifac[j] * ezeta_net * (E - levels_[j].E_ion)/E;
-	    }
-    }
-  }
-}
-
-void AtomicSpecies::bound_free_opacity_for_heating(std::vector<double>& heat_opac, double ne, double T)
-{
-
-  // zero out arrays
-  for (size_t i=0;i<heat_opac.size();++i) {heat_opac[i] = 0.;}
-
-  int ng = nu_grid_.size();
-  double kt_ev = pc::k_ev*T;
-  double lam_t   = sqrt(pc::h*pc::h/(2*pc::pi*pc::m_e* pc::k * T));
-
-  std::vector<double> nc_phifac(n_levels_);
-  for (int j=0;j<n_levels_;++j)
-  {
-    int ic = levels_[j].ic;
-    if (ic == -1) continue;
-    double nc = n_dens_*levels_[ic].n;
-    double gl_o_gc = (1.0*levels_[j].g)/(1.0*levels_[ic].g);
-    nc_phifac[j] = nc*gl_o_gc/2. * lam_t * lam_t * lam_t;
-  }
-
-  for (int i=0;i<ng;++i)
-  {
-    double nu    = nu_grid_.center(i);
-    double E     = pc::h*nu*pc::ergs_to_ev;
-
-    for (int j=0;j<n_levels_;++j)
-    {
-      // check if above threshold
-      if (E < levels_[j].E_ion) continue;
-      // check if there is an ionization stage above
-      int ic = levels_[j].ic;
-      if (ic == -1) continue;
-
-      // get extinction coefficient and emissivity
-      double zeta_net = (levels_[j].E_ion - E)/kt_ev;
-      double ezeta_net = exp(zeta_net);
-      double sigma = levels_[j].s_photo.value_at_with_zero_edges(E);
-      double opac_fac = n_dens_ * levels_[j].n  - nc_phifac[j] * ne * ezeta_net;
-      if (opac_fac < 0)
-	      opac_fac = 0.;
-
-      // including this energy difference for each frequency bin is the whole point of this function
-      heat_opac[i]  += sigma * (opac_fac) * (E - levels_[j].E_ion) * pc::ev_to_ergs;
-    }
-  }
-}
-
+//---------------------------------------------------------
+// calculate the net cooling rate for collisional
+// processes (bound-bound and bound-free)
+// given the passed temperature T and free electron density ne
+//---------------------------------------------------------
 double AtomicSpecies::collisional_net_cooling_rate(double ne, double T)
 {
-
   double collisional_net_cooling = 0.;
 
   //  bound-bound collisional transitions
   for (int l=0;l<n_lines_;l++)
   {
-    int lu  = lines_[l].lu;
-    int ll  = lines_[l].ll;
+    int lu  = adata_->get_line_u(l);
+    int ll  = adata_->get_line_l(l);
+    double El = adata_->get_lev_E(ll);
+    double Eu = adata_->get_lev_E(lu);
+    double gl = 1.0*adata_->get_lev_g(ll);
+    double gu = 1.0*adata_->get_lev_g(lu);
 
-    double ndown   = n_dens_ * levels_[ll].n;
-    double nup     = n_dens_ * levels_[lu].n;
+    double ndown   = n_dens_ * lev_n_[ll];
+    double nup     = n_dens_ * lev_n_[lu];
 
-    double dE = (levels_[lu].E - levels_[ll].E)*pc::ev_to_ergs;
-
-    double zeta = dE/pc::k/T; // note dE is in ergs
+    double dE = (Eu - El)*pc::ev_to_ergs;
+    double zeta = dE/pc::k/T;
     double ezeta = exp(zeta);
 
     // floor oscillator strengths so that forbidden lines can contribute.
     // should be improved by using real collisional rates for forbidden lines
-    double effective_f_lu = 0.;
-    if (lines_[l].f_lu < 1.e-3) effective_f_lu = 1.e-3;
-    else effective_f_lu = lines_[l].f_lu;
+    double f_lu = adata_->get_line_f(l);
+    double effective_f_lu = f_lu;
+    if (f_lu < 1.e-3) effective_f_lu = 1.e-3;
 
     double C_up = 3.9*pow(zeta,-1.)*pow(T,-1.5) / ezeta * ne * effective_f_lu;
     if (zeta > 700) C_up = 0.; // be careful about overflow
-    double C_down = 3.9*pow(zeta,-1.)*pow(T,-1.5) * ne * effective_f_lu * levels_[ll].g/levels_[lu].g;
+    double C_down = 3.9*pow(zeta,-1.)*pow(T,-1.5) * ne * effective_f_lu * gl/gu;
 
     collisional_net_cooling += dE * (ndown * C_up - nup * C_down);
-
   }
 
   //bound-free collisional transitions:
   for (int i=0;i<n_levels_;++i)
   {
-	  int ic = levels_[i].ic;
+	  int ic = adata_->get_lev_ic(i);
 	  if (ic == -1) continue;
 
 	  // ionization potential
-	  int istage  = levels_[i].ion;
-	  double chi  = (ions_[istage].chi - levels_[i].E) * pc::ev_to_ergs;
+	  double chi  = adata_->get_lev_Eion(i)* pc::ev_to_ergs;
 	  double zeta = chi/pc::k/T; // note chi is now in ergs
 
-	  double nc = n_dens_ * levels_[ic].n;
-	  double ni = n_dens_ * levels_[i].n;
+	  double nc = n_dens_ * lev_n_[ic];
+	  double ni = n_dens_ * lev_n_[i];
 
 	  // collisional ionization rate
 	  // needs to be multiplied by number of electrons in outer shell
 	  double C_ion = 2.7/zeta/zeta*pow(T,-1.5)*exp(-zeta)*ne;
 
 	  // collisional recombination rate
-	  int gi = levels_[i].g;
-	  int gc = levels_[ic].g;
+	  int gi = adata_->get_lev_g(i);
+	  int gc = adata_->get_lev_g(ic);
 	  double C_rec = 5.59080e-16/zeta/zeta*pow(T,-3)*gi/gc*ne*ne;
 
 	  collisional_net_cooling += chi * ( ni * C_ion - nc * C_rec);
   }
 
   return collisional_net_cooling;
-
 }
 
 //---------------------------------------------------------
-// calculate the bound-free extinction coefficient
-// (units cm^{-1}) for all levels
+// calculate the bound-bound (i.e., line) extinction coefficient
+// (units cm^{-1}) and emissivity for all lines
 //---------------------------------------------------------
 void AtomicSpecies::bound_bound_opacity(std::vector<double>& opac, std::vector<double>& emis)
 {
@@ -244,24 +206,25 @@ void AtomicSpecies::bound_bound_opacity(std::vector<double>& opac, std::vector<d
   // loop over all lines
   for (int i=0;i<n_lines_;++i)
   {
-    int ll = lines_[i].ll;
-    int lu = lines_[i].lu;
+    int lu  = adata_->get_line_u(i);
+    int ll  = adata_->get_line_l(i);
 
-    double nlow  = levels_[ll].n;
-    double nup   = levels_[lu].n;
-    double glow  = levels_[ll].g;
-    double gup   = levels_[lu].g;
-    double nu_0  = lines_[i].nu;
+    double nl    = lev_n_[ll];
+    double nu    = lev_n_[lu];
+    double gl    = 1.0*adata_->get_lev_g(ll);
+    double gu    = 1.0*adata_->get_lev_g(lu);
+    double nu_0  = adata_->get_line_nu(i);
 
-    double dnu = line_beta_dop_*nu_0;
-    double gamma = lines_[i].A_ul;
+    double dnu   = line_beta_dop_*nu_0;
+    double A_ul  = adata_->get_line_A(i);
+    double gamma = A_ul;
     double a_voigt = gamma/4/pc::pi/dnu;
 
     // extinction coefficient
-    if (nlow == 0) continue;
-    double alpha_0 = nlow*n_dens_*gup/glow*lines_[i].A_ul/(8*pc::pi)*pc::c*pc::c;
+    if (nl == 0) continue;
+    double alpha_0 = nl*n_dens_*gu/gl*A_ul/(8*pc::pi)*pc::c*pc::c;
     // correction for stimulated emission
-    alpha_0 = alpha_0*(1 - nup*glow/(nlow*gup));
+    alpha_0 = alpha_0*(1 - nu*gl/(nl*gu));
 
     //if (alpha_0 < 0) std::cout << "LASER " << levels_[ll].E << " " << levels[lu].E << "\n";
     //if (alpha_0 < 0) {std::cout << "LASER: " << nlow*gup << " " << nup*glow << "\n"; continue;}
@@ -278,10 +241,9 @@ void AtomicSpecies::bound_bound_opacity(std::vector<double>& opac, std::vector<d
     int inu1 = nu_grid_.locate_within_bounds(nu_1);
     int inu2 = nu_grid_.locate_within_bounds(nu_2);
 
-
     // line emissivity: ergs/sec/cm^3/str
     // multiplied by phi below to get per Hz
-    double line_j = lines_[i].A_ul*nup*n_dens_*pc::h/(4.0*pc::pi);
+    double line_j = A_ul*nu*n_dens_*pc::h/(4.0*pc::pi);
     for (int j = inu1;j<inu2;++j)
     {
       double nu = nu_grid_.center(j);
@@ -299,47 +261,91 @@ void AtomicSpecies::bound_bound_opacity(std::vector<double>& opac, std::vector<d
 }
 
 
-
-
-void AtomicSpecies::compute_sobolev_taus(double time)
+//---------------------------------------------------------
+// Calculate the extinction coefficient (units cm^{-1})
+// for lines in the Sobolev expansion opacity formalism
+// using the fuzz lines
+//---------------------------------------------------------
+void AtomicSpecies::fuzzline_expansion_opacity
+(std::vector<double>& opac, double time)
 {
-  for (int i=0;i<n_lines_;++i) compute_sobolev_tau(i,time);
-}
+  // zero out opacity array
+  std::fill(opac.begin(),opac.end(),0);
 
-double AtomicSpecies::compute_sobolev_tau(int i, double time)
-{
-  int ll = lines_[i].ll;
-  int lu = lines_[i].lu;
-
-  double nl = levels_[ll].n;
-  double nu = levels_[lu].n;
-  double gl = levels_[ll].g;
-  double gu = levels_[lu].g;
-
-  // check for empty levels_
-  if (nl < std::numeric_limits<double>::min())
+  // loop over all lines
+  int n_flines = adata_->get_n_fuzz_lines();
+  for (int i=0;i<n_flines;++i)
   {
-    lines_[i].tau  = 0;
-    lines_[i].etau = 1;
-    lines_[i].beta = 1;
-    return 0;
+    // properties of this line
+    double nu = adata_->get_fuzz_line_nu(i);
+    double gf = adata_->get_fuzz_line_gf(i);
+    double El = adata_->get_fuzz_line_El(i);
+    int   ion = adata_->get_fuzz_line_ion(i);
+    int   bin = adata_->get_fuzz_line_bin(i);
+
+    // calculate Sobole optical depth
+    double nion = n_dens_*ion_frac_[ion];
+    double nl = nion*exp(-1.0*El/pc::k_ev/gas_temp_)/ion_part_[ion];
+    double lam = pc::c/nu;
+    double stim_cor = (1 - exp(-pc::h*nu/pc::k/gas_temp_));
+    double tau = pc::sigma_tot*lam*nl*gf*stim_cor*time;
+
+    // bin the lines
+    double etau = exp(-tau);
+    opac[bin] += (1 - etau);
   }
 
-  double lam   = pc::c/lines_[i].nu;
-  double tau   = nl*n_dens_*pc::sigma_tot*lines_[i].f_lu*time*lam;
-  // correction for stimulated emission
-  tau = tau*(1 - nu*gl/(nl*gu));
+  // renormalize opacity array
+  for (size_t i=0;i<opac.size();i++)
+    opac[i] = opac[i]*nu_grid_.center(i)/nu_grid_.delta(i)/pc::c/time;
+}
 
-  if (nu*gl > nl*gu) {
-//    printf("laser regime, line %d, whoops\n",i);
-    lines_[i].tau  = 0;
-    lines_[i].etau = 1;
-    lines_[i].beta = 1;
-    return 0; }
 
-  double etau = exp(-tau);
-  lines_[i].etau = etau;
-  lines_[i].tau  = tau;
-  lines_[i].beta = (1-etau)/tau;
-  return lines_[i].tau;
+//---------------------------------------------------------
+// Calculate the extinction coefficient (units cm^{-1})
+// for lines in the Sobolev expansion opacity formalism
+//---------------------------------------------------------
+void AtomicSpecies::line_expansion_opacity
+(std::vector<double>& opac, double time)
+{
+  // zero out opacity array
+  std::fill(opac.begin(),opac.end(),0);
+
+  // loop over all lines
+  for (int i=0;i<n_lines_;++i)
+  {
+    int    ll  = adata_->get_line_l(i);
+    int    lu  = adata_->get_line_u(i);
+    double nl  = lev_n_[ll];
+    double nu  = lev_n_[lu];
+    double gl  = 1.0*adata_->get_lev_g(ll);
+    double gu  = 1.0*adata_->get_lev_g(lu);
+
+    // don't bother with unpopulated levels
+    if (nl < std::numeric_limits<double>::min())
+      continue;
+
+    // Calculate Sobolev optical depth tau
+    double nu_0  = adata_->get_line_nu(i);
+    double lam   = pc::c/nu_0;
+    double f_lu  = adata_->get_line_f(i);
+    double tau   = nl*n_dens_*pc::sigma_tot*f_lu*time*lam;
+
+    // correction for stimulated emission
+    tau = tau*(1 - nu*gl/(nl*gu));
+    if (nu*gl > nl*gu)
+    {
+       //   printf("laser regime, line %d, whoops\n",i);
+       tau = 0;
+    }
+
+    // bin the lines
+    double etau = exp(-tau);
+    int    bin   = adata_->get_line_bin(i);
+    opac[bin] += (1 - etau);
+  }
+
+  // renormalize opacity array
+  for (size_t i=0;i<opac.size();i++)
+     opac[i] = opac[i]*nu_grid_.center(i)/nu_grid_.delta(i)/pc::c/time;
 }
