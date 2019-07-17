@@ -138,7 +138,7 @@ void transport::init(ParameterReader* par, grid_general *g)
 
     if (set_Tgas_to_Trad_ == 1)
 	{
-	  cout << "# WARNING: set_Tgas_to_Trad_ is set to 1, so this will override anything more detailed that might result from setting solve_coupled_gas_state_temp_ to 1\n";
+	  cout << "# WARNING: set_Tgas_to_Trad_ is set to 1, so this will override anything more detailed that might result from setting solve_Tgas_with_updateed_opacities to 1\n";
 	}
   }
 
