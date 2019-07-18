@@ -65,7 +65,7 @@ void GasState::initialize
   afile.close();
 
   // read in the atom data
-  atomic_data_ = new AtomicData[1];
+  atomic_data_ = new AtomicData;
   atomic_data_->initialize(atomdata_file_,ng);
   atoms.resize(elem_Z.size());
   for (size_t i=0;i<atoms.size();++i)
@@ -76,6 +76,7 @@ void GasState::initialize
         " in file " << atomdata_file_ << std::endl;
     atoms[i].initialize(elem_Z[i],atomic_data_);
   }
+  atomic_data_->print();
  }
 
 //-----------------------------------------------------------------
