@@ -74,6 +74,7 @@ public:
   int n_ions_;              // Number of ionic stages considered
   int n_levels_;            // number of energy levels
   int n_lines_;             // number of line transitions
+  int max_ion_stage_;       // maximum ionization stage to use
 
   fuzz_line_structure fuzz_lines_; // vector of fuzz lines
 
@@ -166,6 +167,7 @@ public:
 
   int initialize(std::string, locate_array ng);
   int read_atomic_data(std::string fname, int z);
+  int read_atomic_data(int z,int max_ion);
   int read_atomic_data(int z);
   void print();
   void print_detailed(int);

@@ -76,7 +76,6 @@ void GasState::initialize
         " in file " << atomdata_file_ << std::endl;
     atoms[i].initialize(elem_Z[i],atomic_data_);
   }
-  atomic_data_->print();
  }
 
 //-----------------------------------------------------------------

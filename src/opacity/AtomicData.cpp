@@ -24,6 +24,9 @@ AtomicData::AtomicData()
     atomlist_[i].n_levels_ = 0;
     atomlist_[i].n_lines_  = 0;
     atomlist_[i].fuzz_lines_.n_lines = 0;
+
+    // default is to include all ion stages
+    atomlist_[i].max_ion_stage_ = 9999;
   }
 }
 
@@ -111,6 +114,23 @@ void AtomicData::print_detailed(int z)
   }
 }
 
+//------------------------------------------------------------------------
+// Read all atomic data for species with atomic number Z
+// Only include up to ionization stage max_ion
+// (note ion = 0 is neutral)
+//------------------------------------------------------------------------
+int AtomicData::read_atomic_data(int z, int max_ion)
+{
+  // return if this is an invalid atom
+  if ((z < 1)||(z >= MAX_N_ATOMS))
+  {
+    std::cout << "ERROR: Atomic number " << z << " is not allowed!" << std::endl;
+    return 1;
+  }
+
+  atomlist_[z].max_ion_stage_ = max_ion;
+  read_atomic_data(z);
+}
 
 //------------------------------------------------------------------------
 // Read all atomic data for species with atomic number Z
@@ -161,21 +181,19 @@ int AtomicData::read_atomic_data(int z)
       atom->levels_[0].ion = 0;
       return 1;
   }
-  // default, no fuzzlines
-  // fuzz_lines.n_lines = 0;
 
+  // otherwise data exists, we'll read it in
   atomlist_[z].data_exists_ = true;
 
   //----------------------------------------
   // read ion data
   // ----------------------------------------
-  int max_ion = 5;
-
   int n_tot_ions;
   status = H5LTget_attribute_int(file_id, atomname, "n_ions", &n_tot_ions);
   if (status != 0) return -1;
   atom->n_ions_ = n_tot_ions;
-  if (atom->n_ions_  > max_ion) atom->n_ions_  = max_ion;
+  if (atom->n_ions_  > atomlist_[z].max_ion_stage_)
+    atom->n_ions_  = atomlist_[z].max_ion_stage_;
   atom->ions_ = new AtomicIon[atom->n_ions_];
 
   // allocate space to read in data
@@ -200,8 +218,6 @@ int AtomicData::read_atomic_data(int z)
   // clean up
   delete[] ion_darr;
   delete[] ion_iarr;
-  for (int j=0;j<atom->n_ions_;j++)
-    std::cout <<j << " " << atom->ions_[j].stage << "\n";
 
   // ----------------------------------------
   // read levels
@@ -252,9 +268,6 @@ int AtomicData::read_atomic_data(int z)
     for (int j=0;j<atom->n_ions_;j++)
       if (atom->ions_[j].stage == atom->levels_[i].ion + 1)
       	atom->levels_[i].ic  = atom->ions_[j].ground;
-
-    std::cout << i << " " << atom->levels_[i].ion << " " << atom->levels_[i].ic << "\n";
-
   }
 
   // clean up
@@ -304,8 +317,6 @@ int AtomicData::read_atomic_data(int z)
     delete[] lin_darr;
     delete[] lin_iarr;
   }
-
-  std::cout << atom->n_levels_ << "\n";
 
   // set additional line properties
   for (int i=0;i<atom->n_lines_;++i)
