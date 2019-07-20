@@ -426,7 +426,7 @@ ParticleFate transport::propagate_monte_carlo(particle &p, double tstop)
         // check if you are moving into a ddmc zone
         if (use_ddmc_ && new_cell_ddmc && (new_ind != p.ind))
         {
-          int convert_to_ddmc = move_across_DDMC_interface(p,new_ind,sigma_i);
+          int convert_to_ddmc = move_across_DDMC_interface(p,new_ind,sigma_i,dr);
           if (convert_to_ddmc) return moving;
         }
         else
