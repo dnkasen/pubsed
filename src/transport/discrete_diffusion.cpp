@@ -395,7 +395,7 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double tstop)
 // gets converted into DDMC. If the particle is not converted,
 // it is returned to the MC region.
 // ------------------------------------------------------
-int transport::move_across_DDMC_interface(particle &p, int new_ind, double sigma_i)
+int transport::move_across_DDMC_interface(particle &p, int new_ind, double sigma_i, double dr)
 {
   // gather information for neighboring zone
   int ip = p.ind + 1;
@@ -404,9 +404,6 @@ int transport::move_across_DDMC_interface(particle &p, int new_ind, double sigma
   int nz = grid->n_zones;
   if (ip == nz) ip = p.ind;
   if (im < 0)   im = 0;
-
-  double dr;
-  grid->get_zone_size(p.ind,&dr);
 
   // Getting radii at zone boundaries and center
   double rcoords[3];
