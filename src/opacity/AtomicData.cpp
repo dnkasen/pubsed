@@ -146,7 +146,7 @@ int AtomicData::read_atomic_data(int z)
 
   // return if this atom has already been read
   if (atomlist_[z].data_exists_)
-    return 2;
+    return 0;
 
   // open hdf5 file
   herr_t status;
@@ -192,9 +192,15 @@ int AtomicData::read_atomic_data(int z)
   status = H5LTget_attribute_int(file_id, atomname, "n_ions", &n_tot_ions);
   if (status != 0) return -1;
   atom->n_ions_ = n_tot_ions;
-  if (atom->n_ions_  > atomlist_[z].max_ion_stage_)
-    atom->n_ions_  = atomlist_[z].max_ion_stage_;
-  atom->ions_ = new AtomicIon[atom->n_ions_];
+  int add_last_stage = 0;
+  if (atom->n_ions_  > atom->max_ion_stage_)
+  {
+    atom->n_ions_  = atom->max_ion_stage_;
+    atom->ions_ = new AtomicIon[atom->n_ions_ + 1];
+    add_last_stage = 1;
+  }
+  else
+    atom->ions_ = new AtomicIon[atom->n_ions_];
 
   // allocate space to read in data
   int *ion_iarr = new int[n_tot_ions];
@@ -214,6 +220,7 @@ int AtomicData::read_atomic_data(int z)
 
   for (int i=0;i<atom->n_ions_;++i)
     atom->ions_[i].stage  = i;
+
 
   // clean up
   delete[] ion_darr;
@@ -240,7 +247,11 @@ int AtomicData::read_atomic_data(int z)
   for (i=0;i<tot_n_levels;++i)
     if (lev_iarr[i] > atom->n_ions_-1) break;
   atom->n_levels_ = i;
-  atom->levels_ = new AtomicLevel[atom->n_levels_];
+
+  if (add_last_stage)
+    atom->levels_ = new AtomicLevel[atom->n_levels_ + 1];
+  else
+    atom->levels_ = new AtomicLevel[atom->n_levels_];
 
   for (int i=0;i<atom->n_levels_;++i)
     atom->levels_[i].ion = lev_iarr[i];
@@ -345,6 +356,32 @@ int AtomicData::read_atomic_data(int z)
 
     // find index of bin in deal
     atom->lines_[i].bin = nu_grid_.locate_within_bounds(nu);
+  }
+
+  if (add_last_stage)
+  {
+    int i = atom->n_ions_;
+    int l = atom->n_levels_;
+    atom->ions_[i].ground = l;
+    atom->ions_[i].stage = i;
+    atom->ions_[i].chi = 99999;
+    atom->n_ions_ += 1;
+
+    atom->levels_[l].ic = -1;
+    atom->levels_[l].E   = 0;
+    atom->levels_[l].g   = 1;
+    atom->levels_[l].E_ion = 99999;
+    atom->levels_[l].ion   = atom->n_ions_-1;
+    atom->n_levels_     += 1;
+
+    // find the level that this ionizes to (= -1 if none)
+    for (int i=0;i<atom->n_levels_;++i)
+    {
+      atom->levels_[i].ic = -1;
+      for (int j=0;j<atom->n_ions_;j++)
+        if (atom->ions_[j].stage == atom->levels_[i].ion + 1)
+          atom->levels_[i].ic  = atom->ions_[j].ground;
+    }
   }
 
   // ----------------------------------------
