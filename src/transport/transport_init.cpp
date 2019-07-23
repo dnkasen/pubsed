@@ -100,6 +100,9 @@ void transport::init(ParameterReader* par, grid_general *g)
   else
     rangen.init();
 
+  atomic_data_ = new AtomicData;
+  atomic_data_->initialize(atomdata_file_,nu_grid);
+
   // read relevant parameters
   max_total_particles = params_->getScalar<int>("particles_max_total");
   radiative_eq    = params_->getScalar<int>("transport_radiative_equilibrium");
@@ -180,56 +183,60 @@ void transport::init(ParameterReader* par, grid_general *g)
   }
   // setup the GasState class
   std::string atomdata = params_->getScalar<string>("data_atomic_file");
+  atomic_data_ = new AtomicData;
+  atomic_data_->initialize(atomdata_file_,ng);
 
-  // set gas opacity flags and parameters
-  gas_state_.use_electron_scattering_opacity
-    = params_->getScalar<int>("opacity_electron_scattering");
-  gas_state_.use_line_expansion_opacity
-    = params_->getScalar<int>("opacity_line_expansion");
-  gas_state_.use_fuzz_expansion_opacity
-    = params_->getScalar<int>("opacity_fuzz_expansion");
-  gas_state_.use_bound_free_opacity
-    = params_->getScalar<int>("opacity_bound_free");
-  gas_state_.use_bound_bound_opacity
-    = params_->getScalar<int>("opacity_bound_bound");
-  gas_state_.use_free_free_opacity
-    = params_->getScalar<int>("opacity_free_free");
-  gas_state_.use_user_opacity_
-    = params_->getScalar<int>("opacity_user_defined");
-  gas_state_.smooth_grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
-  gas_state_.use_zone_dependent_grey_opacity_
-    = params_->getScalar<int>("opacity_zone_dependent_grey_opacity");
-  double min_ext = params_->getScalar<double>("opacity_minimum_extinction");
+  // Move the gas state parameter stuff to GasState::initialize
+  for (auto i_gas_state = gas_state_vec_.init(); i_gas_state != gas_state.end(); i_gas_state) {
+    // set gas opacity flags and parameters
+    i_gas_state->use_electron_scattering_opacity
+      = params_->getScalar<int>("opacity_electron_scattering");
+    i_gas_state->use_line_expansion_opacity
+      = params_->getScalar<int>("opacity_line_expansion");
+    i_gas_state->use_fuzz_expansion_opacity
+      = params_->getScalar<int>("opacity_fuzz_expansion");
+    i_gas_state->use_bound_free_opacity
+      = params_->getScalar<int>("opacity_bound_free");
+    i_gas_state->use_bound_bound_opacity
+      = params_->getScalar<int>("opacity_bound_bound");
+    i_gas_state->use_free_free_opacity
+      = params_->getScalar<int>("opacity_free_free");
+    i_gas_state->use_user_opacity_
+      = params_->getScalar<int>("opacity_user_defined");
+    i_gas_state->smooth_grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
+    i_gas_state->use_zone_dependent_grey_opacity_
+      = params_->getScalar<int>("opacity_zone_dependent_grey_opacity");
+    double min_ext = params_->getScalar<double>("opacity_minimum_extinction");
+    i_gas_state->set_minimum_extinction(min_ext);
+    i_gas_state->atom_zero_epsilon_ = params_->getVector<int>("opacity_atom_zero_epsilon");
+    i_gas_state->epsilon_           = params_->getScalar<double>("opacity_epsilon");
+
+    // set non-lte settings
+    int use_nlte = params_->getScalar<int>("opacity_use_nlte");
+    i_gas_state->use_collisions_nlte_ = params_->getScalar<int>("opacity_use_collisions_nlte");
+    i_gas_state->no_ground_recomb = params_->getScalar<int>("opacity_no_ground_recomb");
+    i_gas_state->initialize(atomdata,grid->elems_Z,grid->elems_A,nu_grid);
+    i_gas_state->set_atoms_in_nlte(params_->getVector<int>("opacity_atoms_in_nlte"));
+
+    // getting fuzz line data
+    std::string fuzzfile = params_->getScalar<string>("data_fuzzline_file");
+    int nl = i_gas_state->read_fuzzfile(fuzzfile);
+    if (verbose) std::cout << "# From fuzzfile \"" << fuzzfile << "\" " <<
+       nl << " lines used\n";
+
+    if (verbose) i_gas_state->print_properties();
+
+    // parameters for treatment of detailed lines
+    line_velocity_width_ = params_->getScalar<double>("line_velocity_width");
+    i_gas_state->line_velocity_width_ = line_velocity_width_;
+  }
   maximum_opacity_ = params_->getScalar<double>("opacity_maximum_opacity");
-  gas_state_.set_minimum_extinction(min_ext);
-  gas_state_.atom_zero_epsilon_ = params_->getVector<int>("opacity_atom_zero_epsilon");
-  gas_state_.epsilon_           = params_->getScalar<double>("opacity_epsilon");
-
-  // set non-lte settings
-  int use_nlte = params_->getScalar<int>("opacity_use_nlte");
-  gas_state_.use_collisions_nlte_ = params_->getScalar<int>("opacity_use_collisions_nlte");
-  gas_state_.no_ground_recomb = params_->getScalar<int>("opacity_no_ground_recomb");
-  gas_state_.initialize(atomdata,grid->elems_Z,grid->elems_A,nu_grid);
-  gas_state_.set_atoms_in_nlte(params_->getVector<int>("opacity_atoms_in_nlte"));
-
-  // getting fuzz line data
-  std::string fuzzfile = params_->getScalar<string>("data_fuzzline_file");
-  int nl = gas_state_.read_fuzzfile(fuzzfile);
-  if (verbose) std::cout << "# From fuzzfile \"" << fuzzfile << "\" " <<
-     nl << " lines used\n";
-
   // define it as the first step, for NLTE
   first_step_ = 1;
-
-  if (verbose) gas_state_.print_properties();
 
   // set up outer inner boundary condition
   boundary_in_reflect_ = params_->getScalar<int>("transport_boundary_in_reflect");
   boundary_out_reflect_ = params_->getScalar<int>("transport_boundary_out_reflect");
-
-  // parameters for treatment of detailed lines
-  line_velocity_width_ = params_->getScalar<double>("line_velocity_width");
-  gas_state_.line_velocity_width_ = line_velocity_width_;
 
   omit_composition_decay_ = params_->getScalar<int>("dont_decay_composition");
 

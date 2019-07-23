@@ -49,10 +49,12 @@ class transport
   int max_total_particles;
 
   // gas class for opacities
-  GasState gas_state_;
+  vector<GasState> gas_state_vec_;
 
   // pointer to parameter reader
   ParameterReader* params_;
+  // atomic data
+  AtomicData* atom_data_;
 
   // MPI stuff
   int MPI_nprocs;
