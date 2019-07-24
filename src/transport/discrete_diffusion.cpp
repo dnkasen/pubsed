@@ -217,7 +217,7 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double tstop)
     // effective scattering that could change the particle's frequency.
     double d_sc, k_es_inelastic;
 
-    if (nu_grid.size() == 1) // no extra scattering for grey case
+    if (nu_grid_.size() == 1) // no extra scattering for grey case
       {d_sc = std::numeric_limits<double>::infinity();}
     else  // non-grey case
     {

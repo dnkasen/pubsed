@@ -33,7 +33,7 @@ GasState::GasState()
 // locate_array ng:  locate_array giving the freq. array
 //---------------------------------------------------------------
 void GasState::initialize
-(std::string af, std::vector<int> e, std::vector<int> A, locate_array ng)
+(AtomicData* adata, std::vector<int> e, std::vector<int> A, locate_array ng)
 {
   // verbocity
 #ifdef MPI_PARALLEL
@@ -47,26 +47,13 @@ void GasState::initialize
   // copy the frequency grid
   nu_grid_.copy(ng);
 
+  // set passed variables
   for (size_t i=0;i<e.size();++i) elem_Z.push_back(e[i]);
   for (size_t i=0;i<e.size();++i) elem_A.push_back(A[i]);
   mass_frac.resize(e.size());
+  atomic_data_ = adata;
 
-  // set passed variables
-  atomdata_file_ = af;
 
-  // check if atomfile is there
-  std::ifstream afile(atomdata_file_);
-  if (!afile)
-  {
-    if (verbose_)
-      std::cerr << "Can't open atom datafile " << atomdata_file_ << "; exiting" << std::endl;
-    exit(1);
-  }
-  afile.close();
-
-  // read in the atom data
-  atomic_data_ = new AtomicData;
-  atomic_data_->initialize(atomdata_file_,ng);
   atoms.resize(elem_Z.size());
   for (size_t i=0;i<atoms.size();++i)
   {

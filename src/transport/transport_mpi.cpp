@@ -23,7 +23,7 @@ void transport::wipe_radiation()
     grid->z[i].e_abs  = 0;
     grid->z[i].L_radio_dep = 0;
     if (store_Jnu_)
-      for (int j=0;j<nu_grid.size();j++)
+      for (int j=0;j<nu_grid_.size();j++)
         J_nu_[i][j] = 0;
     grid->z[i].L_radio_emit = 0;
     grid->z[i].fx_rad = 0;
@@ -51,7 +51,7 @@ void transport::reduce_opacities()
   //=************************************************
 
   // dimensions
-  int nw = nu_grid.size();
+  int nw = nu_grid_.size();
   int nz = grid->n_zones;
 
   // maximum size of transfer blocks
@@ -331,7 +331,7 @@ void transport::reduce_opacities()
   if (MPI_nprocs > 1)
   {
   // eventually do a smarter reduction
-    int ng = nu_grid.size();
+    int ng = nu_grid_.size();
     int nz = grid->n_zones;
     int blocksize = 100000; // transfer around 10 million # per round
     int nz_per_block = floor(blocksize/ng);
@@ -397,17 +397,17 @@ void transport::reduce_opacities()
     //grid->z[i].fy_rad  /= vol*pc::c*dt;
     //grid->z[i].fz_rad  /= vol*pc::c*dt;
 
-    if ((nu_grid.size() == 1)||(!store_Jnu_))
+    if ((nu_grid_.size() == 1)||(!store_Jnu_))
     {
       grid->z[i].e_rad = J_nu_[i][0]/(vol*dt*pc::c);
     }
     else
     {
       double esum = 0;
-      for (int j=0;j<nu_grid.size();j++)
+      for (int j=0;j<nu_grid_.size();j++)
       {
-        J_nu_[i][j] /= vol*dt*4*pc::pi*nu_grid.delta(j);
-        esum += J_nu_[i][j]*nu_grid.delta(j)*4*pc::pi/pc::c;
+        J_nu_[i][j] /= vol*dt*4*pc::pi*nu_grid_.delta(j);
+        esum += J_nu_[i][j]*nu_grid_.delta(j)*4*pc::pi/pc::c;
       }
       grid->z[i].e_rad = esum;
     }

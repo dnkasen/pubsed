@@ -95,7 +95,7 @@ class GasState
   // locate_array ng:  locate_array giving the freq. array
   //---------------------------------------------------------------
   void initialize
-  (std::string, std::vector<int>, std::vector<int>, locate_array);
+  (AtomicData*, std::vector<int>, std::vector<int>, locate_array);
 
   //-----------------------------------------------------------
   // set which atoms to treat in nlte
