@@ -5,7 +5,7 @@ model_file    = "onezone.h5"
 
 transport_nu_grid  = {3.5e13,3.5e13,0.1,1}  -- frequency grid
 transport_steady_iterate         = 0
-transport_fix_Tgas_during_transport   = 1
+transport_radiative_equilibrium   = 0
 transport_boundary_in_reflect    = 1
 transport_boundary_out_reflect   = 1
 transport_fleck_alpha            = 0.5
