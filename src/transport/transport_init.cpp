@@ -200,6 +200,8 @@ void transport::init(ParameterReader* par, grid_general *g)
 #endif
   gas_state_vec_.resize(max_nthreads);
 
+  int n_fuzzlines = 0;
+  std::string fuzzfile = "";
   // Move the gas state parameter stuff to GasState::initialize
   for (auto i_gas_state = gas_state_vec_.begin(); i_gas_state != gas_state_vec_.end(); i_gas_state++) {
     // set gas opacity flags and parameters
@@ -233,17 +235,17 @@ void transport::init(ParameterReader* par, grid_general *g)
     i_gas_state->set_atoms_in_nlte(params_->getVector<int>("opacity_atoms_in_nlte"));
 
     // getting fuzz line data
-    std::string fuzzfile = params_->getScalar<string>("data_fuzzline_file");
-    int nl = i_gas_state->read_fuzzfile(fuzzfile);
-    if (verbose) std::cout << "# From fuzzfile \"" << fuzzfile << "\" " <<
-       nl << " lines used\n";
-
-    if (verbose) i_gas_state->print_properties();
+    fuzzfile = params_->getScalar<string>("data_fuzzline_file");
+    n_fuzzlines = i_gas_state->read_fuzzfile(fuzzfile);
 
     // parameters for treatment of detailed lines
     line_velocity_width_ = params_->getScalar<double>("line_velocity_width");
     i_gas_state->line_velocity_width_ = line_velocity_width_;
   }
+  if (verbose) std::cout << "# From fuzzfile \"" << fuzzfile << "\" " <<
+       n_fuzzlines << " lines used\n";
+  if (verbose) gas_state_vec_[0].print_properties();
+
   maximum_opacity_ = params_->getScalar<double>("opacity_maximum_opacity");
   // define it as the first step, for NLTE
   first_step_ = 1;
@@ -388,8 +390,8 @@ void transport::init(ParameterReader* par, grid_general *g)
     std::cout << std::endl;
     std::cout << "# There are " << gas_state_vec_.size();
     std::cout << " instances of the GasState class. For each:" << std::endl;
-    std::cout << "#-----------  Memory usage for transport data (for each gas state class)";
-    std::cout << " ----------- |" << std::endl;
+    std::cout << "# Memory usage for transport data (for each gas state class)";
+    std::cout << std::endl;
     std::cout << "#---------------------------------------------------------|";
     std::cout << std::endl;
     std::cout << std::setw(10) << "#  data   |";

@@ -39,11 +39,12 @@ class radioactive
 {
  
 public:
+  int test_value = 44;
 
 	double rprocess_heating_rate(double t, double *gfrac);
 
 	void decay_composition
-	(std::vector<int> elem_Z, std::vector<int> elem_A, std::vector<double>& X, double t);
+	(const std::vector<int> &elem_Z, const std::vector<int> &elem_A, std::vector<double>& X, const double t);
 
 	double decay(std::vector<int> elem_Z, std::vector<int> elem_A, 
 	       std::vector<double> X, double t, double *gfrac, int force_rproc);

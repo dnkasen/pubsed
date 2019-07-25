@@ -60,23 +60,23 @@ void transport::set_opacity(double dt)
 
   // loop over my zones to calculate
   // loop to parallelize with OpenMP
-  int solve_error = 0;
   tstr = get_system_time();
-#pragma omp parallel
-  {
+#pragma omp parallel for shared(emis, scat, cerr) default(none)
+    for (int i=my_zone_start_;i<my_zone_stop_;i++) {
+  { 
 #ifdef OMP_PARALLEL
     int my_threadID = omp_get_thread_num();
 #else
     int my_threadID = 0;
 #endif
+    //std::cerr << my_threadID << std::endl;
     // Private variables for each thread
     GasState* gas_state_ptr = &(gas_state_vec_[my_threadID]);
     // TODO: resolve once dev-radioactivity gets merged into development
-    radioactive radio;
     vector<double> X_now(grid->n_elems);
-#pragma omp for
-    for (int i=my_zone_start_;i<my_zone_stop_;i++)
-    {
+    radioactive radio_obj;
+    radioactive* radio = &radio_obj;
+    int solve_error = 0;
       // pointer to current zone for easy access
       zone* z = &(grid->z[i]);
 
@@ -94,23 +94,42 @@ void transport::set_opacity(double dt)
       // radioactive decay the composition
       for (size_t j=0;j<X_now.size();j++) X_now[j] = z->X_gas[j];
       if (!omit_composition_decay_) {
-        radio.decay_composition(grid->elems_Z,grid->elems_A,X_now,t_now_);
+        //std::cerr << t_now_ << std::endl;
+        for (int k = 0; k < X_now.size(); k++) {
+          //std::cerr << grid->elems_Z[k] << std::endl;
+          //std::cerr << grid->elems_A[k] << std::endl;
+          //std::cerr << X_now[k] << std::endl;
+        }
+        //std::cerr << radio << " " << &(grid->elems_Z) << " " << &X_now << std::endl;
+        //std::cerr << "entering composition decay" << std::endl;
+        //std::cerr << radio->test_value << std::endl;
+        radio->decay_composition(grid->elems_Z,grid->elems_A,X_now,t_now_);
+        //std::cerr << "exiting composition decay" << std::endl;
+      }
+
+      for (int k = 0; k < X_now.size(); k++) {
+        //std::cerr << X_now[k] << std::endl;
       }
       gas_state_ptr->set_mass_fractions(X_now);
+      //std::cerr << "did mass frac" << std::endl;
 
+      //std::cerr << "updategrey" << std::endl;
       gas_state_ptr->total_grey_opacity_ = gas_state_ptr->smooth_grey_opacity_ + z->grey_opacity;
 
       if (first_step_)
       {
+        //std::cerr << "start of first step block" << std::endl;
         zone* z = &(grid->z[i]);
         gas_state_ptr->dens_ = z->rho;
         gas_state_ptr->temp_ = z->T_gas;
 
+        //std::cerr << "going into solve error" << std::endl;
         if ( (gas_state_ptr->smooth_grey_opacity_ == 0) && (gas_state_ptr->use_zone_dependent_grey_opacity_ == 0) )
         {
           // always do LTE on first step, without updating temperature
           solve_error = gas_state_ptr->solve_state();
         }
+        //std::cerr << "end of first step block" << std::endl;
       }
 
       else
@@ -119,12 +138,14 @@ void transport::set_opacity(double dt)
         {
           // gas state solution (LTE or NLTE) solution as well as radiative
           // equilibrium temperature solve will happen here
+          //std::cerr << "solv tgas with updated opacities" << std::endl;
           solve_error = solve_state_and_temperature(gas_state_ptr, i);
         }
 
         else
         {
           if ( (gas_state_ptr->smooth_grey_opacity_ == 0) && (gas_state_ptr->use_zone_dependent_grey_opacity_ == 0) )          {
+          //std::cerr << "otherwise calc opacity" << std::endl;
             solve_error = gas_state_ptr->solve_state(J_nu_[i]);
           }
         }
@@ -141,6 +162,7 @@ void transport::set_opacity(double dt)
       //gas_state_ptr->print();
       if(write_levels) gas_state_ptr->write_levels(i);
 
+      //std::cerr << "about to compute opacity" << std::endl;
       // calculate the opacities/emissivities
       gas_state_ptr->computeOpacity(abs_opacity_[i],scat,emis);
 
@@ -173,11 +195,14 @@ void transport::set_opacity(double dt)
       }
       emissivity_[i].normalize();
 
+      //std::cerr << "mean opacities" << std::endl;
       // calculate mean opacities
       planck_mean_opacity_[i] =
         gas_state_ptr->get_planck_mean(abs_opacity_[i],scat_opacity_[i]);
+      //std::cerr << "done planck mean opacity" << std::endl;
       rosseland_mean_opacity_[i] =
         gas_state_ptr->get_rosseland_mean(abs_opacity_[i],scat_opacity_[i]);
+      //std::cerr << "done roseland mean opacity" << std::endl;
 
       //------------------------------------------------------
       // gamma-ray opacity (compton + photo-electric)
@@ -196,8 +221,6 @@ void transport::set_opacity(double dt)
         photo *= pow(pc::m_e_MeV,3.5);
         photoion_opac[i] += ndens*2.0*pc::thomson_cs*photo;
       }
-
-
     }
   }
   // end OpenMP parallel region

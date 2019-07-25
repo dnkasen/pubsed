@@ -100,7 +100,7 @@ void GasState::set_atoms_in_nlte
 // input:
 // std::vector<double> x: vector of mass fractions of each element
 //-----------------------------------------------------------------
-void GasState::set_mass_fractions(std::vector<double> x)
+void GasState::set_mass_fractions(std::vector<double>& x)
 {
   double norm = 0.0;
   for (size_t i=0;i<mass_frac.size();++i)
@@ -168,7 +168,7 @@ int GasState::solve_state()
 // further calculations
 // Returns: any error
 //-----------------------------------------------------------
-int GasState::solve_state(std::vector<real> J_nu)
+int GasState::solve_state(std::vector<real>& J_nu)
 {
   // set key properties of all atoms
   for (size_t i=0;i<atoms.size();++i)
