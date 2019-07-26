@@ -9,6 +9,8 @@ model_file = "../models/ensman_model.mod"        -- input model file
 hydro_module     = "1D_lagrangian"
 hydro_gamma_index = 5.0/3.0
 hydro_v_piston    = 2e6
+hydro_viscosity_parameter = 1
+
 transport_module = "monte_carlo"
 
 particles_n_initialize    = 5000
