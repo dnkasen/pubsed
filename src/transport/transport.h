@@ -22,7 +22,7 @@
 #include <mpi.h>
 #endif
 
-#ifdef OMP_PARALLEL
+#ifdef _OPENMP
 #include <omp.h>
 #endif
 

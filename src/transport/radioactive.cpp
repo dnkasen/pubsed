@@ -58,13 +58,7 @@ double R_proc_fit[] =  {17.608179, -2.0442059, -0.42565322, 0.39830095,  -0.0059
 void radioactive::decay_composition
 (const std::vector<int> &elems_Z, const std::vector<int> &elems_A, std::vector<double>& X, const double t)
 {
-  //std::cerr << "test" << std::endl;
-  //std::cerr << &elems_Z << std::endl;
-  for (int k = 0; k < elems_Z.size(); k++) {
-    //std::cerr << elems_Z[k] << std::endl;
-  }
   int n_el = elems_Z.size();
-  //std::cerr << n_el << std::endl;
 
   // 56nickel decay
   double X_ni = 0;
@@ -74,7 +68,6 @@ void radioactive::decay_composition
     if ((elems_Z[i] == 28)&&(elems_A[i] == 56)) X_ni = X[i];
     if ((elems_Z[i] == 27)&&(elems_A[i] == 56)) X_co = X[i];
   }
-  //std::cerr << "decay 1" << std::endl;
 
   double ni_f = exp(-t/TAU_56NI);
   double co_f = TAU_56CO/(TAU_56NI-TAU_56CO)*(exp(-t/TAU_56NI) - exp(-t/TAU_56CO));
@@ -93,7 +86,6 @@ void radioactive::decay_composition
 
 
   // Cr48 decay
-  //std::cerr << "decay 2" << std::endl;
   double X_cr = 0;
   double X_vn = 0;  
   for (int i=0;i<n_el;i++)

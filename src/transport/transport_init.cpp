@@ -193,7 +193,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   atomic_data_->initialize(atomdata_file_,nu_grid_);
 
   // setup the GasState class
-#ifdef OMP_PARALLEL
+#ifdef _OPENMP
   int max_nthreads = omp_get_max_threads();
 #else
   int max_nthreads = 1;
