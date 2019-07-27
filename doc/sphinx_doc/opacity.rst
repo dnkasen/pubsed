@@ -38,12 +38,12 @@ to all zones in the model. All other sources of opacity discussed below
 (e.g., free-free, bound-free) will be ignored.
 
 The user can also set a spatially varying grey opacity, provided that a dataset
-giving the value of kappa in every zone has been set in an input hdf5 model file.
-Then setting::
+named grey_opacity giving the value of kappa in every zone has been set in an
+input hdf5 model file. Then setting::
 
   opacity_zone_dependent_grey_opacity	= 1
 
-Will use the kappa defined in the modelfile
+will use the kappa defined in the model file
 
 -----------------------------------
 Continuum opacities
@@ -178,7 +178,7 @@ Opacity Parameters
           - value of grey opacity to use (in cm^2/g). Will override all other opacity settings
         * - opacity_zone_dependent_grey_opacity
           - 0 = no | 1 = yes
-          - Use a zone dependent grey opacity dataset set in an hdf5 input model file
+          - Use a zone-dependent grey opacity dataset that is set in an hdf5 input model file and named grey_opacity
         * - opacity_user_defined
           - 0 = no | 1 = yes
           - Calculate opacities by calling the function
