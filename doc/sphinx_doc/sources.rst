@@ -6,6 +6,25 @@ Radiation Sources
 Radioactivity
 -------------------
 
+.. list-table:: Radioactivity Parameters
+        :widths: 15,10,40
+        :header-rows: 1
+        
+        * - parameter
+          - values
+          - definition
+        * - maximum_half_life_seconds
+          - <real>
+          - the largest acceptable half life (in seconds). Radioactive nuclei with half-lives larger than this will not undergo decay
+        * - parent_isotopes_to_use
+          - <string> of isotopes in the form "Z1.A1 Z2.A2 ... Zn.An"
+          - select the earliest nuclei to consider for each decay chain you would like to include. Nuclei that are earlier in each decay chain will not undergo decay
+        * - force_rprocess_heating
+          - 0 = no | 1 = yes
+          - force the simulation to include r-process heating
+        * - partial_rprocess_heating
+          - ?
+          - ?
 
 -------------------
 Thermal Emission
