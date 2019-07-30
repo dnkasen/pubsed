@@ -1,0 +1,4 @@
+CXX  = mpicxx
+CXXFLAGS = -O0 -g -fopenmp -DMPICH_IGNORE_CXX_SEEK -std=c++11 -fsanitize=address -ldl
+
+include make.exec

@@ -12,15 +12,17 @@ Sedona6 Users Guide
    :caption: Contents:
 
    getting_started
+   input_files
+   output_files
    code_execution
    radiation_transport
    sources
-   atomic_data
    opacity
-   nlte
    hydrodynamics
    plotting
    all_parameters
+   python_tools
+   documentation
 
 
 Indices and tables

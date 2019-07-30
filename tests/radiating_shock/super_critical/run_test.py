@@ -41,7 +41,7 @@ def run_test(pdf="",runcommand=""):
     # write code here to read in output data and
     # plot it compared to standard reference
 
-    for i in [5,10]:
+    for i in [9]:
         name = 'plt_0000' + str(i) + '.h5'
         if (i > 9): name = 'plt_000' + str(i) + '.h5'
         print (name)
@@ -52,15 +52,24 @@ def run_test(pdf="",runcommand=""):
         T_rad = np.array(fin['T_rad'])
         print (time/1e4)
         plt.plot(r,T_gas,color='k')
-    #    plt.plot(r,T_rad,'--',color='r')
+        plt.plot(r,T_rad,'--',color='r')
 
     # comparisons -- output every 5e2 seconds
-    r,T_gas,T_rad = np.loadtxt('comparison/ray_00004',usecols=[0,3,4],unpack=True)
-    plt.plot(r-2.4e12 + 8e11,T_gas,color='b')
+#    r,T_gas,T_rad = np.loadtxt('comparison/ray_00004',usecols=[0,3,4],unpack=True)
+ #   plt.plot(r-2.4e12 + 8e11,T_gas,color='b')
+#   plt.plot(r-2.4e12 + 8e11,T_rad,'--',color='b')
+  #  r,T_gas,T_rad = np.loadtxt('comparison/ray_00008',usecols=[0,3,4],unpack=True)
+   # plt.plot(r-2.4e12 + 8e11,T_gas,color='b')
 #    plt.plot(r-2.4e12 + 8e11,T_rad,'--',color='b')
-    r,T_gas,T_rad = np.loadtxt('comparison/ray_00008',usecols=[0,3,4],unpack=True)
-    plt.plot(r-2.4e12 + 8e11,T_gas,color='b')
-#    plt.plot(r-2.4e12 + 8e11,T_rad,'--',color='b')
+#    
+    r,T_gas,T_rad = np.loadtxt('comparison_files/ray_00200_zeus',usecols=[0,4,5],unpack=True)
+    T_rad = T_rad*11614.5300726
+    T_gas = T_gas*11614.5300726
+    r = 2e6*4.0e3 + r + 8e11
+    plt.plot(r,T_gas)
+    plt.plot(r,T_rad)
+
+
 
     plt.xlabel('radius')
     plt.ylabel('temperature')
