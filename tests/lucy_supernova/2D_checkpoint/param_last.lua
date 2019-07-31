@@ -31,5 +31,6 @@ transport_radiative_equilibrium   = 1
 -- checkpoint/restart parameters
 run_do_restart                  = 1
 run_do_checkpoint               = 1
+run_chk_timestep_interval       = 1
 run_restart_file                = "chk_00068.h5"
 run_checkpoint_name_base        = "chk_restart"
