@@ -276,17 +276,6 @@ void grid_1D_sphere::read_ascii_file(std::string model_file, int verbose)
     exit(1);
   }
 
-  // Saving the model file style
-  // This is to allow the proper grid::expand in homology:
-  // Case 'standard': r(t) = r(0) + v*t
-  // Case 'SNR': r(t) = v*t
-  // This makes a difference for IIP applications
-  // debug -- the non snr case produces unwanted behavior at this time
-  // so commented out - need to figure out how to do this properly
-    is_snr_system = true;
- // is_snr_system = false;
- //if (snr == 1) is_snr_system = true;
-
   // read header, general properties
   double texp;
   infile >> r_out.min;
@@ -405,17 +394,9 @@ void grid_1D_sphere::read_ascii_file(std::string model_file, int verbose)
 //************************************************************
 void grid_1D_sphere::expand(double e)
 {
-  if (is_snr_system)
-  {
-    for (int i=0;i<n_zones;i++) r_out[i] *= e;
-    r_out.min *=e;
-  }
-  else
-  { // with 'standard' style assume the input e to be dt
-    double dt = e;
-    for (int i=0;i<n_zones;i++) r_out[i] += z[i].v[0]*dt;
-    r_out.min += v_inner_*dt;
-  }
+  for (int i=0;i<n_zones;i++)
+    r_out[i] *= e;
+  r_out.min *=e;
 
   // recalculate shell volume
   for (int i=0;i<n_zones;i++)
@@ -453,6 +434,41 @@ void grid_1D_sphere::restartGrid(ParameterReader* params) {
 
   readCheckpointGrid(restart_file);
   readCheckpointZones(restart_file);
+
+
+  // print out properties of the model
+  if (verbose)
+  {
+    cout << "# n_x = " << n_zones << endl;
+    cout << "# elems (n=" << n_elems << ") ";
+    for (int k=0;k<n_elems;k++) cout << elems_Z[k] << "." << elems_A[k] << " ";
+    cout << "\n#\n";
+
+    // summed properties
+    double tmass = 0;
+    double ke    = 0;
+    double re    = 0;
+    std::vector<double>elem_mass(n_elems);
+    for (int k=0;k<n_elems;k++) elem_mass[k] = 0;
+
+    // calculate some useful summed properties
+    for (int i=0;i<n_zones;i++)
+    {
+      tmass += z[i].rho*vol[i];
+      for (int k=0;k<n_elems;k++) elem_mass[k] += vol[i]*z[i].rho*z[i].X_gas[k];
+      ke += 0.5*z[i].rho*vol[i]*z[i].v[0]*z[i].v[0];
+      re += z[i].e_rad*vol[i];
+    }
+
+    printf("# mass = %.4e (%.4e Msun)\n",tmass,tmass/pc::m_sun);
+    for (int k=0;k<n_elems;k++) {
+      cout << "# " << elems_Z[k] << "." << elems_A[k] <<  "\t";
+      cout << elem_mass[k] << " (" << elem_mass[k]/pc::m_sun << " Msun)\n"; }
+    printf("# kinetic energy   = %.4e\n",ke);
+    printf("# radiation energy = %.4e\n",re);
+    cout << "##############################\n#" << endl;
+
+  }
 }
 
 
