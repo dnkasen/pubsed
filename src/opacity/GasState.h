@@ -87,7 +87,7 @@ class GasState
 
   //----------------------------------------------------------------
   // initialize the gas by specifying the atoms that will
-  // compose it, along with datafile and freq. array
+  // compose it and freq. array, and name of atomic data file
   // inputs:
   // std::string atomfile: name of atom data file (in hdf5)
   // std::vector<int> e:  vector of atomic numbers
@@ -95,7 +95,13 @@ class GasState
   // locate_array ng:  locate_array giving the freq. array
   //---------------------------------------------------------------
   void initialize
+  (std::string af, std::vector<int> e, std::vector<int> A, locate_array ng);
+
+  // initialize with atomic data class already created and passed
+  // directly as pointer
+  void initialize
   (AtomicData*, std::vector<int>, std::vector<int>, locate_array);
+
 
   //-----------------------------------------------------------
   // set which atoms to treat in nlte

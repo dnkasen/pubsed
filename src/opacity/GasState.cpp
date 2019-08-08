@@ -25,9 +25,11 @@ GasState::GasState()
 
 //----------------------------------------------------------------
 // initialize the gas by specifying the atoms that will
-// compose it, along with datafile and freq. array
+// compose it, the freq. array, and atomic data pointer.
+// Assumes the atomic data has already been read in and
+// is passed as a pointer to the class
 // inputs:
-// std::string atomfile: name of atom data file (in hdf5)
+// AtomicData* adata:  pointer to atomic data holder class
 // std::vector<int> e:  vector of atomic numbers
 // std::vector<int> A:  vector of atomic weights (in atomic units)
 // locate_array ng:  locate_array giving the freq. array
@@ -63,7 +65,39 @@ void GasState::initialize
         " in file " << atomdata_file_ << std::endl;
     atoms[i].initialize(elem_Z[i],atomic_data_);
   }
- }
+}
+
+//----------------------------------------------------------------
+// initialize the gas by specifying the atoms that will
+// compose it and freq. array, and name of atomic data file
+// will initialize the atomic data locally
+// inputs:
+// std::string atomfile: name of atom data file (in hdf5)
+// std::vector<int> e:  vector of atomic numbers
+// std::vector<int> A:  vector of atomic weights (in atomic units)
+// locate_array ng:  locate_array giving the freq. array
+//---------------------------------------------------------------
+void GasState::initialize
+(std::string af, std::vector<int> e, std::vector<int> A, locate_array ng)
+{
+  atomdata_file_ = af;
+  // check if atomfile is there
+  std::ifstream afile(atomdata_file_);
+  if (!afile)
+  {
+    if (verbose_)
+      std::cerr << "Can't open atom datafile " << atomdata_file_ << "; exiting" << std::endl;
+    exit(1);
+  }
+  afile.close();
+
+  // read in the atom data
+  atomic_data_ = new AtomicData;
+  atomic_data_->initialize(atomdata_file_,ng);
+  initialize(atomic_data_,e,A,ng);
+}
+
+
 
 //-----------------------------------------------------------------
 // Choose the atoms to be solve in nlte
