@@ -22,6 +22,10 @@
 #include <mpi.h>
 #endif
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 
 using std::vector;
 
@@ -49,10 +53,13 @@ class transport
   int max_total_particles;
 
   // gas class for opacities
-  GasState gas_state_;
+  vector<GasState> gas_state_vec_;
 
   // pointer to parameter reader
   ParameterReader* params_;
+  // atomic data
+  std::string atomdata_file_;
+  AtomicData* atomic_data_;
 
   // MPI stuff
   int MPI_nprocs;
@@ -81,6 +88,8 @@ class transport
   int    solve_Tgas_with_updated_opacities_;
   int    set_Tgas_to_Trad_;
   int    fix_Tgas_during_transport_;
+
+  int use_nlte_;
 
 
   // current time in simulation
@@ -128,7 +137,7 @@ class transport
   grid_general *grid;
 
   // the frequency grid for emissivity/opacity (Hz)
-  locate_array nu_grid;
+  locate_array nu_grid_;
 
   // boundary conditions
   int boundary_in_reflect_, boundary_out_reflect_;
@@ -230,11 +239,11 @@ class transport
   void reduce_Lthermal();
 
   // solve equilibrium temperature
-  int solve_state_and_temperature(int); // calls gas state solve from within interative solution for tempreature. For now, temperature solve is always based on radiative equilibrium
+  int solve_state_and_temperature(GasState*, int); // calls gas state solve from within interative solution for tempreature. For now, temperature solve is always based on radiative equilibrium
   void solve_eq_temperature();
-  double rad_eq_function_LTE(int,double,int, int &);
-  double rad_eq_function_NLTE(int,double,int, int &);
-  double temp_brent_method(int,int, int &);
+  double rad_eq_function_LTE(GasState*, int,double,int, int &);
+  double rad_eq_function_NLTE(GasState*, int,double,int, int &);
+  double temp_brent_method(GasState*, int,int, int &);
 
  public:
 

@@ -29,7 +29,7 @@ void transport::sample_photon_frequency(particle *p)
   if (p->type == photon)
   {
     int inu  = emissivity_[p->ind].sample(rangen.uniform());
-    p->nu = nu_grid.sample(inu,rangen.uniform());
+    p->nu = nu_grid_.sample(inu,rangen.uniform());
     if (p->nu > 1e20) std::cout << "pnu " << p->nu << "\n";
   }
   else if (p->type == gammaray)
@@ -127,7 +127,7 @@ void transport::initialize_particles(int init_particles)
 
   // set up emission distribution across zones
   double E_sum = 0;
-  int ng = nu_grid.size();
+  int ng = nu_grid_.size();
   for (int i=0;i<grid->n_zones;i++)
   {
     double T = grid->z[i].T_gas;
@@ -137,8 +137,8 @@ void transport::initialize_particles(int init_particles)
     // setup blackbody emissivity for initialization
     for (int j=0;j<ng;j++)
     {
-      double nu_m = nu_grid.center(j);
-      double emis = blackbody_nu(T,nu_m)*nu_grid.delta(j);
+      double nu_m = nu_grid_.center(j);
+      double emis = blackbody_nu(T,nu_m)*nu_grid_.delta(j);
       emissivity_[i].set_value(j,emis);
     }
     emissivity_[i].normalize();
@@ -448,11 +448,11 @@ void transport::emit_inner_source(double dt)
     {
       // sample frequency from blackbody
       int inu = core_emission_spectrum_.sample(rangen.uniform());
-      p.nu = nu_grid.sample(inu,rangen.uniform());
+      p.nu = nu_grid_.sample(inu,rangen.uniform());
       p.e  /= emissivity_weight_[inu];
       // straight bin emission
-      //int ilam = rangen.uniform()*nu_grid.size();
-      //p.e *= core_emis.get_value(ilam)*nu_grid.size();
+      //int ilam = rangen.uniform()*nu_grid_.size();
+      //p.e *= core_emis.get_value(ilam)*nu_grid_.size();
     }
 
     // get index of current zone
@@ -520,7 +520,7 @@ void transport::emit_from_pointsoures(double dt)
 
     // sample frequency
     int inu = pointsource_emission_spectrum_.sample(rangen.uniform());
-    p.nu = nu_grid.sample(inu,rangen.uniform());
+    p.nu = nu_grid_.sample(inu,rangen.uniform());
 
     // get index of current zone
     p.ind = grid->get_zone(p.x);

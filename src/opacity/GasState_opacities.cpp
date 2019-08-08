@@ -514,7 +514,7 @@ void GasState::fuzz_expansion_opacity(std::vector<double>& opac, std::vector<dou
 //   the calculated planck mean
 //----------------------------------------------------------------
 double GasState::get_planck_mean
-(std::vector<OpacityType> abs, std::vector<OpacityType> scat)
+(const std::vector<OpacityType>& abs, const std::vector<OpacityType>& scat)
 {
 	if ((abs.size() != nu_grid_.size())||(scat.size() != nu_grid_.size()))
 	{
@@ -550,7 +550,7 @@ double GasState::get_planck_mean
 // Returns:
 //   the calculated planck mean
 //----------------------------------------------------------------
-double GasState::get_planck_mean(std::vector<OpacityType> x)
+double GasState::get_planck_mean(const std::vector<OpacityType>& x)
 {
 	if (x.size() != nu_grid_.size())
 	{
@@ -587,7 +587,7 @@ double GasState::get_planck_mean(std::vector<OpacityType> x)
 //   the calculated planck mean
 //----------------------------------------------------------------
 double GasState::get_rosseland_mean
-(std::vector<OpacityType> abs, std::vector<OpacityType> scat)
+(const std::vector<OpacityType>& abs, const std::vector<OpacityType>& scat)
 {
 	if ((abs.size() != nu_grid_.size())||(scat.size() != nu_grid_.size()))
 	{
@@ -623,7 +623,7 @@ double GasState::get_rosseland_mean
 // Returns:
 //   the calculated planck mean
 //----------------------------------------------------------------
-double GasState::get_rosseland_mean(std::vector<OpacityType> x)
+double GasState::get_rosseland_mean(const std::vector<OpacityType>& x)
 {
 	if (x.size() != nu_grid_.size())
 	{
