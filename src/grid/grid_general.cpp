@@ -419,19 +419,23 @@ void grid_general::write_integrated_quantities(int iw, double tt)
     fout = fopen(TIME_PLOTFILE_NAME,"w");
     if (fout == NULL) return;
     // write header
-    fprintf(fout,"#    time(sec)     E_radiation      L_nuc_dep      L_nuc_emit      Mass\n");
-  }
+    fprintf(fout,"#    time(sec)     E_radiation         L_dep        L_nuc_emit         Mass ");
+    fprintf(fout,"          E_gas         E_ke\n");
+  }  
 
   // integrated quantities
-  double L_dep = 0, L_emit = 0, E_rad = 0, mass = 0;
+  double L_dep = 0, L_emit = 0, E_rad = 0, mass = 0, E_gas = 0, E_ke = 0;
   for (int i=0;i<n_zones;++i)
   {
     double vol = zone_volume(i);
     L_dep  += z[i].L_radio_dep*vol;
     L_emit += z[i].L_radio_emit*vol;
     E_rad  += z[i].e_rad*vol;
+    E_gas  += z[i].e_gas*vol*z[i].rho;
+    double vsq = z[i].v[0]*z[i].v[0] + z[i].v[1]*z[i].v[1] + z[i].v[2]*z[i].v[2];
+    E_ke   += 0.5*z[i].rho*vol*vsq;
     mass   += z[i].rho*vol;
   }
-  fprintf(fout,"%15.6e %15.6e %15.6e %15.6e %15.6e\n",tt,E_rad,L_dep,L_emit,mass);
+  fprintf(fout,"%15.6e %15.6e %15.6e %15.6e %15.6e %15.6e %15.6e\n",tt,E_rad,L_dep,L_emit,mass,E_gas,E_ke);
   fclose(fout);
 }
