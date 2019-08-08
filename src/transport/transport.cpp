@@ -90,7 +90,7 @@ void transport::step(double dt)
       {
         grid->z[i].e_rad *= fac;
         if (store_Jnu_)
-         for (size_t j=0;j<nu_grid.size();++j)
+         for (size_t j=0;j<nu_grid_.size();++j)
             J_nu_[i][j] *= fac;
       }
     }
@@ -299,7 +299,7 @@ ParticleFate transport::propagate_monte_carlo(particle &p, double tstop)
 
     // check for distance to next frequency bin
     // nushift = nu*(dvds*l)/c --> l = nushift/nu*c/dvds
-    double d_nu = nu_grid.delta(i_nu)/p.nu*pc::c/p.dvds;
+    double d_nu = nu_grid_.delta(i_nu)/p.nu*pc::c/p.dvds;
     if (p.dvds == 0) d_nu = std::numeric_limits<double>::infinity();
     if (d_nu < 0) d_nu = -1*d_nu;
     if (d_nu < d_bn)

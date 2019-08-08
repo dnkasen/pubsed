@@ -78,10 +78,11 @@ void transport::write_levels_to_plotfile(int iw)
     hid_t zone_grp_dest = H5Gopen(zone_id_dest,zid,H5P_DEFAULT);
 
 
-    for(size_t j=0;j<gas_state_.atoms.size();j++)
+    GasState* gas_state = &(gas_state_vec_[0]);
+    for(size_t j=0;j<gas_state->atoms.size();j++)
     {
       char ag[100];
-      int this_Z = gas_state_.elem_Z[j];
+      int this_Z = gas_state->elem_Z[j];
       sprintf(ag,"Z_%d",this_Z);
       hid_t atom_id_src = H5Gopen(file_id_src,ag,H5P_DEFAULT);
       hid_t atom_id_dest = H5Gcreate1(zone_grp_dest,ag,0);
@@ -92,7 +93,7 @@ void transport::write_levels_to_plotfile(int iw)
       H5LTread_dataset_double(atom_id_src,"ion_fraction",tmp_ion);
       H5LTmake_dataset(atom_id_dest,"ion_fraction",RANK,dims_ion,H5T_NATIVE_DOUBLE,tmp_ion);
 
-      int this_nl = gas_state_.atoms[j].n_levels_;
+      int this_nl = gas_state->atoms[j].n_levels_;
       double* tmp_level = new double[this_nl];
       hsize_t dims_level[RANK] = {(hsize_t)this_nl};
       H5LTread_dataset_double(atom_id_src,"level_fraction",tmp_level);
@@ -133,11 +134,11 @@ void transport::write_radiation_file(int iw)
   hid_t file_id = H5Fopen( zonefile, H5F_ACC_RDWR, H5P_DEFAULT);
   const int RANK = 1;
 
-  int n_nu = nu_grid.size();
+  int n_nu = nu_grid_.size();
   float* tmp_array = new float[n_nu];
   hsize_t  dims[RANK]={(hsize_t)n_nu};
 
-  for (int j=0;j<n_nu;j++) tmp_array[j] = nu_grid.center(j);
+  for (int j=0;j<n_nu;j++) tmp_array[j] = nu_grid_.center(j);
   H5LTmake_dataset(file_id,"nu",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
   // write out mean opacities
@@ -212,7 +213,7 @@ void transport::write_radiation_file(int iw)
     H5LTmake_dataset(zone_id,"epsilon",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
     // write emissivity
-    for (int j=0;j<n_nu;j++)  tmp_array[j] = emissivity_[i].get_value(j)/nu_grid.delta(j);
+    for (int j=0;j<n_nu;j++)  tmp_array[j] = emissivity_[i].get_value(j)/nu_grid_.delta(j);
     H5LTmake_dataset(zone_id,"emissivity",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
     // write radiation field J
@@ -225,38 +226,38 @@ void transport::write_radiation_file(int iw)
     // {
     //   // just recalculate state for now... I know...
     //   // set up the state of the gas in this zone
-    //   gas_state_.dens_ = grid->z[i].rho;
-    //   gas_state_.temp_ = grid->z[i].T_gas;
-    //   gas_state_.time_ = grid->t_now;
-    //   gas_state_.set_mass_fractions(grid->z[i].X_gas);
+    //   gas_state->dens_ = grid->z[i].rho;
+    //   gas_state->temp_ = grid->z[i].T_gas;
+    //   gas_state->time_ = grid->t_now;
+    //   gas_state->set_mass_fractions(grid->z[i].X_gas);
     //   // solve for the state
-    //   if (!gas_state_.grey_opacity_) gas_state_.solve_state(J_nu_[i]);
+    //   if (!gas_state->grey_opacity_) gas_state->solve_state(J_nu_[i]);
 
-    //   for (size_t j=0;j<gas_state_.atoms.size();j++)
+    //   for (size_t j=0;j<gas_state->atoms.size();j++)
     //   {
     //     char afile[100];
-    //     int this_Z = gas_state_.elem_Z[j];
+    //     int this_Z = gas_state->elem_Z[j];
     //     sprintf(afile,"Z_%d",this_Z);
     //     hid_t atom_id =  H5Gcreate1( zone_id, afile, 0 );
 
     //     // write out ionization fractions for this atom
     //     float tmp_ion[100];
     //     hsize_t  dims_ion[RANK]={(hsize_t)this_Z+1};
-    //     for (int k=0;k<gas_state_.elem_Z[j]+1;k++)
-    //       tmp_ion[k] = gas_state_.get_ionization_fraction(j,k);
+    //     for (int k=0;k<gas_state->elem_Z[j]+1;k++)
+    //       tmp_ion[k] = gas_state->get_ionization_fraction(j,k);
     //     H5LTmake_dataset(atom_id,"ion_fraction",RANK,dims_ion,H5T_NATIVE_FLOAT,tmp_ion);
 
     //     // write out level populations for this atom
-    //     int this_nl = gas_state_.atoms[j].n_levels_;
+    //     int this_nl = gas_state->atoms[j].n_levels_;
     //     float* tmp_level = new float[this_nl];
     //     hsize_t  dims_level[RANK]={(hsize_t)this_nl};
     //     for (int k=0;k<this_nl;k++)
-    //       tmp_level[k] = gas_state_.get_level_fraction(j,k);
+    //       tmp_level[k] = gas_state->get_level_fraction(j,k);
     //     H5LTmake_dataset(atom_id,"level_fraction",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
 
     //     // write out level departures for this atom
     //     for (int k=0;k<this_nl;k++)
-    //       tmp_level[k] = gas_state_.get_level_departure(j,k);
+    //       tmp_level[k] = gas_state->get_level_departure(j,k);
     //     H5LTmake_dataset(atom_id,"level_departure",RANK,dims_level,H5T_NATIVE_FLOAT,tmp_level);
 
     //     H5Gclose(atom_id);

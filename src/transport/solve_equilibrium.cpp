@@ -11,11 +11,11 @@ namespace pc = physical_constants;
 //  Solve for the temperature assuming radiative equilibrium
 //-------------------------------------------------------------
 
-int transport::solve_state_and_temperature(int i)
+int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
 {
 
-  vector<OpacityType> emis(nu_grid.size());
-  vector<OpacityType> scat(nu_grid.size());
+  vector<OpacityType> emis(nu_grid_.size());
+  vector<OpacityType> scat(nu_grid_.size());
   emis.assign(emis.size(),0.0);
 
   int solve_error = 0;
@@ -30,33 +30,33 @@ int transport::solve_state_and_temperature(int i)
   else
   {
     zone* z = &(grid->z[i]);
-    gas_state_.dens_ = z->rho;
-    gas_state_.temp_ = z->T_gas;
+    gas_state_ptr->dens_ = z->rho;
+    gas_state_ptr->temp_ = z->T_gas;
 
     // For LTE, do an initial solve of the gas state
-    if (gas_state_.use_nlte_ == 0)
+    if (gas_state_ptr->use_nlte_ == 0)
     {
-      solve_error = gas_state_.solve_state();
-      gas_state_.computeOpacity(abs_opacity_[i],scat,emis);
+      solve_error = gas_state_ptr->solve_state();
+      gas_state_ptr->computeOpacity(abs_opacity_[i],scat,emis);
     }
 
     // Calculate equilibrium temperature.
     // Additional gas_state solve may also happen here
-    grid->z[i].T_gas = temp_brent_method(i,1,solve_error);
+    grid->z[i].T_gas = temp_brent_method(gas_state_ptr, i,1,solve_error);
 
-    if (gas_state_.use_nlte_ == 0)
+    if (gas_state_ptr->use_nlte_ == 0)
     {
       // For LTE, do a final solve
-      solve_error = gas_state_.solve_state();
+      solve_error = gas_state_ptr->solve_state();
     }
 
-    if (gas_state_.use_nlte_)
+    if (gas_state_ptr->use_nlte_)
     {
-      bf_heating[i] = gas_state_.bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
-      ff_heating[i] = gas_state_.free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
-      bf_cooling[i] = gas_state_.bound_free_cooling_rate(grid->z[i].T_gas);
-      ff_cooling[i] = gas_state_.free_free_cooling_rate(grid->z[i].T_gas);
-     coll_cooling[i] = gas_state_.collisional_net_cooling_rate(grid->z[i].T_gas);
+      bf_heating[i] = gas_state_ptr->bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+      ff_heating[i] = gas_state_ptr->free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+      bf_cooling[i] = gas_state_ptr->bound_free_cooling_rate(grid->z[i].T_gas);
+      ff_cooling[i] = gas_state_ptr->free_free_cooling_rate(grid->z[i].T_gas);
+     coll_cooling[i] = gas_state_ptr->collisional_net_cooling_rate(grid->z[i].T_gas);
     }
     return solve_error;
   }
@@ -66,6 +66,7 @@ int transport::solve_state_and_temperature(int i)
 void transport::solve_eq_temperature()
 {
   int solve_error = 0;
+  GasState* gas_state_ptr = &(gas_state_vec_[0]);
   for (int i=my_zone_start_;i<my_zone_stop_;i++)
   {
     if (set_Tgas_to_Trad_ == 1)
@@ -73,15 +74,15 @@ void transport::solve_eq_temperature()
     else
   {
       // solve_error won't be updated here because that's for the gas_state solve which isn't happening here
-     grid->z[i].T_gas = temp_brent_method(i,0,solve_error);
+     grid->z[i].T_gas = temp_brent_method(gas_state_ptr, i,0,solve_error);
 
-	  if (gas_state_.use_nlte_)
+	  if (gas_state_ptr->use_nlte_)
     {
-	    bf_heating[i] = gas_state_.bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
-	    ff_heating[i] = gas_state_.free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
-	    bf_cooling[i] = gas_state_.bound_free_cooling_rate(grid->z[i].T_gas);
-	    ff_cooling[i] = gas_state_.free_free_cooling_rate(grid->z[i].T_gas);
-	    coll_cooling[i] = gas_state_.collisional_net_cooling_rate(grid->z[i].T_gas);
+	    bf_heating[i] = gas_state_ptr->bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+	    ff_heating[i] = gas_state_ptr->free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+	    bf_cooling[i] = gas_state_ptr->bound_free_cooling_rate(grid->z[i].T_gas);
+	    ff_cooling[i] = gas_state_ptr->free_free_cooling_rate(grid->z[i].T_gas);
+	    coll_cooling[i] = gas_state_ptr->collisional_net_cooling_rate(grid->z[i].T_gas);
 	  }
 
 	}
@@ -110,22 +111,22 @@ void transport::solve_eq_temperature()
 //              compute emission rates
 //
 //************************************************************/
-double transport::rad_eq_function_LTE(int c,double T, int solve_flag, int & solve_error)
+double transport::rad_eq_function_LTE(GasState* gas_state_ptr, int c,double T, int solve_flag, int & solve_error)
 {
   zone* z = &(grid->z[c]);
-  gas_state_.dens_ = z->rho;
-  gas_state_.temp_ = T;
+  gas_state_ptr->dens_ = z->rho;
+  gas_state_ptr->temp_ = T;
 
   // helper variables need for call (will not be used)
-  vector<OpacityType> emis(nu_grid.size());
-  vector<OpacityType> scat(nu_grid.size());
+  vector<OpacityType> emis(nu_grid_.size());
+  vector<OpacityType> scat(nu_grid_.size());
   emis.assign(emis.size(),0.0);
 
   // recalculate opacities based on current T if desired
   if (solve_flag)
   {
-    // solve_error = gas_state_.solve_state();
-    gas_state_.computeOpacity(abs_opacity_[c],scat,emis);
+    // solve_error = gas_state_ptr->solve_state();
+    gas_state_ptr->computeOpacity(abs_opacity_[c],scat,emis);
   }
 
   // total energy emitted (to be calculated)
@@ -138,7 +139,7 @@ double transport::rad_eq_function_LTE(int c,double T, int solve_flag, int & solv
     E_absorbed = grid->z[c].e_abs;
 
   // Calculate total emission assuming no frequency (grey) opacity
-  if (nu_grid.size() == 1)
+  if (nu_grid_.size() == 1)
   {
     E_emitted = 4.0*pc::pi*abs_opacity_[c][0]*pc::sb/pc::pi*pow(T,4);
 
@@ -151,10 +152,10 @@ double transport::rad_eq_function_LTE(int c,double T, int solve_flag, int & solv
   // ergs/sec/cm^3 radition emitted. Opacities are
   // held constant for this (assumed not to change
   // much from the last time step).
-  else for (int i=0;i<nu_grid.size();i++)
+  else for (int i=0;i<nu_grid_.size();i++)
   {
-    double dnu  = nu_grid.delta(i);
-    double nu   = nu_grid.center(i);
+    double dnu  = nu_grid_.delta(i);
+    double nu   = nu_grid_.center(i);
     double B_nu = blackbody_nu(T,nu);
     double kappa_abs = abs_opacity_[c][i];
     E_emitted += 4.0*pc::pi*kappa_abs*B_nu*dnu;
@@ -183,15 +184,15 @@ double transport::rad_eq_function_LTE(int c,double T, int solve_flag, int & solv
 //              compute emission rates
 //
 //************************************************************/
-double transport::rad_eq_function_NLTE(int c,double T, int solve_flag, int &solve_error)
+double transport::rad_eq_function_NLTE(GasState* gas_state_ptr, int c,double T, int solve_flag, int &solve_error)
 {
 
   zone* z = &(grid->z[c]);
-  gas_state_.dens_ = z->rho;
-  gas_state_.temp_ = T;
+  gas_state_ptr->dens_ = z->rho;
+  gas_state_ptr->temp_ = T;
 
   // make sure grey_opacity is not being used
-  if ( (gas_state_.smooth_grey_opacity_ == 1) || (gas_state_.use_zone_dependent_grey_opacity_ == 1) )
+  if ( (gas_state_ptr->smooth_grey_opacity_ == 1) || (gas_state_ptr->use_zone_dependent_grey_opacity_ == 1) )
   {
 	std::cerr << "# ERROR: NLTE solve should not be used with grey opacity\n";
 	exit(1);
@@ -199,18 +200,18 @@ double transport::rad_eq_function_NLTE(int c,double T, int solve_flag, int &solv
 
   // if flag set, recompute the entire NLTE problem for this iteration
   if (solve_flag)
-	solve_error = gas_state_.solve_state(J_nu_[c]);
+	solve_error = gas_state_ptr->solve_state(J_nu_[c]);
 
   // total energy absorbed
-  double E_absorbed = gas_state_.free_free_heating_rate(T,J_nu_[c]) +
-        gas_state_.bound_free_heating_rate(T,J_nu_[c]) ;
+  double E_absorbed = gas_state_ptr->free_free_heating_rate(T,J_nu_[c]) +
+        gas_state_ptr->bound_free_heating_rate(T,J_nu_[c]) ;
 
   // total energy emitted
-  double E_emitted =  E_emitted= gas_state_.free_free_cooling_rate(T) +
-        gas_state_.bound_free_cooling_rate(T);
+  double E_emitted =  E_emitted= gas_state_ptr->free_free_cooling_rate(T) +
+        gas_state_ptr->bound_free_cooling_rate(T);
 
-  if (gas_state_.use_collisions_nlte_)
-      E_emitted += gas_state_.collisional_net_cooling_rate(T);
+  if (gas_state_ptr->use_collisions_nlte_)
+      E_emitted += gas_state_ptr->collisional_net_cooling_rate(T);
 
   // radiative equillibrium condition: "emission equals absorbtion"
   // return to Brent function to iterate this to zero
@@ -225,7 +226,7 @@ double transport::rad_eq_function_NLTE(int c,double T, int solve_flag, int &solv
 // definitions used for temperature solver
 
 #define SIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
-double transport::temp_brent_method(int cell, int solve_flag, int &solve_error)
+double transport::temp_brent_method(GasState* gas_state_ptr, int cell, int solve_flag, int &solve_error)
 {
   double brent_solve_tolerance = 1.0e-2;
   double temp_range_min = temp_min_value_;
@@ -241,15 +242,15 @@ double transport::temp_brent_method(int cell, int solve_flag, int &solve_error)
   double c=b;
   double d,e,min1,min2;
   double fa,fb = 0.;
-  if (gas_state_.use_nlte_ == 0)
+  if (gas_state_ptr->use_nlte_ == 0)
     {
-      fa=rad_eq_function_LTE(cell,a,solve_flag,solve_error);
-      fb=rad_eq_function_LTE(cell,b,solve_flag,solve_error);
+      fa=rad_eq_function_LTE(gas_state_ptr, cell,a,solve_flag,solve_error);
+      fb=rad_eq_function_LTE(gas_state_ptr, cell,b,solve_flag,solve_error);
     }
   else
     {
-      fa=rad_eq_function_NLTE(cell,a,solve_flag,solve_error);
-      fb=rad_eq_function_NLTE(cell,b,solve_flag,solve_error);
+      fa=rad_eq_function_NLTE(gas_state_ptr, cell,a,solve_flag,solve_error);
+      fb=rad_eq_function_NLTE(gas_state_ptr, cell,b,solve_flag,solve_error);
     }
 
   double fc,p,q,r,s,tol1,xm;
@@ -307,13 +308,13 @@ double transport::temp_brent_method(int cell, int solve_flag, int &solve_error)
     else
       b += SIGN(tol1,xm);
 
-    if (gas_state_.use_nlte_ == 0)
+    if (gas_state_ptr->use_nlte_ == 0)
       {
-	fb=rad_eq_function_LTE(cell,b,solve_flag,solve_error);
+	fb=rad_eq_function_LTE(gas_state_ptr, cell,b,solve_flag,solve_error);
       }
     else
       {
-	fb=rad_eq_function_NLTE(cell,b,solve_flag,solve_error);
+	fb=rad_eq_function_NLTE(gas_state_ptr, cell,b,solve_flag,solve_error);
       }
   }
   printf("Maximum number of iterations exceeded in zbrent");

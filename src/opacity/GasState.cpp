@@ -25,15 +25,17 @@ GasState::GasState()
 
 //----------------------------------------------------------------
 // initialize the gas by specifying the atoms that will
-// compose it, along with datafile and freq. array
+// compose it, the freq. array, and atomic data pointer.
+// Assumes the atomic data has already been read in and
+// is passed as a pointer to the class
 // inputs:
-// std::string atomfile: name of atom data file (in hdf5)
+// AtomicData* adata:  pointer to atomic data holder class
 // std::vector<int> e:  vector of atomic numbers
 // std::vector<int> A:  vector of atomic weights (in atomic units)
 // locate_array ng:  locate_array giving the freq. array
 //---------------------------------------------------------------
 void GasState::initialize
-(std::string af, std::vector<int> e, std::vector<int> A, locate_array ng)
+(AtomicData* adata, std::vector<int> e, std::vector<int> A, locate_array ng)
 {
   // verbocity
 #ifdef MPI_PARALLEL
@@ -47,13 +49,38 @@ void GasState::initialize
   // copy the frequency grid
   nu_grid_.copy(ng);
 
+  // set passed variables
   for (size_t i=0;i<e.size();++i) elem_Z.push_back(e[i]);
   for (size_t i=0;i<e.size();++i) elem_A.push_back(A[i]);
   mass_frac.resize(e.size());
+  atomic_data_ = adata;
 
-  // set passed variables
+
+  atoms.resize(elem_Z.size());
+  for (size_t i=0;i<atoms.size();++i)
+  {
+    int error = atomic_data_->read_atomic_data(elem_Z[i]);
+    if ((error)&&(verbose_))
+      std::cerr << "# ERROR: incomplete data for atom Z=" << elem_Z[i] <<
+        " in file " << atomdata_file_ << std::endl;
+    atoms[i].initialize(elem_Z[i],atomic_data_);
+  }
+}
+
+//----------------------------------------------------------------
+// initialize the gas by specifying the atoms that will
+// compose it and freq. array, and name of atomic data file
+// will initialize the atomic data locally
+// inputs:
+// std::string atomfile: name of atom data file (in hdf5)
+// std::vector<int> e:  vector of atomic numbers
+// std::vector<int> A:  vector of atomic weights (in atomic units)
+// locate_array ng:  locate_array giving the freq. array
+//---------------------------------------------------------------
+void GasState::initialize
+(std::string af, std::vector<int> e, std::vector<int> A, locate_array ng)
+{
   atomdata_file_ = af;
-
   // check if atomfile is there
   std::ifstream afile(atomdata_file_);
   if (!afile)
@@ -67,16 +94,10 @@ void GasState::initialize
   // read in the atom data
   atomic_data_ = new AtomicData;
   atomic_data_->initialize(atomdata_file_,ng);
-  atoms.resize(elem_Z.size());
-  for (size_t i=0;i<atoms.size();++i)
-  {
-    int error = atomic_data_->read_atomic_data(elem_Z[i]);
-    if ((error)&&(verbose_))
-      std::cerr << "# ERROR: incomplete data for atom Z=" << elem_Z[i] <<
-        " in file " << atomdata_file_ << std::endl;
-    atoms[i].initialize(elem_Z[i],atomic_data_);
-  }
- }
+  initialize(atomic_data_,e,A,ng);
+}
+
+
 
 //-----------------------------------------------------------------
 // Choose the atoms to be solve in nlte
@@ -113,7 +134,7 @@ void GasState::set_atoms_in_nlte
 // input:
 // std::vector<double> x: vector of mass fractions of each element
 //-----------------------------------------------------------------
-void GasState::set_mass_fractions(std::vector<double> x)
+void GasState::set_mass_fractions(std::vector<double>& x)
 {
   double norm = 0.0;
   for (size_t i=0;i<mass_frac.size();++i)
@@ -181,7 +202,7 @@ int GasState::solve_state()
 // further calculations
 // Returns: any error
 //-----------------------------------------------------------
-int GasState::solve_state(std::vector<real> J_nu)
+int GasState::solve_state(std::vector<real>& J_nu)
 {
   // set key properties of all atoms
   for (size_t i=0;i<atoms.size();++i)
