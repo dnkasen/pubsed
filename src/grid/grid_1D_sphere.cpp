@@ -488,7 +488,6 @@ int grid_1D_sphere::get_zone(const double *x) const
   return ind;
 }
 
-
 //************************************************************
 // Overly simple search to find zone
 //************************************************************
@@ -497,45 +496,69 @@ int grid_1D_sphere::get_next_zone(const double *x, const double *D, int i, doubl
   double rsq   = (x[0]*x[0] + x[1]*x[1] + x[2]*x[2]);
   double xdotD = (D[0]*x[0] + D[1]*x[1] + D[2]*x[2]);
 
-  // distance to outer shell edge
+  // Calculate distance to the outer shell edge
+  // using quadratic formula
   double r_o = r_out[i];
   double l_out = -1*xdotD + sqrt(xdotD*xdotD + r_o*r_o - rsq);
 
 
-  double r_i = 0;
-  int ind_in = i-1;
-  if (i != 0)  r_i = r_out[i-1];
-  if (r_core >= r_i) {
-    r_i = r_core;
-    ind_in = -1; }
-
-
-  double l_in;
-  if ((i == 0)&&(r_core == 0)) l_in = -1;
+  double r_in;    // radius of the inner shell edge
+  int ind_in;    // index of interior shell
+  // get radius of inner shell edge
+  if (i != 0)
+  {
+    r_in = r_out[i-1];
+    ind_in = i-1;
+  }
+  // for innermost shell, use minimum r
   else
   {
-    double rad = xdotD*xdotD + r_i*r_i - rsq;
+    r_in = r_out.min;
+    ind_in = -1;
+  }
+
+  // check for a core boundary
+  if (r_core >= r_in)
+  {
+    r_in = r_core;
+    ind_in = -1;
+  }
+
+
+  // find distance to inner shell
+  double l_in;
+  // if in innermost zone and there is no inner boundary,
+  // (i.e., r_in = 0) then we never hit the inner shell
+  // so set l_in = -1 as an indicator
+  if ((i == 0)&&(r_in == 0)) l_in = -1;
+  // otherwise calculate the distance
+  else
+  {
+    double rad = xdotD*xdotD + r_in*r_in - rsq;
     if   (rad < 0)  l_in = -1;
     else l_in = -1*xdotD - sqrt(rad);
   }
 
-  // find shortest positive distance
   int ind;
-  //double tiny = 1 + 1e-10;
+   // offset so we don't land *exactly on a boundary
+  double tiny_offset = 1 + 1e-6;
+
+  // if l_out is shortest positive distance, set this as distance
   if ((l_out < l_in)||(l_in < 0))
   {
     ind = i + 1;
     if (ind == n_zones) ind = -2;
-    *l = l_out; //*tiny;
+    *l = l_out*tiny_offset;
   }
+  // otherwise set inward as distance to move
   else
   {
     ind = ind_in;
-    *l = l_in; //*tiny;
+    *l = l_in*tiny_offset;
   }
-
   return ind;
 }
+
 
 
 
