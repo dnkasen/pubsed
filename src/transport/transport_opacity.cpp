@@ -139,6 +139,7 @@ void transport::set_opacity(double dt)
       }
 
       //gas_state_ptr->print();
+      #pragma omp critical
       if(write_levels) gas_state_ptr->write_levels(i);
 
       // calculate the opacities/emissivities
