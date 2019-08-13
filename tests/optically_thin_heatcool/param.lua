@@ -6,7 +6,7 @@ data_atomic_file = sedona_home.."/data/H_3lev_plusC_atomdata.hdf5"
 
 transport_radiative_equilibrium  = 1
 transport_steady_iterate         = 5
-solve_coupled_gas_state_temperature = 1
+transport_solve_Tgas_with_updated_opacities = 1
 
 -- inner source emission
 h       = 6.6260755e-27      -- planck's constant (ergs-s)
