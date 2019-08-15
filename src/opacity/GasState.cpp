@@ -61,7 +61,7 @@ void GasState::initialize
   {
     int error = atomic_data_->read_atomic_data(elem_Z[i]);
     if ((error)&&(verbose_))
-      std::cerr << "# ERROR: incomplete data for atom Z=" << elem_Z[i] <<
+      std::cerr << "# ERROR: incomplete data (" << error << ") for atom Z=" << elem_Z[i] <<
         " in file " << atomdata_file_ << std::endl;
     atoms[i].initialize(elem_Z[i],atomic_data_);
   }

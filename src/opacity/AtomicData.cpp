@@ -114,6 +114,24 @@ void AtomicData::print_detailed(int z)
     std::cout << "#------------------------------------------------" << std::endl;;
     std::cout << std::endl;
   }
+  for (int i=0;i<atom->n_levels_;++i)
+  {
+    std::cout << i << "\t" << atom->levels_[i].ion << "\t";
+    std::cout << atom->levels_[i].E  << "\t" << atom->levels_[i].g;
+    std::cout << "\t" << atom->levels_[i].ic << std::endl;
+  }
+  std::cout << std::endl;
+  std::cout << "#------------------------------------------------" << std::endl;;
+
+  for (int i=0;i<atom->n_lines_;++i)
+  {
+    std::cout << i << "\t" << atom->lines_[i].nu << "\t";
+    std::cout << atom->lines_[i].ll << "\t" << atom->lines_[i].lu;
+    std::cout << std::endl;
+  }
+  std::cout << std::endl;
+  std::cout << "#------------------------------------------------" << std::endl;;
+
 }
 
 //------------------------------------------------------------------------
@@ -139,7 +157,21 @@ int AtomicData::read_atomic_data(int z)
   // default now is to use old style of files
   // will update eventually to read in new style files
   // if version correct
-  read_atomic_data_oldstyle(z);
+
+  // open hdf5 file
+  herr_t status;
+  status = H5Eset_auto1(NULL, NULL);
+  hid_t file_id = H5Fopen (atom_datafile_.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+
+  int version;
+  status = H5LTread_dataset_int(file_id, "version" ,&version);
+  if (status != 0)
+    version = 1;
+
+  if (version == 1)
+    return read_atomic_data_oldstyle(z);
+  if (version == 2)
+    return read_atomic_data_newstyle(z);
 }
 
 
@@ -198,7 +230,8 @@ int AtomicData::read_atomic_data_newstyle(int z)
 
   // deterime number of ions
   int n_tot_ions;
-  status = H5LTget_attribute_int(file_id, atomname, "n_ions", &n_tot_ions);
+  sprintf(dset,"%s%s",atomname,"n_ions");
+  status = H5LTread_dataset_int(file_id, dset ,&n_tot_ions);
   if (status != 0) return -1;
   atom->n_ions_ = n_tot_ions;
   if (atom->n_ions_  > atom->max_ion_stage_)
@@ -220,7 +253,9 @@ int AtomicData::read_atomic_data_newstyle(int z)
 
     // get number of levels
     int tot_n_levels;
-    status = H5LTget_attribute_int(file_id, ionname, "n_levels",&tot_n_levels);
+    sprintf(dset,"%s%s",ionname,"n_levels");
+    status = H5LTread_dataset_int(file_id, dset ,&tot_n_levels);
+
     if (status != 0) tot_n_levels = 0;
 
     if (tot_n_levels != 0)
@@ -272,7 +307,8 @@ int AtomicData::read_atomic_data_newstyle(int z)
     // Read and Setup line data
     // ---------------------------------------
     int n_tot_lines;
-    status = H5LTget_attribute_int(file_id, ionname, "n_lines",&n_tot_lines);
+    sprintf(dset,"%s%s",ionname,"n_lines");
+    status = H5LTread_dataset_int(file_id, dset ,&n_tot_lines);
     if (status != 0) n_tot_lines = 0;
 
     if (n_tot_lines > 0)
@@ -298,7 +334,7 @@ int AtomicData::read_atomic_data_newstyle(int z)
 
       // add in the lines
       int n_lines_add = 0;
-      for (int i=0;i<atom->n_lines_;++i)
+      for (int i=0;i<n_tot_lines;++i)
       {
         int ll = ll_iarr[i];
         int lu = lu_iarr[i];
@@ -308,6 +344,10 @@ int AtomicData::read_atomic_data_newstyle(int z)
         if (lu > tot_n_levels) continue;
         if (ll > tot_n_levels) continue;
         n_lines_add++;
+
+        // offset the level index
+        lu = lu + atom->ions_[ion].ground;
+        ll = ll + atom->ions_[ion].ground;
 
         AtomicLine lin;
         lin.lu   = lu;
@@ -359,8 +399,6 @@ int AtomicData::read_atomic_data_newstyle(int z)
     if (n_photo_cs > max_n_photo_cs)
         n_photo_cs = max_n_photo_cs;
 
-    std::cout << n_photo_cs << " CS\n";
-
     atom->photo_cs_.resize(n_photo_cs);
     for (int i=0;i<n_photo_cs;++i)
     {
@@ -383,7 +421,6 @@ int AtomicData::read_atomic_data_newstyle(int z)
         atom->photo_cs_[i].s[j] = darray[j];
 
       delete [] darray;
-      std::cout << n_pts << " AA\n";
     }
 
    }
@@ -408,6 +445,8 @@ int AtomicData::read_atomic_data_newstyle(int z)
    atom->n_lines_  = atom->lines_.size();
 
    H5Fclose(file_id);
+   print_detailed(z);
+
    return 0;
 }
 
@@ -460,7 +499,7 @@ int AtomicData::read_atomic_data_oldstyle(int z)
       atom->levels_[0].g  = 1;
       atom->levels_[0].ic = -1;
       atom->levels_[0].ion = 0;
-      return 1;
+      return 2;
   }
 
   // otherwise data exists, we'll read it in
@@ -741,6 +780,7 @@ int AtomicData::read_fuzzfile_data(std::string fname)
 //------------------------------------------------------------------------
 int AtomicData::read_fuzzfile_data_for_atom(std::string fname, int Z)
 {
+  IndividualAtomData *atom = &(atomlist_[Z]);
 
   // open hdf5 file
   hid_t file_id = H5Fopen (fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -751,52 +791,76 @@ int AtomicData::read_fuzzfile_data_for_atom(std::string fname, int Z)
   sprintf(atomname,"%d/",Z);
   char dset[1000];
 
-  int nl;
-  status = H5LTget_attribute_int(file_id, atomname, "n_lines", &nl);
+  int n_tot_lines;
+  status = H5LTget_attribute_int(file_id, atomname, "n_lines", &n_tot_lines);
   if (status != 0) return -1;
 
-  atomlist_[Z].fuzz_lines_.n_lines = nl;
-  atomlist_[Z].fuzz_lines_.nu.resize(nl);
-  atomlist_[Z].fuzz_lines_.gf.resize(nl);
-  atomlist_[Z].fuzz_lines_.El.resize(nl);
-  atomlist_[Z].fuzz_lines_.ion.resize(nl);
-  atomlist_[Z].fuzz_lines_.bin.resize(nl);
-
   // read in arrays
-  double *darr = new double[nl];
-  int    *iarr = new int[nl];
+  double *darr = new double[n_tot_lines];
+  double *Earr = new double[n_tot_lines];
+  double *garr = new double[n_tot_lines];
+  int    *iarr = new int[n_tot_lines];
 
   // read line frequency
   sprintf(dset,"%s%s",atomname,"nu");
   status = H5LTread_dataset_double(file_id,dset,darr);
-  for (int i=0;i<nl;++i) atomlist_[Z].fuzz_lines_.nu[i] = darr[i];
+
+  // read line ionization state
+  sprintf(dset,"%s%s",atomname,"ion");
+  status = H5LTread_dataset_int(file_id,dset,iarr);
 
   // read line gf
   sprintf(dset,"%s%s",atomname,"gf");
-  status = H5LTread_dataset_double(file_id,dset,darr);
-  for (int i=0;i<nl;++i) atomlist_[Z].fuzz_lines_.gf[i] = darr[i];
+  status = H5LTread_dataset_double(file_id,dset,garr);
 
   // read line lower level excitation energy
  sprintf(dset,"%s%s",atomname,"El");
- status = H5LTread_dataset_double(file_id,dset,darr);
- for (int i=0;i<nl;++i) atomlist_[Z].fuzz_lines_.El[i] = darr[i];
+ status = H5LTread_dataset_double(file_id,dset,Earr);
 
- // read line ionization state
- sprintf(dset,"%s%s",atomname,"ion");
- status = H5LTread_dataset_int(file_id,dset,iarr);
- for (int i=0;i<nl;++i) atomlist_[Z].fuzz_lines_.ion[i] = iarr[i];
+  // count the number of lines to store
+  int n_use = 0;
+  for (int i=0;i<n_tot_lines;++i)
+  {
+    if (iarr[i] >= atom->n_ions_) continue;
+    if (darr[i] <= nu_grid_.minval()) continue;
+    if (darr[i] >= nu_grid_.maxval()) continue;
+    n_use += 1;
+  }
 
- // get frequency bin of line
- for (int i=0;i<nl;++i)
- {
-   int ind = nu_grid_.locate(atomlist_[Z].fuzz_lines_.nu[i])-1;
-   if (ind < 0) ind = 0;
-   atomlist_[Z].fuzz_lines_.bin[i] = ind;
- }
+  atom->fuzz_lines_.n_lines = n_use;
+  atom->fuzz_lines_.nu.resize(n_use);
+  atom->fuzz_lines_.gf.resize(n_use);
+  atom->fuzz_lines_.El.resize(n_use);
+  atom->fuzz_lines_.ion.resize(n_use);
+  atom->fuzz_lines_.bin.resize(n_use);
+
+  int n_cnt = 0;
+  for (int i=0;i<n_tot_lines;++i)
+  {
+    if (iarr[i] >= atom->n_ions_) continue;
+    if (darr[i] <= nu_grid_.minval()) continue;
+    if (darr[i] >= nu_grid_.maxval()) continue;
+
+    atom->fuzz_lines_.nu[n_cnt]  = darr[i];
+    atom->fuzz_lines_.ion[n_cnt] = iarr[i];
+    atom->fuzz_lines_.gf[n_cnt]  = garr[i];
+    atom->fuzz_lines_.El[n_cnt]  = Earr[i];
+
+    int ind = nu_grid_.locate(atom->fuzz_lines_.nu[n_cnt])-1;
+    atom->fuzz_lines_.bin[n_cnt] = ind;
+
+//    std::cout << n_cnt << "/" << n_use << " " << i << " "  <<  atom->fuzz_lines_.ion[n_cnt] << " " << atom->fuzz_lines_.nu[n_cnt]
+//    << " " << atom->fuzz_lines_.gf[n_cnt] << " " << atom->fuzz_lines_.El[n_cnt] << "\n";
+
+    n_cnt += 1;
+  }
+
 
   delete[] darr;
+  delete[] Earr;
+  delete[] garr;
   delete[] iarr;
   H5Fclose(file_id);
 
-  return nl;
+  return n_use;
 }

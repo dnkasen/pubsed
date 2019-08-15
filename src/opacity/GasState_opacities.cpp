@@ -101,7 +101,7 @@ void GasState::computeOpacity(std::vector<OpacityType>& abs,
        double nu = nu_grid_.center(i);
        double ezeta = exp(1.0*pc::h*nu/pc::k/temp_);
        double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(ezeta-1);
-       tot_emis[i] += bb*abs[i];
+       tot_emis[i] += bb*epsilon_*opac[i];
       }
     }
 
@@ -115,7 +115,7 @@ void GasState::computeOpacity(std::vector<OpacityType>& abs,
        double nu = nu_grid_.center(i);
        double ezeta = exp(1.0*pc::h*nu/pc::k/temp_);
        double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(ezeta-1);
-       tot_emis[i] += bb*abs[i];
+       tot_emis[i] += bb*epsilon_*opac[i];
       }
     }
 
