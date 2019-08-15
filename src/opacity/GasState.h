@@ -227,7 +227,7 @@ class GasState
   void bound_bound_opacity(std::vector<double>&, std::vector<double>&);
   void bound_bound_opacity(int, std::vector<double>&, std::vector<double>&);
   void line_expansion_opacity(std::vector<double>&);
-  void fuzz_expansion_opacity(std::vector<double>&, std::vector<double>&);
+  void fuzz_expansion_opacity(std::vector<double>&);
   void get_line_opacities(std::vector<double>&);
 
   void get_user_defined_opacity
