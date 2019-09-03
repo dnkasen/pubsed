@@ -88,6 +88,8 @@ void transport::init(ParameterReader* par, grid_general *g)
 //  std::cout << MPI_myID <<  " " << my_zone_start_ << " " << my_zone_stop_ <<
 //   " " << my_zone_stop_ - my_zone_start_ << "\n";
 
+  bool fix_seed = (bool) params_->getScalar<int>("transport_fix_rng_seed");
+  unsigned long int seed_value = params_->getScalar<int>("transport_rng_seed");
   std::string restart_file = params_->getScalar<string>("run_restart_file");
   int do_restart = params_->getScalar<int>("run_do_restart");
 
@@ -95,11 +97,11 @@ void transport::init(ParameterReader* par, grid_general *g)
   if (do_restart) {
     int status = rangen.readCheckpointRNG(restart_file);
     if (status != 0) {
-      rangen.init();
+      rangen.init(fix_seed, seed_value);
     }
   }
   else
-    rangen.init();
+    rangen.init(fix_seed, seed_value);
 
   // read relevant parameters
   max_total_particles = params_->getScalar<int>("particles_max_total");
