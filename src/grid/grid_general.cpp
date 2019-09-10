@@ -68,6 +68,10 @@ void grid_general::write_hdf5_plotfile_zones
 	for (int i=0;i<n_zones;++i) arr[i] = z[i].L_radio_dep;
 	H5LTmake_dataset(file_id,"e_nuc_dep",ndims,dims_g,H5T_NATIVE_FLOAT,arr);
 
+	// print out n_elec
+	for (int i=0;i<n_zones;++i) arr[i] = z[i].n_elec;
+	H5LTmake_dataset(file_id,"n_elec",ndims,dims_g,H5T_NATIVE_FLOAT,arr);
+
 	// print out radioactive emission
 	for (int i=0;i<n_zones;++i) arr[i] = z[i].L_radio_emit;
 	H5LTmake_dataset(file_id,"e_nuc_emit",ndims,dims_g,H5T_NATIVE_FLOAT,arr);

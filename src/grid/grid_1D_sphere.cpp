@@ -589,7 +589,7 @@ void grid_1D_sphere::write_plotfile(int iw, double tt, int write_mass_fracs)
   outfile = fopen(zonefile,"w");
 
   fprintf(outfile,"# t = %8.4e ; rmin = %8.4e\n",tt, r_out.min);
-  fprintf(outfile, "#  %-12.12s %-15.15s %-15.15s %-15.15s %-15.15s %-15.15s %-15.15s","r", "rho","v", "T_gas", "T_rad", "L_dep_nuc","L_emit_nuc");
+  fprintf(outfile, "#  %-12.12s %-15.15s %-15.15s %-15.15s %-15.15s %-15.15s %-15.15s","r", "rho","v", "T_gas", "T_rad", "n_elec", "L_dep_nuc","L_emit_nuc");
   if (write_mass_fracs) // output mass fractions
   {
     for (int j =0; j < n_elems; j++)
@@ -608,7 +608,7 @@ void grid_1D_sphere::write_plotfile(int iw, double tt, int write_mass_fracs)
     if (i > 0) rin = r_out[i-1];
     double T_rad = pow(z[i].e_rad/pc::a,0.25);
 
-    fprintf(outfile, "%12.8e  %12.8e  %12.8e  %12.8e  %12.8e  %12.8e  %12.8e", r_out[i], z[i].rho, z[i].v[0], z[i].T_gas, T_rad, z[i].L_radio_dep, z[i].L_radio_emit);
+    fprintf(outfile, "%12.8e  %12.8e  %12.8e  %12.8e  %12.8e  %12.8e  %12.8e", r_out[i], z[i].rho, z[i].v[0], z[i].T_gas, T_rad, z[i].n_elec, z[i].L_radio_dep, z[i].L_radio_emit);
     if (write_mass_fracs) // output mass fractions
     {
       for (int j =0; j < n_elems; j++)
