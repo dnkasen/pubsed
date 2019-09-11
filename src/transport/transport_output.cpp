@@ -23,11 +23,12 @@ void transport::output_spectrum(int it)
   string base = ss.str();
 
   string specname = params_->getScalar<string>("spectrum_name");
+  int suppress_txt = params_->getScalar<int>("spectrum_suppress_txt");
   if (specname != "")
     {
     optical_spectrum.set_name(specname + base);
     optical_spectrum.MPI_average();
-    if (verbose) optical_spectrum.print();
+    if (verbose) optical_spectrum.print(suppress_txt);
   }
 
   string gamname = params_->getScalar<string>("gamma_name");
@@ -35,7 +36,7 @@ void transport::output_spectrum(int it)
   {
     gamma_spectrum.set_name(gamname + base);
     gamma_spectrum.MPI_average();
-    if (verbose) gamma_spectrum.print();
+    if (verbose) gamma_spectrum.print(suppress_txt);
   }
 
 
