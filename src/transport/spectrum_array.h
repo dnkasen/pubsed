@@ -55,7 +55,7 @@ public:
   void MPI_average();
 
   // Print out
-  void print();
+  void print(int);
 
   void writeCheckpointSpectrum(std::string fname, std::string spectrum_name);
   void readCheckpointSpectrum(std::string fname, std::string n);

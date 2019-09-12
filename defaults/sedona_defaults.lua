@@ -140,6 +140,7 @@ spectrum_time_grid = {0,1,1}
 spectrum_nu_grid   = {1,1,1}
 spectrum_n_mu      = 1
 spectrum_n_phi     = 1
+spectrum_suppress_txt = 0
 
 -- output gamma-ray spectrum
 gamma_name     = ""
