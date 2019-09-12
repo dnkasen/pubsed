@@ -356,6 +356,7 @@ int AtomicData::read_atomic_data_newstyle(int z)
 
         // get wavelength/frequency
         double delta_E = atom->levels_[lu].E - atom->levels_[ll].E;
+        if (delta_E == 0) continue;
         double nu      = delta_E*pc::ev_to_ergs/pc::h;
         double lam   = pc::c/nu*pc::cm_to_angs;
         lin.nu  = nu;
@@ -659,6 +660,7 @@ int AtomicData::read_atomic_data_oldstyle(int z)
 
     // get wavelength/frequency
     double delta_E = atom->levels_[lu].E - atom->levels_[ll].E;
+    if (delta_E == 0) continue;
     double nu      = delta_E*pc::ev_to_ergs/pc::h;
     double lam   = pc::c/nu*pc::cm_to_angs;
     atom->lines_[i].nu  = nu;
@@ -846,7 +848,7 @@ int AtomicData::read_fuzzfile_data_for_atom(std::string fname, int Z)
     atom->fuzz_lines_.gf[n_cnt]  = garr[i];
     atom->fuzz_lines_.El[n_cnt]  = Earr[i];
 
-    int ind = nu_grid_.locate(atom->fuzz_lines_.nu[n_cnt])-1;
+    int ind = nu_grid_.locate_within_bounds(atom->fuzz_lines_.nu[n_cnt]);
     atom->fuzz_lines_.bin[n_cnt] = ind;
 
 //    std::cout << n_cnt << "/" << n_use << " " << i << " "  <<  atom->fuzz_lines_.ion[n_cnt] << " " << atom->fuzz_lines_.nu[n_cnt]
