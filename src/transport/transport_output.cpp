@@ -476,6 +476,8 @@ void transport::readCheckpointParticles(std::string fname, bool test) {
       std::cerr << "Rank count pre- and post-restart don't match. Distributing" <<
         " particles evenly." << std::endl;
       std::cerr << n_ranks_old << " " << MPI_nprocs << std::endl;
+      std::cerr << "Exiting." << std::endl;
+      exit(10);
     }
     /* Make sure each particle gets "claimed" by one rank */
     my_n_particles = floor(global_n_particles_total / (1.0 * MPI_nprocs));

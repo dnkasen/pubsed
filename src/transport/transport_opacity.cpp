@@ -61,8 +61,8 @@ void transport::set_opacity(double dt)
   // loop over my zones to calculate
   // loop to parallelize with OpenMP
   tstr = get_system_time();
-#pragma omp parallel shared(emis, scat, cerr) default(none)
-  { 
+#pragma omp parallel firstprivate(emis, scat) shared(cerr) default(none)
+  {
 #ifdef _OPENMP
     int my_threadID = omp_get_thread_num();
 #else
