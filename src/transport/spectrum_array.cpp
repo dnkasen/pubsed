@@ -247,7 +247,7 @@ void spectrum_array::count(double t, double w, double E, double *D)
 //--------------------------------------------------------------
 // print out
 //--------------------------------------------------------------
-void spectrum_array::print(int suppress_txt = false)
+void spectrum_array::print(int suppress_txt = 0)
 {
   // get file name
   char specfile[1000];
@@ -262,6 +262,24 @@ void spectrum_array::print(int suppress_txt = false)
   double *darray = new double[n_elements];
   double *click_buffer = new double[n_elements];
 
+  // unitize
+  for (int k=0;k<n_mu;k++)
+    for (int m=0;m<n_phi;m++)
+      for (int i=0;i<n_times;i++)
+        for (int j=0;j<n_wave;j++)
+        {
+          int id = index(i,j,k,m);
+
+          double norm = 1.0/(n_mu*n_phi);
+          if (n_wave > 1)  norm *= wave_grid.delta(j);
+          if (n_times > 1) norm *= time_grid.delta(i);
+
+          // normalize it
+          darray[id] = flux[id]/norm;
+          click_buffer[id] = click[id] * mpi_procs;
+
+        }
+
   if (!suppress_txt) {
     sprintf(specfile,"%s.dat",name);
 
@@ -269,8 +287,7 @@ void spectrum_array::print(int suppress_txt = false)
 
     fprintf(out,"# %d %d %d %d\n",n_times,n_wave,n_mu,n_phi);
 
-
-    // unitize and printout
+    // printout to txt
     for (int k=0;k<n_mu;k++)
       for (int m=0;m<n_phi;m++)
         for (int i=0;i<n_times;i++)
@@ -285,10 +302,6 @@ void spectrum_array::print(int suppress_txt = false)
             double norm = 1.0/(n_mu*n_phi);
             if (n_wave > 1)  norm *= wave_grid.delta(j);
             if (n_times > 1) norm *= time_grid.delta(i);
-
-            // normalize it
-            darray[id] = flux[id]/norm;
-            click_buffer[id] = click[id] * mpi_procs;
 
             fprintf(out,"%12.5e %12.5e\n", darray[id],click_buffer[id]);
           }
