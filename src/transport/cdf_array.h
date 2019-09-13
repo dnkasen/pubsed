@@ -63,7 +63,7 @@ void normalize()
 {
 
   // check for nan
-  for (int i=0;i<y.size();i++) if (isnan(y[i])) y[i] = 0;
+  for (int i=0;i<y.size();i++) if (std::isnan(y[i])) y[i] = 0;
 
   // check for zero array, set to all constant
   if (y.back() == 0) y.assign(y.size(),1.0);

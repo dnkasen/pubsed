@@ -342,7 +342,8 @@ void AtomicSpecies::line_expansion_opacity
     // bin the lines
     double etau = exp(-tau);
     int    bin   = adata_->get_line_bin(i);
-    opac[bin] += (1 - etau);
+    if (!isnan(etau))
+      opac[bin] += (1 - etau);
   }
 
   // renormalize opacity array
