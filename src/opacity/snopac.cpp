@@ -119,7 +119,7 @@ verbose = (my_rank == 0);
   tot_opacity.resize(ng);
   emissivity.resize(ng);
 
-  gas.print_properties();
+  if (verbose) gas.print_properties();
 
   // ------------------------------------------
   // Do output requested
@@ -138,6 +138,10 @@ verbose = (my_rank == 0);
 
   std::string meanfile = params.getScalar<string>("output_mean_opacities");
   if (meanfile != "") write_mean_opacities(meanfile);
+
+#ifdef MPI_PARALLEL
+  MPI_Finalize();
+#endif
 
 }
 
