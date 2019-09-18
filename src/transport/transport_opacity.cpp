@@ -61,7 +61,10 @@ void transport::set_opacity(double dt)
   // loop over my zones to calculate
   // loop to parallelize with OpenMP
   tstr = get_system_time();
-#pragma omp parallel firstprivate(emis, scat) shared(cerr) default(none)
+  int solve_root_errors = 0;
+  int solve_iter_errors = 0;
+
+#pragma omp parallel firstprivate(emis, scat) shared(cerr,solve_root_errors,solve_iter_errors) default(none)
   {
 #ifdef _OPENMP
     int my_threadID = omp_get_thread_num();
@@ -74,6 +77,8 @@ void transport::set_opacity(double dt)
     radioactive radio_obj;
     radioactive* radio = &radio_obj;
     int solve_error = 0;
+
+
 #pragma omp for
     for (int i=my_zone_start_;i<my_zone_stop_;i++) {
       // pointer to current zone for easy access
@@ -128,15 +133,10 @@ void transport::set_opacity(double dt)
             solve_error = gas_state_ptr->solve_state(J_nu_[i]);
           }
         }
-
       }
 
-      // flag any error
-      if (verbose)
-      {
-        if (solve_error == 1) std::cerr << "# Warning: root not bracketed in n_e solve\n";
-        if (solve_error == 2) std::cerr << "# Warning: max iterations hit in n_e solve\n";
-      }
+      if (solve_error == 1) solve_root_errors += 1;
+      if (solve_error == 2) solve_iter_errors += 1;
 
       //gas_state_ptr->print();
       #pragma omp critical
@@ -198,10 +198,21 @@ void transport::set_opacity(double dt)
         photoion_opac[i] += ndens*2.0*pc::thomson_cs*photo;
       }
     }
+
+    // output any solve error
+    if (verbose) 
+    {
+      if (solve_root_errors != 0) 
+        std::cerr << "# Warning: root not bracketed in n_e solve in " << solve_root_errors << " zones" << std::endl;
+      if (solve_iter_errors != 0) 
+        std::cerr << "# Warning: max iterations hit in n_e solve in " << solve_iter_errors << " zones" << std::endl;
+    }
   }
   // end OpenMP parallel region
+ 
   if (solve_Tgas_with_updated_opacities_ && first_step_ == 0) {
     reduce_Tgas(); }
+
 
   tend = get_system_time();
   if (verbose) cout << "# Calculated opacities   (" << (tend-tstr) << " secs) \n";
