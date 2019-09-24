@@ -44,6 +44,7 @@ struct AtomicLevel
   int  ion;             // ionization state (0 = neutral)
   int   ic;             // index of level we ionize to (-1 if none)
   int    g;             // statistical weight
+  int   cs;             // index of photoionization cross-section
   double E;             // excitation energy above ground (in eV)
   double E_ion;         // energy to ionize (in eV)
 
@@ -53,6 +54,15 @@ struct AtomicLevel
   xy_array a_rec;
 
 };
+
+struct AtomicPhotoCS
+{
+    int id;
+    int n_pts;
+    std::vector<double> E;
+    std::vector<double> s;
+};
+
 
 //---------------------------------------------
 // Holds the data for an individual atoms
@@ -68,13 +78,16 @@ public:
   // bool to see if data was actually read
   bool data_exists_;
 
-  AtomicLevel *levels_;      // array of level data
-  AtomicLine  *lines_;       // array of line data
-  AtomicIon   *ions_;        // array of ion data
+  std::vector<AtomicLevel>   levels_;      // array of level data
+  std::vector<AtomicLine>    lines_;       // array of line data
+  std::vector<AtomicIon>     ions_;        // array of ion data
+  std::vector<AtomicPhotoCS> photo_cs_;    // array of cross-section
+
   int n_ions_;              // Number of ionic stages considered
   int n_levels_;            // number of energy levels
   int n_lines_;             // number of line transitions
   int max_ion_stage_;       // maximum ionization stage to use
+  int max_n_levels_;        // maximum number of levels per ion stage
 
   fuzz_line_structure fuzz_lines_; // vector of fuzz lines
 
@@ -166,9 +179,11 @@ public:
   locate_array nu_grid_;
 
   int initialize(std::string, locate_array ng);
-  int read_atomic_data(std::string fname, int z);
   int read_atomic_data(int z,int max_ion);
   int read_atomic_data(int z);
+  int read_atomic_data_oldstyle(int z);
+  int read_atomic_data_newstyle(int z);
+
   void print();
   void print_detailed(int);
 

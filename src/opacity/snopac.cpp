@@ -72,7 +72,18 @@ verbose = (my_rank == 0);
   // Set up the gas class
   //-------------------------------------------------------
   std::string atomdata = params.getScalar<string>("data_atomic_file");
-  gas.initialize(atomdata,elems_Z,elems_A,nu_grid);
+  std::ifstream afile(atomdata);
+  if (!afile)
+  {
+    if (verbose)
+      std::cerr << "Can't open atom datafile " << atomdata << "; exiting" << std::endl;
+    exit(1);
+  }
+  afile.close();
+  AtomicData* atomic_data = new AtomicData;
+  atomic_data->initialize(atomdata,nu_grid);
+  gas.initialize(atomic_data,elems_Z,elems_A,nu_grid);
+
   std::string fuzzfile = params.getScalar<string>("data_fuzzline_file");
   int nl = gas.read_fuzzfile(fuzzfile);
   std::cout << "# From fuzzfile \"" << fuzzfile << "\" " <<
@@ -108,7 +119,7 @@ verbose = (my_rank == 0);
   tot_opacity.resize(ng);
   emissivity.resize(ng);
 
-  gas.print_properties();
+  if (verbose) gas.print_properties();
 
   // ------------------------------------------
   // Do output requested
@@ -127,6 +138,10 @@ verbose = (my_rank == 0);
 
   std::string meanfile = params.getScalar<string>("output_mean_opacities");
   if (meanfile != "") write_mean_opacities(meanfile);
+
+#ifdef MPI_PARALLEL
+  MPI_Finalize();
+#endif
 
 }
 

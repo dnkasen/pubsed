@@ -101,21 +101,21 @@ void GasState::computeOpacity(std::vector<OpacityType>& abs,
        double nu = nu_grid_.center(i);
        double ezeta = exp(1.0*pc::h*nu/pc::k/temp_);
        double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(ezeta-1);
-       tot_emis[i] += bb*abs[i];
+       tot_emis[i] += bb*epsilon_*opac[i];
       }
     }
 
     //---
     if (use_fuzz_expansion_opacity)
     {
-      fuzz_expansion_opacity(opac, aopac);
+      fuzz_expansion_opacity(opac);
       for (int i=0;i<ns;i++) {
-	     abs[i]  += aopac[i];
-	     scat[i] += opac[i];
+	     abs[i]  += epsilon_*opac[i];
+	     scat[i] += (1-epsilon_)*opac[i];
        double nu = nu_grid_.center(i);
        double ezeta = exp(1.0*pc::h*nu/pc::k/temp_);
        double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(ezeta-1);
-       tot_emis[i] += bb*abs[i];
+       tot_emis[i] += bb*epsilon_*opac[i];
       }
     }
 
@@ -445,8 +445,25 @@ void GasState::line_expansion_opacity(std::vector<double>& opac)
 // UNITS are cm^{-1}
 // So this is really an extinction coefficient
 //----------------------------------------------------------------
-void GasState::fuzz_expansion_opacity(std::vector<double>& opac, std::vector<double>& aopac)
+void GasState::fuzz_expansion_opacity(std::vector<double>& opac)
 {
+  int ng = nu_grid_.size();
+  int na = atoms.size();
+
+  // zero out opacity array
+  std::fill(opac.begin(),opac.end(),0);
+
+  // Add in contribution of every atom
+  std::vector<double> atom_opac(ng);
+  for (int i=0;i<na;i++)
+  {
+    atoms[i].fuzzline_expansion_opacity(atom_opac, time_);
+    for (size_t j=0;j<ng;++j)
+      opac[j]  += atom_opac[j];
+  }
+}
+
+
   // double exp_min = 1e-6;
   // double exp_max = 100;
 	//
@@ -503,7 +520,7 @@ void GasState::fuzz_expansion_opacity(std::vector<double>& opac, std::vector<dou
   //   opac[i]  = opac[i]*nu_grid_.center(i)/nu_grid_.delta(i)/pc::c/time_;
   //   aopac[i] = aopac[i]*nu_grid_.center(i)/nu_grid_.delta(i)/pc::c/time_;
   // }
-}
+//}
 
 //----------------------------------------------------------------
 // Calculate a total Planck mean of the passed opacities
@@ -514,7 +531,7 @@ void GasState::fuzz_expansion_opacity(std::vector<double>& opac, std::vector<dou
 //   the calculated planck mean
 //----------------------------------------------------------------
 double GasState::get_planck_mean
-(std::vector<OpacityType> abs, std::vector<OpacityType> scat)
+(const std::vector<OpacityType>& abs, const std::vector<OpacityType>& scat)
 {
 	if ((abs.size() != nu_grid_.size())||(scat.size() != nu_grid_.size()))
 	{
@@ -550,7 +567,7 @@ double GasState::get_planck_mean
 // Returns:
 //   the calculated planck mean
 //----------------------------------------------------------------
-double GasState::get_planck_mean(std::vector<OpacityType> x)
+double GasState::get_planck_mean(const std::vector<OpacityType>& x)
 {
 	if (x.size() != nu_grid_.size())
 	{
@@ -587,7 +604,7 @@ double GasState::get_planck_mean(std::vector<OpacityType> x)
 //   the calculated planck mean
 //----------------------------------------------------------------
 double GasState::get_rosseland_mean
-(std::vector<OpacityType> abs, std::vector<OpacityType> scat)
+(const std::vector<OpacityType>& abs, const std::vector<OpacityType>& scat)
 {
 	if ((abs.size() != nu_grid_.size())||(scat.size() != nu_grid_.size()))
 	{
@@ -623,7 +640,7 @@ double GasState::get_rosseland_mean
 // Returns:
 //   the calculated planck mean
 //----------------------------------------------------------------
-double GasState::get_rosseland_mean(std::vector<OpacityType> x)
+double GasState::get_rosseland_mean(const std::vector<OpacityType>& x)
 {
 	if (x.size() != nu_grid_.size())
 	{

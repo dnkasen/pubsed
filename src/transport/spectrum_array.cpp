@@ -34,7 +34,7 @@ void spectrum_array::set_name(std::string n)
 // Initialization and Allocation
 //--------------------------------------------------------------
 void spectrum_array::init(std::vector<double> t, std::vector<double> w,
-		    int n_mu, int n_phi)
+    int n_mu, int n_phi)
 {
   // assign time grid
   double t_start = t[0];
@@ -54,7 +54,7 @@ void spectrum_array::init(std::vector<double> t, std::vector<double> w,
 
   // initialize the frequency grid
   if (w.size() == 3)
-   this->wave_grid.init(w_start,w_stop,w_del);
+    this->wave_grid.init(w_start,w_stop,w_del);
   if (w.size() == 4)
   {
     if (w[3] == 1) wave_grid.log_init(w_start,w_stop,w_del);
@@ -236,9 +236,9 @@ void spectrum_array::count(double t, double w, double E, double *D)
   // add to counters
   int ind      = index(t_bin,l_bin,m_bin,p_bin);
 
-  #pragma omp atomic
+#pragma omp atomic
   flux[ind]  += E;
-  #pragma omp atomic
+#pragma omp atomic
   click[ind] += 1;
 }
 
@@ -247,50 +247,66 @@ void spectrum_array::count(double t, double w, double E, double *D)
 //--------------------------------------------------------------
 // print out
 //--------------------------------------------------------------
-void spectrum_array::print()
+void spectrum_array::print(int suppress_txt = 0)
 {
-   // get file name
+  // get file name
   char specfile[1000];
-  sprintf(specfile,"%s.dat",name);
-
   int mpi_procs;
   MPI_Comm_size( MPI_COMM_WORLD, &mpi_procs );
-
-  FILE *out = fopen(specfile,"w");
 
   int n_times  = this->time_grid.size();
   int n_wave   = this->wave_grid.size();
   int n_mu     = this->mu_grid.size();
   int n_phi    = this->phi_grid.size();
 
-  fprintf(out,"# %d %d %d %d\n",n_times,n_wave,n_mu,n_phi);
-
   double *darray = new double[n_elements];
   double *click_buffer = new double[n_elements];
 
-  // unitize and printout
+  // unitize
   for (int k=0;k<n_mu;k++)
     for (int m=0;m<n_phi;m++)
       for (int i=0;i<n_times;i++)
-	     for (int j=0;j<n_wave;j++)
+        for (int j=0;j<n_wave;j++)
         {
-	       int id = index(i,j,k,m);
-	       if (n_times > 1)  fprintf(out,"%12.4e ",time_grid.center(i));;
-	       if (n_wave > 1)   fprintf(out,"%12.4e ",wave_grid.center(j));
-	       if (n_mu > 1)     fprintf(out,"%12.4f ",mu_grid.center(k));
-	       if (n_phi> 1)     fprintf(out,"%12.4f ",phi_grid.center(m));
+          int id = index(i,j,k,m);
 
-    	   double norm = 1.0/(n_mu*n_phi);
-	       if (n_wave > 1)  norm *= wave_grid.delta(j);
-	       if (n_times > 1) norm *= time_grid.delta(i);
+          double norm = 1.0/(n_mu*n_phi);
+          if (n_wave > 1)  norm *= wave_grid.delta(j);
+          if (n_times > 1) norm *= time_grid.delta(i);
 
-         // normalize it
-         darray[id] = flux[id]/norm;
-         click_buffer[id] = click[id] * mpi_procs;
+          // normalize it
+          darray[id] = flux[id]/norm;
+          click_buffer[id] = click[id] * mpi_procs;
 
-    	   fprintf(out,"%12.5e %12.5e\n", darray[id],click_buffer[id]);
-    	 }
-  fclose(out);
+        }
+
+  if (!suppress_txt) {
+    sprintf(specfile,"%s.dat",name);
+
+    FILE *out = fopen(specfile,"w");
+
+    fprintf(out,"# %d %d %d %d\n",n_times,n_wave,n_mu,n_phi);
+
+    // printout to txt
+    for (int k=0;k<n_mu;k++)
+      for (int m=0;m<n_phi;m++)
+        for (int i=0;i<n_times;i++)
+          for (int j=0;j<n_wave;j++)
+          {
+            int id = index(i,j,k,m);
+            if (n_times > 1)  fprintf(out,"%12.4e ",time_grid.center(i));;
+            if (n_wave > 1)   fprintf(out,"%12.4e ",wave_grid.center(j));
+            if (n_mu > 1)     fprintf(out,"%12.4f ",mu_grid.center(k));
+            if (n_phi> 1)     fprintf(out,"%12.4f ",phi_grid.center(m));
+
+            double norm = 1.0/(n_mu*n_phi);
+            if (n_wave > 1)  norm *= wave_grid.delta(j);
+            if (n_times > 1) norm *= time_grid.delta(i);
+
+            fprintf(out,"%12.5e %12.5e\n", darray[id],click_buffer[id]);
+          }
+    fclose(out);
+  }
 
   // write hdf5 spectrum file
   sprintf(specfile,"%s.h5",name);
@@ -416,7 +432,7 @@ void spectrum_array::MPI_average()
     receive.resize(n_elements);
     for (int i=0;i<n_elements;++i) receive[i] = 0.0;
 
-//    MPI_Reduce(&flux.front(), &receive.front(), n_elements, MPI_DOUBLE, MPI_SUM, receiving_ID, MPI_COMM_WORLD);
+    //    MPI_Reduce(&flux.front(), &receive.front(), n_elements, MPI_DOUBLE, MPI_SUM, receiving_ID, MPI_COMM_WORLD);
     MPI_Allreduce(&flux.front(), &receive.front(), n_elements, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     flux.swap(receive);
   }
@@ -434,11 +450,11 @@ void spectrum_array::MPI_average()
   MPI_Comm_size( MPI_COMM_WORLD, &mpi_procs );
   MPI_Comm_rank( MPI_COMM_WORLD, &myID      );
   //if(myID == receiving_ID){
- //   #pragma omp parallel for
-    for (int i=0;i<n_elements;i++) {
-      flux[i]  /= mpi_procs;
-      click[i] /= mpi_procs;
-    }
+  //   #pragma omp parallel for
+  for (int i=0;i<n_elements;i++) {
+    flux[i]  /= mpi_procs;
+    click[i] /= mpi_procs;
+  }
 
 #endif
 }

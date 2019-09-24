@@ -56,7 +56,7 @@ double R_proc_fit[] =  {17.608179, -2.0442059, -0.42565322, 0.39830095,  -0.0059
 // decay composition
 //--------------------------------------------------------------
 void radioactive::decay_composition
-(std::vector<int> elems_Z, std::vector<int> elems_A, std::vector<double>& X, double t)
+(const std::vector<int> &elems_Z, const std::vector<int> &elems_A, std::vector<double>& X, const double t)
 {
   int n_el = elems_Z.size();
 

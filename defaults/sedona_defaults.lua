@@ -52,6 +52,11 @@ transport_use_ddmc               = 0
 transport_ddmc_tau_threshold     = 100
 transport_fleck_alpha            = 0
 
+-- whether or not to fix RNG seed
+transport_fix_rng_seed           = 0
+-- what a fixed RNG seed should be set to
+transport_rng_seed               = 0
+
 -- options for handling temperature solve
 transport_solve_Tgas_with_updated_opacities = 0
 transport_fix_Tgas_during_transport         = 0
@@ -135,6 +140,7 @@ spectrum_time_grid = {0,1,1}
 spectrum_nu_grid   = {1,1,1}
 spectrum_n_mu      = 1
 spectrum_n_phi     = 1
+spectrum_suppress_txt = 0
 
 -- output gamma-ray spectrum
 gamma_name     = ""
