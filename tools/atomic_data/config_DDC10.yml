@@ -1,0 +1,111 @@
+#Hydrogen:
+#    Z: 1
+#    species: [1]
+
+#Helium:
+#    Z: 2
+#    species: [1,2]
+
+#Lithium:
+#    Z: 3
+#    species: [1,2,3]
+
+#Beryllium:
+#    Z: 4
+#    species: [1,2,3,4]
+
+#Boron:
+#    Z: 5
+#    species: [1,2,3,4,5]
+
+Carbon:
+    Z: 6
+    species: [1,2,3]
+
+Nitrogen:
+    Z: 7
+    species: [1,2,3]
+
+Oxygen:
+    Z: 8
+    species: [1,2,3]
+
+#Fluorine:
+#    Z: 9
+#    species: [1,2,3,4,5,6,7,8,9]
+
+Neon:
+    Z: 10
+    species: [1,2]
+
+Sodium:
+    Z: 11
+    species: [1,2]
+
+Magnesium:
+    Z: 12
+    species: [1,2]
+
+Aluminum:
+    Z: 13
+    species: [1,2,3]
+
+Silicon:
+    Z: 14
+    species: [1,2,3,4]
+
+#Phosphorus:
+#    Z: 15
+#    species: [2,3,4,5]
+
+Sulphur:
+    Z: 16
+    species: [1,2,3,4]
+
+Chlorine:
+    Z: 17
+    species: [4]
+
+Argon:
+    Z: 18
+    species: [1,2,3]
+
+Potassium:
+    Z: 19
+    species: [1,2,3]
+
+Calcium:
+    Z: 20
+    species: [1,2,3]
+
+Scandium:
+    Z: 21
+    species: [2,3]
+
+Titanium:
+    Z: 22
+    species: [2,3,4]
+
+Vanadium:
+    Z: 23
+    species: []
+
+Chromium:
+    Z: 24
+    species: [1,2,3,4]
+
+Manganese:
+    Z: 25
+    species: [2,3,4]
+
+Iron:
+   Z: 26
+   species: [1,2,3,4]
+
+Cobalt:
+    Z: 27
+    species: [2,3,4]
+
+Nickel:
+   Z: 28
+   species: [2,3,4]
