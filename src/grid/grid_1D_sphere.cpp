@@ -547,14 +547,28 @@ int grid_1D_sphere::get_next_zone(const double *x, const double *D, int i, doubl
   if ((l_out < l_in)||(l_in < 0))
   {
     ind = i + 1;
-    if (ind == n_zones) ind = -2;
-    *l = l_out*tiny_offset;
+
+    // if in outermost zone, move to just inside the outer edge
+    if (ind == n_zones)
+    {
+        ind = -2;
+        *l = l_out/tiny_offset;
+    }
+    // else move a tiny bit past outer zone edge
+    else
+        *l = l_out*tiny_offset;
   }
   // otherwise set inward as distance to move
   else
   {
     ind = ind_in;
-    *l = l_in*tiny_offset;
+
+    // if at inner boundary, muve to just outside of it
+    if (ind_in == -1)
+        *l = l_in/tiny_offset;
+    // otherwise move a tiny past inner zone edge
+    else
+        *l = l_in*tiny_offset;
   }
   return ind;
 }
