@@ -315,7 +315,7 @@ void transport::reduce_opacities()
 
 
 #endif
- }
+}
 
  void transport::reduce_Lthermal()
  {
