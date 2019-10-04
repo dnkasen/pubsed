@@ -285,6 +285,33 @@ void transport::reduce_opacities()
     MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
     for (int i=0;i<nz;i++) coll_cooling[i] = dst_MPI_zones[i];
   }
+ #endif
+ }
+
+ void transport::reduce_n_elec()
+ {
+
+#ifndef MPI_PARALLEL
+  return;
+#else
+
+  if (MPI_nprocs == 1) return;
+
+  //=************************************************
+  // do zone scalar
+  //=************************************************
+  int nz = grid->n_zones;
+  for (int i=0;i<nz;i++)
+  {
+    src_MPI_zones[i] = 0;
+    dst_MPI_zones[i] = 0.0;
+  }
+
+  for (int i=my_zone_start_;i<my_zone_stop_;i++)
+    src_MPI_zones[i] = grid->z[i].n_elec;
+
+  MPI_Allreduce(src_MPI_zones,dst_MPI_zones,nz,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  for (int i=0;i<nz;i++) grid->z[i].n_elec = dst_MPI_zones[i];
 
 
 #endif

@@ -142,6 +142,8 @@ void transport::set_opacity(double dt)
       #pragma omp critical
       if(write_levels) gas_state_ptr->write_levels(i);
 
+      grid->z[i].n_elec = gas_state_ptr->n_elec_;
+
       // calculate the opacities/emissivities
       gas_state_ptr->computeOpacity(abs_opacity_[i],scat,emis);
 
@@ -213,6 +215,8 @@ void transport::set_opacity(double dt)
   if (solve_Tgas_with_updated_opacities_ && first_step_ == 0) {
     reduce_Tgas(); }
 
+
+  reduce_n_elec();
 
   tend = get_system_time();
   if (verbose) cout << "# Calculated opacities   (" << (tend-tstr) << " secs) \n";
