@@ -103,6 +103,11 @@ void transport::write_levels_to_plotfile(int iw)
       H5LTread_dataset_double(atom_id_src,"level_departure",tmp_level);
       H5LTmake_dataset(atom_id_dest,"level_departure",RANK,dims_level,H5T_NATIVE_DOUBLE,tmp_level);
 
+      int this_nd = 1;
+      double tmp_ndens[1] = {gas_state->dens_ * gas_state->mass_frac[j]/(gas_state->elem_A[j]*pc::m_p)};
+      hsize_t dims_ndens[RANK] = {(hsize_t)this_nd};
+      H5LTmake_dataset(atom_id_dest,"n_dens",RANK,dims_ndens,H5T_NATIVE_DOUBLE,tmp_ndens);
+
       H5Gclose(atom_id_dest);
       H5Gclose(atom_id_src);
       delete[] tmp_level;
