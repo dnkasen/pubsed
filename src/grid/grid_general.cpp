@@ -88,7 +88,7 @@ void grid_general::writeCheckpointZones(std::string fname) {
     writeScalarZoneProp(fname, "cs");
     writeScalarZoneProp(fname, "p_gas");
     writeScalarZoneProp(fname, "T_gas");
-    writeScalarZoneProp(fname, "mu");
+    writeScalarZoneProp(fname, "mu_I");
     writeScalarZoneProp(fname, "e_rad");
     writeScalarZoneProp(fname, "e_abs");
     writeScalarZoneProp(fname, "fx_rad");
@@ -150,8 +150,8 @@ void grid_general::writeScalarZoneProp(std::string fname, std::string fieldname)
     for (int i = 0; i < n_zones; i++) buffer[i] = z[i].p_gas;
   else if (fieldname == "T_gas")
     for (int i = 0; i < n_zones; i++) buffer[i] = z[i].T_gas;
-  else if (fieldname == "mu")
-    for (int i = 0; i < n_zones; i++) buffer[i] = z[i].mu;
+  else if (fieldname == "mu_I")
+    for (int i = 0; i < n_zones; i++) buffer[i] = z[i].mu_I;
   else if (fieldname == "e_rad")
     for (int i = 0; i < n_zones; i++) buffer[i] = z[i].e_rad;
   else if (fieldname == "e_abs")
@@ -241,7 +241,7 @@ void grid_general::readCheckpointZones(std::string fname, bool test) {
       readScalarZoneProp(fname, "cs");
       readScalarZoneProp(fname, "p_gas");
       readScalarZoneProp(fname, "T_gas");
-      readScalarZoneProp(fname, "mu");
+      readScalarZoneProp(fname, "mu_I");
       readScalarZoneProp(fname, "e_rad");
       readScalarZoneProp(fname, "e_abs");
       readScalarZoneProp(fname, "fx_rad");
@@ -297,8 +297,8 @@ void grid_general::readScalarZoneProp(std::string fname, std::string fieldname) 
     for (int i = 0; i < n_zones; i++) z_new[i].p_gas = buffer[i];
   else if (fieldname == "T_gas")
     for (int i = 0; i < n_zones; i++) z_new[i].T_gas= buffer[i];
-  else if (fieldname == "mu")
-    for (int i = 0; i < n_zones; i++) z_new[i].mu = buffer[i];
+  else if (fieldname == "mu_I")
+    for (int i = 0; i < n_zones; i++) z_new[i].mu_I = buffer[i];
   else if (fieldname == "e_rad")
     for (int i = 0; i < n_zones; i++) z_new[i].e_rad = buffer[i];
   else if (fieldname == "e_abs")

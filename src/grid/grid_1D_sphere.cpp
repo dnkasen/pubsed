@@ -167,12 +167,13 @@ void grid_1D_sphere::read_hdf5_file(std::string model_file, ParameterReader* par
     }
 
     // Make sure initial compositions are normalized, and compute mu
-    z[i].mu = 0;
+    double inverse_mu_sum = 0.;
     for (int k = 0; k < n_elems; k++)
     {
       z[i].X_gas[k] /= norm;
-      z[i].mu += z[i].X_gas[k]*elems_A[k];
+      inverse_mu_sum += z[i].X_gas[k]/elems_A[k];
     }
+    z[i].mu_I = 1./inverse_mu_sum;
   }
   delete [] ctmp;
 
@@ -329,12 +330,13 @@ void grid_1D_sphere::read_ascii_file(std::string model_file, int verbose)
     }
 
     // Make sure initial compositions are normalized, and compute mu
-    z[i].mu = 0;
+    double inverse_mu_sum = 0.;
     for (int k = 0; k < n_elems; k++)
     {
       z[i].X_gas[k] /= norm;
-      z[i].mu += z[i].X_gas[k]*elems_A[k];
+      inverse_mu_sum += z[i].X_gas[k]/elems_A[k];
     }
+    z[i].mu_I = 1./inverse_mu_sum;
 
     // assume LTE radiation field to start
     z[i].e_rad = pc::a*pow(z[i].T_gas,4);

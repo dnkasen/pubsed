@@ -146,10 +146,13 @@ void GasState::set_mass_fractions(std::vector<double>& x)
   // make sure it is normalized
   for (size_t i=0;i<mass_frac.size();++i) mass_frac[i] /= norm;
 
-  // find mean weight of gas
-  this->A_mu = 0;
+  // find mean weight of atoms/ions in gas (not counting free electrons)
+  //  see e.g. Hansen Kawaler Trimble textbook 2nd edition page 18
+  double inverse_mu_sum = 0.;
   for (size_t i=0;i<mass_frac.size();++i)
-    A_mu += mass_frac[i]*elem_A[i];
+    inverse_mu_sum += mass_frac[i]/elem_A[i];
+
+  this->mu_I = 1./inverse_mu_sum;
 }
 
 
@@ -180,7 +183,7 @@ int GasState::read_fuzzfile(std::string fuzzfile)
 //-----------------------------------------------------------
 double GasState::get_ionization_state()
 {
-  double ni = dens_/(A_mu*pc::m_p);
+  double ni = dens_/(mu_I*pc::m_p);
   return n_elec_/ni;
 }
 
@@ -219,8 +222,8 @@ int GasState::solve_state(std::vector<real>& J_nu)
     if (use_nlte_) atoms[i].calculate_radiative_rates(J_nu);
   }
 
-  double max_ne = 100*dens_/(A_mu*pc::m_p);
-  double min_ne = 1e-10*dens_/(A_mu*pc::m_p);;
+  double max_ne = 100*dens_/(mu_I*pc::m_p);
+  double min_ne = 1e-10*dens_/(mu_I*pc::m_p);;
   double tol    = 1e-3;
   solve_error_  = 0;
   n_elec_ = ne_brent_method(min_ne,max_ne,tol,J_nu);
@@ -435,7 +438,7 @@ void GasState::print()
 {
   std::cout << "# dens = " << dens_ << "\n";
   std::cout << "# temp = " << temp_ << "\n";
-  std::cout << "# A_mu = " << A_mu << "\n";
+  std::cout << "# mu_I = " << mu_I << "\n";
   for (size_t i=0;i<elem_Z.size();++i)
     printf("%4d %12.4e %12.4e\n",elem_Z[i],mass_frac[i],atoms[i].get_net_ion_fraction());
   for (size_t i=0;i<elem_Z.size();++i)
