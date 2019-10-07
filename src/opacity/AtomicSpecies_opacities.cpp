@@ -59,7 +59,7 @@ void AtomicSpecies::bound_free_opacity_general
 (std::vector<double>& opac, std::vector<double>& emis, double ne, double T, int coolheat)
 {
   // zero out arrays
-  for (size_t i=0;i<opac.size();++i)
+  for (size_t i=0;i<std::max(opac.size(),emis.size());++i)
   {
     if ((coolheat == 0)||(coolheat == 2))
       opac[i] = 0;
