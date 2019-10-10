@@ -58,14 +58,37 @@ void AtomicSpecies::bound_free_opacity_for_heating
 void AtomicSpecies::bound_free_opacity_general
 (std::vector<double>& opac, std::vector<double>& emis, double ne, double T, int coolheat)
 {
-  // zero out arrays
-  for (size_t i=0;i<std::max(opac.size(),emis.size());++i)
-  {
-    if ((coolheat == 0)||(coolheat == 2))
-      opac[i] = 0;
-    if ((coolheat == 0)||(coolheat == 1))
-      emis[i] = 0;
-  }
+
+  if (coolheat !=0 && coolheat !=1 && coolheat !=2 )
+    {
+      std::cerr << "# ERROR: When calling bound_free_opacity_general(), must specify coolheat value of 0, 1, or 2\n";
+      exit(1);
+    }
+
+  // zero out array(s)
+  if (coolheat == 0)
+    {
+      if (opac.size() != emis.size())
+	{
+	  std::cerr << "# ERROR: Emissivity and opacity frequency arrays must be the same size for storing bound-free emissivities and opaciites\n";
+	  exit(1);
+	}
+      for (size_t i=0;i<opac.size();++i)
+	{
+	    opac[i] = 0;
+	    emis[i] = 0;
+	}
+    }
+  if (coolheat == 1)
+    {
+      for (size_t i=0;i<emis.size();++i)
+	emis[i] = 0;
+    }
+  if (coolheat == 2)
+    {
+      for (size_t i=0;i<opac.size();++i)
+	opac[i] = 0;
+    }
 
   int ng = nu_grid_.size();
   double kt_ev = pc::k_ev*T;
