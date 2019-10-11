@@ -474,10 +474,16 @@ void GasState::write_levels(int iz)
     for(int k=0;k<this_nl;k++)
       tmp_level[k] = get_level_fraction(j,k);
     H5LTmake_dataset(atom_id,"level_fraction",RANK,dims_level,H5T_NATIVE_DOUBLE,tmp_level);
-
+    
     for(int k=0;k<this_nl;k++)
       tmp_level[k] = get_level_departure(j,k);
     H5LTmake_dataset(atom_id,"level_departure",RANK,dims_level,H5T_NATIVE_DOUBLE,tmp_level);
+
+    int this_nd = 1;
+    double* tmp_ndens = new double[this_nd];
+    hsize_t dims_ndens[RANK] = {(hsize_t)this_nd};
+    tmp_ndens[0] = dens_ * mass_frac[j]/(elem_A[j]*pc::m_p);
+    H5LTmake_dataset(atom_id,"n_dens",RANK,dims_ndens,H5T_NATIVE_DOUBLE,tmp_ndens);
 
     H5Gclose(atom_id);
     delete[] tmp_level;
