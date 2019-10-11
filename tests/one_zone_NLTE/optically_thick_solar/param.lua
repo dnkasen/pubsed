@@ -1,6 +1,6 @@
 sedona_home   = os.getenv('SEDONA_HOME')
 defaults_file    = sedona_home.."/defaults/sedona_defaults.lua"
-data_atomic_file = sedona_home.."/data/atom_data.hdf5"
+data_atomic_file = "./atom_data.hdf5"
 model_file    = "onezone.mod"       
 
 transport_nu_grid  = {3.5e13,3.e17,0.005,1}  -- frequency grid
