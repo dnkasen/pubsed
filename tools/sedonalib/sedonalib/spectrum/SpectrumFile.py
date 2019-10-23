@@ -41,6 +41,7 @@ class SpectrumFile():
                 print ('ERROR: unknown time units; using default = day')
             self.time_units = 'day'
 
+        self.Lbol = None
         self.read_data()
 
 
@@ -49,6 +50,9 @@ class SpectrumFile():
     def mu(self):
         return self.mu
 
+    @property
+    def shape(self):
+        return self.L.shape
 
     def read_data(self):
 
@@ -71,15 +75,11 @@ class SpectrumFile():
         self.n_mu = len(self.mu)
         self.n_phi = len(self.phi)
 
-        print self.n_mu,self.n_phi
         # reshape so we always have 4 dimensions
-        print self.L.shape
         if (self.n_mu == 1 and self.n_phi == 1):
             self.L = self.L[..., newaxis,newaxis]
         if (self.n_mu > 1 and self.n_phi == 1):
             self.L = self.L[..., newaxis]
-
-        print self.L.shape
 
 
 #        if (self.spec_units == 'angstrom'):
@@ -93,43 +93,178 @@ class SpectrumFile():
 
     def __str__(self):
 
-        val = "Spectrum from file = " + self.filename
-        #print ("n frequency = " + str(self.n_x))
+        val =  "Spectrum from file = " + self.filename
+        val += "\n\ntime pts = " + str(len(self.t))
+        val += "\n freq pts = " + str(len(self.x))
+        val += "\n   mu pts = " + str(len(self.mu))
+        val += "\n  phi pts = " + str(len(self.phi))
+
         return val
 
     def switch_units(self,spec_units='angstroms'):
 
         new_spec_units = spec_units
 
-    def get_bolometric_lc(self,angle_average=False,magnitudes=False):
 
-        Lbol = np.zeros([self.n_times,self.n_mu,self.n_phi],dtype='d')
-        Lave = np.zeros([self.n_times])
-        print Lave.shape
+
+    def get_bolometric_lc(self,view=None,angle_average=False,magnitudes=False):
+
+        # compute bolometric light curve
+        if (self.Lbol is None):
+            self.Lbol = np.zeros([self.n_times,self.n_mu,self.n_phi],dtype='d')
+            self.Lave = np.zeros([self.n_times])
 
         # integrate bolometric light curve
-        for it,im,ip in np.ndindex(self.n_times,self.n_mu,self.n_phi):
-            if (self.n_x == 1):
-                Lbol[it,im,ip] = self.L[it,0,im,ip]
-                Lave[it] += self.L[it,0,im,ip]
-            else:
-                Lbol[it,im,ip] = np.trapz(self.L[it,:,im,ip],x=self.x)
-                Lave[it] += Lbol[it,im,ip]
+            for it,im,ip in np.ndindex(self.n_times,self.n_mu,self.n_phi):
+                if (self.n_x == 1):
+                    self.Lbol[it,im,ip] = self.L[it,0,im,ip]
+                    self.Lave[it] += self.L[it,0,im,ip]
+                else:
+                    self.Lbol[it,im,ip] = np.trapz(self.L[it,:,im,ip],x=self.x)
+                    self.Lave[it] += self.Lbol[it,im,ip]
 
-        Lave = Lave/(1.0*self.n_mu*self.n_phi)
+                self.Lave = self.Lave/(1.0*self.n_mu*self.n_phi)
+
+        Lbol = self.Lbol
+        Lave = self.Lave
+
+        thisL = self.Lbol
+        if (angle_average):
+            thisL = self.Lave
 
         if (magnitudes):
-            Lbol = -2.5*np.log10(Lbol)+88.697425
-            Lave = -2.5*np.log10(Lave)+88.697425
-
-        if (angle_average):
-            return self.t,Lave
+            thisL = -2.5*np.log10(thisL)+88.697425
 
         if (self.n_mu == 1 and self.n_phi == 1):
-            return self.t,Lbol[:,0,0]
+            return self.t,thisL[:,0,0]
         if (self.n_mu > 1 and self.n_phi == 1):
-            return self.t,Lbol[:,:,0]
-        return self.t,Lbol
+            return self.t,thisL[:,:,0]
+
+        # interpolate to particular viewing angle
+        if (view is not None):
+            mu  = view[0]
+            phi = view[1]
+            import bisect
+
+            imu = bisect.bisect_left(self.mu,mu)
+            i1 = imu-1
+            i2 = imu
+            if (i2 == len(self.mu)): i2 = imu-1
+            m1 = self.mu[i1]
+            m2 = self.mu[i2]
+            dm = mu - m1
+    #        print i1,i2,m1,m2,mu
+
+
+            jphi = bisect.bisect_left(self.phi,phi)
+            nphi = len(self.phi)
+            if (jphi == 0):
+                j1 = nphi-1
+                j2 = 0
+                p1 = self.phi[j1] - 2.0*np.pi
+                p2 = self.phi[j2]
+            elif (jphi == nphi):
+                j1 = nphi-1
+                j2 = 0
+                p1 = self.phi[j1]
+                p2 = self.phi[j2] + 2.0*np.pi
+            else:
+                j1 = jphi -1
+                j2 = jphi
+                p1 = self.phi[j1]
+                p2 = self.phi[j2]
+
+            print p1,phi,p2, jphi,j1,j2
+
+            p1 = self.phi[j1]
+            p2 = self.phi[j2]
+            if (jphi == len(self.phi)):
+                j2 = jphi - 1
+                j1 = 0
+                p1 = np.pi*2.0 + self.phi[0]
+
+
+            dp = phi - p1
+
+            Llo = self.Lbol[:,i1,j1]
+            Lhi = self.Lbol[:,i2,j1]
+            if (m2 == m1):
+                L1 = Llo
+            else:
+                L1  =   Llo + (Lhi - Llo)*dm/(m2 - m1)
+
+            Llo = self.Lbol[:,i1,j2]
+            Lhi = self.Lbol[:,i2,j2]
+            if (m2 == m1):
+                L2 = Llo
+            else:
+                L2  = Llo + (Lhi - Llo)*dm/(m2 - m1)
+
+            if (p2 == p1):
+                Lint = L1
+            else:
+                Lint = L1 + (L2 - L1)*dp/(p2 - p1)
+
+            thisL = Lint
+
+
+        return self.t,thisL
+
+
+
+
+    def get_spectrum(self,time=None,mu=None,phi=None,interpolate=True):
+
+        import bisect
+
+        nt = len(self.t)
+        nmu  = len(self.mu)
+        nphi = len(self.phi)
+        nx   = len(self.x)
+
+        smp = np.zeros((nx,nmu,nphi))
+
+        if (interpolate and nt > 1):
+
+            # interpolate in time
+            indt = bisect.bisect_left(self.t,time)
+            i1 = indt-1
+            i2 = indt
+            t1 = self.t[i1]
+            t2 = self.t[i2]
+            dt = time - t1
+            for i in range(nmu):
+                for j in range (nphi):
+                    s1 = self.L[i1,:,i,j]
+                    s2 = self.L[i2,:,i,j]
+                    smp[:,i,j] = s1 + (s2 - s1)*dt/(t2 - t1)
+
+        else:
+            if (nt == 1):
+                smp = self.L[0,:,:,:]
+            else:
+                indt = bisect.bisect(self.t,time)
+                smp = self.L[indt,:,:,:]
+
+            # interpolate in mu, if wanted
+#            if (mu is not None):
+#                imu = bisect.bisect_left(self.mu,mu)
+#                i1 = imu-1
+#                i2 = imu
+#                m1 = self.mu[i1]
+#                m2 = self.mu[i2]
+#                dm = mu - m1
+#                for j in range (nphi):
+#                    s1 = smp[:,i1,j]
+#                    s2 = smp[:,i2,j]
+#                    sm[:,j] = s1 + (s2 - s1)*dm/(m2 - m1)
+
+        if (nmu == 1 and nphi == 1):
+            return self.x,smp[:,0,0]
+        elif (nmu == 1):
+            return self,x,smp[:,0,:]
+        else:
+            return self,x,smp[:,:,0]
 
     def get_ABMag(self,band):
         """
