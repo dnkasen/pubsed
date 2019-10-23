@@ -9,6 +9,7 @@ class Sedona1DSphereModel(SedonaBaseModel):
 
         # These variables will need to be defined
         # to constitute a legitimate model
+        self.dims       = None
         self.n_zones    = 0
         self.dens       = None
         self.temp       = None
@@ -34,6 +35,7 @@ class Sedona1DSphereModel(SedonaBaseModel):
         # else return empty model
         if (dims is not None):
             self.n_zones = dims
+            self.dims    = (dims,)
             self.dens    = np.zeros(self.n_zones)
             self.temp    = np.zeros(self.n_zones)
             self.erad    = np.zeros(self.n_zones)
@@ -85,56 +87,8 @@ class Sedona1DSphereModel(SedonaBaseModel):
     def kinetic_energy(self):
         return np.sum(0.5*self.vol*self.dens*self.v_edge**2.0)
 
-
-    def set_constant_density(self,v):
-        self.dens.fill(v)
-    def set_constant_temperature(self,v):
-        self.temp.fill(v)
     def set_constant_velocity(self,v):
         self.v_edge.fill(v)
-    def set_constant_erad(self,v):
-        self.erad.fill(v)
-
-    def set_constant_composition(self,c):
-
-        nelem = len(self.elem_Z)
-        if (len(c) != nelem):
-            message = "compostion passed does not have same # of "
-            message += "elements as model"
-            raise ValueError(message)
-
-        for i in range(nelem):
-            self.comp[:,i].fill(c[i])
-
-
-    def set_density(self,d):
-
-        if (np.isscalar(d)):
-            self.set_constant_density(d)
-            return
-
-        if (len(d) != self.n_zones):
-            message = "length of array not equal to "
-            message += "number of zones = " + str(self.n_zones) + "\n"
-            raise ValueError(message)
-
-        for i in range(self.n_zones):
-            self.dens[i] = d[i]
-
-
-    def set_temperature(self,t):
-
-        if (np.isscalar(t)):
-            self.set_constant_temperature(t)
-            return
-
-        if (len(t) != self.n_zones):
-            message = "length of array not equal to "
-            message += "number of zones = " + str(self.n_zones) + "\n"
-            raise ValueError(message)
-
-        for i in range(self.n_zones):
-            self.temp[i] = t[i]
 
 
     def set_velocity(self,v):
@@ -152,20 +106,6 @@ class Sedona1DSphereModel(SedonaBaseModel):
             self.v_edge[i] = v[i]
 
 
-    def set_erad(self,v):
-
-        if (np.isscalar(v)):
-            self.set_constant_erad(v)
-            return
-
-        if (len(v) != self.n_zones):
-            message = "length of array not equal to "
-            message += "number of zones = " + str(self.n_zones) + "\n"
-            raise ValueError(message)
-
-        for i in range(self.n_zones):
-            self.erad[i] = v[i]
-
 
     def set_uniform_radial_edges(self,rmax,rmin=0):
 
@@ -173,30 +113,7 @@ class Sedona1DSphereModel(SedonaBaseModel):
         self.r_min = rmin
         self.r_edge = (np.arange(self.n_zones) + 1)*dr
 
-    def add_elements(self,elist):
 
-        if not isinstance(elist, (list, tuple)):
-            elist = [elist]
-
-        n_add = 0
-        for e in elist:
-
-            if (not isinstance(e, basestring)):
-                e = str(e)
-
-            if (e not in self.elem_list):
-                self.elem_list.append(e)
-                Z,A =  e.split(".")
-                self.elem_Z.append(int(Z))
-                self.elem_A.append(int(A))
-                n_add += 1
-
-        if (n_add != 0):
-            nelem = len(self.elem_Z)
-            self.comp.resize((self.n_zones,nelem))
-
-    def add_element(self,e):
-        self.add_elements(e)
 
     def calculate_volumes(self):
 
@@ -215,11 +132,17 @@ class Sedona1DSphereModel(SedonaBaseModel):
 ##############################################################
 # Homologous profiles
 ##############################################################
-    def set_homologous_constant_profile(self,mass,KE,t,vmax=None):
-        self.time = t
-        v_t = (10.0/3.0*KE/mass)**(0.5)
-        rho_t = mass/(4.0*pc.pi/3.0*v_t**3.0*self.time**3.0)
-        vmax = v_t
+    def set_homologous_constant_profile(self,mass,KE=None,time=86400.,vmax=None):
+
+        self.time = time
+
+        if (KE is None and vmax is None):
+            raise exception("Must define either vmax or KE")
+
+        if (vmax is None):
+            vmax = (10.0/3.0*KE/mass)**(0.5)
+
+        rho_t = mass/(4.0*pc.pi/3.0*vmax**3.0*self.time**3.0)
 
         self.r_min = 0.0
         dv = vmax/(1.0*self.n_zones)
@@ -341,18 +264,24 @@ class Sedona1DSphereModel(SedonaBaseModel):
 
     def check_model_validity(self):
 
+        if (self.check_base_model_validity() is False):
+            return False
+
         if (self.n_zones <= 0):
             return False
 
         if (len(self.elem_Z) <= 0):
+            print 'Error: no elements defined in composition'
             return False
 
         if (self.dens is None):
+            print 'Error: density has not been set'
             return False
 
         return True
 
-    def normalization_composition(self):
+
+    def normalize_composition(self):
 
         nel = len(self.elem_A)
         for i in range(self.n_zones):
@@ -373,7 +302,7 @@ class Sedona1DSphereModel(SedonaBaseModel):
             message = "Model is not valid or complete\n"
             raise Exception(message)
 
-        self.normalization_composition()
+        self.normalize_composition()
 
         fileformat = self.get_filename_format(outfile)
         if (fileformat == "ascii"):

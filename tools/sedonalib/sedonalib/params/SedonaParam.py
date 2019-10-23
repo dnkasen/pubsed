@@ -2,7 +2,7 @@ import os
 
 class SedonaParam(dict):
 
-    def __init__(self,defaults_file=None):
+    def __init__(self,template_file=None,defaults_file=None):
 
         self.stringlist = []
         self.helper_lines = ""
@@ -15,7 +15,11 @@ class SedonaParam(dict):
         self.read_defaults_file(self.defaults_file)
         self.defaults_dict = self.param_dict.copy()
         self.defaults_file = "\"" + self.defaults_file + "\""
-        self.param_dict.update({"defaults_file":self.defaults_file})
+
+        if (template_file is not None):
+            self.set_template(template_file)
+
+    #    self.param_dict.update({"defaults_file":self.defaults_file})
 
 
 
@@ -24,8 +28,15 @@ class SedonaParam(dict):
 
 
     def __setitem__(self, key, item):
+
         if (key not in self.defaults_dict.keys()):
-            raise ValueError(key + " is not a valid Sedona parameter")
+            import difflib
+            message = key + " is not a valid Sedona parameter\n"
+            message += "Did you mean one of: \n"
+            for e in difflib.get_close_matches(key, self.defaults_dict.keys()):
+                message += "> " + str(e) + "\n"
+            raise ValueError(message)
+
         if (key in self.stringlist):
             self.param_dict[key] = "\"" + item + "\""
         else:
@@ -61,6 +72,7 @@ class SedonaParam(dict):
 
 
     def set_template(self,fname=None):
+
 
         tm_dir = os.environ['SEDONA_HOME'] + "/defaults/"
 
@@ -107,7 +119,10 @@ class SedonaParam(dict):
             if (len(data) != 2):
                 continue
 
-            self.param_dict[data[0]] = data[1]
+            if (data[0] != "defaults_file"):
+                self.param_dict[data[0]] = data[1]
+            else:
+                self.defaults_file = data[1]
         fin.close()
 
     def __str__(self):
@@ -147,15 +162,35 @@ class SedonaParam(dict):
         except:
             print "Can't open output param filename " + filename
 
-        line = "----------------------------------\n"
+        linebreak = "--------------------------------------------\n"
+
+        # print user define variables
+        line = linebreak
         for key in sorted(self.param_dict.keys()):
             if (key not in self.defaults_dict.keys()):
                 line += "{0:35} = {1}\n".format(key,self.param_dict[key])
-        line += "----------------------------------\n"
+        line += linebreak
+        fout.write(line)
+
+        # print defaults file
+        line = "{0:35} = {1}\n".format("defaults_file",self.defaults_file)
+        line += linebreak
+        fout.write(line)
+
+
+        # print out a few params to the top
+        header_keys = ["model_file","grid_type"]
+        line = ""
+        for key in header_keys:
+            if (self.param_dict[key] != self.defaults_dict[key] or all==True):
+                line += "{0:35} = {1}\n".format(key,self.param_dict[key])
+        line += linebreak
         fout.write(line)
 
         lasthead = ""
         for key in sorted(self.param_dict.keys()):
+            if (key in header_keys):
+                continue
             if (key in self.defaults_dict.keys()):
                 if (self.param_dict[key] != self.defaults_dict[key] or all==True):
                     head = (key.split("_"))[0]
@@ -165,3 +200,4 @@ class SedonaParam(dict):
 
                     line = "{0:35} = {1}\n".format(key,self.param_dict[key])
                     fout.write(line)
+        fout.write(linebreak)
