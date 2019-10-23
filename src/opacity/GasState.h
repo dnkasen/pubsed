@@ -41,7 +41,7 @@ class GasState
   double temp_;                  // Temperature (K)
   double time_;                  // Time since Explosion (days)
   double e_gamma;                // gamma-ray deposited energy
-  double A_mu;                   // mean atomic weight of the gas
+  double mu_I;                   // // mean atomic/ionic mass (not including free electrons). Dimensionless; needs to be multiplied by amu (~ m_p) to get units of grams
   int no_ground_recomb;          // suppress ground recombinations
 
   // flags for what opacities to use
@@ -166,7 +166,7 @@ class GasState
   //-----------------------------------------------------------
   double get_density()             {return dens_;}
   double get_temperature()         {return temp_;}
-  double get_mean_atomic_weight()  {return A_mu;}
+  double get_mean_atomic_weight()  {return mu_I;}
   double get_electron_density()    {return n_elec_;}
 
   //-----------------------------------------------------------

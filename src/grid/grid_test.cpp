@@ -36,8 +36,8 @@ void grid_general::testCheckpointZones(std::string fname) {
           std::cerr << "issue at T_gas on zone " << i << " on rank " << rank << std::endl;
           fail = true;
         }
-        if (z_new[i].mu != z[i].mu) {
-          std::cerr << "issue at mu on zone " << i << " on rank " << rank << std::endl;
+        if (z_new[i].mu_I != z[i].mu_I) {
+          std::cerr << "issue at mu_I on zone " << i << " on rank " << rank << std::endl;
           fail = true;
         }
         if (z_new[i].e_rad != z[i].e_rad) {

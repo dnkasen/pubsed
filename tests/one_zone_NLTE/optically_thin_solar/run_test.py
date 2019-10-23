@@ -84,7 +84,7 @@ def run_test(pdf="",runcommand=""):
     num_elems = len(Z_elem)
     counter = 0
 
-    atomic_database = h5py.File(os.environ['SEDONA_HOME'] + str('/data/atom_data.hdf5'), 'r')
+    atomic_database = h5py.File('./atom_data.hdf5', 'r')
 
     nrow = num_elems
     ncol = 1

@@ -541,7 +541,7 @@ double GasState::get_planck_mean
 		return 0;
 	}
 
-	if (nu_grid_.size() == 1) return abs[0] + scat[0];
+	if (nu_grid_.size() == 1) return abs[0];
 
 	double mean = 0;
 	double norm = 0;
@@ -597,11 +597,12 @@ double GasState::get_planck_mean(const std::vector<OpacityType>& x)
 
 
 //----------------------------------------------------------------
-// Calculate a Rosseland mean of the passed array x
+// Calculate a total Rosseland mean of the passed opacities
 // Passed:
-//   x -- a vector of the same size of the frequency bin
+//   abs -- a vector of the absorption opacity
+//   scat -- a vector of the scattering opacity
 // Returns:
-//   the calculated planck mean
+//   the calculated rosseland mean
 //----------------------------------------------------------------
 double GasState::get_rosseland_mean
 (const std::vector<OpacityType>& abs, const std::vector<OpacityType>& scat)
@@ -638,7 +639,7 @@ double GasState::get_rosseland_mean
 // Passed:
 //   x -- a vector of the same size of the frequency bin
 // Returns:
-//   the calculated planck mean
+//   the calculated rosseland mean
 //----------------------------------------------------------------
 double GasState::get_rosseland_mean(const std::vector<OpacityType>& x)
 {

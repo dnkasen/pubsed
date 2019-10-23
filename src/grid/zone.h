@@ -18,11 +18,12 @@ public:
   real e_gas;           // gas pressure
   real p_gas;           // gas pressure
   real T_gas;           // gas temperature
+  real n_elec;          // number of free electrons
   real grey_opacity;    // grey opacity (cm^2/g) if the user defines a zone-dependent grey opacity
 
   // composition of gas
   std::vector<real> X_gas;   // mass fractions of elements in zone
-  real mu;                   // mean atomic mass
+  real mu_I;                   // mean atomic/ionic mass (not including free electrons). Dimensionless; needs to be multiplied by amu (~ m_p) to get units of grams
 
   // radiation quantities
   real e_rad;      // radiation energy density  (ergs/cm^3) in lab frame

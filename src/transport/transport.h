@@ -236,6 +236,7 @@ class transport
   void wipe_radiation();
   void reduce_radiation(double);
   void reduce_Tgas();
+  void reduce_n_elec();
   void reduce_Lthermal();
 
   // solve equilibrium temperature

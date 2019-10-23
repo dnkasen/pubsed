@@ -77,6 +77,7 @@ class grid_general
   void reduce_radiation();
   void reduce_radiation_block(int, int);
   void reduce_T_gas();
+  void reduce_n_elec();
 
 
   // output functions
