@@ -662,21 +662,17 @@ double  grid_1D_sphere::zone_volume(const int i) const
 
 
 //************************************************************
-// sample a random position within the spherical shell
+// sample a random position within the spherical shell weighted by volume
 //************************************************************
-  void grid_1D_sphere::sample_in_zone
-(int i, std::vector<double> ran, double r[3])
+void grid_1D_sphere::sample_in_zone(int i, std::vector<double> ran, double r[3])
 {
   // inner radius of shell
   double r_0;
   if (i == 0) r_0 = r_out.min;
   else r_0 = r_out[i-1];
 
-  // thickness of shell
-  double dr = r_out[i] - r_0;
-
-  // sample radial position in shell
-  r_0 = r_0 + dr*ran[0];
+  // sample radial position in shell weighted by volume
+  double r_samp = pow( r_0*r_0*r_0 + ran[0]*( r_out[i]*r_out[i]*r_out[i]-r_0*r_0*r_0 ), 1.0/3.0);
 
   // random spatial angles
   double mu  = 1 - 2.0*ran[1];
@@ -684,9 +680,9 @@ double  grid_1D_sphere::zone_volume(const int i) const
   double sin_theta = sqrt(1 - mu*mu);
 
   // set the real 3-d coordinates
-  r[0] = r_0*sin_theta*cos(phi);
-  r[1] = r_0*sin_theta*sin(phi);
-  r[2] = r_0*mu;
+  r[0] = r_samp*sin_theta*cos(phi);
+  r[1] = r_samp*sin_theta*sin(phi);
+  r[2] = r_samp*mu;
 }
 
 

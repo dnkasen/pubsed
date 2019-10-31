@@ -424,15 +424,17 @@ double  grid_2D_cyln::zone_volume(const int i) const
 
 
 //************************************************************
-// sample a random position within the spherical shell
+// sample a random position within the annulus weighted by volume
 //************************************************************
-void grid_2D_cyln::sample_in_zone
-(int i, std::vector<double> ran, double r[3])
+void grid_2D_cyln::sample_in_zone(int i, std::vector<double> ran, double r[3])
 {
-  double p   = index_x_[i]*dx_ + dx_*ran[0];
   double phi = 2*pc::pi*ran[1];
-  r[0] = p*cos(phi);
-  r[1] = p*sin(phi);
+  double p_in = index_x_[i]*dx_;
+  double p_out = index_x_[i]*dx_ + dx_;
+  double p_samp = sqrt( p_in*p_in + ran[0]*( p_out*p_out-p_in*p_in ) );
+
+  r[0] = p_samp*cos(phi);
+  r[1] = p_samp*sin(phi);
   r[2] = index_z_[i]*dz_ - zcen_ + dz_*ran[2];
 }
 
