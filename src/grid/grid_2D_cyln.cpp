@@ -158,7 +158,7 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   //---------------------------------------------------
   if (verbose)
   {
-    std::cout << "# gridtype: 2D cylndrical\n";
+    std::cout << "# gridtype: 2D cylindrical\n";
     std::cout << "# n_zones = " << n_zones << "\n";
     std::cout << "# (nx,nz) = (" << nx_ << ", " << nz_ << ")\n";
     std::cout << "# (dx,dz) = (" << dx_ << ", " << dz_ << ")\n";
