@@ -13,6 +13,13 @@ void grid_general::init(ParameterReader* params)
   MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
   MPI_Comm_size( MPI_COMM_WORLD, &nproc );
 
+  // Test for homologous expansion
+  string hydro_type = params->getScalar<string>("hydro_module");
+  if (hydro_type == "homologous")
+    use_homologous_velocities_ = 1;
+  else
+    use_homologous_velocities_ = 0;
+
   // If it's a restart, restart the grid. Otherwise read in the model file
   do_restart_ = params->getScalar<int>("run_do_restart");
   if (do_restart_)

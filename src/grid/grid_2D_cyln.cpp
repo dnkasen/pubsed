@@ -446,25 +446,24 @@ void grid_2D_cyln::sample_in_zone(int i, std::vector<double> ran, double r[3])
 void grid_2D_cyln::get_velocity(int i, double x[3], double D[3], double v[3], double *dvds)
 {
 
-  /*
-  double  p = sqrt(x[0]*x[0] + x[1]*x[1]);
-  v[0] = z[i].v[0]*x[0]/p;
-  v[1] = z[i].v[0]*x[1]/p;
-  v[2] = z[i].v[2];
-  if (p == 0)
-  {
-    v[0] = 0;
-    v[1] = 0;
+  if (use_homologous_velocities_ == 1) {
+    v[0] = x[0]/t_now;
+    v[1] = x[1]/t_now;
+    v[2] = x[2]/t_now;
+    *dvds = 1.0/t_now;
+  } else {
+    double p = sqrt(x[0]*x[0] + x[1]*x[1]);
+    v[0] = z[i].v[0]*x[0]/p;
+    v[1] = z[i].v[0]*x[1]/p;
+    v[2] = z[i].v[2];
+
+    if (p == 0) {
+      v[0] = 0;
+      v[1] = 0;
+    }
+
+    *dvds = 0;
   }
-
-  *dvds = 0;
-  */
-
-  /* This is only true for homologous flow! */
-  v[0] = x[0]/t_now;
-  v[1] = x[1]/t_now;
-  v[2] = x[2]/t_now;
-  *dvds = 1.0/t_now;
 
 }
 
