@@ -662,21 +662,17 @@ double  grid_1D_sphere::zone_volume(const int i) const
 
 
 //************************************************************
-// sample a random position within the spherical shell
+// sample a random position within the spherical shell weighted by volume
 //************************************************************
-  void grid_1D_sphere::sample_in_zone
-(int i, std::vector<double> ran, double r[3])
+void grid_1D_sphere::sample_in_zone(int i, std::vector<double> ran, double r[3])
 {
   // inner radius of shell
   double r_0;
   if (i == 0) r_0 = r_out.min;
   else r_0 = r_out[i-1];
 
-  // thickness of shell
-  double dr = r_out[i] - r_0;
-
-  // sample radial position in shell
-  r_0 = r_0 + dr*ran[0];
+  // sample radial position in shell weighted by volume
+  double r_samp = pow( r_0*r_0*r_0 + ran[0]*( r_out[i]*r_out[i]*r_out[i]-r_0*r_0*r_0 ), 1.0/3.0);
 
   // random spatial angles
   double mu  = 1 - 2.0*ran[1];
@@ -684,9 +680,9 @@ double  grid_1D_sphere::zone_volume(const int i) const
   double sin_theta = sqrt(1 - mu*mu);
 
   // set the real 3-d coordinates
-  r[0] = r_0*sin_theta*cos(phi);
-  r[1] = r_0*sin_theta*sin(phi);
-  r[2] = r_0*mu;
+  r[0] = r_samp*sin_theta*cos(phi);
+  r[1] = r_samp*sin_theta*sin(phi);
+  r[2] = r_samp*mu;
 }
 
 
@@ -696,32 +692,40 @@ double  grid_1D_sphere::zone_volume(const int i) const
 //************************************************************
 void grid_1D_sphere::get_velocity(int i, double x[3], double D[3], double v[3], double *dvds)
 {
-  // radius in zone
-  double rr = sqrt(x[0]*x[0] + x[1]*x[1] + x[2]*x[2]);
 
-  // linearly interpolate velocity here
-  double v_0, r_0;
-  if (i == 0) {v_0 = v_inner_; r_0 = r_out.min; }
-  else {v_0 = z[i-1].v[0]; r_0 = r_out[i-1]; }
-  double dr = rr - r_0;
-  double dv_dr = (z[i].v[0] - v_0)/(r_out[i] - r_0);
+  if (use_homologous_velocities_ == 1) {
+    v[0] = x[0]/t_now;
+    v[1] = x[1]/t_now;
+    v[2] = x[2]/t_now;
+    *dvds = 1.0/t_now;
+  } else {
+    // radius in zone
+    double rr = sqrt(x[0]*x[0] + x[1]*x[1] + x[2]*x[2]);
 
-  double vv = v_0 + dv_dr*dr;
+    // linearly interpolate velocity here
+    double v_0, r_0;
+    if (i == 0) {v_0 = v_inner_; r_0 = r_out.min; }
+    else {v_0 = z[i-1].v[0]; r_0 = r_out[i-1]; }
+    double dr = rr - r_0;
+    double dv_dr = (z[i].v[0] - v_0)/(r_out[i] - r_0);
 
-  // assuming radial velocity
-  v[0] = x[0]/rr*vv;
-  v[1] = x[1]/rr*vv;
-  v[2] = x[2]/rr*vv;
+    double vv = v_0 + dv_dr*dr;
 
-  // check for pathological case
-  if (rr == 0)
-  {
-    v[0] = 0;
-    v[1] = 0;
-    v[2] = 0;
+    // assuming radial velocity
+    v[0] = x[0]/rr*vv;
+    v[1] = x[1]/rr*vv;
+    v[2] = x[2]/rr*vv;
+
+    // check for pathological case
+    if (rr == 0)
+    {
+      v[0] = 0;
+      v[1] = 0;
+      v[2] = 0;
+    }
+
+    *dvds = dv_dr;  // not quite right, but upper limit
   }
-
-  *dvds = dv_dr;  // not quite right, but upper limit
 
 }
 

@@ -36,6 +36,7 @@ class grid_general
 
  protected:
 
+  int use_homologous_velocities_;
   int my_rank;
   int nproc;
   int do_restart_;
