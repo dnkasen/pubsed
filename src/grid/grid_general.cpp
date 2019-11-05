@@ -32,7 +32,6 @@ void grid_general::init(ParameterReader* params)
   {
     std::cerr << "Error: there are no grid zones." << std::endl;
     exit(5);
-    n_zones = z.size();
   }
 
 }
