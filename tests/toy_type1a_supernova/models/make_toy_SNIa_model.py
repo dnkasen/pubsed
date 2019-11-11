@@ -104,7 +104,7 @@ vxx  = np.zeros((nx,nz))
 
 for i in range(nx):
 	for j in range(nz):
-		vr = (vx[i]**2 + vz[j]**2)**0.5
+		vr = ((vx[i]-dv*0.5)**2 + (vz[j]-dv*0.5)**2)**0.5
 
 		if (vr < vmax): 
 			ind = np.searchsorted(v1d,vr)
