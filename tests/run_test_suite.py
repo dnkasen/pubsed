@@ -9,11 +9,31 @@ from importlib import import_module
 import timeit
 
 
-########################################
+###############################################
 # runs a series of tests of sedona
-# output figures are put into
-# test_results_%date.pdf
-########################################
+# by default, the tests to be run are read
+# from the file "suite_test_list"
+#
+# output figures showing test results are put
+# into in the pdf file:
+#  test_results_%date.pdf
+# (where %date is the current date)
+#
+# Usage:
+#  python run_test_suite.py [options]
+# Options:
+#
+#   -n 2
+#   (will run on 2 mpi ranks, more generally -n nranks
+#   will run on nranks ranks where nranks is an integer)
+#
+#  -testlist "spherical_lightbulb/1D","lucy_supernova/1D"
+#   (will run the tests given after the --testlist flag)
+#
+#  --testfile "my_tests.txt"
+#   (will read the file "my_tests.txt" or whatever filename you wante
+#   to get the list of files to run)
+###########################################
 
 parser = optparse.OptionParser()
 parser.add_option("-n",dest="nproc")
@@ -43,7 +63,6 @@ else:
     pdffile = homedir + '/test_results_' + date + '.pdf'
 pdf = PdfPages(pdffile)
 
-
 runcommand = "mpirun -np " + str(nproc) + " ./" + executable
 if (not opts.verbose):
     runcommand = runcommand + " >> " + outfile
@@ -69,7 +88,15 @@ else:
 line = "echo \"Testing SEDONA code on " + date + "\"  > " + outfile
 print "Testing SEDONA code on " + date + "\n"
 os.system(line)
-print "Will run " + str(len(testlist)) + " tests on " +str(nproc)  + " cores\n"
+
+# get number of threads
+try:
+    nthreads = os.environ['OMP_NUM_THREADS']
+except:
+    nthreads = 1
+
+print "Will run " + str(len(testlist)) + " tests on " +str(nproc)  + " mpi ranks,",
+print "with " + str(nthreads) + " threads per rank\n";
 print "------------------------------------------"
 i = 1
 for this_test in testlist:
