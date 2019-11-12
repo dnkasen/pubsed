@@ -68,15 +68,15 @@ for i  in range(nx):
     	t1d[i] = T0*(1 + (1e9 - vm)/1e9)
     else:
     	t1d[i] = T0*(vm/1e9)**(-2.0)
-    
+
     line = "%12.4e %12.4e %12.4e %12.4e " % (r,v,rho1d[i],t1d[i])
-    
+
     xime = ximem[i]
     xni = 0
     xco = 0
-    if (mfrac[i] < mmid): 
+    if (mfrac[i] < mmid):
     	xni = 1 - xime
-    else:  
+    else:
 		xco = 1 - xime
 
     for j in range(nelems):
@@ -106,7 +106,7 @@ for i in range(nx):
 	for j in range(nz):
 		vr = ((vx[i]-dv*0.5)**2 + (vz[j]-dv*0.5)**2)**0.5
 
-		if (vr < vmax): 
+		if (vr < vmax):
 			ind = np.searchsorted(v1d,vr)
 			comp[i,j,:] = comp_1d[ind,:]
 			temp[i,j]   = t1d[ind]
@@ -121,7 +121,7 @@ for i in range(nx):
 
 		vxx[i,j] = vx[i];
 		vxz[i,j] = vz[j];
-	
+
 
 fout = h5py.File(name + '_2D.h5','w')
 fout.create_dataset('time',data=[texp],dtype='d')
@@ -139,14 +139,16 @@ fout.create_dataset('dr',data=[dv*texp,dv*texp],dtype='d')
 #########################################
 # Make sedona 3D Cartesian hdf5 model
 #########################################
-dv    = vmax/(1.0*nx)*2.0
-vx    = np.arange(-1.0*vmax + dv,vmax+0.1,dv)
-vy    = np.arange(-1.0*vmax + dv,vmax+0.1,dv)
-vz    = np.arange(-1.0*vmax + dv,vmax+0.1,dv)
-
 nx = n_3d
 ny = nx
 nz = nx
+
+dv    = vmax/(1.0*nx)*2.0
+vx    = np.arange(-1.0*vmax + dv/2.0,vmax+0.1,dv)
+vy    = np.arange(-1.0*vmax + dv/2.0,vmax+0.1,dv)
+vz    = np.arange(-1.0*vmax + dv/2.0,vmax+0.1,dv)
+
+
 rho  = np.zeros((nx,ny,nz))
 temp = np.zeros((nx,ny,nz))
 comp = np.zeros((nx,ny,nz,len(Z)))
@@ -158,23 +160,24 @@ vxz  = np.zeros((nx,ny,nz))
 for i in range(nx):
 	for j in range(ny):
 		for k in range(nz):
-			vr = vx[i]**2 + vy[j]**2 + vz[k]**2
+			vr = (vx[i]**2 + vy[j]**2 + vz[k]**2)**0.5
 
-			if (vr < vmax): 
+			vxx[i,j,k] = vx[i];
+			vxy[i,j,k] = vy[j];
+			vxz[i,j,k] = vz[k];
+
+			if (vr < vmax):
 				ind = np.searchsorted(v1d,vr)
-				comp[i,j,:] = comp_1d[ind,:]
-				temp[i,j]   = t1d[ind]
-				rho[i,j]    = rho1d[ind]
+				comp[i,j,k,:] = comp_1d[ind,:]
+				temp[i,j,k]   = t1d[ind]
+				rho[i,j,k]    = rho1d[ind]
 
 			else:
-				rho[i,j]  = rho0*1e-10
-				temp[i,j] = T0*1e-4
-				comp[i,j,:] = comp_co
+				rho[i,j,k]  = rho0*1e-10
+				temp[i,j,k] = T0*1e-4
+				comp[i,j,k,:] = comp_co
 
-				vxx[i,j,k] = vx[i];
-				vxy[i,j,k] = vy[j];
-				vxz[i,j,k] = vz[j];
-				comp[i,j,k,0] = 1
+
 
 fout = h5py.File(name + '_3D.h5','w')
 fout.create_dataset('time',data=[texp],dtype='d')
@@ -189,4 +192,3 @@ fout.create_dataset('erad',data=erad,dtype='d')
 fout.create_dataset('comp',data=comp,dtype='d')
 fout.create_dataset('dr',data=[dv*texp,dv*texp,dv*texp],dtype='d')
 fout.create_dataset('rmin',data=[-1.0*rmax,-1.0*rmax,-1.0*rmax],dtype='d')
-
