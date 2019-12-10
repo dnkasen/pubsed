@@ -69,6 +69,7 @@ void transport::step(double dt)
           optical_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
         if (particles[i].type == gammaray)
           gamma_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
+        particles_escaped.insert(
       }
   }
 

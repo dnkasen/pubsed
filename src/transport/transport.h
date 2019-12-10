@@ -50,6 +50,8 @@ class transport
   // arrays of particles
   std::vector<particle> particles;
   std::vector<particle> particles_new; // For debugging checkpointing
+  std::vector<particle> particles_escaped;
+  std::vector<particle> particles_escaped_new;
   int max_total_particles;
 
   // gas class for opacities
