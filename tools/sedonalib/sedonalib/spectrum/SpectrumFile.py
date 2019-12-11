@@ -59,14 +59,21 @@ class SpectrumFile():
         fin = h5py.File(self.filename,"r")
         self.x     = np.array(fin['nu'])
         self.L     = np.array(fin['Lnu'])
-        self.click = np.array(fin['click'])
+ #       self.click = np.array(fin['click'])
 
         self.t         = np.array(fin['time'])
-        self.t_edges   = np.array(fin['time_edges'])
-        self.mu        = np.array(fin['mu'])
-        self.mu_edges  = np.array(fin['mu_edges'])
-        self.phi       = np.array(fin['phi'])
-        self.phi_edges = np.array(fin['phi_edges'])
+        try:
+            self.mu  = np.array(fin['mu'])
+        except:
+            self.mu  = np.zeros(1)
+        try:
+            self.phi       = np.array(fin['phi'])
+        except:
+            self.phi = np.zeros(1)
+
+    #    self.phi_edges = np.array(fin['phi_edges'])
+   #     self.mu_edges  = np.array(fin['mu_edges'])
+  #      self.t_edges   = np.array(fin['time_edges'])
 
         fin.close()
 
@@ -74,6 +81,7 @@ class SpectrumFile():
         self.n_times = len(self.t)
         self.n_mu = len(self.mu)
         self.n_phi = len(self.phi)
+#        self.n_phi = 1
 
         # reshape so we always have 4 dimensions
         if (self.n_mu == 1 and self.n_phi == 1):
@@ -82,13 +90,20 @@ class SpectrumFile():
             self.L = self.L[..., newaxis]
 
 
-#        if (self.spec_units == 'angstrom'):
-#            self.L  = self.L*self.x**2/pc.c/pc.cm_to_angs
-#            self.x  = pc.c/self.x*pc.cm_to_angs
+        if (self.spec_units == 'angstrom'):
+            for it,im,ip in np.ndindex(self.n_times,self.n_mu,self.n_phi):
+                # change units of luminosity to erg/s/A
+                newL = self.L[it,:,im,ip]*self.x**2/pc.c/pc.cm_to_angs
+                # reverse the order fo the array
+                self.L[it,:,im,ip]  = newL[::-1]
+
+            # change x units to wavelength and flip order
+            newx  = pc.c/self.x*pc.cm_to_angs
+            self.x = newx[::-1]
 
         if (self.time_units == 'day'):
             self.t       = self.t*pc.sec_to_day
-            self.t_edges = self.t_edges*pc.sec_to_day
+ #           self.t_edges = self.t_edges*pc.sec_to_day
 
 
     def __str__(self):
@@ -105,7 +120,28 @@ class SpectrumFile():
 
         new_spec_units = spec_units
 
+    def get_band_lc(self,wrange,view=None,angle_average=False,magnitudes=False):
 
+        Lband = np.zeros([self.n_times,self.n_mu,self.n_phi],dtype='d')
+
+        b = (self.x >= wrange[0])*(self.x <= wrange[1])
+        if (sum(b) == 0):
+            message = "Wavelength range for band light curve not in spectrum range"
+            raise ValueError(message)
+
+        # integrate bolometric light curve
+        for it,im,ip in np.ndindex(self.n_times,self.n_mu,self.n_phi):
+            Lband[it,im,ip] = np.trapz(self.L[it,b,im,ip],x=self.x[b])
+
+        Lband = Lband/(wrange[1] - wrange[0])
+
+        if (self.n_mu == 1 and self.n_phi == 1):
+            return self.t,Lband[:,0,0]
+        if (self.n_mu > 1 and self.n_phi == 1):
+            return self.t,Lband[:,:,0]
+        if (self.n_mu == 1 and self.n_phi > 1):
+            return self.t,Lband[:,0,:]
+        return self.t,Lband
 
     def get_bolometric_lc(self,view=None,angle_average=False,magnitudes=False):
 
@@ -115,13 +151,13 @@ class SpectrumFile():
             self.Lave = np.zeros([self.n_times])
 
         # integrate bolometric light curve
-            for it,im,ip in np.ndindex(self.n_times,self.n_mu,self.n_phi):
-                if (self.n_x == 1):
-                    self.Lbol[it,im,ip] = self.L[it,0,im,ip]
-                    self.Lave[it] += self.L[it,0,im,ip]
-                else:
-                    self.Lbol[it,im,ip] = np.trapz(self.L[it,:,im,ip],x=self.x)
-                    self.Lave[it] += self.Lbol[it,im,ip]
+        for it,im,ip in np.ndindex(self.n_times,self.n_mu,self.n_phi):
+            if (self.n_x == 1):
+                self.Lbol[it,im,ip] = self.L[it,0,im,ip]
+                self.Lave[it] += self.L[it,0,im,ip]
+            else:
+                self.Lbol[it,im,ip] = np.trapz(self.L[it,:,im,ip],x=self.x)
+                self.Lave[it] += self.Lbol[it,im,ip]
 
                 self.Lave = self.Lave/(1.0*self.n_mu*self.n_phi)
 
@@ -213,7 +249,7 @@ class SpectrumFile():
 
 
 
-    def get_spectrum(self,time=None,mu=None,phi=None,interpolate=True):
+    def get_spectrum(self,time=None,mu=None,phi=None,interpolate=True,angle_average=False):
 
         import bisect
 
@@ -221,6 +257,10 @@ class SpectrumFile():
         nmu  = len(self.mu)
         nphi = len(self.phi)
         nx   = len(self.x)
+
+        # for just a snapshot 1D spectrum
+        if (nt == 1 and nmu == 1 and nphi == 1):
+            return self.x, self.L[0,:,0,0]
 
         smp = np.zeros((nx,nmu,nphi))
 
@@ -259,18 +299,43 @@ class SpectrumFile():
 #                    s2 = smp[:,i2,j]
 #                    sm[:,j] = s1 + (s2 - s1)*dm/(m2 - m1)
 
+        if (angle_average):
+            Fave = np.zeros(self.n_x)
+            for im,ip in np.ndindex(self.n_mu,self.n_phi):
+                Fave += smp[:,im,ip]
+            Fave /= 1.0/(1.0*self.n_mu*self.n_phi)
+            return self.x, Fave
+
         if (nmu == 1 and nphi == 1):
             return self.x,smp[:,0,0]
         elif (nmu == 1):
-            return self,x,smp[:,0,:]
+            return self.x,smp[:,0,:]
         else:
-            return self,x,smp[:,:,0]
+            return self.x,smp[:,:,:]
+
+
+    def get_nuLnu_lc(self,wrange,magnitudes=False):
+        b = (self.x >= wrange[0])*(self.x <= wrange[1])
+        new_x = self.x[b]
+        lc = np.zeros(self.t.size)
+        for i in range(self.t.size):
+            lc[i] = np.trapz(self.L[i,b,0,0],x=new_x)
+
+
+        if (magnitudes):
+            lc = lc/(wrange[1] - wrange[0])
+            
+        else:
+            lc = lc*0.5*(wrange[0] + wrange[1])/(wrange[1] - wrange[0])
+
+        return self.t,lc
+
 
     def get_ABMag(self,band):
         """
         returns the AB magnitude light curve, for a given band
         """
-        lum = np.zeros(self.time.size)
+        lum = np.zeros(self.t.size)
         dnu = np.ediff1d(self.nu,to_end=0)
         for i in range(self.time.size):
             sample_points = self.spec_tnu[i, :]/self.nu*(self.filter.transFunc_nu(band)(self.nu))
@@ -280,4 +345,4 @@ class SpectrumFile():
             flx[np.where(flx==0.)] 	= 1e-99 #some small number so not taking log(0)
             mag = -2.5*np.log10(flx)-48.6 #get the AB magnitude
             mag[np.where(mag>0)] = 0. #set minimum mag to 0
-            return mag
+            return self.t,mag
