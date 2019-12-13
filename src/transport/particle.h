@@ -18,6 +18,7 @@ class particle
   
   double    x[3];         // x,y,z position
   double    D[3];         // direction vector, Dx,Dy,Dz
+  double    x_interact[3];    // position of last scatter
   int        ind;         // index of the zone in grid where we are
   double       t;         // current time
   double       e;         // total energy in ergs of packet

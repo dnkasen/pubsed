@@ -60,7 +60,7 @@ void transport::step(double dt)
     // propagate particles
     particles[i].fate = propagate(particles[i],dt);
 
-    // Add escaped photons to output spectrum
+    // Add escaped photons to output spectrum and escaped particle list
     if (particles[i].fate == escaped)
     {
       // account for light crossing time, relative to grid center
@@ -69,7 +69,8 @@ void transport::step(double dt)
           optical_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
         if (particles[i].type == gammaray)
           gamma_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
-        particles_escaped.insert(
+        particles[i].t = t_obs;
+        particles_escaped.insert(particles[i]);
       }
   }
 

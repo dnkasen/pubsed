@@ -279,6 +279,8 @@ class transport
   // return
   int n_particles() { return particles.size(); }
   int n_particles_new() { return particles_new.size(); }
+  int n_particles_escaped() { return particles_escaped.size();}
+  int n_particles_escaped_new() { return particles_escaped_new.size();}
 
   // finalize and output spectra
   void output_spectrum();
