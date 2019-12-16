@@ -15,9 +15,9 @@ ParticleFate transport::do_scatter(particle *p, double eps)
   ParticleFate fate = moving;
 
   // Update position of last interaction
-  p->x_interact[0] = p->x[0]
-  p->x_interact[1] = p->x[1]
-  p->x_interact[2] = p->x[2]
+  p->x_interact[0] = p->x[0];
+  p->x_interact[1] = p->x[1];
+  p->x_interact[2] = p->x[2];
 
   // do photon interaction physics
   if (p->type == photon)

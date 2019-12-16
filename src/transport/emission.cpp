@@ -73,6 +73,10 @@ void transport::create_isotropic_particle
   p.x[1] = r[1];
   p.x[2] = r[2];
 
+  p.x_interact[0] = r[0];
+  p.x_interact[1] = r[1];
+  p.x_interact[2] = r[2];
+
   // emit isotropically in comoving frame
   double mu  = 1 - 2.0*rangen.uniform();
   double phi = 2.0*pc::pi*rangen.uniform();
@@ -435,6 +439,10 @@ void transport::emit_inner_source(double dt)
       p.D[2] = -sint_core*D_xl+cost_core*D_zl;
     }
 
+    p.x_interact[0] = p.x[0];
+    p.x_interact[1] = p.x[1];
+    p.x_interact[2] = p.x[2];
+
     // set energy of packet
     p.e = Ep;
 
@@ -506,6 +514,10 @@ void transport::emit_from_pointsoures(double dt)
     p.x[0] = pointsource_x_[ind];
     p.x[1] = pointsource_y_[ind];
     p.x[2] = pointsource_z_[ind];
+    
+    p.x_interact[0] = p.x[0];
+    p.x_interact[1] = p.x[1];
+    p.x_interact[2] = p.x[2];
 
     // emit isotropically in comoving frame
     double mu  = 1 - 2.0*rangen.uniform();

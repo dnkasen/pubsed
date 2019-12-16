@@ -371,8 +371,10 @@ void transport::init(ParameterReader* par, grid_general *g)
   t_now_ = g->t_now;
 
   // initialize particles
-  if (do_restart)
-    readCheckpointParticles(restart_file);
+  if (do_restart) {
+    readCheckpointParticles(particles, restart_file, "particles");
+    readCheckpointParticles(particles_escaped, restart_file, "particles_escaped");
+  }
   else {
     int n_parts = params_->getScalar<int>("particles_n_initialize");
     initialize_particles(n_parts);

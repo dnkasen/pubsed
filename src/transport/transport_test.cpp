@@ -9,11 +9,11 @@
 #include "physical_constants.h"
 
 void transport::testCheckpointParticles(std::string fname) {
-  writeCheckpointParticles(fname);
+  writeCheckpointParticles(particles, fname, "particles");
 
   MPI_Barrier(MPI_COMM_WORLD);
 
-  readCheckpointParticles(fname, true);
+  readCheckpointParticles(particles, fname, "particles", true);
 
   for (int rank = 0; rank < MPI_nprocs; rank++) {
     if (rank == MPI_myID) {

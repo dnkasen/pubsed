@@ -496,7 +496,7 @@ void SedonaClass::write_checkpoint(std::string checkpoint_file_full)
     createFile(checkpoint_file_full);
   }
   write_checkpoint_meta(checkpoint_file_full);
-  transport_->writeCheckpointParticles(checkpoint_file_full);
+  transport_->writeCheckpointParticlesAll(checkpoint_file_full);
   grid_->writeCheckpointZones(checkpoint_file_full);
   transport_->writeCheckpointSpectra(checkpoint_file_full);
   transport_->writeCheckpointRNG(checkpoint_file_full);
