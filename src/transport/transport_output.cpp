@@ -450,7 +450,7 @@ void transport::writeParticleProp(std::string fname, std::string fieldname,
     t = H5T_NATIVE_INT;
     buffer_i = new int[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
-      buffer_i[i] = particles[i].fate;
+      buffer_i[i] = particle_list[i].fate;
     }
   }
   else {
