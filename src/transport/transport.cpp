@@ -482,3 +482,7 @@ transport::~transport() {
   if (dst_MPI_zones)
     delete[] dst_MPI_zones;
 }
+
+void transport::clearEscapedParticles() {
+  particles_escaped.clear();
+}

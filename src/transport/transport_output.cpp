@@ -46,7 +46,10 @@ void transport::output_spectrum(int it)
       std::cout << "# writing escaped particle list" << std::endl;
       createFile(partname + base + ".h5");
     }
+    // whenever escaped particles are written out, clear the list so we are less likely to run
+    // into memory issues
     writeCheckpointParticles(particles_escaped, partname + base + ".h5", "particles_escaped");
+    clearEscapedParticles();
   }
 
 
