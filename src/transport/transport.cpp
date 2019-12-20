@@ -70,9 +70,8 @@ void transport::step(double dt)
         if (particles[i].type == gammaray)
           gamma_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
         particles[i].t = t_obs;
-#pragma omp critical {
+#pragma omp critical
         particles_escaped.push_back(particles[i]);
-}
       }
   }
 
