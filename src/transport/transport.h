@@ -290,6 +290,7 @@ class transport
   void write_levels_to_plotfile(int);
   void write_radiation_file(int);
   void wipe_spectra();
+  void clearEscapedParticles();
 
   void writeCheckpointParticlesAll(std::string fname);
   void writeCheckpointParticles(std::vector<particle>& particle_list,
