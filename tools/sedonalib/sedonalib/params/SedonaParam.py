@@ -74,20 +74,26 @@ class SedonaParam(dict):
     def set_template(self,fname=None):
 
 
-        tm_dir = os.environ['SEDONA_HOME'] + "/defaults/"
+        tm_dir = os.environ['SEDONA_HOME'] + "/defaults/templates"
 
         if (fname is None):
             print("\nAvailable parameter templates are: ")
 
             templates = []
-            for filename in os.listdir(tm_dir):
-                if ("template_" not in filename):
-                    continue
-                templates.append(filename)
+
+            # get all the template names
+            for subdir, dirs, files in os.walk(tm_dir):
+                for file in files:
+                    templates.append(os.path.join(subdir, file))
+
+#            for filename in os.listdir(tm_dir):
+#                if ("template_" not in filename):
+#                    continue
+#                templates.append(filename)
 
             for i,t in enumerate(templates):
-                name = t.replace(".lua","")
-                name = name.replace("template_","")
+                name = t.replace(tm_dir + "/","")
+                name = name.replace(".lua","")
                 print str(i) + ') ' + name
 
             num = raw_input("choose template number >")
@@ -96,9 +102,9 @@ class SedonaParam(dict):
             if (num < 0 or num >= len(templates)):
                 print "Not a valid selection"
                 return
-            fname = tm_dir + templates[num]
+            fname = templates[num]
         else:
-            fname = tm_dir + "template_" + fname + ".lua"
+            fname = tm_dir + "/" + fname + ".lua"
 
 
         try:

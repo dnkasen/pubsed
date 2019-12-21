@@ -1,5 +1,8 @@
 from SedonaParam import *
 
+def new_param_file(template=None):
+    new_paramfile(template)
+    
 def new_paramfile(template=None):
 
     param = SedonaParam()

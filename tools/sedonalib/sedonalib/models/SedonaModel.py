@@ -8,12 +8,24 @@ class SedonaBaseModel():
         return self.n_zones
 
     @property
+    def n_elements(self):
+        return len(self.elem_A)
+
+    @property
     def dims(self):
         return self.dims
 
     @property
     def density(self):
         return self.dens
+
+    @property
+    def rho(self):
+        return self.dens
+
+    @property
+    def ke(self):
+        return self.kinetic_energy
 
     @property
     def composition(self):
@@ -46,7 +58,10 @@ class SedonaBaseModel():
         self.min_temp = t
         self.temp[self.temp < t] = t
 
-    def set_constant_composition(self,c):
+    def set_constant_composition(self,c,elements=None):
+
+        if (elements is not None):
+            self.set_elements(elements)
 
         nelem = len(self.elem_Z)
         if (len(c) != nelem):
@@ -105,6 +120,13 @@ class SedonaBaseModel():
         self.erad = np.copy(v)
 
 
+    def set_elements(self,elist):
+
+        # wipe whatever elements might have been there
+        self.elem_A = []
+        self.elem_Z = []
+        self.elem_list = []
+        self.add_elements(elist)
 
     def add_elements(self,elist):
 
@@ -136,7 +158,7 @@ class SedonaBaseModel():
 
     def check_base_model_validity(self):
 
-        if None in (self.elem_A, self.elem_Z):
+        if (self.elem_A is None or self.elem_Z is None):
             print 'Error: no elements defined in composition'
             return False
 

@@ -1,6 +1,7 @@
 from SedonaModel import *
 from Sedona1DSphereModel import *
-from Sedona3DCartModel import *
+from Sedona2DCylnModel   import *
+from Sedona3DCartModel   import *
 
 def read_model(name,type=type):
 
@@ -47,5 +48,7 @@ def new_model(geometry,dims=None,type=type,rout=None):
 
     if (geometry == "1D_sphere"):
         return Sedona1DSphereModel(dims=dims,rout=rout)
+    if (geometry == "2D_cyln"):
+        return Sedona2DCylnModel(dims=dims,rout=rout)
     if (geometry == "3D_cart"):
         return Sedona3DCartModel(dims=dims,rout=rout)

@@ -33,6 +33,10 @@ class Sedona3DCartModel(SedonaBaseModel):
             self.read(input_filename)
         ######################
 
+    ###############################################
+    # Read model file
+    ###############################################
+
     def read(self, infile):
 
         fin = h5py.File(infile, 'r')
@@ -48,6 +52,40 @@ class Sedona3DCartModel(SedonaBaseModel):
         self.dr = np.array(fin['dr'],dtype='d')
         self.rmin = np.array(fin['rmin'],dtype='d')
         self.time = float((fin['time'])[0])
+        self.dims = self.dens.shape
+
+
+    ###############################################
+    # Return basic properties
+    ###############################################
+    @property
+    def mass(self):
+        vol  = self.dr[0]*self.dr[1]*self.dr[2]
+        return np.sum(vol*self.dens)
+
+    @property
+    def kinetic_energy(self):
+        vol  = self.dr[0]*self.dr[1]*self.dr[2]
+        vtotsq = (self.vx**2.0 + self.vy**2.0 + self.vz**2.0)
+        return np.sum(0.5*vol*self.dens*vtotsq)
+
+    @property
+    def vtot(self):
+        return (self.vx**2.0 + self.vy**2.0 + self.vz**2.0)**0.5
+
+    @property
+    def x(self):
+        return self.rmin[0] + np.arange(self.dims[0])*self.dr[0]
+    @property
+    def y(self):
+        return self.rmin[1] + np.arange(self.dims[1])*self.dr[1]
+    @property
+    def z(self):
+        return self.rmin[2] + np.arange(self.dims[2])*self.dr[2]
+
+    ###############################################
+    # Set basic properties
+    ###############################################
 
     def set_grid(self,dims,dr,rmin):
 
@@ -194,6 +232,10 @@ class Sedona3DCartModel(SedonaBaseModel):
         self.time = tnew
 
 
+    ###############################################
+    # Plot, Print and Write
+    ###############################################
+
     def check_model_validity(self):
 
         if (self.check_base_model_validity() is False):
@@ -235,41 +277,34 @@ class Sedona3DCartModel(SedonaBaseModel):
         fout.create_dataset('comp',data=self.comp,dtype='d')
         fout.close()
 
-    @property
-    def mass(self):
-        vol  = self.dr[0]*self.dr[1]*self.dr[2]
-        return np.sum(vol*self.dens)
 
-    @property
-    def kinetic_energy(self):
-        vol  = self.dr[0]*self.dr[1]*self.dr[2]
-        vtotsq = (self.vx**2.0 + self.vy**2.0 + self.vz**2.0)
-        return np.sum(0.5*vol*self.dens*vtotsq)
 
-    @property
-    def vtot(self):
-        return (self.vx**2.0 + self.vy**2.0 + self.vz**2.0)**0.5
-
-    @property
-    def x(self):
-        return self.rmin[0] + np.arange(self.dims[0])*self.dr[0]
-    @property
-    def y(self):
-        return self.rmin[1] + np.arange(self.dims[1])*self.dr[1]
-    @property
-    def z(self):
-        return self.rmin[2] + np.arange(self.dims[2])*self.dr[2]
     def plot(self):
 
         try:
             import matplotlib.pyplot as plt
             from matplotlib.pyplot import cm
-            from mayavi import mlab
+#            from mayavi import mlab
         except Exception as e:
             raise e
 
-        mlab.figure(1, fgcolor=(1, 1, 1), bgcolor=(1, 1, 1))
-        mlab.contour3d(np.log10(self.dens + 1e-20),contours=20,opacity=0.2,colormap='jet' )
+        nxm = int(self.dims[0]/2)
+        nym = int(self.dims[1]/2)
+        nzm = int(self.dims[2]/2)
+
+        fix,axs = plt.subplots(2,3)
+        axs[0,0].matshow(np.log10(self.density[:,:,nzm]))
+    #    axs[0,0].colorbar()
+        axs[0,1].matshow(self.temp[:,:,nzm])
+        axs[0,2].matshow(self.vtot[:,:,nzm])
+        axs[1,0].matshow(self.vx[:,:,nzm])
+        axs[1,1].matshow(self.vy[:,:,nzm])
+        axs[1,2].matshow(self.vz[:,:,nzm])
+
+#        plt.colorbar()
+
+#        mlab.figure(1, fgcolor=(1, 1, 1), bgcolor=(1, 1, 1))
+#        mlab.contour3d(np.log10(self.dens + 1e-20),contours=20,opacity=0.2,colormap='jet' )
 
         plt.ion()
         plt.show()

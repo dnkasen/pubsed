@@ -1,4 +1,5 @@
 from SedonaModel import SedonaBaseModel
+from Sedona2DCylnModel import Sedona2DCylnModel
 import physical_constants as pc
 import numpy as np
 
@@ -17,6 +18,7 @@ class Sedona1DSphereModel(SedonaBaseModel):
         self.comp       = None
         self.r_edge     = None
         self.v_edge     = None
+        self.m_edge     = None
         self.elem_A     = []
         self.elem_Z     = []
         self.elem_list  = []
@@ -34,18 +36,10 @@ class Sedona1DSphereModel(SedonaBaseModel):
 
         # else return empty model
         if (dims is not None):
-            self.n_zones = dims
-            self.dims    = (dims,)
-            self.dens    = np.zeros(self.n_zones)
-            self.temp    = np.zeros(self.n_zones)
-            self.erad    = np.zeros(self.n_zones)
-            self.comp    = np.zeros((self.n_zones,0))
-            self.v_edge  = np.zeros(self.n_zones)
-            self.r_edge  = np.zeros(self.n_zones)
-            self.vol     = np.zeros(self.n_zones)
+            self.set_dims(dims)
 
-            if (rout is not None):
-                self.set_uniform_radial_edges(rout)
+        if (rout is not None):
+            self.set_uniform_radial_edges(rout)
 
     def get_filename_format(self,name):
         ascii_extensions = [".dat",".mod",".txt"]
@@ -69,6 +63,13 @@ class Sedona1DSphereModel(SedonaBaseModel):
         return r
 
     @property
+    def rmax(self):
+        return self.r_edge[-1]
+    @property
+    def rmin(self):
+        return self.r_min
+
+    @property
     def v(self):
         v = np.zeros(self.n_zones)
         for i in range(self.n_zones):
@@ -81,6 +82,7 @@ class Sedona1DSphereModel(SedonaBaseModel):
 
     @property
     def mass(self):
+        self.calculate_volumes()
         return np.sum(self.vol*self.dens)
 
     @property
@@ -90,6 +92,24 @@ class Sedona1DSphereModel(SedonaBaseModel):
     def set_constant_velocity(self,v):
         self.v_edge.fill(v)
 
+
+    def set_dims(self,dims):
+        self.n_zones = dims
+        self.dims    = (dims,)
+        self.dens    = np.zeros(self.n_zones)
+        self.temp    = np.zeros(self.n_zones)
+        self.erad    = np.zeros(self.n_zones)
+        self.comp    = np.zeros((self.n_zones,0))
+        self.v_edge  = np.zeros(self.n_zones)
+        self.r_edge  = np.zeros(self.n_zones)
+        self.m_edge  = np.zeros(self.n_zones)
+        self.vol     = np.zeros(self.n_zones)
+
+
+    def set_grid(self,dims,rmax=None,rmin = 0.0):
+        self.set_dims(dims)
+        if (rmax is not None):
+            self.set_uniform_radial_edges(rmax,rmin=rmin)
 
     def set_velocity(self,v):
 
@@ -117,21 +137,97 @@ class Sedona1DSphereModel(SedonaBaseModel):
 
     def calculate_volumes(self):
 
-        self.vol = np.zeros(self.n_zones)
+        self.vol    = np.zeros(self.n_zones)
+        self.m_edge = np.zeros(self.n_zones)
         for i in range(self.n_zones):
             if (i == 0):
                 r0 = self.r_min
+                m0 = 0.0
             else:
                 r0 = self.r_edge[i-1]
+                m0 = self.m_edge[i-1]
             self.vol[i] = 4.0*np.pi/3.0*(self.r_edge[i]**3.0 - r0**3.0)
-
+            self.m_edge[i] = m0 + self.vol[i]*self.rho[i]
 
     def resize(self,new_nz):
         print "this is not implemented yet"
 
 ##############################################################
-# Homologous profiles
+# Set composition functions
 ##############################################################
+    def set_shell_composition(self,comp,mrange=None,vrange=None,rrange=None):
+
+        err = False
+        if (mrange is not None and vrange is not None): err = True
+        if (mrange is not None and rrange is not None): err = True
+        if (vrange is not None and rrange is not None): err = True
+        if (err):
+            mess = "Can define only one of mrange, vrange, or rrange"
+            raise ValueError(mess)
+
+        # set composition in mass range
+        if (mrange is not None):
+
+            if (len(mrange) != 2):
+                raise ValueError("mrange must have format [mass_in,mass_out]")
+            if (mrange[0] > mrange[1]):
+                raise ValueError("mrange must have format [mass_in,mass_out]")
+
+            # make sure mass coordinates are calculated
+            self.calculate_volumes()
+
+            b = (self.m_edge >= mrange[0])*(self.m_edge <= mrange[1])
+            self.comp[b,:] = comp
+
+        # set composition in radial range
+        if (rrange is not None):
+
+            if (len(rrange) != 2):
+                raise ValueError("rrange must have format [r_in,r_out]")
+            if (rrange[0] > rrange[1]):
+                raise ValueError("rrange must have format [r_in,r_out]")
+
+            b = (self.r_edge >= rrange[0])*(self.r_edge <= rrange[1])
+            self.comp[b,:] = comp
+
+        # set composition in velocity range
+        if (vrange is not None):
+
+            if (len(vrange) != 2):
+                raise ValueError("rrange must have format [v_in,v_out]")
+            if (vrange[0] > vrange[1]):
+                raise ValueError("rrange must have format [v_in,v_out]")
+            # check if velocity is monotonic
+            for i in range(self.v_edge.size-1):
+                if (self.v_edge[i+1] < self.v_edge[i]) :
+                    raise ValueError("Velocity must be monotonic to set shell")
+
+            b = (self.v_edge >= vrange[0])*(self.v_edge <= vrange[1])
+            self.comp[b,:] = comp
+
+
+##############################################################
+# Homologous density profiles
+##############################################################
+
+    def set_homologous_profile(self,mass,KE,type="powerlaw",time=86400,vmax=None,n_out=10,n_in=1,min_density=1e-3):
+
+        if (self.dims is None):
+            message = "Error == Must set model dimensions before setting homologous profile"
+            raise ValueError(message)
+
+        if (type == "constant"):
+            self.set_homologous_constant_profile(mass,KE=KE,time=time,vmax=vmax)
+        elif (type == "powerlaw"):
+            self.set_homologous_powerlaw_profile(mass,KE,time=time,n_out=n_out,n_in=n_in,vmax=vmax,min_density=min_density)
+        elif (type == "exponential"):
+            self.set_homologous_exponential_profile(mass,KE,time=time,vmax=vmax)
+        else:
+            message = "Error == Unknown homolgous profile type " + type
+            raise ValueError(message)
+
+
+
     def set_homologous_constant_profile(self,mass,KE=None,time=86400.,vmax=None):
 
         self.time = time
@@ -151,9 +247,12 @@ class Sedona1DSphereModel(SedonaBaseModel):
             self.r_edge[i] = self.v_edge[i]*self.time
             self.dens[i] = rho_t
 
-    def set_homologous_powerlaw_profile(self,mass,KE,t,n_out=10,n_in=1,vmax=None,min_density=1e-3):
+        self.calculate_volumes()
 
-        self.time = t
+
+    def set_homologous_powerlaw_profile(self,mass,KE,time=86400.,n_out=10,n_in=1,vmax=None,min_density=1e-3):
+
+        self.time = time
         v_t   = (2.0*KE/mass*(5.0 - n_in)*(n_out - 5.0)/(3.0 - n_in)/(n_out - 3.0))**0.5
         rho_t = (n_out - 3.0)*(3.0 - n_in)/(4.0*pc.pi)/(n_out - n_in)
         rho_t = rho_t*mass/(v_t**3*self.time**3.0)
@@ -162,14 +261,37 @@ class Sedona1DSphereModel(SedonaBaseModel):
 
         self.r_min = 0.0
         dv = vmax/(1.0*self.n_zones)
+
         for i in range(self.n_zones):
-                self.v_edge[i] = dv*(i+1.0)
-                self.r_edge[i] = self.v_edge[i]*self.time
-                vm = dv*(i + 0.5)
-                if (vm < v_t):
-                    self.dens[i] = rho_t*(vm/v_t)**(-1.0*n_in)
-                else:
-                    self.dens[i] = rho_t*(vm/v_t)**(-1.0*n_out)
+            self.v_edge[i] = dv*(i+1.0)
+            self.r_edge[i] = self.v_edge[i]*self.time
+            vm = dv*(i + 0.5)
+            if (vm < v_t):
+                self.dens[i] = rho_t*(vm/v_t)**(-1.0*n_in)
+            else:
+                self.dens[i] = rho_t*(vm/v_t)**(-1.0*n_out)
+
+        self.calculate_volumes()
+
+
+    def set_homologous_exponential_profile(self,mass,KE,time=86400.,vmax=None,min_density=1e-3):
+
+        self.time = time
+        v_e   = (KE/6.0/mass)**(0.5)
+        rho0  = mass/8.0/np.pi/(v_e*self.time)**3.0
+
+        if (vmax is None):
+            vmax = v_e*np.log(1.0/min_density)
+
+        self.r_min = 0.0
+        dv = vmax/(1.0*self.n_zones)
+        for i in range(self.n_zones):
+            vm = dv*(i + 0.5)
+            self.v_edge[i] = dv*(i+1.0)
+            self.r_edge[i] = self.v_edge[i]*self.time
+            self.dens[i] = rho0*np.exp(-vm/v_e)
+
+        self.calculate_volumes()
 
 
 ##############################################################
@@ -190,6 +312,15 @@ class Sedona1DSphereModel(SedonaBaseModel):
             if (mass is None):
                 mass = 1.0*pc.m_sun
 
+##############################################################
+# Remapping functions
+##############################################################
+    def remap_to(self,type):
+
+        if (type == "2D_cyln"):
+            newmod = Sedona2DCylnModel()
+            newmod.remap_from(self)
+            return newmod
 
 ##############################################################
 # Reading in functions
@@ -230,6 +361,7 @@ class Sedona1DSphereModel(SedonaBaseModel):
 
         # close the file
 
+        self.dims = self.n_zones
         if self.n_zones != len(data):
             raise ValueError('badly formatted sedona model: nzones != number of data rows')
 
@@ -380,11 +512,14 @@ class Sedona1DSphereModel(SedonaBaseModel):
         ret_str += "n_elements = {:0}\n".format(len(self.elem_Z))
         ret_str += lbreak
 
+        self.calculate_volumes()
         for i in range(len(self.elem_Z)):
-            ret_str += " {:0}.{:1}\n".format(self.elem_Z[i],self.elem_A[i])
-
+            elem_mass = np.sum(self.vol*self.dens*self.comp[:,i])
+            ret_str += " {0:3.0f}.{1:}  ".format(self.elem_Z[i],self.elem_A[i])
+            ret_str += " {0:.4e} ({1:.4e} msun)\n".format(elem_mass,elem_mass/pc.m_sun)
         ret_str += lbreak
-        ret_str += "mass = {:0}\n".format(self.mass)
+        ret_str += "mass = {0:.4e} g ({1:.4e} msun)\n".format(self.mass,self.mass/pc.m_sun)
+        ret_str += "kinetic energy = {0:.4e} erg\n".format(self.kinetic_energy)
 
         return ret_str
 
