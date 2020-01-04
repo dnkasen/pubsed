@@ -90,7 +90,8 @@ class SpectrumFile():
             self.L = self.L[..., newaxis]
 
 
-        if (self.spec_units == 'angstrom'):
+        if (self.spec_units == 'angstrom' and self.n_x > 1):
+
             for it,im,ip in np.ndindex(self.n_times,self.n_mu,self.n_phi):
                 # change units of luminosity to erg/s/A
                 newL = self.L[it,:,im,ip]*self.x**2/pc.c/pc.cm_to_angs
@@ -129,7 +130,7 @@ class SpectrumFile():
             message = "Wavelength range for band light curve not in spectrum range"
             raise ValueError(message)
 
-        # integrate bolometric light curve
+        # integrate light curve
         for it,im,ip in np.ndindex(self.n_times,self.n_mu,self.n_phi):
             Lband[it,im,ip] = np.trapz(self.L[it,b,im,ip],x=self.x[b])
 
@@ -172,7 +173,7 @@ class SpectrumFile():
             thisL = -2.5*np.log10(thisL)+88.697425
 
         if (self.n_mu == 1 and self.n_phi == 1):
-            return self.t,thisL[:,0,0]
+            return self.t,Lbol #thisL[:,0,0]
         if (self.n_mu > 1 and self.n_phi == 1):
             return self.t,thisL[:,:,0]
 
@@ -324,7 +325,7 @@ class SpectrumFile():
 
         if (magnitudes):
             lc = lc/(wrange[1] - wrange[0])
-            
+
         else:
             lc = lc*0.5*(wrange[0] + wrange[1])/(wrange[1] - wrange[0])
 

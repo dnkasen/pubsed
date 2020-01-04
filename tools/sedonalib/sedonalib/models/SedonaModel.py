@@ -40,6 +40,8 @@ class SedonaBaseModel():
     def __str__(self):
         pass
 
+    def set_time(self,t):
+        self.time = t
 
     def set_constant_density(self,v):
         self.dens.fill(v)
@@ -186,6 +188,17 @@ class SedonaBaseModel():
 
 
         return True
+
+    def get_abundance(self,type,elems=None):
+
+        if (type == "solar"):
+
+                elems = ["1.1","2.4","26.56"]
+                comp  = []
+#            if (elems is None):
+
+
+
 
     def write(self,outfile):
         pass
