@@ -146,4 +146,9 @@ spectrum_suppress_txt = 0
 gamma_name     = ""
 gamma_nu_grid  = {1,1,1}
 
-spectrum_particle_list_name = "escaped_particles";
+spectrum_particle_list_name = "escaped_particles"
+spectrum_calc_particle_files = {}
+spectrum_calc_file_to_rank = {}
+spectrum_calc_chk_file = "chk.h5"
+spectrum_calc_out_file = "spectrum_out"
+spectrum_calc_n_ranks_old = 1

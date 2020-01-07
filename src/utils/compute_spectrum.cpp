@@ -24,11 +24,11 @@ int main(int argc, char **argv){
     if( argc > 1 ) param_file = std::string( argv[ 1 ] );
     ParameterReader params(param_file,verbose);
 
-    std::vector<std::string> fnames = params.getVector<std::string>("file_names");
-    std::vector<int> file_rank_id = params.getVector<int>("file_to_which_rank");
-    std::string chk_spectrum_fname = params.getScalar<std::string>("chk_spectrum_fname");
-    std::string out_spectrum_fname = params.getScalar<std::string>("out_spectrum_fname");
-    double rank_factor = params.getScalar<double>("n_ranks_old") / nprocs;
+    std::vector<std::string> fnames = params.getVector<std::string>("spectrum_calc_particle_files");
+    std::vector<int> file_rank_id = params.getVector<int>("spectrum_calc_file_to_rank");
+    std::string chk_spectrum_fname = params.getScalar<std::string>("spectrum_calc_chk_file");
+    std::string out_spectrum_fname = params.getScalar<std::string>("spectrum_calc_out_file");
+    double rank_factor = params.getScalar<double>("spectrum_calc_n_ranks_old") / nprocs;
 
     if (fnames.size() != file_rank_id.size()) {
       std::cerr << "File list and rank correspondence not same size. Exiting." << std::endl;
