@@ -302,7 +302,8 @@ class transport
   void writeCheckpointRNG(std::string fname);
 
   void readCheckpointParticles(std::vector<particle>& particle_list, 
-      std::string fname, std::string groupname, bool test=false);
+      std::string fname, std::string groupname, bool test=false,
+      bool all_one_rank=false);
   void readParticleProp(std::string fname, std::string fieldname,
       std::string groupname, std::vector<particle>& particle_list,
       int total_particles, int offset);

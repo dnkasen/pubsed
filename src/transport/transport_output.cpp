@@ -495,60 +495,71 @@ void transport::writeCheckpointRNG(std::string fname) {
 }
 
 void transport::readCheckpointParticles(std::vector<particle>& particle_list,
-    std::string fname, std::string groupname, bool test) {
+    std::string fname, std::string groupname, bool test, bool all_one_rank) {
   /* Get number of particles that are stored in the file */
-  hsize_t global_n_particles_total;
-  hsize_t n_ranks_old;
-  for (int rank = 0; rank < MPI_nprocs; rank++) {
-    if (MPI_myID == rank) {
-      getH5dims(fname, groupname, "e", &global_n_particles_total);
-      getH5dims(fname, groupname, "counts_by_rank", &n_ranks_old);
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-  }
-
-  int* global_n_particles = new int[MPI_nprocs];
-  int my_n_particles;
-  if (n_ranks_old != MPI_nprocs) {
-    if (verbose) {
-      std::cerr << "Rank count pre- and post-restart don't match. Distributing" <<
-        " particles evenly." << std::endl;
-      std::cerr << n_ranks_old << " " << MPI_nprocs << std::endl;
-      std::cerr << "Exiting." << std::endl;
-      exit(10);
-    }
-    /* Make sure each particle gets "claimed" by one rank */
-    my_n_particles = floor(global_n_particles_total / (1.0 * MPI_nprocs));
-    int remainder = global_n_particles_total % MPI_nprocs;
-    if (MPI_myID < remainder) {
-      my_n_particles += 1;
-    }
-  }
-  else {
+  hsize_t global_n_particles_total, n_ranks_old;
+  int my_n_particles, my_offset;
+  int* global_n_particles;
+  int* particle_offsets;
+  // all_one_rank option reads all particles into this rank and does not divide
+  // them up
+  if (!all_one_rank) {
     for (int rank = 0; rank < MPI_nprocs; rank++) {
       if (MPI_myID == rank) {
-        readSimple(fname, groupname, "counts_by_rank", global_n_particles, H5T_NATIVE_INT);
-        my_n_particles = global_n_particles[MPI_myID];
+        getH5dims(fname, groupname, "e", &global_n_particles_total);
+        getH5dims(fname, groupname, "counts_by_rank", &n_ranks_old);
       }
       MPI_Barrier(MPI_COMM_WORLD);
     }
+
+    global_n_particles = new int[MPI_nprocs];
+    if (n_ranks_old != MPI_nprocs) {
+      if (verbose) {
+        std::cerr << "Rank count pre- and post-restart don't match. Distributing" <<
+          " particles evenly." << std::endl;
+        std::cerr << n_ranks_old << " " << MPI_nprocs << std::endl;
+        std::cerr << "Exiting." << std::endl;
+        exit(10);
+      }
+      /* Make sure each particle gets "claimed" by one rank */
+      my_n_particles = floor(global_n_particles_total / (1.0 * MPI_nprocs));
+      int remainder = global_n_particles_total % MPI_nprocs;
+      if (MPI_myID < remainder) {
+        my_n_particles += 1;
+      }
+    }
+    else {
+      for (int rank = 0; rank < MPI_nprocs; rank++) {
+        if (MPI_myID == rank) {
+          readSimple(fname, groupname, "counts_by_rank", global_n_particles, H5T_NATIVE_INT);
+          my_n_particles = global_n_particles[MPI_myID];
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+      }
+    }
+    /* Figure out what each rank's offset will be in the particle array */
+    particle_offsets = new int[MPI_nprocs];
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Gather(&my_n_particles, 1, MPI_INT, global_n_particles, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    if (MPI_myID == 0) {
+      particle_offsets[0] = 0;
+      for (int i = 1; i < MPI_nprocs; i++) {
+        particle_offsets[i] = particle_offsets[i - 1] + global_n_particles[i - 1];
+      }
+    }
+    // Rank 0 tells all of the other ranks what their offsets will be
+    MPI_Scatter(particle_offsets, 1, MPI_INT, &my_offset, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
   }
+  else {
+    getH5dims(fname, groupname, "e", &global_n_particles_total);
+    std::cerr << "particle count " << global_n_particles_total << std::endl;
+    my_n_particles = global_n_particles_total;
+    my_offset = 0;
+  }
+  std::cerr << my_n_particles << std::endl;
   particle_list.resize(my_n_particles);
 
-  /* Figure out what each rank's offset will be in the particle array */
-  int my_offset;
-  int* particle_offsets = new int[MPI_nprocs];
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Gather(&my_n_particles, 1, MPI_INT, global_n_particles, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  if (MPI_myID == 0) {
-    particle_offsets[0] = 0;
-    for (int i = 1; i < MPI_nprocs; i++) {
-      particle_offsets[i] = particle_offsets[i - 1] + global_n_particles[i - 1];
-    }
-  }
-  // Rank 0 tells all of the other ranks what their offsets will be
-  MPI_Scatter(particle_offsets, 1, MPI_INT, &my_offset, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
 
   /* Read in all of the quantities */
   for (int i = 0; i < MPI_nprocs; i++) {
@@ -569,8 +580,10 @@ void transport::readCheckpointParticles(std::vector<particle>& particle_list,
     MPI_Barrier(MPI_COMM_WORLD);
   }
 
-  delete[] global_n_particles;
-  delete[] particle_offsets;
+  if (!all_one_rank) {
+    delete[] global_n_particles;
+    delete[] particle_offsets;
+  }
 }
 
 void transport::readParticleProp(std::string fname, std::string fieldname,
