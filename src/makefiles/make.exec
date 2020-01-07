@@ -1,7 +1,7 @@
 #####
 # SEDONA makefile
 #######
-.PHONY: all clean realclean gomc snopac
+.PHONY: all clean realclean gomc snopac spectrum chk
 
 SEDONA_GIT_VERSION := $(shell cd $(SEDONA_HOME); git describe --abbrev=12 --dirty --always --tags)
 COMPILE_DATETIME := $(shell date --iso=seconds)
@@ -9,8 +9,8 @@ DEFINES += -DSEDONA_GIT_VERSION=\"$(SEDONA_GIT_VERSION)\" -DCOMPILE_DATETIME=\"$
 CXXFLAGS += $(DEFINES)
 
 # location of gsl
-GSL_INC=$(GSL_DIR_INC)/
-GSL_LIB=$(GSL_DIR_LIB)/
+GSL_INC=$(GSL_DIR)/include
+GSL_LIB=$(GSL_DIR)/lib
 
 # location of lua
 LUA_INC=$(LUA_DIR)/src
