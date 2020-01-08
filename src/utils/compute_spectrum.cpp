@@ -28,7 +28,9 @@ int main(int argc, char **argv){
     std::vector<int> file_rank_id = params.getVector<int>("spectrum_calc_file_to_rank");
     std::string chk_spectrum_fname = params.getScalar<std::string>("spectrum_calc_chk_file");
     std::string out_spectrum_fname = params.getScalar<std::string>("spectrum_calc_out_file");
+    std::vector<double> time_filter = params.getVector<double>("spectrum_calc_time_filter");
     double rank_factor = params.getScalar<double>("spectrum_calc_n_ranks_old") / nprocs;
+    int save_particles = params.getScalar<int>("spectrum_calc_save_particles");
 
     if (fnames.size() != file_rank_id.size()) {
       std::cerr << "File list and rank correspondence not same size. Exiting." << std::endl;
@@ -57,14 +59,18 @@ int main(int argc, char **argv){
     grid->elems_Z.push_back(1);
 
     transport* transport_dummy = new transport;
-    transport_dummy->init(&params, grid);
+    transport_dummy->setup_MPI();
+    std::vector<particle> saved_particles;
     for (auto i_fname = my_fnames.begin(); i_fname != my_fnames.end(); i_fname++) {
       std::vector<particle> particle_list;
       std::string fname = *i_fname;
       transport_dummy->readCheckpointParticles(particle_list, fname, "particles_escaped", false, true);
-      std::cerr << particle_list.size() << std::endl;
       for (auto i_part = particle_list.begin(); i_part != particle_list.end(); i_part++) {
-        spectrum.count(i_part->t, i_part->nu, i_part->e / rank_factor, i_part->D);
+        if ((i_part->t > time_filter[0]) and (i_part->t <= time_filter[1])) {
+          spectrum.count(i_part->t, i_part->nu, i_part->e / rank_factor, i_part->D);
+          if (save_particles)
+            saved_particles.push_back(*i_part);
+        } 
       }
     }
 
@@ -74,6 +80,9 @@ int main(int argc, char **argv){
     if (verbose) {
       spectrum.print(1);
     }
+
+    if (save_particles)
+      writeCheckpointParticles(fname, "particles_filtered", saved_particles);
 
     delete grid;
     delete transport_dummy;
