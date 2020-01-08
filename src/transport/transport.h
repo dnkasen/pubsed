@@ -272,6 +272,7 @@ class transport
 
   // set things up
   void init(ParameterReader*, grid_general*);
+  void setup_MPI();
 
   // run a transport step
   void step(double dt);
