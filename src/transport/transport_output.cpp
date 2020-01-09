@@ -577,7 +577,9 @@ void transport::readCheckpointParticles(std::vector<particle>& particle_list,
       readParticleProp(fname, "dvds", groupname, particle_list, global_n_particles_total, my_offset);
       readParticleProp(fname, "fate", groupname, particle_list, global_n_particles_total, my_offset);
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    if (!all_one_rank) {
+      MPI_Barrier(MPI_COMM_WORLD);
+    }
   }
 
   if (!all_one_rank) {
