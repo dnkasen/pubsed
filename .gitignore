@@ -8,3 +8,4 @@ spectrum*h5
 *~
 *.pyc
 doc/sphinx_doc/_build/
+src/external/lua-5.2.1

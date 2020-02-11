@@ -185,6 +185,8 @@ class Sedona2DCylnModel(SedonaBaseModel):
 
         rho_fac = 1e-10
 
+        self.time = mod1d.time
+        
         # copy over elements
         self.elem_A = list(mod1d.elem_A)
         self.elem_Z = list(mod1d.elem_Z)
@@ -309,7 +311,7 @@ class Sedona2DCylnModel(SedonaBaseModel):
         fout.close()
 
 
-    def plot(self):
+    def plot(self,log=True):
 
         try:
             import matplotlib.pyplot as plt
@@ -351,7 +353,10 @@ class Sedona2DCylnModel(SedonaBaseModel):
             axs[0].set_title("mass fraction Z = " + str(self.elem_Z[i]))
             fig.colorbar(im1, ax=axs[0])
             if (i+1 < nelem):
-                im2 = axs[1].matshow(np.swapaxes(self.comp[:,:,i+1],0,1))
+                arr = np.swapaxes(self.comp[:,:,i+1],0,1)
+                if (log):
+                    arr = np.log10(arr)
+                im2 = axs[1].matshow(arr)
                 axs[1].set_title("mass fraction Z = " + str(self.elem_Z[i+1]))
                 fig.colorbar(im2, ax=axs[1])
             plt.show()
