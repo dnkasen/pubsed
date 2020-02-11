@@ -146,4 +146,4 @@ spectrum_suppress_txt = 0
 gamma_name     = ""
 gamma_nu_grid  = {1,1,1}
 
-spectrum_particle_list_name = "escaped_particles"
+spectrum_particle_list_name = ""
