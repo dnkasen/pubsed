@@ -67,7 +67,7 @@ void transport::solve_eq_temperature()
 {
   int solve_error = 0;
   GasState* gas_state_ptr = &(gas_state_vec_[0]);
-#pragma omp parallel for default(none) firstprivate(gas_state_ptr, solve_error)
+#pragma omp parallel for schedule(dynamic, 16) default(none) firstprivate(gas_state_ptr, solve_error)
   for (int i=my_zone_start_;i<my_zone_stop_;i++)
   {
     if (set_Tgas_to_Trad_ == 1)
