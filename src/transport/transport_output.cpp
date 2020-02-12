@@ -422,7 +422,12 @@ void transport::writeParticleProp(std::string fname, std::string fieldname,
   else if (fieldname == "e") {
     buffer_d = new double[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
-      buffer_d[i] = particle_list[i].e;
+      // Divide particle energy by number of processes. Total
+      // energy on each rank is the energy of the ejecta.
+      // In case we restart with a different number of particles,
+      // we need to scale down the energy so that the total of all
+      // particles is the total ejecta energy.
+      buffer_d[i] = particle_list[i].e / MPI_nprocs;
     }
   }
   else if (fieldname == "nu") {
@@ -663,7 +668,7 @@ void transport::readParticleProp(std::string fname, std::string fieldname,
   }
   else if (fieldname == "e") {
     for (int i = 0; i < n_particles_local; i++) {
-      particle_list[i].e = buffer_d[i];
+      particle_list[i].e = buffer_d[i] * MPI_nprocs;
     }
   }
   else if (fieldname == "nu") {
