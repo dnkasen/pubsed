@@ -47,8 +47,6 @@ int main(int argc, char **argv){
     int save_particles = params.getScalar<int>("spectrum_calc_save_particles");
     std::string save_particles_fname = params.getScalar<std::string>("spectrum_calc_save_particles_file");
 
-    double n_ranks_old = params.getScalar<double>("spectrum_calc_n_ranks_old");
-    double rank_factor = n_ranks_old / nprocs;
     std::vector<double> time_filter = params.getVector<double>("spectrum_calc_time_filter");
     std::vector<double> time_phys_filter = params.getVector<double>("spectrum_calc_time_phys_filter");
     std::vector<double> energy_filter = params.getVector<double>("spectrum_calc_energy_filter");
@@ -107,7 +105,7 @@ int main(int argc, char **argv){
             mu_filt_flag * nu_filt_flag * vel_filt_flag;
 
         if (filt_flag) {
-          spectrum.count(i_part->t, i_part->nu, i_part->e / rank_factor, i_part->D);
+          spectrum.count(i_part->t, i_part->nu, i_part->e, i_part->D);
           if (save_particles)
             saved_particles.push_back(*i_part);
         } 
@@ -122,10 +120,8 @@ int main(int argc, char **argv){
     }
 
     if (save_particles) {
-      // If saving out particles, need to scale down energy of each particle
-      // by # of MPI ranks job was run at
       for (auto i_part = saved_particles.begin(); i_part != saved_particles.end(); i_part++) {
-        i_part->e = i_part->e / n_ranks_old;
+        i_part->e = i_part->e;
       }
       if (verbose)
         createFile(save_particles_fname);
