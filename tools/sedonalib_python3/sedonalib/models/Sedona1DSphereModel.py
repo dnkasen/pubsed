@@ -1,5 +1,5 @@
 from .SedonaModel import SedonaBaseModel
-# from .Sedona2DCylnModel import Sedona2DCylnModel
+from .Sedona2DCylnModel import Sedona2DCylnModel
 from . import physical_constants as pc
 import numpy as np
 
@@ -19,6 +19,7 @@ class Sedona1DSphereModel(SedonaBaseModel):
         self.r_edge     = None
         self.v_edge     = None
         self.m_edge     = None
+        self.n_elements = 0
         self.elem_A     = []
         self.elem_Z     = []
         self.elem_list  = []
@@ -51,6 +52,10 @@ class Sedona1DSphereModel(SedonaBaseModel):
         if any(name.endswith(x) for x in hdf5_extensions):
             fileformat = "hdf5"
         return fileformat
+
+    ###############################################
+    # Return basic properties
+    ###############################################
 
     @property
     def r(self):
@@ -89,6 +94,10 @@ class Sedona1DSphereModel(SedonaBaseModel):
     def kinetic_energy(self):
         return np.sum(0.5*self.vol*self.dens*self.v_edge**2.0)
 
+    ###############################################
+    # Set basic properties
+    ###############################################
+
     def set_constant_velocity(self,v):
         self.v_edge.fill(v)
 
@@ -104,7 +113,6 @@ class Sedona1DSphereModel(SedonaBaseModel):
         self.r_edge  = np.zeros(self.n_zones)
         self.m_edge  = np.zeros(self.n_zones)
         self.vol     = np.zeros(self.n_zones)
-
 
     def set_grid(self,dims,rmax=None,rmin = 0.0):
         self.set_dims(dims)
@@ -147,14 +155,14 @@ class Sedona1DSphereModel(SedonaBaseModel):
                 r0 = self.r_edge[i-1]
                 m0 = self.m_edge[i-1]
             self.vol[i] = 4.0*np.pi/3.0*(self.r_edge[i]**3.0 - r0**3.0)
-            self.m_edge[i] = m0 + self.vol[i]*self.rho[i]
+            self.m_edge[i] = m0 + self.vol[i]*self.dens[i]
 
     def resize(self,new_nz):
         print("this is not implemented yet")
 
-##############################################################
-# Set composition functions
-##############################################################
+    ##############################################################
+    # Set composition functions
+    ##############################################################
     def set_shell_composition(self,comp,mrange=None,vrange=None,rrange=None):
 
         err = False
@@ -206,9 +214,9 @@ class Sedona1DSphereModel(SedonaBaseModel):
             self.comp[b,:] = comp
 
 
-##############################################################
-# Homologous density profiles
-##############################################################
+    ##############################################################
+    # Homologous density profiles
+    ##############################################################
 
     def set_homologous_profile(self,mass,KE,type="powerlaw",time=86400,vmax=None,n_out=10,n_in=1,min_density=1e-3):
 
@@ -294,9 +302,9 @@ class Sedona1DSphereModel(SedonaBaseModel):
         self.calculate_volumes()
 
 
-##############################################################
-# Default supernova profiles
-##############################################################
+    ##############################################################
+    # Default supernova profiles
+    ##############################################################
     def set_supernova_model(self,type,time=None,mass=None,KE=None,profile="powerlaw"):
 
         typeII_names = ["II","IIP","TYPEII","TYPEIIP","SNII","SNIIP"]
@@ -312,9 +320,9 @@ class Sedona1DSphereModel(SedonaBaseModel):
             if (mass is None):
                 mass = 1.0*pc.m_sun
 
-##############################################################
-# Remapping functions
-##############################################################
+    ##############################################################
+    # Remapping functions
+    ##############################################################
     def remap_to(self,type):
 
         if (type == "2D_cyln"):
@@ -322,9 +330,9 @@ class Sedona1DSphereModel(SedonaBaseModel):
             newmod.remap_from(self)
             return newmod
 
-##############################################################
-# Reading in functions
-##############################################################
+    ##############################################################
+    # Reading in functions
+    ##############################################################
 
     def read_ascii_file(self,name):
 
@@ -333,10 +341,10 @@ class Sedona1DSphereModel(SedonaBaseModel):
             # read header
             geometry,rtype = fin.readline().split()
             nz, rin, t, nelem  = fin.readline().split()
-            self.n_zones = int(nz)
-            self.time    = float(t)
-            n_elements   = int(nelem)
-            self.r_min   = float(rin)
+            self.n_zones    = int(nz)
+            self.time       = float(t)
+            self.n_elements = int(nelem)
+            self.r_min      = float(rin)
 
             # determine model type
             if (rtype == "SNR" or rtype == "homologous"):
@@ -351,7 +359,7 @@ class Sedona1DSphereModel(SedonaBaseModel):
 
             # read in element list
             self.elem_list = fin.readline().split()
-            if (len(self.elem_list) != n_elements):
+            if (len(self.elem_list) != self.n_elements):
                 message = "Badly formatted sedona model, "
                 message += "n_elements in header not equal to list"
                 raise ValueError(message)
@@ -363,11 +371,11 @@ class Sedona1DSphereModel(SedonaBaseModel):
 
         self.dims = self.n_zones
         if self.n_zones != len(data):
-            raise ValueError('badly formatted sedona model: nzones != number of data rows')
+            raise ValueError('badly formatted sedona model: n_zones != number of data rows')
 
         # determine elements
-        self.elem_Z = np.zeros(n_elements,dtype='i')
-        self.elem_A = np.zeros(n_elements,dtype='i')
+        self.elem_Z = np.zeros(self.n_elements,dtype='i')
+        self.elem_A = np.zeros(self.n_elements,dtype='i')
         for i,e in enumerate(self.elem_list):
             Z,A =  e.split(".")
             self.elem_Z[i] = int(Z)
@@ -390,9 +398,9 @@ class Sedona1DSphereModel(SedonaBaseModel):
 
 
 
-##############################################################
-# Writing out functions
-##############################################################
+    ##############################################################
+    # Writing out functions
+    ##############################################################
 
     def check_model_validity(self):
 
@@ -415,13 +423,12 @@ class Sedona1DSphereModel(SedonaBaseModel):
 
     def normalize_composition(self):
 
-        nel = len(self.elem_A)
         for i in range(self.n_zones):
             norm = np.sum(self.comp[i,:])
 
             if (norm == 0):
-                for j in range(nel):
-                    self.comp[i,j] = 1.0/(1.0*nel)
+                for j in range(self.n_elements):
+                    self.comp[i,j] = 1.0/(1.0*self.n_elements)
             else:
                 self.comp[i,:] /= norm
 
@@ -496,9 +503,9 @@ class Sedona1DSphereModel(SedonaBaseModel):
 
 
 
-##############################################################
-# Print out and plot out functions
-##############################################################
+    ##############################################################
+    # Print out and plot out functions
+    ##############################################################
 
     def __str__(self):
 
@@ -509,7 +516,7 @@ class Sedona1DSphereModel(SedonaBaseModel):
         ret_str += "geometry   = 1D_sphere\n"
         ret_str += "type       = " + self.type + "\n"
         ret_str += "n_zones    = {:0}\n".format(self.n_zones)
-        ret_str += "n_elements = {:0}\n".format(len(self.elem_Z))
+        ret_str += "n_elements = {:0}\n".format(self.n_elements)
         ret_str += lbreak
 
         self.calculate_volumes()

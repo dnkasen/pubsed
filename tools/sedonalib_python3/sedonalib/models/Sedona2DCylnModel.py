@@ -1,5 +1,5 @@
 from .SedonaModel import SedonaBaseModel
-#from .Sedona1DSphereModel import Sedona1DSphereModel
+from .Sedona1DSphereModel import Sedona1DSphereModel
 from . import physical_constants as pc
 import numpy as np
 import h5py
@@ -12,12 +12,14 @@ class Sedona2DCylnModel(SedonaBaseModel):
         # These variables will need to be defined
         # to constitute a legitimate model
         self.dims       = None
+        self.n_zones    = 0
         self.dens       = None
         self.temp       = None
         self.erad       = None
         self.comp       = None
         self.vx         = None
         self.vz         = None
+        self.n_elements = 0
         self.elem_A     = []
         self.elem_Z     = []
         self.elem_list  = []
@@ -50,8 +52,14 @@ class Sedona2DCylnModel(SedonaBaseModel):
         self.elem_Z = np.array(fin['Z'],dtype='i')
         self.dr = np.array(fin['dr'],dtype='d')
         self.time = float((fin['time'])[0])
-        self.dims = self.dens.shape
 
+        self.dims = self.dens.shape
+        self.n_zones = np.size(self.dims)
+
+        if (self.elem_A is None):
+            self.n_elements = 0
+        else:
+            self.n_elements = len(self.elem_A)
 
     ###############################################
     # Return basic properties
@@ -143,17 +151,15 @@ class Sedona2DCylnModel(SedonaBaseModel):
         else:
             self.dims = dims
 
+        self.n_zones = np.size(self.dims)
+
         self.vx = np.zeros(self.dims)
         self.vz = np.zeros(self.dims)
         self.dens = np.zeros(self.dims)
         self.temp = np.zeros(self.dims)
         self.erad = np.zeros(self.dims)
 
-        if (self.elem_A is None):
-            nelem = 0
-        else:
-            nelem = len(self.elem_A)
-        self.comp = np.zeros(self.dims +(nelem,))
+        self.comp = np.zeros(self.dims + (self.n_elements,))
 
     def set_dr(self, d):
 
@@ -190,7 +196,7 @@ class Sedona2DCylnModel(SedonaBaseModel):
         # copy over elements
         self.elem_A = list(mod1d.elem_A)
         self.elem_Z = list(mod1d.elem_Z)
-        nelem = len(self.elem_A)
+        self.n_elements = mod1d.n_elements
 
         # reset dimensions if not set already
         n1d = (mod1d.dims)[0]
@@ -226,7 +232,7 @@ class Sedona2DCylnModel(SedonaBaseModel):
                     v = (np.interp([r],r1d,mod1d.v))[0]
                     self.vx[i,j]  = v*x[i]/r
                     self.vz[i,j]  = v*z[j]/r
-                    for l in range(nelem):
+                    for l in range(self.n_elements):
                         self.comp[i,j,l] = (np.interp([r],r1d,mod1d.comp[:,l]))[0]
 
                 elif (r >= rmax_1d):
@@ -235,7 +241,7 @@ class Sedona2DCylnModel(SedonaBaseModel):
                     self.vx[i,j]   = 0
                     self.vz[i,j]   = 0.0
                     self.erad[i,j] = 0.0
-                    for l in range(nelem):
+                    for l in range(self.n_elements):
                         self.comp[i,j,l] = mod1d.comp[-1,l]
 
                 else:
@@ -244,7 +250,7 @@ class Sedona2DCylnModel(SedonaBaseModel):
                     self.vx[i,j]   = 0
                     self.vz[i,j]   = 0.0
                     self.erad[i,j] = 0.0
-                    for l in range(nelem):
+                    for l in range(self.n_elements):
                         self.comp[i,j,l] = mod1d.comp[0,l]
 
 
@@ -260,13 +266,12 @@ class Sedona2DCylnModel(SedonaBaseModel):
         ret_str += "Sedona model\n" + lbreak
         ret_str += "geometry   = 2D_cyln\n"
         ret_str += "dims       = ({:0},{:1})\n".format(self.dims[0],self.dims[1])
-        nzones = self.dims[0]*self.dims[1]
-        ret_str += "n_zones    = {:0}\n".format(nzones)
-        ret_str += "n_elements = {:0}\n".format(len(self.elem_Z))
+        ret_str += "n_zones    = {:0}\n".format(self.n_zones)
+        ret_str += "n_elements = {:0}\n".format(self.n_elements)
         ret_str += "dr         = ({:0},{:1})\n".format(self.dr[0],self.dr[1])
         ret_str += lbreak
 
-        for i in range(len(self.elem_Z)):
+        for i in range(self.n_elements):
             ret_str += " {:0}.{:1}\n".format(self.elem_Z[i],self.elem_A[i])
 
         ret_str += lbreak
@@ -343,8 +348,7 @@ class Sedona2DCylnModel(SedonaBaseModel):
 
 
 
-        nelem = len(self.elem_Z)
-        for i in range(0,nelem,2):
+        for i in range(0,self.n_elements,2):
 
             plt.clf()
             fig,axs = plt.subplots(1,2)
@@ -352,7 +356,7 @@ class Sedona2DCylnModel(SedonaBaseModel):
             im1 = axs[0].matshow(np.swapaxes(self.comp[:,:,i],0,1))
             axs[0].set_title("mass fraction Z = " + str(self.elem_Z[i]))
             fig.colorbar(im1, ax=axs[0])
-            if (i+1 < nelem):
+            if (i+1 < self.n_elements):
                 arr = np.swapaxes(self.comp[:,:,i+1],0,1)
                 if (log):
                     arr = np.log10(arr)

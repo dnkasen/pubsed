@@ -11,6 +11,7 @@ class Sedona3DCartModel(SedonaBaseModel):
         # These variables will need to be defined
         # to constitute a legitimate model
         self.dims       = None
+        self.n_zones    = 0
         self.dens       = None
         self.temp       = None
         self.erad       = None
@@ -18,6 +19,7 @@ class Sedona3DCartModel(SedonaBaseModel):
         self.vx         = None
         self.vy         = None
         self.vz         = None
+        self.n_elements = 0
         self.elem_A     = []
         self.elem_Z     = []
         self.elem_list  = []
@@ -52,8 +54,14 @@ class Sedona3DCartModel(SedonaBaseModel):
         self.dr = np.array(fin['dr'],dtype='d')
         self.rmin = np.array(fin['rmin'],dtype='d')
         self.time = float((fin['time'])[0])
-        self.dims = self.dens.shape
 
+        self.dims = self.dens.shape
+        self.n_zones = np.size(self.dims)
+
+        if (self.elem_A is None):
+            self.n_elements = 0
+        else:
+            self.n_elements = len(self.elem_A)
 
     ###############################################
     # Return basic properties
@@ -101,6 +109,8 @@ class Sedona3DCartModel(SedonaBaseModel):
         else:
             self.dims = dims
 
+        self.n_zones = np.size(self.dims)
+
         self.vx = np.zeros(self.dims)
         self.vy = np.zeros(self.dims)
         self.vz = np.zeros(self.dims)
@@ -108,11 +118,7 @@ class Sedona3DCartModel(SedonaBaseModel):
         self.temp = np.zeros(self.dims)
         self.erad = np.zeros(self.dims)
 
-        if (self.elem_A is None):
-            nelem = 0
-        else:
-            nelem = len(self.elem_A)
-        self.comp = np.zeros(self.dims +(nelem,))
+        self.comp = np.zeros(self.dims + (self.n_elements,))
 
     def set_dr(self, d):
 
@@ -293,7 +299,7 @@ class Sedona3DCartModel(SedonaBaseModel):
         nzm = int(self.dims[2]/2)
 
         fix,axs = plt.subplots(2,3)
-        axs[0,0].matshow(np.log10(self.density[:,:,nzm]))
+        axs[0,0].matshow(np.log10(self.dens[:,:,nzm]))
     #    axs[0,0].colorbar()
         axs[0,1].matshow(self.temp[:,:,nzm])
         axs[0,2].matshow(self.vtot[:,:,nzm])

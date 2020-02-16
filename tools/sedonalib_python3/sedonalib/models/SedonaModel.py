@@ -7,29 +7,25 @@ class SedonaBaseModel():
     # def n_zones(self):
     #     return self.n_zones
 
-    @property
-    def n_elements(self):
-        return len(self.elem_A)
+    # @property
+    # def n_elements(self):
+    #     return self.n_elements
 
     # @property
     # def dims(self):
     #     return self.dims
 
-    @property
-    def density(self):
-        return self.dens
+    # @property
+    # def density(self):
+    #     return self.dens
 
-    @property
-    def rho(self):
-        return self.dens
+    # @property
+    # def ke(self):
+    #     return self.kinetic_energy
 
-    @property
-    def ke(self):
-        return self.kinetic_energy
-
-    @property
-    def composition(self):
-        return self.comp
+    # @property
+    # def composition(self):
+    #     return self.comp
 
     def __init__(self):
         pass
@@ -65,13 +61,12 @@ class SedonaBaseModel():
         if (elements is not None):
             self.set_elements(elements)
 
-        nelem = len(self.elem_Z)
-        if (len(c) != nelem):
+        if (len(c) != self.n_elements):
             message = "compostion passed does not have same # of "
             message += "elements as model"
             raise ValueError(message)
 
-        for i in range(nelem):
+        for i in range(self.n_elements):
             if (len(self.dims) == 1):
                 self.comp[:,i].fill(c[i])
             if (len(self.dims) == 2):
@@ -125,6 +120,7 @@ class SedonaBaseModel():
     def set_elements(self,elist):
 
         # wipe whatever elements might have been there
+        self.n_elements = 0
         self.elem_A = []
         self.elem_Z = []
         self.elem_list = []
@@ -148,11 +144,11 @@ class SedonaBaseModel():
                 self.elem_A.append(int(A))
                 n_add += 1
 
-        if (n_add != 0):
-            nelem = len(self.elem_Z)
+        self.n_elements = len(self.elem_A)
 
+        if (n_add != 0):
             if (self.comp is not None):
-                self.comp.resize(self.dims + (nelem,))
+                self.comp.resize(self.dims + (self.n_elements,))
 
     def add_element(self,e):
         self.add_elements(e)
@@ -164,7 +160,7 @@ class SedonaBaseModel():
             print('Error: no elements defined in composition')
             return False
 
-        if (len(self.elem_Z) <= 0):
+        if (self.n_elements <= 0):
             print('Error: no elements defined in composition')
             return False
 
