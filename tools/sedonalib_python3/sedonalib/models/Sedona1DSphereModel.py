@@ -589,6 +589,6 @@ class Sedona1DSphereModel(SedonaBaseModel):
         if show:
             plt.ion()
             fig.show()
-            j = raw_input("press any key to continue>")
+            j = input("press any key to continue>")
 
         return (fig, axarr)

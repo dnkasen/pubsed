@@ -96,7 +96,7 @@ class SedonaParam(dict):
                 name = name.replace(".lua","")
                 print(str(i) + ') ' + name)
 
-            num = raw_input("choose template number >")
+            num = input("choose template number >")
 
             num = int(num)
             if (num < 0 or num >= len(templates)):

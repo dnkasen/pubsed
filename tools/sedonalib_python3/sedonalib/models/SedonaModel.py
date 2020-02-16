@@ -205,4 +205,4 @@ class SedonaBaseModel():
 
 
     def wait_for_key(self):
-        j = raw_input("press any key to continue>")
+        j = input("press any key to continue>")
