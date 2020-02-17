@@ -698,7 +698,8 @@ void grid_1D_sphere::get_velocity(int i, double x[3], double D[3], double v[3], 
     v[1] = x[1]/t_now;
     v[2] = x[2]/t_now;
     *dvds = 1.0/t_now;
-  } else {
+  }
+  else {
     // radius in zone
     double rr = sqrt(x[0]*x[0] + x[1]*x[1] + x[2]*x[2]);
 
