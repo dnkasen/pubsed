@@ -177,8 +177,6 @@ class Sedona2DCylnModel(SedonaBaseModel):
 
     def set_homologous_profile(self,mass,KE,type="powerlaw",time=86400,vmax=None,n_out=10,n_in=1,min_density=1e-3):
 
-        from Sedona1DSphereModel import Sedona1DSphereModel
-
         mod1d = Sedona1DSphereModel(dims=self.dims[0])
         mod1d.set_homologous_profile(mass,KE,type=type,vmax=vmax,n_out=n_out,n_in=n_in,min_density=min_density)
         self.remap_from(mod1d)

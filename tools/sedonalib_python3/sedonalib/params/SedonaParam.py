@@ -29,11 +29,11 @@ class SedonaParam(dict):
 
     def __setitem__(self, key, item):
 
-        if (key not in self.defaults_dict.keys()):
+        if (key not in list(self.defaults_dict.keys())):
             import difflib
             message = key + " is not a valid Sedona parameter\n"
             message += "Did you mean one of: \n"
-            for e in difflib.get_close_matches(key, self.defaults_dict.keys()):
+            for e in difflib.get_close_matches(key, list(self.defaults_dict.keys())):
                 message += "> " + str(e) + "\n"
             raise ValueError(message)
 
@@ -96,7 +96,7 @@ class SedonaParam(dict):
                 name = name.replace(".lua","")
                 print(str(i) + ') ' + name)
 
-            num = input("choose template number >")
+            num = eval(input("choose template number >"))
 
             num = int(num)
             if (num < 0 or num >= len(templates)):
@@ -139,12 +139,12 @@ class SedonaParam(dict):
 
 
         for key in sorted(self.param_dict.keys()):
-            if (key not in self.defaults_dict.keys()):
+            if (key not in list(self.defaults_dict.keys())):
                 line += "{0:35} = {1}\n".format(key,self.param_dict[key])
         line += "----------------------------------\n"
 
         for key in sorted(self.param_dict.keys()):
-            if (key in self.defaults_dict.keys()):
+            if (key in list(self.defaults_dict.keys())):
                 if (self.param_dict[key] != self.defaults_dict[key] or all==True):
                     head = (key.split("_"))[0]
                     if (head != lasthead):
@@ -173,7 +173,7 @@ class SedonaParam(dict):
         # print user define variables
         line = linebreak
         for key in sorted(self.param_dict.keys()):
-            if (key not in self.defaults_dict.keys()):
+            if (key not in list(self.defaults_dict.keys())):
                 line += "{0:35} = {1}\n".format(key,self.param_dict[key])
         line += linebreak
         fout.write(line)
@@ -197,7 +197,7 @@ class SedonaParam(dict):
         for key in sorted(self.param_dict.keys()):
             if (key in header_keys):
                 continue
-            if (key in self.defaults_dict.keys()):
+            if (key in list(self.defaults_dict.keys())):
                 if (self.param_dict[key] != self.defaults_dict[key] or all==True):
                     head = (key.split("_"))[0]
                     if (head != lasthead):

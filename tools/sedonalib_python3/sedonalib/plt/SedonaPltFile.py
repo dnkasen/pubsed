@@ -16,12 +16,12 @@ class SedonaPltFile():
     def load_data(self):
 
         ds         = h5py.File(self.name)
-        keys       = ds.keys()
+        keys       = list(ds.keys())
         self.data  = {key: np.array(ds[key], dtype = np.float64) for key in keys}
         ds.close()
 
         self.data_status 		= "loaded"
-        self.data_keys 			= self.data.keys()
+        self.data_keys 			= list(self.data.keys())
         self.dim 				= len(self.data['rho'].shape)
 
         print("Found the modelfile to be a ", self.dim, "dimensional setup.")

@@ -38,7 +38,7 @@ def plot_spectrum(name,time=None,mu=None,phi=None):
 
     plt.ion()
     plt.show()
-    j = input()
+    j = eval(input())
 
 def plot_lightcurve(name,band=None):
 
@@ -73,4 +73,4 @@ def plot_lightcurve(name,band=None):
 
     plt.ion()
     plt.show()
-    j = input()
+    j = eval(input())
