@@ -33,7 +33,6 @@ from scipy import integrate as integrate
 
 
 
-
 class Filter:
 
 # contains the filter data and interpolation routines
@@ -84,27 +83,33 @@ class Filter:
         sample_points = self.transFunc_nu(filt)(nu)/nu
         return integrate.trapz(sample_points,nu)      
 
-    
-    
+
+
 class LightCurve:
-   
+
 # takes an input spectrum and a list of filters to convert to AB mag. light curves
 
- 
     def __init__(self,sname):
         self.fname = sname
         self.sdat = h5py.File(sname,'r')
-        self.nu = np.array(self.sdat['nu'])
+
+        self.time_centers = np.array(self.sdat['time'])
+        self.nu_centers = np.array(self.sdat['nu'])
+        self.n_times = np.size(self.time_centers)
+        self.n_nu = np.size(self.nu_centers)
+
         self.spec = self.sdat['Lnu']
-        self.time = np.array(self.sdat['time'])
-        self.filter = Filter()
-       
+
+        self.time_edges = np.array(self.sdat['time_edges'])
+        self.nu_edges = np.array(self.sdat['nu_edges'])
+
+        self.filter = Filter()       
 
     # returns the bolometric light curve (in erg/s) 
     def get_bolometric_lum(self):
-        lum = np.zeros(self.time.size)
-        dnu = np.ediff1d(self.nu,to_end=0)
-        for i in range(self.time.size):
+        lum = np.zeros(self.n_times)
+        dnu = np.ediff1d(self.nu_edges)
+        for i in range(self.n_times):
             lum[i] = np.sum(self.spec[i]*dnu)
         lum[np.where(lum==0)] = 1e-10
         return lum
@@ -118,12 +123,12 @@ class LightCurve:
    
    # returns the AB magnitude light curve, for a given band 
     def get_ABMag(self,band):
-        lum = np.zeros(self.time.size)
-        dnu = np.ediff1d(self.nu,to_end=0)
-        for i in range(self.time.size):
-            sample_points = np.array(self.spec[i])/self.nu*(self.filter.transFunc_nu(band)(self.nu))
-            lum[i] = integrate.trapz(sample_points,x=self.nu)
-        lum = lum/self.filter.getNormalization(band,self.nu) #gets Lnu(band)
+        lum = np.zeros(self.n_times)
+        dnu = np.ediff1d(self.nu_edges)
+        for i in range(self.n_times):
+            sample_points = np.array(self.spec[i])/self.nu_centers*(self.filter.transFunc_nu(band)(self.nu_centers))
+            lum[i] = integrate.trapz(sample_points,x=self.nu_centers)
+        lum = lum/self.filter.getNormalization(band,self.nu_centers) #gets Lnu(band)
         flx = lum/(4.*np.pi*(10.*3.0857e18)**2) #convert to flux at 10pc
         flx[np.where(flx==0.)] = 1e-99 #some small number so not taking log(0)
         mag = -2.5*np.log10(flx)-48.6 #get the AB magnitude
@@ -136,8 +141,8 @@ class LightCurve:
    
    # takes a list of bands and returns their AB magnitude light curves 
     def get_lcs(self,bands):
-        time_arr = self.time/(24.*3600.)
-        mag_array = np.zeros((len(bands),self.time.size))
+        time_arr = self.time_centers/(24.*3600.)
+        mag_array = np.zeros((len(bands),self.n_times))
         for i in range(len(bands)):
             mag_array[i] = self.get_ABMag(bands[i])
         mag_array[np.where(np.isinf(mag_array))] = 0.
@@ -146,12 +151,12 @@ class LightCurve:
    
    # writes out the file to "lightcurve.out" 
     def write_bands(self,bands):
-        dat_arr = np.c_[self.time/(24.*3600),self.get_bolometric_lum(),self.get_bolometric_mag(),
-                                 self.get_lcs(bands).T]
+        dat_arr = np.c_[self.time_centers/(24.*3600),self.get_bolometric_lum(),self.get_bolometric_mag(),self.get_lcs(bands).T]
         filename = "lightcurve.out"
         header_arr = "Time (Days) \t Lbol (erg/s) \t Mbol \t  {} \n All magnitudes are given in the AB Magnitude System".format('\t'.join(map(str,tuple(bands))))
         np.savetxt(filename,dat_arr,header=header_arr,fmt='%.6e')
-    
+
+
     
 def main(argv):
     specfile = ''
@@ -176,7 +181,7 @@ def main(argv):
         elif opt == "-s":
             specfile = arg
         elif opt == "-b":
-             bands = arg
+            bands = arg
     print("Filename: {}".format(specfile))
     print("Bands: {}".format(bands))
     lc = LightCurve(specfile)
@@ -184,9 +189,4 @@ def main(argv):
     print("Output written to {}".format("lightcurve.out"))
 
 if __name__ == "__main__":
-	main(sys.argv[1:])
-
-
-
-
-    
+    main(sys.argv[1:])
