@@ -19,7 +19,9 @@ public:
   real p_gas;           // gas pressure
   real T_gas;           // gas temperature
   real n_elec;          // number of free electrons
-  real grey_opacity;    // grey opacity (cm^2/g) if the user defines a zone-dependent grey opacity
+  real bulk_grey_opacity;           // bulk component of the grey opacity (cm^2/g), which is the same in every zone
+  real zone_specific_grey_opacity;  // zone-specific component of the grey opacity (cm^2/g), which varies from zone to zone
+  real total_grey_opacity;          // total grey opacity (cm^2/g), which is the sum of the bulk component and the zone-specific component
 
   // composition of gas
   std::vector<real> X_gas;   // mass fractions of elements in zone

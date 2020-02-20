@@ -193,10 +193,10 @@ double transport::rad_eq_function_NLTE(GasState* gas_state_ptr, int c,double T, 
   gas_state_ptr->temp_ = T;
 
   // make sure grey_opacity is not being used
-  if ( (gas_state_ptr->smooth_grey_opacity_ == 1) || (gas_state_ptr->use_zone_dependent_grey_opacity_ == 1) )
+  if (gas_state_ptr->total_grey_opacity_ != 0)
   {
-	std::cerr << "# ERROR: NLTE solve should not be used with grey opacity\n";
-	exit(1);
+    std::cerr << "# ERROR: NLTE solve should not be used with grey opacity\n";
+    exit(1);
   }
 
   // if flag set, recompute the entire NLTE problem for this iteration

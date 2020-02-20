@@ -107,7 +107,7 @@ limits_temp_min = 1000
 
 -- opacity calculation defaults
 opacity_grey_opacity				= 0
-opacity_zone_dependent_grey_opacity	= 0
+opacity_zone_specific_grey_opacity	= 0
 opacity_user_defined		        = 0
 opacity_epsilon             		= 1.0
 opacity_atom_zero_epsilon  			= {}

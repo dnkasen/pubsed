@@ -111,12 +111,19 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
   status = H5LTread_dataset_double(file_id,"/erad",tmp);
   if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find erad" << endl;
   for (int i=0; i < n_zones; i++) z[i].e_rad = tmp[i];
-  // read grey opacity if the user defines a zone-dependent grey opacity
-  int use_zone_dependent_grey_opacity = params->getScalar<int>("opacity_zone_dependent_grey_opacity");
-  if(use_zone_dependent_grey_opacity != 0){
+  // read grey opacity if the user defines a zone-specific grey opacity
+  int use_zone_specific_grey_opacity = params->getScalar<int>("opacity_zone_specific_grey_opacity");
+  if(use_zone_specific_grey_opacity != 0){
     status = H5LTread_dataset_double(file_id,"/grey_opacity",tmp);
     if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find grey_opacity" << endl;
-    for (int i=0; i < n_zones; i++) z[i].grey_opacity = tmp[i];
+    for (int i=0; i < n_zones; i++) z[i].zone_specific_grey_opacity = tmp[i];
+  }
+  // set bulk grey opacity (note: this parameter is set in the param file, not in the hdf5 file)
+  // and set total grey opacity
+  double bulk_grey_opacity = params->getScalar<int>("opacity_grey_opacity")
+  for (int i=0; i < n_zones; i++){
+    z[i].bulk_grey_opacity = bulk_grey_opacity;
+    z[i].total_grey_opacity = z[i].bulk_grey_opacity + z[i].zone_specific_grey_opacity;
   }
   delete [] tmp;
 
