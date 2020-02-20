@@ -149,7 +149,7 @@ void grid_1D_sphere::read_hdf5_file(std::string model_file, ParameterReader* par
   }
   // set bulk grey opacity (note: this parameter is set in the param file, not in the hdf5 file)
   // and set total grey opacity
-  double bulk_grey_opacity = params->getScalar<int>("opacity_grey_opacity")
+  double bulk_grey_opacity = params->getScalar<double>("opacity_grey_opacity")
   for (int i=0; i < n_zones; i++){
     z[i].bulk_grey_opacity = bulk_grey_opacity;
     z[i].total_grey_opacity = z[i].bulk_grey_opacity + z[i].zone_specific_grey_opacity;
