@@ -2,16 +2,16 @@ import numpy as np
 import h5py
 
 #######################################################
-nx     = 100          # number of radial zones
-n_3d   =  60          # number zones per side for 3D model
-mass   = 1.0          # mass in solar masses
-KE     = 1.0e51       # kinetic energy in ergs
-texp   = 20.0*3660*24 # time since explosion in seconds
-vmax   = 2.5e9        # outer velocity (cm/s)
-Mni    = 0.6          # mass of 56Ni
-Mime   = 0.25          # mass of IME
-T0     = 0.8e4        # temperature scale at day 20
-name   = "toy_SNIa"   # base name of model
+nx     = 100          	# number of radial zones
+n_3d   =  60          	# number zones per side for 3D model
+mass   = 1.0          	# mass in solar masses
+KE     = 1.0e51       	# kinetic energy in ergs
+texp   = 20.0*(3600*24)	# time since explosion in seconds
+vmax   = 2.5e9        	# outer velocity (cm/s)
+Mni    = 0.6          	# mass of 56Ni
+Mime   = 0.25          	# mass of IME
+T0     = 0.8e4        	# temperature scale at day 20
+name   = "toy_SNIa"   	# base name of model
 #######################################################
 
 # elements included
