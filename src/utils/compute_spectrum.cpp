@@ -91,7 +91,7 @@ int main(int argc, char **argv){
       // Divide particle energy by number of processes to undo multiplication that happens on
       // reading in a particle list from checkpoint
       for (auto i_part = particle_list.begin(); i_part != particle_list.end(); i_part++) {
-        i_part->e = i_part->e / nproc;
+        i_part->e = i_part->e / nprocs;
       }
       for (auto i_part = particle_list.begin(); i_part != particle_list.end(); i_part++) {
         double time_phys = i_part->t + i_part->x_dot_d() / pc::c;
