@@ -36,8 +36,6 @@ using std::endl;
 //--------------------------------------------------------
 int SedonaClass::run(std::string param_file)
 {
-  // get MPI ranks and verbosity
-  int my_rank,n_procs;
 #ifdef MPI_PARALLEL
   MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
   MPI_Comm_size( MPI_COMM_WORLD, &n_procs);
@@ -391,8 +389,20 @@ void SedonaClass::evolve_system()
       i_write++;
     }
 
-    if ((do_checkpoint_) && (do_checkpoint_now()))
+    int chk_now;
+#ifdef MPI_PARALLEL
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
+    if (verbose_) {
+      chk_now = do_checkpoint_now();
+    }
+#ifdef MPI_PARALLEL
+    MPI_Bcast(&chk_now, 1, MPI_INT, 0, MPI_COMM_WORLD);
+#endif
+    if ((do_checkpoint_) && (chk_now))
     {
+      std::cerr << "write checkpoint " << i_chk_ << " " << my_rank << std::endl;
       write_checkpoint(i_chk_);
       i_chk_++;
     }
@@ -479,6 +489,7 @@ int SedonaClass::do_checkpoint_simulation_time() {
 //-----------------------------------------------------------
 void SedonaClass::write_checkpoint(int i_chk_)
 {
+  std::cerr << verbose_ << " initcall " << my_rank << std::endl;
   string i_chk_str = std::to_string(i_chk_);
   i_chk_str.insert(i_chk_str.begin(), 5 - i_chk_str.length(), '0');
   string checkpoint_file_full = checkpoint_name_base_ + "_" + i_chk_str + ".h5";
@@ -490,11 +501,13 @@ void SedonaClass::write_checkpoint(int i_chk_)
 //-----------------------------------------------------------
 void SedonaClass::write_checkpoint(std::string checkpoint_file_full)
 {
+  std::cerr << verbose_ << " in " << my_rank << std::endl;
   if (verbose_) {
     cout << "# writing checkpoint file " << checkpoint_file_full;
     cout << " at time " << t_ << endl;
     createFile(checkpoint_file_full);
   }
+  MPI_Barrier(MPI_COMM_WORLD);
   write_checkpoint_meta(checkpoint_file_full);
   transport_->writeCheckpointParticles(checkpoint_file_full);
   grid_->writeCheckpointZones(checkpoint_file_full);
@@ -539,14 +552,6 @@ void SedonaClass::read_checkpoint_meta
 (std::string checkpoint_file, std::string& datetime_string_new,
 std::string& version_string_new)
 {
-  int my_rank, n_procs;
-  #ifdef MPI_PARALLEL
-  MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
-  MPI_Comm_size( MPI_COMM_WORLD, &n_procs);
-  #else
-  my_rank = 0;
-  n_procs = 1;
-  #endif
 
   for (int rank = 0; rank < n_procs; rank++)
   {
