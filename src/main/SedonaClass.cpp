@@ -402,7 +402,6 @@ void SedonaClass::evolve_system()
 #endif
     if ((do_checkpoint_) && (chk_now))
     {
-      std::cerr << "write checkpoint " << i_chk_ << " " << my_rank << std::endl;
       write_checkpoint(i_chk_);
       i_chk_++;
     }
@@ -489,7 +488,6 @@ int SedonaClass::do_checkpoint_simulation_time() {
 //-----------------------------------------------------------
 void SedonaClass::write_checkpoint(int i_chk_)
 {
-  std::cerr << verbose_ << " initcall " << my_rank << std::endl;
   string i_chk_str = std::to_string(i_chk_);
   i_chk_str.insert(i_chk_str.begin(), 5 - i_chk_str.length(), '0');
   string checkpoint_file_full = checkpoint_name_base_ + "_" + i_chk_str + ".h5";
@@ -501,7 +499,6 @@ void SedonaClass::write_checkpoint(int i_chk_)
 //-----------------------------------------------------------
 void SedonaClass::write_checkpoint(std::string checkpoint_file_full)
 {
-  std::cerr << verbose_ << " in " << my_rank << std::endl;
   if (verbose_) {
     cout << "# writing checkpoint file " << checkpoint_file_full;
     cout << " at time " << t_ << endl;
