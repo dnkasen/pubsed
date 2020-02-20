@@ -63,6 +63,10 @@ class transport
   std::string atomdata_file_;
   AtomicData* atomic_data_;
 
+  std::string escaped_particle_filename_;
+  int save_escaped_particles_;
+  double maxn_escaped_particles_;
+
   // MPI stuff
   int MPI_nprocs;
   int MPI_myID;

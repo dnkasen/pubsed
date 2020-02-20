@@ -39,16 +39,15 @@ void transport::output_spectrum(int it)
     if (verbose) gamma_spectrum.print(suppress_txt);
   }
 
-  string partname = params_->getScalar<string>("spectrum_particle_list_name");
-  if (partname != "")
+  if (save_escaped_particles_)
   {
     if (verbose) {
       std::cout << "# writing escaped particle list" << std::endl;
-      createFile(partname + base + ".h5");
+      createFile(escaped_particle_filename_ + base + ".h5");
     }
     // whenever escaped particles are written out, clear the list so we are less likely to run
     // into memory issues
-    writeCheckpointParticles(particles_escaped, partname + base + ".h5", "particles_escaped");
+    writeCheckpointParticles(particles_escaped, escaped_particle_filename_ + base + ".h5", "particles_escaped");
     clearEscapedParticles();
   }
 

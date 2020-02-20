@@ -172,6 +172,13 @@ void transport::init(ParameterReader* par, grid_general *g)
     std::vector<double>gng = params_->getVector<double>("gamma_nu_grid");
     gamma_spectrum.init(stg,sng,nmu,nphi);
   }
+  escaped_particle_filename_ = params_->getScalar<string>("spectrum_particle_list_name");
+  if (escaped_particle_filename_ == "")
+    save_escaped_particles_ = 0;
+  else
+    save_escaped_particles_ = 1;
+  maxn_escaped_particles_ = params_->getScalar<double>("spectrum_particle_list_maxn");
+  
   // check if atomfile is there
   atomdata_file_ = params_->getScalar<string>("data_atomic_file");
   std::ifstream afile(atomdata_file_);

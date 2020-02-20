@@ -70,8 +70,20 @@ void transport::step(double dt)
         if (particles[i].type == gammaray)
           gamma_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
         particles[i].t = t_obs;
+        if (save_escaped_particles_) {
 #pragma omp critical
-        particles_escaped.push_back(particles[i]);
+        {
+          if (maxn_escaped_particles_ >= particles_escaped.size()) {
+            particles_escaped.push_back(particles[i]);
+          }
+          else {
+            std::cerr << "# WARNING: Escaped particle list exceeds max size " 
+              << maxn_escaped_particles_ << std::endl;
+            std::cerr << "# Clearing escaped particle list on rank " << MPI_myID << std::endl;
+            clearEscapedParticles();
+          }
+        }
+        }
       }
   }
 
