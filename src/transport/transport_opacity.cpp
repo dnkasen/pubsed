@@ -103,7 +103,8 @@ void transport::set_opacity(double dt)
 
       gas_state_ptr->set_mass_fractions(X_now);
 
-      gas_state_ptr->total_grey_opacity_ = gas_state_ptr->smooth_grey_opacity_ + z->grey_opacity;
+      gas_state_ptr->bulk_grey_opacity_ = z->bulk_grey_opacity;
+      gas_state_ptr->total_grey_opacity_ = z->total_grey_opacity;
 
       if (first_step_)
       {
@@ -111,7 +112,7 @@ void transport::set_opacity(double dt)
         gas_state_ptr->dens_ = z->rho;
         gas_state_ptr->temp_ = z->T_gas;
 
-        if ( (gas_state_ptr->smooth_grey_opacity_ == 0) && (gas_state_ptr->use_zone_dependent_grey_opacity_ == 0) )
+        if (gas_state_ptr->total_grey_opacity_ == 0)
         {
           // always do LTE on first step, without updating temperature
           solve_error = gas_state_ptr->solve_state();
@@ -129,7 +130,8 @@ void transport::set_opacity(double dt)
 
         else
         {
-          if ( (gas_state_ptr->smooth_grey_opacity_ == 0) && (gas_state_ptr->use_zone_dependent_grey_opacity_ == 0) )          {
+          if (gas_state_ptr->total_grey_opacity_ == 0)
+          {
             solve_error = gas_state_ptr->solve_state(J_nu_[i]);
           }
         }

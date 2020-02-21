@@ -132,7 +132,7 @@ All Runtime Parameters
         * - opacity_grey_opacity
           - <real>
           - value of grey opacity to use (in cm^2/g). Will override all other opacity settings
-        * - opacity_zone_dependent_grey_opacity
+        * - opacity_zone_specific_grey_opacity
           - 0 = no | 1 = yes
           - Use a zone dependent grey opacity dataset set in an hdf5 input model file
         * - opacity_user_defined

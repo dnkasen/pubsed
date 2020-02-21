@@ -397,10 +397,10 @@ void GasState::print_properties()
   std::cout << "# opacity settings\n";
   std::cout << "#-------------------------------------------------\n";
 
-  if ( (smooth_grey_opacity_ != 0) || (use_zone_dependent_grey_opacity_ != 0) )
+  if ( (bulk_grey_opacity_ != 0) || (use_zone_specific_grey_opacity_ != 0) )
   {
-    std::cout << "# smooth grey opacity             = " << smooth_grey_opacity_ << "\n";
-    std::cout << "# use_zone_dependent_grey_opacity = " << use_zone_dependent_grey_opacity_ << "\n";
+    std::cout << "# bulk grey opacity              = " << bulk_grey_opacity_ << "\n";
+    std::cout << "# use_zone_specific_grey_opacity = " << use_zone_specific_grey_opacity_ << "\n";
   }
   else
   {

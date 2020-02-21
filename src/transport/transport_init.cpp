@@ -219,9 +219,9 @@ void transport::init(ParameterReader* par, grid_general *g)
       = params_->getScalar<int>("opacity_free_free");
     i_gas_state->use_user_opacity_
       = params_->getScalar<int>("opacity_user_defined");
-    i_gas_state->smooth_grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
-    i_gas_state->use_zone_dependent_grey_opacity_
-      = params_->getScalar<int>("opacity_zone_dependent_grey_opacity");
+    i_gas_state->bulk_grey_opacity_ = params_->getScalar<double>("opacity_grey_opacity");
+    i_gas_state->use_zone_specific_grey_opacity_
+      = params_->getScalar<int>("opacity_zone_specific_grey_opacity");
     double min_ext = params_->getScalar<double>("opacity_minimum_extinction");
     i_gas_state->set_minimum_extinction(min_ext);
     i_gas_state->atom_zero_epsilon_ = params_->getVector<int>("opacity_atom_zero_epsilon");
