@@ -27,7 +27,7 @@ private:
   std::vector<double> vol_new;
 
   // functions for reading in model files
-  void read_ascii_file(std::string, int);
+  void read_ascii_file(std::string, ParameterReader*, int);
   void read_hdf5_file(std::string, ParameterReader*, int);
 
 

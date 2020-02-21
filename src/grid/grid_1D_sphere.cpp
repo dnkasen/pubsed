@@ -56,7 +56,7 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
       else
         cerr << "# Don't recognize model file extension, assuming ascii" << endl;
     }
-    read_ascii_file(model_file,verbose);
+    read_ascii_file(model_file,params,verbose);
   }
 }
 
@@ -238,7 +238,7 @@ void grid_1D_sphere::read_hdf5_file(std::string model_file, ParameterReader* par
 // Read model data from an ascii input file
 //------------------------------------------------------------
 //------------------------------------------------------------
-void grid_1D_sphere::read_ascii_file(std::string model_file, int verbose)
+void grid_1D_sphere::read_ascii_file(std::string model_file, ParameterReader* params, int verbose)
 {
   std::ifstream infile;
   infile.open(model_file.c_str());
