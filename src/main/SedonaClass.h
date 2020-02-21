@@ -26,6 +26,8 @@ private:
 
   // some core control parameters
   int verbose_;
+  int my_rank; // MPI info 
+  int n_procs;
   int do_restart_;
   int do_checkpoint_;
   int use_transport_;

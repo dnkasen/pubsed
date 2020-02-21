@@ -36,8 +36,6 @@ using std::endl;
 //--------------------------------------------------------
 int SedonaClass::run(std::string param_file)
 {
-  // get MPI ranks and verbosity
-  int my_rank,n_procs;
 #ifdef MPI_PARALLEL
   MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
   MPI_Comm_size( MPI_COMM_WORLD, &n_procs);
@@ -391,7 +389,18 @@ void SedonaClass::evolve_system()
       i_write++;
     }
 
-    if ((do_checkpoint_) && (do_checkpoint_now()))
+    int chk_now;
+#ifdef MPI_PARALLEL
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
+    if (verbose_) {
+      chk_now = do_checkpoint_now();
+    }
+#ifdef MPI_PARALLEL
+    MPI_Bcast(&chk_now, 1, MPI_INT, 0, MPI_COMM_WORLD);
+#endif
+    if ((do_checkpoint_) && (chk_now))
     {
       write_checkpoint(i_chk_);
       i_chk_++;
@@ -495,6 +504,7 @@ void SedonaClass::write_checkpoint(std::string checkpoint_file_full)
     cout << " at time " << t_ << endl;
     createFile(checkpoint_file_full);
   }
+  MPI_Barrier(MPI_COMM_WORLD);
   write_checkpoint_meta(checkpoint_file_full);
   transport_->writeCheckpointParticles(checkpoint_file_full);
   grid_->writeCheckpointZones(checkpoint_file_full);
@@ -539,14 +549,6 @@ void SedonaClass::read_checkpoint_meta
 (std::string checkpoint_file, std::string& datetime_string_new,
 std::string& version_string_new)
 {
-  int my_rank, n_procs;
-  #ifdef MPI_PARALLEL
-  MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
-  MPI_Comm_size( MPI_COMM_WORLD, &n_procs);
-  #else
-  my_rank = 0;
-  n_procs = 1;
-  #endif
 
   for (int rank = 0; rank < n_procs; rank++)
   {
