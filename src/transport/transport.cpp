@@ -60,7 +60,7 @@ void transport::step(double dt)
     // propagate particles
     particles[i].fate = propagate(particles[i],dt);
 
-    // Add escaped photons to output spectrum
+    // Add escaped photons to output spectrum and escaped particle list
     if (particles[i].fate == escaped)
     {
       // account for light crossing time, relative to grid center
@@ -69,6 +69,21 @@ void transport::step(double dt)
           optical_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
         if (particles[i].type == gammaray)
           gamma_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
+        particles[i].t = t_obs;
+        if (save_escaped_particles_) {
+#pragma omp critical
+        {
+          if (maxn_escaped_particles_ >= particles_escaped.size()) {
+            particles_escaped.push_back(particles[i]);
+          }
+          else {
+            std::cerr << "# WARNING: Escaped particle list exceeds max size " 
+              << maxn_escaped_particles_ << std::endl;
+            std::cerr << "# Clearing escaped particle list on rank " << MPI_myID << std::endl;
+            clearEscapedParticles();
+          }
+        }
+        }
       }
   }
 
@@ -477,4 +492,8 @@ transport::~transport() {
     delete[] dst_MPI_block;
   if (dst_MPI_zones)
     delete[] dst_MPI_zones;
+}
+
+void transport::clearEscapedParticles() {
+  particles_escaped.clear();
 }

@@ -202,6 +202,7 @@ void transport::set_opacity(double dt)
     }
 
     // output any solve error
+    #pragma omp single
     if (verbose) 
     {
       if (solve_root_errors != 0) 

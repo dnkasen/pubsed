@@ -46,16 +46,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   params_  = par;
   grid = g;
 
-#ifdef MPI_PARALLEL
-  // get mpi rank
-  MPI_Comm_size( MPI_COMM_WORLD, &MPI_nprocs );
-  MPI_Comm_rank( MPI_COMM_WORLD, &MPI_myID  );
-  MPI_real = ( sizeof(real)==4 ? MPI_FLOAT : MPI_DOUBLE );
-#else
-  MPI_nprocs = 1;
-  MPI_myID= 0;
-#endif
-  verbose = (MPI_myID==0);
+  setup_MPI();
 
   // counts of memory being allocated
   int n_grid_variables = 0;
@@ -181,6 +172,13 @@ void transport::init(ParameterReader* par, grid_general *g)
     std::vector<double>gng = params_->getVector<double>("gamma_nu_grid");
     gamma_spectrum.init(stg,sng,nmu,nphi);
   }
+  escaped_particle_filename_ = params_->getScalar<string>("spectrum_particle_list_name");
+  if (escaped_particle_filename_ == "")
+    save_escaped_particles_ = 0;
+  else
+    save_escaped_particles_ = 1;
+  maxn_escaped_particles_ = params_->getScalar<double>("spectrum_particle_list_maxn");
+  
   // check if atomfile is there
   atomdata_file_ = params_->getScalar<string>("data_atomic_file");
   std::ifstream afile(atomdata_file_);
@@ -371,8 +369,10 @@ void transport::init(ParameterReader* par, grid_general *g)
   t_now_ = g->t_now;
 
   // initialize particles
-  if (do_restart)
-    readCheckpointParticles(restart_file);
+  if (do_restart) {
+    readCheckpointParticles(particles, restart_file, "particles");
+    readCheckpointParticles(particles_escaped, restart_file, "particles_escaped");
+  }
   else {
     int n_parts = params_->getScalar<int>("particles_n_initialize");
     initialize_particles(n_parts);
@@ -426,8 +426,19 @@ void transport::init(ParameterReader* par, grid_general *g)
 
 }
 
-
-
+void transport::setup_MPI()
+{
+#ifdef MPI_PARALLEL
+  // get mpi rank
+  MPI_Comm_size( MPI_COMM_WORLD, &MPI_nprocs );
+  MPI_Comm_rank( MPI_COMM_WORLD, &MPI_myID  );
+  MPI_real = ( sizeof(real)==4 ? MPI_FLOAT : MPI_DOUBLE );
+#else
+  MPI_nprocs = 1;
+  MPI_myID= 0;
+#endif
+  verbose = (MPI_myID==0);
+}
 
 void transport::setup_MB_cdf(double min_v, double max_v, int num_v)
 {

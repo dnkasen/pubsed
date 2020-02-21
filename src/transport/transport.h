@@ -50,6 +50,8 @@ class transport
   // arrays of particles
   std::vector<particle> particles;
   std::vector<particle> particles_new; // For debugging checkpointing
+  std::vector<particle> particles_escaped;
+  std::vector<particle> particles_escaped_new;
   int max_total_particles;
 
   // gas class for opacities
@@ -60,6 +62,10 @@ class transport
   // atomic data
   std::string atomdata_file_;
   AtomicData* atomic_data_;
+
+  std::string escaped_particle_filename_;
+  int save_escaped_particles_;
+  double maxn_escaped_particles_;
 
   // MPI stuff
   int MPI_nprocs;
@@ -270,6 +276,7 @@ class transport
 
   // set things up
   void init(ParameterReader*, grid_general*);
+  void setup_MPI();
 
   // run a transport step
   void step(double dt);
@@ -277,6 +284,8 @@ class transport
   // return
   int n_particles() { return particles.size(); }
   int n_particles_new() { return particles_new.size(); }
+  int n_particles_escaped() { return particles_escaped.size();}
+  int n_particles_escaped_new() { return particles_escaped_new.size();}
 
   // finalize and output spectra
   void output_spectrum();
@@ -286,14 +295,23 @@ class transport
   void write_levels_to_plotfile(int);
   void write_radiation_file(int);
   void wipe_spectra();
+  void clearEscapedParticles();
 
-  void writeCheckpointParticles(std::string fname);
-  void writeParticleProp(std::string fname, std::string fieldname, int total_particles, int offset);
+  void writeCheckpointParticlesAll(std::string fname);
+  void writeCheckpointParticles(std::vector<particle>& particle_list,
+      std::string fname, std::string groupname);
+  void writeParticleProp(std::string fname, std::string fieldname,
+      std::string groupname, std::vector<particle>& particle_list,
+      int total_particles, int offset);
   void writeCheckpointSpectra(std::string fname);
   void writeCheckpointRNG(std::string fname);
 
-  void readCheckpointParticles(std::string fname, bool test=false);
-  void readParticleProp(std::string fname, std::string fieldname, int total_particles, int offset);
+  void readCheckpointParticles(std::vector<particle>& particle_list, 
+      std::string fname, std::string groupname, bool test=false,
+      bool all_one_rank=false);
+  void readParticleProp(std::string fname, std::string fieldname,
+      std::string groupname, std::vector<particle>& particle_list,
+      int total_particles, int offset);
   void readCheckpointSpectra(std::string fname, bool test=false);
   void readCheckpointRNG(std::string fname, bool test=false);
 

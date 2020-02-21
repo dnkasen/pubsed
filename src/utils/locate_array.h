@@ -6,6 +6,7 @@
 #include <hdf5.h>
 #include <limits>
 #include <iostream>
+#include <stdlib.h>
 
 #include "h5utils.h"
 

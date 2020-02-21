@@ -39,9 +39,20 @@ void transport::output_spectrum(int it)
     if (verbose) gamma_spectrum.print(suppress_txt);
   }
 
+  if (save_escaped_particles_)
+  {
+    if (verbose) {
+      std::cout << "# writing escaped particle list" << std::endl;
+      createFile(escaped_particle_filename_ + base + ".h5");
+    }
+    // whenever escaped particles are written out, clear the list so we are less likely to run
+    // into memory issues
+    writeCheckpointParticles(particles_escaped, escaped_particle_filename_ + base + ".h5", "particles_escaped");
+    clearEscapedParticles();
+  }
+
 
 }
-
 
 void transport::wipe_spectra()
 {
@@ -280,9 +291,16 @@ void transport::write_radiation_file(int iw)
   delete[] tmp_array;
 }
 
-void transport::writeCheckpointParticles(std::string fname) {
+
+void transport::writeCheckpointParticlesAll(std::string fname) {
+  writeCheckpointParticles(particles, fname, "particles");
+  writeCheckpointParticles(particles_escaped, fname, "particles_escaped");
+}
+
+void transport::writeCheckpointParticles(std::vector<particle>& particle_list, 
+    std::string fname, std::string groupname) {
   // Figures out what every rank's offset is going to be in the big particle list
-  int my_n_particles = n_particles();
+  int my_n_particles = particle_list.size();
   int my_offset;
   int global_n_particles_total = 0;
   int* global_n_particles = new int[MPI_nprocs];
@@ -305,36 +323,38 @@ void transport::writeCheckpointParticles(std::string fname) {
     hsize_t nranks_dim[1] = {MPI_nprocs};
     int ndim3 = 2;
     hsize_t dims3[2] = {global_n_particles_total, 3};
-    createGroup(fname, "particles");
-    createDataset(fname, "particles", "counts_by_rank", ndim1, nranks_dim, H5T_NATIVE_INT);
-    writeSimple(fname, "particles", "counts_by_rank", global_n_particles, H5T_NATIVE_INT);
+    createGroup(fname, groupname);
+    createDataset(fname, groupname, "counts_by_rank", ndim1, nranks_dim, H5T_NATIVE_INT);
+    writeSimple(fname, groupname, "counts_by_rank", global_n_particles, H5T_NATIVE_INT);
 
-    createDataset(fname, "particles", "type", ndim1, dims1, H5T_NATIVE_INT);
-    createDataset(fname, "particles", "x", ndim3, dims3, H5T_NATIVE_DOUBLE);
-    createDataset(fname, "particles", "D", ndim3, dims3, H5T_NATIVE_DOUBLE);
-    createDataset(fname, "particles", "ind", ndim1, dims1, H5T_NATIVE_INT);
-    createDataset(fname, "particles", "t", ndim1, dims1, H5T_NATIVE_DOUBLE);
-    createDataset(fname, "particles", "e", ndim1, dims1, H5T_NATIVE_DOUBLE);
-    createDataset(fname, "particles", "nu", ndim1, dims1, H5T_NATIVE_DOUBLE);
-    createDataset(fname, "particles", "gamma", ndim1, dims1, H5T_NATIVE_DOUBLE);
-    createDataset(fname, "particles", "dshift", ndim1, dims1, H5T_NATIVE_DOUBLE);
-    createDataset(fname, "particles", "dvds", ndim1, dims1, H5T_NATIVE_DOUBLE);
-    createDataset(fname, "particles", "fate", ndim1, dims1, H5T_NATIVE_INT);
+    createDataset(fname, groupname, "type", ndim1, dims1, H5T_NATIVE_INT);
+    createDataset(fname, groupname, "x", ndim3, dims3, H5T_NATIVE_DOUBLE);
+    createDataset(fname, groupname, "D", ndim3, dims3, H5T_NATIVE_DOUBLE);
+    createDataset(fname, groupname, "x_interact", ndim3, dims3, H5T_NATIVE_DOUBLE);
+    createDataset(fname, groupname, "ind", ndim1, dims1, H5T_NATIVE_INT);
+    createDataset(fname, groupname, "t", ndim1, dims1, H5T_NATIVE_DOUBLE);
+    createDataset(fname, groupname, "e", ndim1, dims1, H5T_NATIVE_DOUBLE);
+    createDataset(fname, groupname, "nu", ndim1, dims1, H5T_NATIVE_DOUBLE);
+    createDataset(fname, groupname, "gamma", ndim1, dims1, H5T_NATIVE_DOUBLE);
+    createDataset(fname, groupname, "dshift", ndim1, dims1, H5T_NATIVE_DOUBLE);
+    createDataset(fname, groupname, "dvds", ndim1, dims1, H5T_NATIVE_DOUBLE);
+    createDataset(fname, groupname, "fate", ndim1, dims1, H5T_NATIVE_INT);
   }
   MPI_Barrier(MPI_COMM_WORLD);
   for (int i = 0; i < MPI_nprocs; i++) {
     if (i == MPI_myID) {
-      writeParticleProp(fname, "type", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "x", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "D", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "ind", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "t", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "e", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "nu", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "gamma", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "dshift", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "dvds", global_n_particles_total, my_offset);
-      writeParticleProp(fname, "fate", global_n_particles_total, my_offset);
+      writeParticleProp(fname, "type", groupname, particle_list, global_n_particles_total, my_offset);
+      writeParticleProp(fname, "x", groupname, particle_list, global_n_particles_total, my_offset);
+      writeParticleProp(fname, "D", groupname, particle_list, global_n_particles_total, my_offset);
+      writeParticleProp(fname, "x_interact", groupname, particle_list, global_n_particles_total, my_offset);
+      writeParticleProp(fname, "ind", groupname, particle_list, global_n_particles_total, my_offset);
+      writeParticleProp(fname, "t", groupname, particle_list, global_n_particles_total, my_offset);
+      writeParticleProp(fname, "e", groupname, particle_list, global_n_particles_total, my_offset);
+      writeParticleProp(fname, "nu", groupname, particle_list, global_n_particles_total, my_offset);
+      writeParticleProp(fname, "gamma", groupname, particle_list, global_n_particles_total, my_offset);
+      writeParticleProp(fname, "dshift", groupname, particle_list, global_n_particles_total, my_offset);
+      writeParticleProp(fname, "dvds", groupname, particle_list, global_n_particles_total, my_offset);
+      writeParticleProp(fname, "fate", groupname, particle_list, global_n_particles_total, my_offset);
     }
     MPI_Barrier(MPI_COMM_WORLD);
   }
@@ -344,9 +364,10 @@ void transport::writeCheckpointParticles(std::string fname) {
 
 // Writes out particle data, assuming that the particles group already exists in
 // the hdf5 file named file. The
-void transport::writeParticleProp(std::string fname, std::string fieldname, int total_particles, int offset) {
+void transport::writeParticleProp(std::string fname, std::string fieldname, 
+    std::string groupname, std::vector<particle>& particle_list, int total_particles, int offset) {
   int n_dims = 1;
-  int n_particles_local = n_particles();
+  int n_particles_local = particle_list.size();
   int* buffer_i;
   double* buffer_d;
   hid_t t = H5T_NATIVE_DOUBLE;
@@ -354,75 +375,89 @@ void transport::writeParticleProp(std::string fname, std::string fieldname, int 
     t = H5T_NATIVE_INT;
     buffer_i = new int[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
-      buffer_i[i] = particles[i].type;
+      buffer_i[i] = particle_list[i].type;
     }
   }
   else if (fieldname == "x") {
     n_dims = 2;
     buffer_d = new double[n_particles_local * 3];
     for (int i = 0; i < n_particles_local; i++) {
-      buffer_d[i * 3] = particles[i].x[0];
-      buffer_d[i * 3 + 1] = particles[i].x[1];
-      buffer_d[i * 3 + 2] = particles[i].x[2];
+      buffer_d[i * 3] = particle_list[i].x[0];
+      buffer_d[i * 3 + 1] = particle_list[i].x[1];
+      buffer_d[i * 3 + 2] = particle_list[i].x[2];
     }
   }
   else if (fieldname == "D") {
     n_dims = 2;
     buffer_d = new double[n_particles_local * 3];
     for (int i = 0; i < n_particles_local; i++) {
-      buffer_d[i * 3] = particles[i].D[0];
-      buffer_d[i * 3 + 1] = particles[i].D[1];
-      buffer_d[i * 3 + 2] = particles[i].D[2];
+      buffer_d[i * 3] = particle_list[i].D[0];
+      buffer_d[i * 3 + 1] = particle_list[i].D[1];
+      buffer_d[i * 3 + 2] = particle_list[i].D[2];
+    }
+  }
+  else if (fieldname == "x_interact") {
+    n_dims = 2;
+    buffer_d = new double[n_particles_local * 3];
+    for (int i = 0; i < n_particles_local; i++) {
+      buffer_d[i * 3] = particle_list[i].x_interact[0];
+      buffer_d[i * 3 + 1] = particle_list[i].x_interact[1];
+      buffer_d[i * 3 + 2] = particle_list[i].x_interact[2];
     }
   }
   else if (fieldname == "ind") {
     t = H5T_NATIVE_INT;
     buffer_i = new int[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
-      buffer_i[i] = particles[i].ind;
+      buffer_i[i] = particle_list[i].ind;
     }
   }
   else if (fieldname == "t") {
     buffer_d = new double[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
-      buffer_d[i] = particles[i].t;
+      buffer_d[i] = particle_list[i].t;
     }
   }
   else if (fieldname == "e") {
     buffer_d = new double[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
-      buffer_d[i] = particles[i].e;
+      // Divide particle energy by number of processes. Total
+      // energy on each rank is the energy of the ejecta.
+      // In case we restart with a different number of particles,
+      // we need to scale down the energy so that the total of all
+      // particles is the total ejecta energy.
+      buffer_d[i] = particle_list[i].e / MPI_nprocs;
     }
   }
   else if (fieldname == "nu") {
     buffer_d = new double[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
-      buffer_d[i] = particles[i].nu;
+      buffer_d[i] = particle_list[i].nu;
     }
   }
   else if (fieldname == "gamma") {
     buffer_d = new double[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
-      buffer_d[i] = particles[i].gamma;
+      buffer_d[i] = particle_list[i].gamma;
     }
   }
   else if (fieldname == "dshift") {
     buffer_d = new double[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
-      buffer_d[i] = particles[i].dshift;
+      buffer_d[i] = particle_list[i].dshift;
     }
   }
   else if (fieldname == "dvds") {
     buffer_d = new double[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
-      buffer_d[i] = particles[i].dvds;
+      buffer_d[i] = particle_list[i].dvds;
     }
   }
   else if (fieldname == "fate") {
     t = H5T_NATIVE_INT;
     buffer_i = new int[n_particles_local];
     for (int i = 0; i < n_particles_local; i++) {
-      buffer_i[i] = particles[i].fate;
+      buffer_i[i] = particle_list[i].fate;
     }
   }
   else {
@@ -442,11 +477,11 @@ void transport::writeParticleProp(std::string fname, std::string fieldname, int 
     exit(3);
   }
   if (t == H5T_NATIVE_INT) {
-    writePatch(fname, "particles", fieldname.c_str(), buffer_i, t, n_dims, start, size, total_size);
+    writePatch(fname, groupname, fieldname.c_str(), buffer_i, t, n_dims, start, size, total_size);
     delete[] buffer_i;
   }
   else if (t == H5T_NATIVE_DOUBLE) {
-    writePatch(fname, "particles", fieldname.c_str(), buffer_d, t, n_dims, start, size, total_size);
+    writePatch(fname, groupname, fieldname.c_str(), buffer_d, t, n_dims, start, size, total_size);
     delete[] buffer_d;
   }
   else {
@@ -463,90 +498,102 @@ void transport::writeCheckpointRNG(std::string fname) {
   rangen.writeCheckpointRNG(fname);
 }
 
-void transport::readCheckpointParticles(std::string fname, bool test) {
+void transport::readCheckpointParticles(std::vector<particle>& particle_list,
+    std::string fname, std::string groupname, bool test, bool all_one_rank) {
   /* Get number of particles that are stored in the file */
-  hsize_t global_n_particles_total;
-  hsize_t n_ranks_old;
-  for (int rank = 0; rank < MPI_nprocs; rank++) {
-    if (MPI_myID == rank) {
-      getH5dims(fname, "particles", "e", &global_n_particles_total);
-      getH5dims(fname, "particles", "counts_by_rank", &n_ranks_old);
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-  }
-
-  int* global_n_particles = new int[MPI_nprocs];
-  int my_n_particles;
-  if (n_ranks_old != MPI_nprocs) {
-    if (verbose) {
-      std::cerr << "Rank count pre- and post-restart don't match. Distributing" <<
-        " particles evenly." << std::endl;
-      std::cerr << n_ranks_old << " " << MPI_nprocs << std::endl;
-      std::cerr << "Exiting." << std::endl;
-      exit(10);
-    }
-    /* Make sure each particle gets "claimed" by one rank */
-    my_n_particles = floor(global_n_particles_total / (1.0 * MPI_nprocs));
-    int remainder = global_n_particles_total % MPI_nprocs;
-    if (MPI_myID < remainder) {
-      my_n_particles += 1;
-    }
-  }
-  else {
+  hsize_t global_n_particles_total, n_ranks_old;
+  int my_n_particles, my_offset;
+  int* global_n_particles;
+  int* particle_offsets;
+  // all_one_rank option reads all particles into this rank and does not divide
+  // them up
+  if (!all_one_rank) {
     for (int rank = 0; rank < MPI_nprocs; rank++) {
       if (MPI_myID == rank) {
-        readSimple(fname, "particles", "counts_by_rank", global_n_particles, H5T_NATIVE_INT);
-        my_n_particles = global_n_particles[MPI_myID];
+        getH5dims(fname, groupname, "e", &global_n_particles_total);
+        getH5dims(fname, groupname, "counts_by_rank", &n_ranks_old);
       }
       MPI_Barrier(MPI_COMM_WORLD);
     }
-  }
-  particles_new.resize(my_n_particles);
 
-  /* Figure out what each rank's offset will be in the particle array */
-  int my_offset;
-  int* particle_offsets = new int[MPI_nprocs];
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Gather(&my_n_particles, 1, MPI_INT, global_n_particles, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  if (MPI_myID == 0) {
-    particle_offsets[0] = 0;
-    for (int i = 1; i < MPI_nprocs; i++) {
-      particle_offsets[i] = particle_offsets[i - 1] + global_n_particles[i - 1];
+    global_n_particles = new int[MPI_nprocs];
+    if (n_ranks_old != MPI_nprocs) {
+      if (verbose) {
+        std::cerr << "Rank count pre- and post-restart don't match. Distributing" <<
+          " particles evenly." << std::endl;
+        std::cerr << n_ranks_old << " " << MPI_nprocs << std::endl;
+      }
+      /* Make sure each particle gets "claimed" by one rank */
+      my_n_particles = floor(global_n_particles_total / (1.0 * MPI_nprocs));
+      int remainder = global_n_particles_total % MPI_nprocs;
+      if (MPI_myID < remainder) {
+        my_n_particles += 1;
+      }
     }
+    else {
+      for (int rank = 0; rank < MPI_nprocs; rank++) {
+        if (MPI_myID == rank) {
+          readSimple(fname, groupname, "counts_by_rank", global_n_particles, H5T_NATIVE_INT);
+          my_n_particles = global_n_particles[MPI_myID];
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+      }
+    }
+    /* Figure out what each rank's offset will be in the particle array */
+    particle_offsets = new int[MPI_nprocs];
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Gather(&my_n_particles, 1, MPI_INT, global_n_particles, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    if (MPI_myID == 0) {
+      particle_offsets[0] = 0;
+      for (int i = 1; i < MPI_nprocs; i++) {
+        particle_offsets[i] = particle_offsets[i - 1] + global_n_particles[i - 1];
+      }
+    }
+    // Rank 0 tells all of the other ranks what their offsets will be
+    MPI_Scatter(particle_offsets, 1, MPI_INT, &my_offset, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
   }
-  // Rank 0 tells all of the other ranks what their offsets will be
-  MPI_Scatter(particle_offsets, 1, MPI_INT, &my_offset, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
+  else {
+    getH5dims(fname, groupname, "e", &global_n_particles_total);
+    std::cerr << "particle count " << global_n_particles_total << std::endl;
+    my_n_particles = global_n_particles_total;
+    my_offset = 0;
+  }
+  std::cerr << my_n_particles << std::endl;
+  particle_list.resize(my_n_particles);
+
 
   /* Read in all of the quantities */
   for (int i = 0; i < MPI_nprocs; i++) {
     if (i == MPI_myID) {
-      readParticleProp(fname, "type", global_n_particles_total, my_offset);
-      readParticleProp(fname, "x", global_n_particles_total, my_offset);
-      readParticleProp(fname, "D", global_n_particles_total, my_offset);
-      readParticleProp(fname, "ind", global_n_particles_total, my_offset);
-      readParticleProp(fname, "t", global_n_particles_total, my_offset);
-      readParticleProp(fname, "e", global_n_particles_total, my_offset);
-      readParticleProp(fname, "nu", global_n_particles_total, my_offset);
-      readParticleProp(fname, "gamma", global_n_particles_total, my_offset);
-      readParticleProp(fname, "dshift", global_n_particles_total, my_offset);
-      readParticleProp(fname, "dvds", global_n_particles_total, my_offset);
-      readParticleProp(fname, "fate", global_n_particles_total, my_offset);
-
-      if (not test) {
-        particles = particles_new;
-      }
+      readParticleProp(fname, "type", groupname, particle_list, global_n_particles_total, my_offset);
+      readParticleProp(fname, "x", groupname, particle_list, global_n_particles_total, my_offset);
+      readParticleProp(fname, "D", groupname, particle_list, global_n_particles_total, my_offset);
+      readParticleProp(fname, "x_interact", groupname, particle_list, global_n_particles_total, my_offset);
+      readParticleProp(fname, "ind", groupname, particle_list, global_n_particles_total, my_offset);
+      readParticleProp(fname, "t", groupname, particle_list, global_n_particles_total, my_offset);
+      readParticleProp(fname, "e", groupname, particle_list, global_n_particles_total, my_offset);
+      readParticleProp(fname, "nu", groupname, particle_list, global_n_particles_total, my_offset);
+      readParticleProp(fname, "gamma", groupname, particle_list, global_n_particles_total, my_offset);
+      readParticleProp(fname, "dshift", groupname, particle_list, global_n_particles_total, my_offset);
+      readParticleProp(fname, "dvds", groupname, particle_list, global_n_particles_total, my_offset);
+      readParticleProp(fname, "fate", groupname, particle_list, global_n_particles_total, my_offset);
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    if (!all_one_rank) {
+      MPI_Barrier(MPI_COMM_WORLD);
+    }
   }
 
-  delete[] global_n_particles;
-  delete[] particle_offsets;
+  if (!all_one_rank) {
+    delete[] global_n_particles;
+    delete[] particle_offsets;
+  }
 }
 
-void transport::readParticleProp(std::string fname, std::string fieldname, int total_particles, int offset) {
+void transport::readParticleProp(std::string fname, std::string fieldname,
+    std::string groupname, std::vector<particle>& particle_list, int total_particles, int offset) {
   int n_dims = 1;
-  int n_particles_local = n_particles_new();
+  int n_particles_local = particle_list.size();
   int* buffer_i;
   double* buffer_d;
   // Set up patch info
@@ -559,7 +606,7 @@ void transport::readParticleProp(std::string fname, std::string fieldname, int t
     t = H5T_NATIVE_INT;
     buffer_i = new int[n_particles_local];
   }
-  else if ((fieldname == "x") || (fieldname == "D")) {
+  else if ((fieldname == "x") || (fieldname == "D") || (fieldname == "x_interact")) {
     n_dims = 2;
     buffer_d = new double[n_particles_local * 3];
   }
@@ -572,9 +619,9 @@ void transport::readParticleProp(std::string fname, std::string fieldname, int t
   }
 
   if (t == H5T_NATIVE_INT)
-    readPatch(fname, "particles", fieldname.c_str(), buffer_i, t, n_dims, start, size, total_size);
+    readPatch(fname, groupname, fieldname.c_str(), buffer_i, t, n_dims, start, size, total_size);
   else if (t == H5T_NATIVE_DOUBLE)
-    readPatch(fname, "particles", fieldname.c_str(), buffer_d, t, n_dims, start, size, total_size);
+    readPatch(fname, groupname, fieldname.c_str(), buffer_d, t, n_dims, start, size, total_size);
   else {
     std::cerr << "HDF5 type is wrong" << std::endl;
     exit(3);
@@ -582,61 +629,68 @@ void transport::readParticleProp(std::string fname, std::string fieldname, int t
 
   if (fieldname == "type") {
     for (int i = 0; i < n_particles_local; i++) {
-      particles_new[i].type = static_cast<PType>(buffer_i[i]);
+      particle_list[i].type = static_cast<PType>(buffer_i[i]);
     }
   }
   else if (fieldname == "x") {
     for (int i = 0; i < n_particles_local; i++) {
-      particles_new[i].x[0] = buffer_d[i * 3];
-      particles_new[i].x[1] = buffer_d[i * 3 + 1];
-      particles_new[i].x[2] = buffer_d[i * 3 + 2];
+      particle_list[i].x[0] = buffer_d[i * 3];
+      particle_list[i].x[1] = buffer_d[i * 3 + 1];
+      particle_list[i].x[2] = buffer_d[i * 3 + 2];
     }
   }
   else if (fieldname == "D") {
     for (int i = 0; i < n_particles_local; i++) {
-      particles_new[i].D[0] = buffer_d[i * 3];
-      particles_new[i].D[1] = buffer_d[i * 3 + 1];
-      particles_new[i].D[2] = buffer_d[i * 3 + 2];
+      particle_list[i].D[0] = buffer_d[i * 3];
+      particle_list[i].D[1] = buffer_d[i * 3 + 1];
+      particle_list[i].D[2] = buffer_d[i * 3 + 2];
+    }
+  }
+  else if (fieldname == "x_interact") {
+    for (int i = 0; i < n_particles_local; i++) {
+      particle_list[i].x_interact[0] = buffer_d[i * 3];
+      particle_list[i].x_interact[1] = buffer_d[i * 3 + 1];
+      particle_list[i].x_interact[2] = buffer_d[i * 3 + 2];
     }
   }
   else if (fieldname == "ind") {
     for (int i = 0; i < n_particles_local; i++) {
-      particles_new[i].ind = buffer_i[i];
+      particle_list[i].ind = buffer_i[i];
     }
   }
   else if (fieldname == "t") {
     for (int i = 0; i < n_particles_local; i++) {
-      particles_new[i].t = buffer_d[i];
+      particle_list[i].t = buffer_d[i];
     }
   }
   else if (fieldname == "e") {
     for (int i = 0; i < n_particles_local; i++) {
-      particles_new[i].e = buffer_d[i];
+      particle_list[i].e = buffer_d[i] * MPI_nprocs;
     }
   }
   else if (fieldname == "nu") {
     for (int i = 0; i < n_particles_local; i++) {
-      particles_new[i].nu = buffer_d[i];
+      particle_list[i].nu = buffer_d[i];
     }
   }
   else if (fieldname == "gamma") {
     for (int i = 0; i < n_particles_local; i++) {
-      particles_new[i].gamma = buffer_d[i];
+      particle_list[i].gamma = buffer_d[i];
     }
   }
   else if (fieldname == "dshift") {
     for (int i = 0; i < n_particles_local; i++) {
-      particles_new[i].dshift = buffer_d[i];
+      particle_list[i].dshift = buffer_d[i];
     }
   }
   else if (fieldname == "dvds") {
     for (int i = 0; i < n_particles_local; i++) {
-      particles_new[i].dvds = buffer_d[i];
+      particle_list[i].dvds = buffer_d[i];
     }
   }
   else if (fieldname == "fate") {
     for (int i = 0; i < n_particles_local; i++) {
-      particles_new[i].fate = static_cast<ParticleFate>(buffer_i[i]);
+      particle_list[i].fate = static_cast<ParticleFate>(buffer_i[i]);
     }
   }
   else {

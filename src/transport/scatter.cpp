@@ -14,24 +14,29 @@ ParticleFate transport::do_scatter(particle *p, double eps)
   zone *zone = &(grid->z[p->ind]);
   ParticleFate fate = moving;
 
+  // Update position of last interaction
+  p->x_interact[0] = p->x[0];
+  p->x_interact[1] = p->x[1];
+  p->x_interact[2] = p->x[2];
+
   // do photon interaction physics
   if (p->type == photon)
   {
     // see if scattered
     if (rangen.uniform() > eps)
-      {
-	if (compton_scatter_photons_)
-	  compton_scatter_photon(p);
-	else
-	  isotropic_scatter(p,0);
-      }
+    {
+      if (compton_scatter_photons_)
+        compton_scatter_photon(p);
+      else
+        isotropic_scatter(p,0);
+    }
     else
     {
       // check for effective scattering
       double z2 = rangen.uniform();
       // enforced radiative equilibrium always effective scatters
       if ((z2 > zone->eps_imc)||(radiative_eq))
-       isotropic_scatter(p,1);
+        isotropic_scatter(p,1);
       else fate = absorbed;
     }
   }
@@ -132,32 +137,32 @@ void transport::sample_MB_vector(double T, double* v_e, double* p_d)
 {
 
   while (true)
+  {
+
+    // if you prefer, you could also rejection sample to get v_tot.
+
+    double v_tot = sqrt(2. * pc::k * T /pc::m_e) * mb_dv * (mb_cdf_.sample(rangen.uniform()) + rangen.uniform() );
+
+    double mu  = 1. - 2.0*rangen.uniform();
+    double phi = 2.0*pc::pi*rangen.uniform();
+    double smu = sqrt(1 - mu*mu);
+    double ed0 = smu*cos(phi);
+    double ed1 = smu*sin(phi);
+    double ed2 = mu;
+
+
+    double omega = ed0 * p_d[0] + ed1 * p_d[1] + ed2 * p_d[2];
+
+    // could tighten this bound if you think you know how small v_tot/C will be
+    if (rangen.uniform() < 0.5 * (1. - omega * v_tot/pc::c)) // this is crucial. For the more relativistic case, the formula gets more complicated. See the discussion at the top of pdf page 135 (journal page 323) of the Pozdnyakov 1983 paper, which references a formula for sigma-hat four pages earlier
     {
 
-      // if you prefer, you could also rejection sample to get v_tot.
-
-      double v_tot = sqrt(2. * pc::k * T /pc::m_e) * mb_dv * (mb_cdf_.sample(rangen.uniform()) + rangen.uniform() );
-
-      double mu  = 1. - 2.0*rangen.uniform();
-      double phi = 2.0*pc::pi*rangen.uniform();
-      double smu = sqrt(1 - mu*mu);
-      double ed0 = smu*cos(phi);
-      double ed1 = smu*sin(phi);
-      double ed2 = mu;
-
-
-      double omega = ed0 * p_d[0] + ed1 * p_d[1] + ed2 * p_d[2];
-
-      // could tighten this bound if you think you know how small v_tot/C will be
-      if (rangen.uniform() < 0.5 * (1. - omega * v_tot/pc::c)) // this is crucial. For the more relativistic case, the formula gets more complicated. See the discussion at the top of pdf page 135 (journal page 323) of the Pozdnyakov 1983 paper, which references a formula for sigma-hat four pages earlier
-	{
-
-	  v_e[0] = v_tot * ed0;
-	  v_e[1] = v_tot * ed1;
-	  v_e[2] = v_tot * ed2;
-	  return;
-	}
+      v_e[0] = v_tot * ed0;
+      v_e[1] = v_tot * ed1;
+      v_e[2] = v_tot * ed2;
+      return;
     }
+  }
 }
 
 
@@ -189,7 +194,7 @@ void transport::compton_scatter_photon(particle *p)
 
   double dshift_into_scatterer = gamma * (1. - vdd/pc::c); // this is simplified since we defined beta and gamma based on the parallel velocity component
 
-    // transform the 0th component (energy and frequency)
+  // transform the 0th component (energy and frequency)
   p->e  *= dshift_into_scatterer;
   p->nu *= dshift_into_scatterer;
 
@@ -230,13 +235,13 @@ void transport::compton_scatter_photon(particle *p)
 
 
   //Transform out of rest frame of electon into comoving frame
-    // shift back to comoving frame
+  // shift back to comoving frame
   for (int i=0;i<3;i++) v_sc[i] = -1.*v_sc[i];
   vdd = (v_sc[0] * D_new[0] + v_sc[1] * D_new[1] + v_sc[2] * D_new[2] );
 
   double dshift_out_scatterer = gamma * (1. - vdd/pc::c);
 
-    // transform the 0th component (energy and frequency)
+  // transform the 0th component (energy and frequency)
   p->e  *= dshift_out_scatterer;
   p->nu *= dshift_out_scatterer;
 
@@ -250,7 +255,7 @@ void transport::compton_scatter_photon(particle *p)
   transform_comoving_to_lab(p);
 
   double E_final = p->e;
-  
+
 }
 
 
