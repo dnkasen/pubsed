@@ -13,7 +13,7 @@ void grid_general::init(ParameterReader* params)
   MPI_Comm_rank( MPI_COMM_WORLD, &my_rank );
   MPI_Comm_size( MPI_COMM_WORLD, &nproc );
 
-  grid_type = params->getScalar<string>("grid_type");
+  grid_type = params->getScalar<std::string>("grid_type");
 
   // Test for homologous expansion
   std::string hydro_type = params->getScalar<std::string>("hydro_module");
