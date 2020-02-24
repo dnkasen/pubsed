@@ -249,10 +249,11 @@ void grid_1D_sphere::read_ascii_file(std::string model_file, ParameterReader* pa
   }
 
   // geometry of model
-  infile >> grid_type;
-  if(grid_type != "1D_sphere")
+  std::string grid_type_temp;
+  infile >> grid_type_temp;
+  if(grid_type_temp != "1D_sphere")
   {
-    if (verbose) cerr << "Err: grid_type param disagrees with the model file" << endl;
+    if (verbose) cerr << "Err: grid type given in model file disagrees with that given in param file" << endl;
     exit(4);
   }
   if (verbose)
