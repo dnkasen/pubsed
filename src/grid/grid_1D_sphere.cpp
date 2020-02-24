@@ -56,7 +56,7 @@ void grid_1D_sphere::read_model_file(ParameterReader* params)
       else
         cerr << "# Don't recognize model file extension, assuming ascii" << endl;
     }
-    read_ascii_file(model_file,verbose);
+    read_ascii_file(model_file,params,verbose);
   }
 }
 
@@ -238,7 +238,7 @@ void grid_1D_sphere::read_hdf5_file(std::string model_file, ParameterReader* par
 // Read model data from an ascii input file
 //------------------------------------------------------------
 //------------------------------------------------------------
-void grid_1D_sphere::read_ascii_file(std::string model_file, int verbose)
+void grid_1D_sphere::read_ascii_file(std::string model_file, ParameterReader* params, int verbose)
 {
   std::ifstream infile;
   infile.open(model_file.c_str());
@@ -305,6 +305,9 @@ void grid_1D_sphere::read_ascii_file(std::string model_file, int verbose)
     elems_A.push_back(std::stoi(el_A));
   }
 
+  // read bulk grey opacity (note: this parameter is set in the param file, not in the ascii file)
+  double bulk_grey_opacity = params->getScalar<double>("opacity_grey_opacity");
+
   // loop over zones and read
   for (int i=0; i<n_zones; i++)
   {
@@ -351,6 +354,10 @@ void grid_1D_sphere::read_ascii_file(std::string model_file, int verbose)
 
     // assume zone-specific grey opacity is zero
     z[i].zone_specific_grey_opacity = 0;
+
+    // set bulk grey opacity and total grey opacity
+    z[i].bulk_grey_opacity = bulk_grey_opacity;
+    z[i].total_grey_opacity = z[i].bulk_grey_opacity + z[i].zone_specific_grey_opacity;
 
     // calculate shell volume
     double r0;
