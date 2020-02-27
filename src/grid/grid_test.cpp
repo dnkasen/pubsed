@@ -36,6 +36,18 @@ void grid_general::testCheckpointZones(std::string fname) {
           std::cerr << "issue at T_gas on zone " << i << " on rank " << rank << std::endl;
           fail = true;
         }
+        if (z_new[i].bulk_grey_opacity != z[i].bulk_grey_opacity) {
+          std::cerr << "issue at bulk_grey_opacity on zone " << i << " on rank " << rank << std::endl;
+          fail = true;
+        }
+        if (z_new[i].zone_specific_grey_opacity != z[i].zone_specific_grey_opacity) {
+          std::cerr << "issue at zone_specific_grey_opacity on zone " << i << " on rank " << rank << std::endl;
+          fail = true;
+        }
+        if (z_new[i].total_grey_opacity != z[i].total_grey_opacity) {
+          std::cerr << "issue at total_grey_opacity on zone " << i << " on rank " << rank << std::endl;
+          fail = true;
+        }
         if (z_new[i].mu_I != z[i].mu_I) {
           std::cerr << "issue at mu_I on zone " << i << " on rank " << rank << std::endl;
           fail = true;
