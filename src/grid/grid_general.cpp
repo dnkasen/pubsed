@@ -96,6 +96,9 @@ void grid_general::writeCheckpointZones(std::string fname) {
     writeScalarZoneProp(fname, "cs");
     writeScalarZoneProp(fname, "p_gas");
     writeScalarZoneProp(fname, "T_gas");
+    writeScalarZoneProp(fname, "bulk_grey_opacity");
+    writeScalarZoneProp(fname, "zone_specific_grey_opacity");
+    writeScalarZoneProp(fname, "total_grey_opacity");
     writeScalarZoneProp(fname, "mu_I");
     writeScalarZoneProp(fname, "e_rad");
     writeScalarZoneProp(fname, "e_abs");
@@ -158,6 +161,12 @@ void grid_general::writeScalarZoneProp(std::string fname, std::string fieldname)
     for (int i = 0; i < n_zones; i++) buffer[i] = z[i].p_gas;
   else if (fieldname == "T_gas")
     for (int i = 0; i < n_zones; i++) buffer[i] = z[i].T_gas;
+  else if (fieldname == "bulk_grey_opacity")
+    for (int i = 0; i < n_zones; i++) buffer[i] = z[i].bulk_grey_opacity;
+  else if (fieldname == "zone_specific_grey_opacity")
+    for (int i = 0; i < n_zones; i++) buffer[i] = z[i].zone_specific_grey_opacity;
+  else if (fieldname == "total_grey_opacity")
+    for (int i = 0; i < n_zones; i++) buffer[i] = z[i].total_grey_opacity;
   else if (fieldname == "mu_I")
     for (int i = 0; i < n_zones; i++) buffer[i] = z[i].mu_I;
   else if (fieldname == "e_rad")
@@ -249,6 +258,9 @@ void grid_general::readCheckpointZones(std::string fname, bool test) {
       readScalarZoneProp(fname, "cs");
       readScalarZoneProp(fname, "p_gas");
       readScalarZoneProp(fname, "T_gas");
+      readScalarZoneProp(fname, "bulk_grey_opacity");
+      readScalarZoneProp(fname, "zone_specific_grey_opacity");
+      readScalarZoneProp(fname, "total_grey_opacity");
       readScalarZoneProp(fname, "mu_I");
       readScalarZoneProp(fname, "e_rad");
       readScalarZoneProp(fname, "e_abs");
@@ -304,7 +316,13 @@ void grid_general::readScalarZoneProp(std::string fname, std::string fieldname) 
   else if (fieldname == "p_gas")
     for (int i = 0; i < n_zones; i++) z_new[i].p_gas = buffer[i];
   else if (fieldname == "T_gas")
-    for (int i = 0; i < n_zones; i++) z_new[i].T_gas= buffer[i];
+    for (int i = 0; i < n_zones; i++) z_new[i].T_gas = buffer[i];
+  else if (fieldname == "bulk_grey_opacity")
+    for (int i = 0; i < n_zones; i++) z_new[i].bulk_grey_opacity = buffer[i];
+  else if (fieldname == "zone_specific_grey_opacity")
+    for (int i = 0; i < n_zones; i++) z_new[i].zone_specific_grey_opacity = buffer[i];
+  else if (fieldname == "total_grey_opacity")
+    for (int i = 0; i < n_zones; i++) z_new[i].total_grey_opacity = buffer[i];
   else if (fieldname == "mu_I")
     for (int i = 0; i < n_zones; i++) z_new[i].mu_I = buffer[i];
   else if (fieldname == "e_rad")

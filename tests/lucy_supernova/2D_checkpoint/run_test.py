@@ -72,7 +72,7 @@ def run_test(pdf="",runcommand=""):
 #    if (h5diff_output): failure = 3
 
     ## make plot
-    plt.title('2D Lucy Supernova test - monte carlo')
+    plt.title('2D Lucy Supernova test - monte carlo, checkpoint')
     plt.legend(['sedona LC','sedona GR','lucy LC','lucy GR'])
     plt.xlim(0,55)
     plt.xlabel('luminosity (erg/s)',size=13)
