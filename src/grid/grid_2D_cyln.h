@@ -15,21 +15,28 @@ class grid_2D_cyln: public grid_general
 
 private:
 
+  int nx_, nz_; // number of zones in each dimension
 
-  int    nx_, nz_; // number of zones in each dimension
-  double dx_, dz_; // length of each zone in each dimension
-  double zcen_   ; // center coordinate of the z-axis
+  // the right zone edge in each direction
+  // the lengths of these arrays are nx_ and nz_, respectively
+  // these arrays are indexed by the x-index and z-index, respectively
+  locate_array x_out_, z_out_;
+
+  // store precomputed zone widths in each direction. These arrays are indexed by the index in the flattened 1D array of all zones
+  std::vector<double> dx_, dz_;
+
+  // store precomputed zone volumes. These arrays are indexed by the index in the flattened 1D array of all zones
+  std::vector<double> vol_;
 
   std::vector<int> index_x_; // map to x index from 1D index
   std::vector<int> index_z_; // map to z index from 1D index
 
-  // store precomputed zone volumes
-  std::vector<double> vol_; 
-
   /* For testing */
   int    nx_new_, nz_new_;
-  double dx_new_, dz_new_; 
-  double zcen_new_   ; 
+
+  locate_array x_out_new_, z_out_new_;
+
+  std::vector<double> dx_new_, dz_new_;
 
   std::vector<int> index_x_new_;
   std::vector<int> index_z_new_;
