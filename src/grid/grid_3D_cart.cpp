@@ -79,40 +79,53 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
   delete [] etmp;
 
   // read minima in each direction
-  double rmin[3];
-  status = H5LTread_dataset_double(file_id,"/rmin",rmin);
-  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find rmin" << endl;
-  x_out_.min = rmin[0];
-  y_out_.min = rmin[1];
-  z_out_.min = rmin[2];
+  herr_t status_rmin = H5LTfind_dataset(file_id,"rmin");
+  if (status_rmin == 1){
+    double rmin[3];
+    status = H5LTread_dataset_double(file_id,"/rmin",rmin);
+    x_out_.min = rmin[0];
+    y_out_.min = rmin[1];
+    z_out_.min = rmin[2];
+  }
+  else {if (verbose) std::cerr << "# Grid Err; can't find rmin" << endl;}
 
-  double dr[3];
-  status = H5LTread_dataset_double(file_id,"/dr",dr);
-  if (status < 0) {if (verbose) std::cerr << "# Grid Err; can't find dr" << endl;}
-  else{
+  herr_t status_dr = H5LTfind_dataset(file_id,"dr");
+  if (status_dr == 1) {
+    double dr[3];
+    status = H5LTread_dataset_double(file_id,"/dr",dr);
     for (int i=0; i < nx_; i++) x_out_[i] = x_out_.min + (i+1.)*dr[0];
     for (int j=0; j < ny_; j++) y_out_[j] = y_out_.min + (j+1.)*dr[1];
     for (int k=0; k < nz_; k++) z_out_[k] = z_out_.min + (k+1.)*dr[2];
   }
 
   // read x bins
-  double *btmp = new double[nx_];
-  status = H5LTread_dataset_double(file_id,"/x_out",btmp);
-  if (status < 0) {if (verbose) std::cerr << "# Grid Err; can't find x_out" << endl;}
-  else {for (int i=0; i < nx_; i++) x_out_[i] = btmp[i];}
-  delete [] btmp;
+  herr_t status_x = H5LTfind_dataset(file_id,"x_out");
+  if (status_x == 1) {
+    double *btmp = new double[nx_];
+    status = H5LTread_dataset_double(file_id,"/x_out",btmp);
+    for (int i=0; i < nx_; i++) x_out_[i] = btmp[i];
+    delete [] btmp;
+  }
   // read y bins
-  btmp = new double[ny_];
-  status = H5LTread_dataset_double(file_id,"/y_out",btmp);
-  if (status < 0) {if (verbose) std::cerr << "# Grid Err; can't find y_out" << endl;}
-  else {for (int i=0; i < ny_; i++) y_out_[i] = btmp[i];}
-  delete [] btmp;
+  herr_t status_y = H5LTfind_dataset(file_id,"y_out");
+  if (status_y == 1) {
+    double *btmp = new double[ny_];
+    status = H5LTread_dataset_double(file_id,"/y_out",btmp);
+    for (int i=0; i < ny_; i++) y_out_[i] = btmp[i];
+    delete [] btmp;
+  }
   // read z bins
-  btmp = new double[nz_];
-  status = H5LTread_dataset_double(file_id,"/z_out",btmp);
-  if (status < 0) {if (verbose) std::cerr << "# Grid Err; can't find z_out" << endl;}
-  else {for (int i=0; i < nz_; i++) z_out_[i] = btmp[i];}
-  delete [] btmp;
+  herr_t status_z = H5LTfind_dataset(file_id,"z_out");
+  if (status_z == 1) {
+    double *btmp = new double[nz_];
+    status = H5LTread_dataset_double(file_id,"/z_out",btmp);
+    for (int i=0; i < nz_; i++) z_out_[i] = btmp[i];
+    delete [] btmp;
+  }
+
+  if ( (status_dr == 0) && ( (status_x == 0) || (status_y == 0) || (status_z == 0) ) ) {
+    if (verbose) std::cerr << "# Grid Err; can't find one of the following inputs to define the grid: 1) dr or 2) x_out, y_out, z_out" << endl;
+  }
 
   // read zone properties
   double *tmp = new double[n_zones];
