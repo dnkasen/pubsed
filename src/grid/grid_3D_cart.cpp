@@ -51,29 +51,22 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
 
   // get grid size and dimensions
   hsize_t     dims[4];
-  double dr[3], rmin[3];
   status = H5LTget_dataset_info(file_id,"/comp",dims, NULL, NULL);
   if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find comp" << endl;
-  status = H5LTread_dataset_double(file_id,"/dr",dr);
-  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find dr" << endl;
-  status = H5LTread_dataset_double(file_id,"/rmin",rmin);
-  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find rmin" << endl;
 
   nx_     = dims[0];
   ny_     = dims[1];
   nz_     = dims[2];
   n_elems = dims[3];
-  dx_ = dr[0];
-  dy_ = dr[1];
-  dz_ = dr[2];
-  x0_ = rmin[0];
-  y0_ = rmin[1];
-  z0_ = rmin[2];
-  n_zones = nz_*ny_*nx_;
+  n_zones = nx_*ny_*nz_;
+  x_out_.resize(nx_);
+  y_out_.resize(ny_);
+  z_out_.resize(nz_);
   z.resize(n_zones);
-
-  // volume
-  vol_ = dx_*dy_*dz_;
+  dx_.resize(n_zones);
+  dy_.resize(n_zones);
+  dz_.resize(n_zones);
+  vol_.resize(n_zones);
 
   // read elements Z and A
   int *etmp = new int[n_elems];
@@ -84,6 +77,42 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
   if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find A" << endl;
   for (int k=0;k<n_elems;k++) elems_A.push_back(etmp[k]);
   delete [] etmp;
+
+  // read minima in each direction
+  double rmin[3];
+  status = H5LTread_dataset_double(file_id,"/rmin",rmin);
+  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find rmin" << endl;
+  x_out_.min = rmin[0];
+  y_out_.min = rmin[1];
+  z_out_.min = rmin[2];
+
+  double dr[3];
+  status = H5LTread_dataset_double(file_id,"/dr",dr);
+  if (status < 0) {if (verbose) std::cerr << "# Grid Err; can't find dr" << endl;}
+  else{
+    for (int i=0; i < nx_; i++) x_out_[i] = x_out_.min + (i+1.)*dr[0];
+    for (int j=0; j < ny_; j++) y_out_[j] = y_out_.min + (j+1.)*dr[1];
+    for (int k=0; k < nz_; k++) z_out_[k] = z_out_.min + (k+1.)*dr[2];
+  }
+
+  // read x bins
+  double *btmp = new double[nx_];
+  status = H5LTread_dataset_double(file_id,"/x_out",btmp);
+  if (status < 0) {if (verbose) std::cerr << "# Grid Err; can't find x_out" << endl;}
+  else {for (int i=0; i < nx_; i++) x_out_[i] = btmp[i];}
+  delete [] btmp;
+  // read y bins
+  btmp = new double[ny_];
+  status = H5LTread_dataset_double(file_id,"/y_out",btmp);
+  if (status < 0) {if (verbose) std::cerr << "# Grid Err; can't find y_out" << endl;}
+  else {for (int i=0; i < ny_; i++) y_out_[i] = btmp[i];}
+  delete [] btmp;
+  // read z bins
+  btmp = new double[nz_];
+  status = H5LTread_dataset_double(file_id,"/z_out",btmp);
+  if (status < 0) {if (verbose) std::cerr << "# Grid Err; can't find z_out" << endl;}
+  else {for (int i=0; i < nz_; i++) z_out_[i] = btmp[i];}
+  delete [] btmp;
 
   // read zone properties
   double *tmp = new double[n_zones];
@@ -146,9 +175,9 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
   H5Fclose (file_id);
 
   // allocate indexs
-  index_x_ = new int[n_zones];
-  index_y_ = new int[n_zones];
-  index_z_ = new int[n_zones];
+  index_x_.resize(n_zones);
+  index_y_.resize(n_zones);
+  index_z_.resize(n_zones);
 
   //---------------------------------------------------
   // Calculate volume, indices, model properties
@@ -158,9 +187,17 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
   for (int l = 0;l < n_elems; l++) elem_mass[l] = 0;
   cnt = 0;
   for (int i=0;i<nx_;++i)
+  {
     for (int j=0;j<ny_;++j)
+    {
       for (int k=0;k<nz_;++k)
       {
+        dx_[cnt] = x_out_.delta(i);
+        dy_[cnt] = y_out_.delta(j);
+        dz_[cnt] = z_out_.delta(k);
+
+        vol_[cnt] = dx_[cnt]*dy_[cnt]*dz_[cnt];
+
         index_x_[cnt] = i;
         index_y_[cnt] = j;
         index_z_[cnt] = k;
@@ -168,12 +205,14 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
         double vrsq = z[cnt].v[0]*z[cnt].v[0] + z[cnt].v[1]*z[cnt].v[1] + z[cnt].v[2]*z[cnt].v[2];
 
         // compute integral quantities
-        totmass    += vol_*z[cnt].rho;
-        totke      += 0.5*vol_*z[cnt].rho*vrsq;
-        totrad     += vol_*z[cnt].e_rad;
-        for (int l = 0;l < n_elems; l++) elem_mass[l] += vol_*z[cnt].rho*z[cnt].X_gas[l];
+        totmass    += vol_[cnt]*z[cnt].rho;
+        totke      += 0.5*vol_[cnt]*z[cnt].rho*vrsq;
+        totrad     += vol_[cnt]*z[cnt].e_rad;
+        for (int l = 0;l < n_elems; l++) elem_mass[l] += vol_[cnt]*z[cnt].rho*z[cnt].X_gas[l];
         cnt++;
+      }
     }
+  }
 
   //---------------------------------------------------
   // Printout model properties
@@ -184,10 +223,10 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
     std::cout << "# n_zones = " << n_zones << "\n";
     std::cout << "# (nx,ny,nz) = (";
     std::cout << nx_ << ", " << ny_ << ", " << nz_ << ")\n";
-    std::cout << "# (dx,dy,dz) = (";
-    std::cout << dx_ << ", " << dy_ << ", " << dz_ << ")\n";
-    std::cout << "# (x0,y0,z0) = (";
-    std::cout << x0_ << ", " << y0_ << ", " << z0_ << ")\n";
+    // std::cout << "# (dx,dy,dz) = (";
+    // std::cout << dx_ << ", " << dy_ << ", " << dz_ << ")\n";
+    std::cout << "# (x_min,y_min,z_min) = (";
+    std::cout << x_out_.min << ", " << y_out_.min << ", " << z_out_.min << ")\n";
     printf("# mass = %.4e (%.4e Msun)\n",totmass,totmass/pc::m_sun);
     for (int k=0;k<n_elems;k++) {
       cout << "# " << elems_Z[k] << "." << elems_A[k] <<  "\t";
@@ -213,32 +252,32 @@ void grid_3D_cart::write_plotfile(int iw, double tt, int write_mass_fractions)
 	// open hdf5 file
 	hid_t file_id = H5Fcreate(plotfilename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-	// print out zone sizes
-	hsize_t  dims_dr[1]={3};
-	float dr[3];
-	dr[0] = dx_;
-  dr[1] = dy_;
-  dr[2] = dz_;
-  H5LTmake_dataset(file_id,"dr",1,dims_dr,H5T_NATIVE_FLOAT,dr);
+	// // print out zone sizes
+	// hsize_t  dims_dr[1]={3};
+	// float dr[3];
+	// dr[0] = dx_;
+ //  dr[1] = dy_;
+ //  dr[2] = dz_;
+ //  H5LTmake_dataset(file_id,"dr",1,dims_dr,H5T_NATIVE_FLOAT,dr);
 
 	// print out x array
 	hsize_t  dims_x[1]={(hsize_t)nx_};
 	float *xarr = new float[nx_];
-	for (int i=0;i<nx_;i++) xarr[i] = i*dx_ + x0_;
+	for (int i=0;i<nx_;i++) xarr[i] = x_out_.left(i);
 	H5LTmake_dataset(file_id,"x",1,dims_x,H5T_NATIVE_FLOAT,xarr);
   delete [] xarr;
 
   // print out y array
 	hsize_t  dims_y[1]={(hsize_t)ny_};
 	float *yarr = new float[ny_];
-	for (int i=0;i<ny_;i++) yarr[i] = i*dy_ + y0_;
+	for (int i=0;i<ny_;i++) yarr[i] = y_out_.left(i);
 	H5LTmake_dataset(file_id,"y",1,dims_y,H5T_NATIVE_FLOAT,yarr);
   delete [] yarr;
 
   // print out z array
 	hsize_t  dims_z[1]={(hsize_t)nz_};
 	float *zarr = new float[nz_];
-	for (int i=0;i<nz_;i++) zarr[i] = i*dz_ + z0_;
+	for (int i=0;i<nz_;i++) zarr[i] = z_out_.left(i);
 	H5LTmake_dataset(file_id,"z",1,dims_z,H5T_NATIVE_FLOAT,zarr);
   delete [] zarr;
 
@@ -258,13 +297,19 @@ void grid_3D_cart::write_plotfile(int iw, double tt, int write_mass_fractions)
 //************************************************************
 void grid_3D_cart::expand(double e)
 {
-  dx_ *= e;
-  dy_ *= e;
-  dz_ *= e;
-  x0_ *= e;
-  y0_ *= e;
-  z0_ *= e;
-  vol_ = vol_*e*e*e;
+  for (int i=0; i < nx_; i++) x_out_[i] *= e;
+  for (int j=0; j < ny_; j++) y_out_[j] *= e;
+  for (int k=0; k < nz_; k++) z_out_[k] *= e;
+  x_out_.min *= e;
+  y_out_.min *= e;
+  z_out_.min *= e;
+
+  for (int i=0; i < n_zones; i++){
+    dx_[i] *= e;
+    dy_[i] *= e;
+    dz_[i] *= e;
+    vol_[i] = vol_[i]*e*e*e;
+  }
 }
 
 
@@ -274,14 +319,21 @@ void grid_3D_cart::expand(double e)
 //------------------------------------------------------------
 int grid_3D_cart::get_zone(const double *x) const
 {
-  int i = floor((x[0]-x0_)/dx_);
-  int j = floor((x[1]-y0_)/dy_);
-  int k = floor((x[2]-z0_)/dz_);
+  // int i = floor((x[0]-x0_)/dx_);
+  // int j = floor((x[1]-y0_)/dy_);
+  // int k = floor((x[2]-z0_)/dz_);
 
-  // check for off grid
-  if ((i < 0)||(i > nx_-1)) return -2;
-  if ((j < 0)||(j > ny_-1)) return -2;
-  if ((k < 0)||(k > nz_-1)) return -2;
+  // // check for off grid
+  // if ((i < 0)||(i > nx_-1)) return -2;
+  // if ((j < 0)||(j > ny_-1)) return -2;
+  // if ((k < 0)||(k > nz_-1)) return -2;
+
+  // int ind =  i*ny_*nz_ + j*nz_ + k;
+  // return ind;
+
+  int i = x_out_.locate_within_bounds(x[0]);
+  int j = y_out_.locate_within_bounds(x[1]);
+  int k = z_out_.locate_within_bounds(x[2]);
 
   int ind =  i*ny_*nz_ + j*nz_ + k;
   return ind;
@@ -303,9 +355,9 @@ int grid_3D_cart::get_next_zone
   // distance to x interfaces
   //---------------------------------
   if (D[0] > 0)
-    bn = dx_*(index_x_[i] + 1 + tiny) + x0_;
+    bn = dx_[i]*(index_x_[i] + 1 + tiny) + x_out_.min;
   else
-    bn = dx_*(index_x_[i] + tiny) + x0_;
+    bn = dx_[i]*(index_x_[i] + tiny) + x_out_.min;
   //std::cout << bn << " ";
   len[0] = (bn - x[0])/D[0];
 
@@ -313,9 +365,9 @@ int grid_3D_cart::get_next_zone
   // distance to y interfaces
   //---------------------------------
   if (D[1] > 0)
-    bn = dy_*(index_y_[i] + 1 + tiny) + y0_;
+    bn = dy_[i]*(index_y_[i] + 1 + tiny) + y_out_.min;
   else
-    bn = dy_*(index_y_[i] + tiny) + y0_;
+    bn = dy_[i]*(index_y_[i] + tiny) + y_out_.min;
   len[1] = (bn - x[1])/D[1];
 //  std::cout << bn << " ";
 
@@ -323,9 +375,9 @@ int grid_3D_cart::get_next_zone
   // distance to z interfaces
   //---------------------------------
   if (D[2] > 0)
-    bn = dz_*(index_z_[i] + 1 + tiny) + z0_;
+    bn = dz_[i]*(index_z_[i] + 1 + tiny) + z_out_.min;
   else
-    bn = dz_*(index_z_[i] + tiny) + z0_;
+    bn = dz_[i]*(index_z_[i] + tiny) + z_out_.min;
   len[2] = (bn - x[2])/D[2];
   //std::cout << bn << "\n";
 
@@ -354,7 +406,7 @@ int grid_3D_cart::get_next_zone
   int new_iy = index_y_[i] + idy;
   int new_iz = index_z_[i] + idz;
 
-    // check for off grid
+  // check for off grid
   if ((new_ix < 0)||(new_ix > nx_-1)) return -2;
   if ((new_iy < 0)||(new_iy > ny_-1)) return -2;
   if ((new_iz < 0)||(new_iz > nz_-1)) return -2;
@@ -369,7 +421,7 @@ int grid_3D_cart::get_next_zone
 //------------------------------------------------------------
 double grid_3D_cart::zone_volume(const int i) const
 {
-  return vol_;
+  return vol_[i];
 }
 
 //------------------------------------------------------------
@@ -378,19 +430,19 @@ double grid_3D_cart::zone_volume(const int i) const
 void grid_3D_cart::sample_in_zone
 (const int i, const std::vector<double> ran,double r[3])
 {
-  r[0] = x0_ + (index_x_[i] + ran[0])*dx_;
-  r[1] = y0_ + (index_y_[i] + ran[1])*dy_;
-  r[2] = z0_ + (index_z_[i] + ran[2])*dz_;
+  r[0] = x_out_.min + (index_x_[i] + ran[0])*dx_[i];
+  r[1] = y_out_.min + (index_y_[i] + ran[1])*dy_[i];
+  r[2] = z_out_.min + (index_z_[i] + ran[2])*dz_[i];
 }
 
 //************************************************************
-// expand the grid
+// get coordinates of zone center
 //************************************************************
 void grid_3D_cart::coordinates(int i,double r[3])
 {
-  r[0] = x0_ + (index_x_[i] + 0.5)*dx_;
-  r[1] = y0_ + (index_y_[i] + 0.5)*dy_;
-  r[2] = z0_ + (index_z_[i] + 0.5)*dz_;
+  r[0] = x_out_.min + (index_x_[i] + 0.5)*dx_[i];
+  r[1] = y_out_.min + (index_y_[i] + 0.5)*dy_[i];
+  r[2] = z_out_.min + (index_z_[i] + 0.5)*dz_[i];
 }
 
 
@@ -414,13 +466,13 @@ void grid_3D_cart::get_velocity(int i, double x[3], double D[3], double v[3], do
     // put grid data into array form
     // this should probalby be stored this way to start...
     double rmin[3];
-    rmin[0] = x0_;
-    rmin[1] = y0_;
-    rmin[2] = z0_;
+    rmin[0] = x_out_.min;
+    rmin[1] = y_out_.min;
+    rmin[2] = z_out_.min;
     double del[3];
-    del[0] = dx_;
-    del[1] = dy_;
-    del[2] = dz_;
+    del[0] = dx_[i];
+    del[1] = dy_[i];
+    del[2] = dz_[i];
     int npts[3];
     npts[0] = nx_;
     npts[1] = ny_;
@@ -455,9 +507,9 @@ void grid_3D_cart::get_velocity(int i, double x[3], double D[3], double v[3], do
     }
 
     // differences in each dimension
-    double xd = (x[0] - r_lo[0])/dx_;
-    double yd = (x[1] - r_lo[1])/dy_;
-    double zd = (x[2] - r_lo[2])/dz_;
+    double xd = (x[0] - r_lo[0])/dx_[i];
+    double yd = (x[1] - r_lo[1])/dy_[i];
+    double zd = (x[2] - r_lo[2])/dz_[i];
 
     // interpolate each of the 3 velocity components
     for (int j = 0;j < 3; j++)

@@ -28,12 +28,11 @@ void hydro_homologous::step(double dt)
 {
   double e = (grid->t_now+dt)/grid->t_now;
 
-
   //if (grid->is_snr_system)
   //{
-    for (int i=0;i<grid->n_zones;i++)
-      grid->z[i].rho = grid->z[i].rho/e/e/e;
-    grid->expand(e);
+  for (int i=0;i<grid->n_zones;i++)
+    grid->z[i].rho = grid->z[i].rho/e/e/e;
+  grid->expand(e);
   //}
 
   // this was put in to handle supernova with non-negligible
