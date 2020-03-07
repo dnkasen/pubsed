@@ -269,6 +269,12 @@ void grid_2D_cyln::write_plotfile(int iw, double tt, int write_mass_fractions)
   H5LTmake_dataset(file_id,"z",1,dims_z,H5T_NATIVE_FLOAT,zarr);
   delete [] zarr;
 
+  hsize_t  dims_min[1]={1};
+  float x0 = x_out_.min;
+  H5LTmake_dataset(file_id,"x_min",1,dims_min,H5T_NATIVE_FLOAT,&x0);
+  float z0 = z_out_.min;
+  H5LTmake_dataset(file_id,"z_min",1,dims_min,H5T_NATIVE_FLOAT,&z0);
+
   hsize_t  dims_g[2]={(hsize_t) nx_,(hsize_t) nz_};
   write_hdf5_plotfile_zones(file_id, dims_g, 2, tt);
   write_integrated_quantities(iw,tt);
@@ -290,8 +296,8 @@ void grid_2D_cyln::expand(double e)
   z_out_.min *= e;
 
   for (int i=0; i < n_zones; i++){
-    dx_[i] *= e;
-    dz_[i] *= e;
+    dx_[i] = dx_[i]*e;
+    dz_[i] = dz_[i]*e;
     vol_[i] = vol_[i]*e*e*e;
   }
 }
@@ -313,6 +319,12 @@ int grid_2D_cyln::get_zone(const double *x) const
   // return ix*nz_ + iz;
 
   double p = sqrt(x[0]*x[0] + x[1]*x[1]);
+
+  if (p < x_out_.min) return -2;
+  if (p > x_out_[nx_-1]) return -2;
+  if (x[2] < z_out_.min) return -2;
+  if (x[2] > z_out_[nz_-1]) return -2;
+
   int i = x_out_.locate_within_bounds(p);
   int k = z_out_.locate_within_bounds(x[2]);
 
@@ -333,8 +345,8 @@ int grid_2D_cyln::get_next_zone
   double  z = x[2];
   double Dz = D[2];
 
-  int ix = index_x_[i]; //floor(p/dx_);
-  int iz = index_z_[i]; //floor(z/dz_); // note this index can be negative
+  int ix = index_x_[i];
+  int iz = index_z_[i];
 
   double lp,lz;
   int d_ip = 0;
@@ -351,7 +363,7 @@ int grid_2D_cyln::get_next_zone
   if (Dz > 0)
   {
     // up interface
-    double zt = dz_[i]*(iz + 1 + tiny) + z_out_.min;
+    double zt = z_out_.right(iz) + dz_[i]*tiny;
     lz   = (zt - z)/Dz;
     //std::cout << "iz_up = "<< iz << "; Dz = " << Dz << "; zt = " << zt << "; z = " << z << "; lz = " << lz << "\n";
     d_iz = 1;
@@ -359,7 +371,7 @@ int grid_2D_cyln::get_next_zone
   else
   {
     // down interface
-    double zt = dz_[i]*(iz - tiny) + z_out_.min;
+    double zt = z_out_.left(iz) - dz_[i]*tiny;
     lz   = (zt - z)/Dz;
     if (Dz == 0) lz = std::numeric_limits<double>::infinity();
     //std::cout << "Dz_dn = " << Dz << ";zt = " << zt << "; z = " << z << "; lz = " << lz << "\n";
@@ -375,7 +387,7 @@ int grid_2D_cyln::get_next_zone
   else
   {
     // outer interface
-    pt = dx_[i]*(ix + 1 + tiny);
+    pt = x_out_.right(ix) + dx_[i]*tiny;
     c  = p*p - pt*pt;
     det = b*b - 4*a*c;
     if (det < 0) lp_out =  std::numeric_limits<double>::infinity();
@@ -383,7 +395,7 @@ int grid_2D_cyln::get_next_zone
     if (lp_out < 0) lp_out =  std::numeric_limits<double>::infinity();
 
     // inner interface
-    pt = dx_[i]*(ix - tiny);
+    pt = x_out_.left(ix) - dx_[i]*tiny;
     c = p*p - pt*pt;
     det = b*b - 4*a*c;
     if (det < 0) lp_in =  std::numeric_limits<double>::infinity();
@@ -494,17 +506,18 @@ double  grid_2D_cyln::zone_volume(const int i) const
 //************************************************************
 void grid_2D_cyln::sample_in_zone(int i, std::vector<double> ran, double r[3])
 {
+  int ix = index_x_[i];
+  int iz = index_z_[i];
+
   double phi = 2*pc::pi*ran[1];
-  double p_in = index_x_[i]*dx_[i];
-  double p_out = (index_x_[i] + 1)*dx_[i];
+  double p_in = x_out_.left(ix);
+  double p_out = x_out_.right(ix);
   double p_samp = sqrt( p_in*p_in + ran[0]*( p_out*p_out-p_in*p_in ) );
 
   r[0] = p_samp*cos(phi);
   r[1] = p_samp*sin(phi);
-  r[2] = z_out_.min + (index_z_[i] + ran[2])*dz_[i];
+  r[2] = z_out_.left(iz) + ran[2]*dz_[i];
 }
-
-
 
 //************************************************************
 // get the velocity vector

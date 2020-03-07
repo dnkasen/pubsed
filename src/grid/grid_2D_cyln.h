@@ -53,8 +53,7 @@ public:
   void    get_velocity(int i, double[3], double[3], double[3], double*);
   void    expand(double);
   int     get_next_zone(const double *x, const double *D, int, double, double *dist) const;
-  void    coordinates(int i,double r[3]) {
-    r[0] = 0; r[1] = 0; r[2] = 0;}
+  void    coordinates(int i,double r[3]) {r[0] = 0; r[1] = 0; r[2] = 0;}
 
   void writeCheckpointGrid(std::string fname);
   void readCheckpointGrid(std::string fname, bool test=false);

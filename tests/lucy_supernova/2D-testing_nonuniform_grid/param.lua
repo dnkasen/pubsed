@@ -4,7 +4,7 @@ defaults_file    = sedona_home.."/defaults/sedona_defaults.lua"
 data_atomic_file = sedona_home.."/data/ASD_atomdata.hdf5"
 
 grid_type    = "grid_2D_cyln"        -- grid geometry; match input model
-model_file   = "../models/lucy_2D-testing_new_grid_inputs.h5"    -- input model file
+model_file   = "../models/lucy_2D-testing_nonuniform_grid.h5"    -- input model file
 hydro_module = "homologous"
 
 -- time stepping

@@ -23,8 +23,10 @@ lucy_supernova/1D_ddmc
 lucy_supernova/1D_checkpoint
 lucy_supernova/1D_checkpoint_rankcount
 lucy_supernova/2D
-lucy_supernova/2D-testing_new_grid_inputs
+lucy_supernova/2D-testing_nonuniform_grid
 lucy_supernova/2D_checkpoint
 lucy_supernova/3D
 one_zone_rad_eq/grey_IMC
 sod_shock_tube
+##ellipsoidal_outflow_2D/2D_benchmark
+ellipsoidal_outflow_2D/2D-testing_nonuniform_grid

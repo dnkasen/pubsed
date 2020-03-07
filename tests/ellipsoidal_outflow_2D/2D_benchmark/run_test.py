@@ -1,8 +1,9 @@
-import os
-import matplotlib.pyplot as plt
+import sys, os
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import h5py
-import sys
+
 
 
 def run_test(pdf="",runcommand=""):
@@ -11,75 +12,74 @@ def run_test(pdf="",runcommand=""):
     # clean up old results and run the code
     ###########################################
     if (runcommand != ""):
-    	os.system("rm *_spectrum_* plt_* integrated_quantities.dat")
-    	os.system(runcommand)
+        os.system("rm *_spectrum_* plt_* integrated_quantities.dat")
+        os.system(runcommand)
 
     ###########################################
     # compare the output
     ###########################################
+
     plt.clf()
     failure = 0
 
     # sedona results
-    fin = h5py.File('optical_spectrum_final.h5','r')
-    tlc = np.array(fin['time'])
-    Lnu = np.array(fin['Lnu'])
-    mu  = np.array(fin['mu'])
-    tlc = tlc/3600.0/24.0
+    f = h5py.File('optical_spectrum_final.h5','r')
+    t_centers = np.array(f['time'])
+    t_centers = t_centers/(3600.0*24.0)
+    Lnu = np.array(f['Lnu'])
+    mu_centers  = np.array(f['mu'])
 
-    # get and plot angle integrated light curve
-    total_lc = np.zeros(len(tlc))
-    for i in range(len(mu)):
-        total_lc += Lnu[:,0,i]
-    total_lc = total_lc/(1.0*len(mu))
-    plt.plot(tlc,total_lc,'o',markeredgecolor='k',markersize=6,markeredgewidth=2)
+    n_times = np.size(t_centers)
+    n_mu = np.size(mu_centers)
 
-    # plot radioactive deposition
-    ts2,erad,Ls2,Lnuc = np.loadtxt('integrated_quantities.dat',usecols=[0,1,2,3],unpack=1,skiprows=1)
-    ts2= ts2/3600.0/24.0
-    plt.plot(ts2,Ls2,'o',markeredgecolor='blue',markersize=8,markeredgewidth=2,markerfacecolor='none')
+    t_min = 0.2
+    t_max = 5
+    index_t_min = np.searchsorted(t_centers,t_min)
+    index_t_max = np.searchsorted(t_centers,t_max)
 
-    # plot benchmark results
-    tl1,Ll1 = np.loadtxt('../comparefiles/lucy_lc.dat',unpack=1)
-    plt.plot(tl1,Ll1,color='k',linewidth=3)
-    tl2,Ll2 = np.loadtxt('../comparefiles/lucy_gr.dat',unpack=1)
-    plt.plot(tl2,Ll2,color='blue',linewidth=3)
-    plt.ylim(1e40,0.4e44)
+    # get and plot angle-integrated light curve
+    L_tot = np.zeros(n_times)
+    for i in range(n_mu):
+        L_tot += Lnu[:,0,i]
+    L_tot = L_tot/(1.0*n_mu)
+    plt.scatter(t_centers[index_t_min:index_t_max], L_tot[index_t_min:index_t_max], color='black', s=1)
+    plt.plot(t_centers[index_t_min:index_t_max], L_tot[index_t_min:index_t_max], color='black', linewidth=1)
 
-    # overplot angle dependent light curves
-    for i in range(len(mu)):
-        plt.plot(tlc,Lnu[:,0,i],'o',markeredgecolor='red',markersize=6,markeredgewidth=2,markerfacecolor='none',alpha=0.2)
-        # calculate error
-        use = ((tlc > 3)*(tlc < 55))
-        max_err,mean_err = get_error(Lnu[:,0,i],Ll1,x=tlc,x_comp=tl1,use = use)
-#        if (max_err > 0.4): failure = 1
-        if (mean_err > 0.1): failure = 1
-
-    use = ((ts2 > 3)*(ts2 < 55))
-    max_err,mean_err = get_error(Ls2,Ll2,x=ts2,x_comp=tl2,use = use)
-    if (max_err > 0.25): failure = 2
-    if (mean_err > 0.1): failure = 2
+    # overplot angle-dependent light curves
+    for i in range(n_mu):
+        plt.scatter(t_centers[index_t_min:index_t_max], Lnu[index_t_min:index_t_max,0,i], color='red', s=1)
+        plt.plot(t_centers[index_t_min:index_t_max], Lnu[index_t_min:index_t_max,0,i], color='red', linewidth=1)
 
     ## make plot
-    plt.title('2D Lucy Supernova test - monte carlo, testing new grid inputs')
-    plt.legend(['sedona LC','sedona GR','lucy LC','lucy GR'])
-    plt.xlim(0,55)
-    plt.xlabel('luminosity (erg/s)',size=13)
-    plt.ylabel('days since explosion',size=13)
+    plt.title('Ellipsoidal Outflow - Monte Carlo only')
+    lines = [Line2D([0,1], [0,1], color=col, linewidth=1) for col in ['black','red']]
+    plt.legend(lines, ['LC angle-integrated','LC angle-dependent'])
+    plt.yscale('log')
+    plt.xlim(0,5)
+    plt.ylim(6e41,2e43)
+    plt.xlabel('Time since explosion [days]',size=12)
+    plt.ylabel('Luminosity [erg/s]',size=12)
     if (pdf != ''): pdf.savefig()
     else:
         plt.ion()
         plt.show()
         j = get_input('press any key> ')
 
+    # failure = 1
+
+    # this should return !=0 if failed
     return failure
 
 
-#-------------------------------------------
-# error calculator helper function
-#-------------------------------------------
+
+#----------------------------------------------
+# helper function for calculating the error
+# between two numpy arrays
+#----------------------------------------------
 
 def get_error(a,b,x=[],x_comp=[],use=[]):
+
+    #-------------------------------------------
 
     """ Function to calculate the error between two arrays
 
@@ -103,6 +103,7 @@ def get_error(a,b,x=[],x_comp=[],use=[]):
             max_error, mean_error = get_error(y,y_comp,use=(x > 0.5))
 
     """
+    #-------------------------------------------------
 
     # result array
     y = a
