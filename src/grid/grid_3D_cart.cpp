@@ -63,9 +63,9 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
   y_out_.resize(ny_);
   z_out_.resize(nz_);
   z.resize(n_zones);
-  dx_.resize(n_zones);
-  dy_.resize(n_zones);
-  dz_.resize(n_zones);
+  dx_.resize(nx_);
+  dy_.resize(ny_);
+  dz_.resize(nz_);
   vol_.resize(n_zones);
 
   // read elements Z and A
@@ -126,6 +126,10 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
   if ( (status_dr == 0) && ( (status_x == 0) || (status_y == 0) || (status_z == 0) ) ) {
     if (verbose) std::cerr << "# Grid Err; can't find one of the following inputs to define the grid: 1) dr or 2) x_out, y_out, z_out" << endl;
   }
+
+  for (int i=0; i < nx_; i++) dx_[i] = x_out_.delta(i);
+  for (int i=0; i < ny_; i++) dy_[i] = y_out_.delta(i);
+  for (int i=0; i < nz_; i++) dz_[i] = z_out_.delta(i);
 
   // read zone properties
   double *tmp = new double[n_zones];
@@ -205,11 +209,7 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
     {
       for (int k=0;k<nz_;++k)
       {
-        dx_[cnt] = x_out_.delta(i);
-        dy_[cnt] = y_out_.delta(j);
-        dz_[cnt] = z_out_.delta(k);
-
-        vol_[cnt] = dx_[cnt]*dy_[cnt]*dz_[cnt];
+        vol_[cnt] = dx_[i]*dy_[j]*dz_[k];
 
         index_x_[cnt] = i;
         index_y_[cnt] = j;
@@ -310,19 +310,23 @@ void grid_3D_cart::write_plotfile(int iw, double tt, int write_mass_fractions)
 //************************************************************
 void grid_3D_cart::expand(double e)
 {
-  for (int i=0; i < nx_; i++) x_out_[i] *= e;
-  for (int j=0; j < ny_; j++) y_out_[j] *= e;
-  for (int k=0; k < nz_; k++) z_out_[k] *= e;
+  for (int i=0; i < nx_; i++){
+    x_out_[i] *= e;
+    dx_[i] = dx_[i]*e;
+  }
+  for (int j=0; j < ny_; j++){
+    y_out_[j] *= e;
+    dy_[j] = dy_[j]*e;
+  }
+  for (int k=0; k < nz_; k++){
+    z_out_[k] *= e;
+    dz_[k] = dz_[k]*e;
+  }
   x_out_.min *= e;
   y_out_.min *= e;
   z_out_.min *= e;
 
-  for (int i=0; i < n_zones; i++){
-    dx_[i] = dx_[i]*e;
-    dy_[i] = dy_[i]*e;
-    dz_[i] = dz_[i]*e;
-    vol_[i] = vol_[i]*e*e*e;
-  }
+  for (int i=0; i < n_zones; i++) vol_[i] = vol_[i]*e*e*e;
 }
 
 
@@ -347,7 +351,7 @@ int grid_3D_cart::get_zone(const double *x) const
   if (x[0] < x_out_.min) return -2;
   if (x[0] > x_out_[nx_-1]) return -2;
   if (x[1] < y_out_.min) return -2;
-  if (x[1] > y_out_.[ny_-1]) return -2;
+  if (x[1] > y_out_[ny_-1]) return -2;
   if (x[2] < z_out_.min) return -2;
   if (x[2] > z_out_[nz_-1]) return -2;
 
@@ -379,9 +383,9 @@ int grid_3D_cart::get_next_zone
   // distance to x interfaces
   //---------------------------------
   if (D[0] > 0)
-    bn = x_out_.right(ix) + dx_[i]*tiny;
+    bn = x_out_.right(ix) + dx_[ix]*tiny;
   else
-    bn = x_out_.left(ix) - dx_[i]*tiny;
+    bn = x_out_.left(ix) - dx_[ix]*tiny;
   //std::cout << bn << " ";
   len[0] = (bn - x[0])/D[0];
 
@@ -389,9 +393,9 @@ int grid_3D_cart::get_next_zone
   // distance to y interfaces
   //---------------------------------
   if (D[1] > 0)
-    bn = y_out_.right(iy) + dy_[i]*tiny;
+    bn = y_out_.right(iy) + dy_[iy]*tiny;
   else
-    bn = y_out_.left(iy) - dy_[i]*tiny;
+    bn = y_out_.left(iy) - dy_[iy]*tiny;
   len[1] = (bn - x[1])/D[1];
 //  std::cout << bn << " ";
 
@@ -399,9 +403,9 @@ int grid_3D_cart::get_next_zone
   // distance to z interfaces
   //---------------------------------
   if (D[2] > 0)
-    bn = z_out_.right(iz) + dz_[i]*tiny;
+    bn = z_out_.right(iz) + dz_[iz]*tiny;
   else
-    bn = z_out_.left(iz) - dz_[i]*tiny;
+    bn = z_out_.left(iz) - dz_[iz]*tiny;
   len[2] = (bn - x[2])/D[2];
   //std::cout << bn << "\n";
 
@@ -458,24 +462,24 @@ void grid_3D_cart::sample_in_zone
   int iy = index_y_[i];
   int iz = index_z_[i];
 
-  r[0] = x_out_.left(ix) + ran[2]*dx_[i];
-  r[1] = y_out_.left(iy) + ran[2]*dy_[i];
-  r[2] = z_out_.left(iz) + ran[2]*dz_[i];
+  r[0] = x_out_.left(ix) + ran[2]*dx_[ix];
+  r[1] = y_out_.left(iy) + ran[2]*dy_[iy];
+  r[2] = z_out_.left(iz) + ran[2]*dz_[iz];
 }
 
-// //************************************************************
-// // get coordinates of zone center
-// //************************************************************
-// void grid_3D_cart::coordinates(int i,double r[3])
-// {
-//   int ix = index_x_[i];
-//   int iy = index_y_[i];
-//   int iz = index_z_[i];
+//************************************************************
+// get coordinates of zone center
+//************************************************************
+void grid_3D_cart::coordinates(int i,double r[3])
+{
+  int ix = index_x_[i];
+  int iy = index_y_[i];
+  int iz = index_z_[i];
 
-//   r[0] = x_out_.left(ix) + 0.5*dx_[i];
-//   r[1] = y_out_.left(iy) + 0.5*dy_[i];
-//   r[2] = z_out_.left(iz) + 0.5*dz_[i];
-// }
+  r[0] = x_out_.left(ix) + 0.5*dx_[i];
+  r[1] = y_out_.left(iy) + 0.5*dy_[i];
+  r[2] = z_out_.left(iz) + 0.5*dz_[i];
+}
 
 //------------------------------------------------------------
 // get the velocity vector
@@ -494,26 +498,26 @@ void grid_3D_cart::get_velocity(int i, double x[3], double D[3], double v[3], do
     // trilinear interpolation
     // e.g., https://en.wikipedia.org/wiki/Trilinear_interpolation
 
-    // put grid data into array form
-    // this should probalby be stored this way to start...
-    double rmin[3];
-    rmin[0] = x_out_.min;
-    rmin[1] = y_out_.min;
-    rmin[2] = z_out_.min;
-    double del[3];
-    del[0] = dx_[i];
-    del[1] = dy_[i];
-    del[2] = dz_[i];
-    int npts[3];
-    npts[0] = nx_;
-    npts[1] = ny_;
-    npts[2] = nz_;
-
     // indices along each dimensions for this zone
     int ic[3];
     ic[0] = index_x_[i];
     ic[1] = index_y_[i];
     ic[2] = index_z_[i];
+
+    // put grid data into array form
+    // this should probably be stored this way to start...
+    int npts[3];
+    npts[0] = nx_;
+    npts[1] = ny_;
+    npts[2] = nz_;
+    double rmin[3];
+    rmin[0] = x_out_.min;
+    rmin[1] = y_out_.min;
+    rmin[2] = z_out_.min;
+    double del[3];
+    del[0] = dx_[ic[0]];
+    del[1] = dy_[ic[1]];
+    del[2] = dz_[ic[2]];
 
     // find lattice points to interpolate from
     int    i_lo[3], i_hi[3];
@@ -538,9 +542,9 @@ void grid_3D_cart::get_velocity(int i, double x[3], double D[3], double v[3], do
     }
 
     // differences in each dimension
-    double xd = (x[0] - r_lo[0])/dx_[i];
-    double yd = (x[1] - r_lo[1])/dy_[i];
-    double zd = (x[2] - r_lo[2])/dz_[i];
+    double xd = (x[0] - r_lo[0])/dx_[ic[0]];
+    double yd = (x[1] - r_lo[1])/dy_[ic[1]];
+    double zd = (x[2] - r_lo[2])/dz_[ic[2]];
 
     // interpolate each of the 3 velocity components
     for (int j = 0;j < 3; j++)
