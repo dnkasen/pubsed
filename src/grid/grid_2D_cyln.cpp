@@ -65,8 +65,8 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   x_out_.resize(nx_);
   z_out_.resize(nz_);
   z.resize(n_zones);
-  dx_.resize(n_zones);
-  dz_.resize(n_zones);
+  dx_.resize(nx_);
+  dz_.resize(nz_);
   vol_.resize(n_zones);
 
   int *etmp = new int[n_elems];
@@ -121,6 +121,9 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   if ( (status_dr == 0) && ( (status_x == 0) || (status_z == 0) ) ) {
     if (verbose) std::cerr << "# Grid Err; can't find one of the following inputs to define the grid: 1) dr or 2) x_out, z_out" << endl;
   }
+
+  for (int i=0; i < nx_; i++) dx_[i] = x_out_.delta(i);
+  for (int i=0; i < nz_; i++) dz_[i] = z_out_.delta(i);
 
   // read zone properties
   double *tmp = new double[n_zones];
@@ -192,12 +195,9 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   for (int i=0;i<nx_;++i)
     for (int j=0;j<nz_;++j)
     {
-      dx_[cnt] = x_out_.delta(i);
-      dz_[cnt] = z_out_.delta(j);
-
       double r0 = x_out_.left(i);
       double r1 = x_out_.right(i);
-      vol_[cnt] = pc::pi*(r1*r1 - r0*r0)*dz_[cnt];
+      vol_[cnt] = pc::pi*(r1*r1 - r0*r0)*dz_[j];
 
       index_x_[cnt] = i;
       index_z_[cnt] = j;
@@ -290,16 +290,18 @@ void grid_2D_cyln::write_plotfile(int iw, double tt, int write_mass_fractions)
 //************************************************************
 void grid_2D_cyln::expand(double e)
 {
-  for (int i=0; i < nx_; i++) x_out_[i] *= e;
-  for (int k=0; k < nz_; k++) z_out_[k] *= e;
+  for (int i=0; i < nx_; i++){
+    x_out_[i] *= e;
+    dx_[i] = dx_[i]*e;
+  }
+  for (int k=0; k < nz_; k++){
+    z_out_[k] *= e;
+    dz_[k] = dz_[k]*e;
+  }
   x_out_.min *= e;
   z_out_.min *= e;
 
-  for (int i=0; i < n_zones; i++){
-    dx_[i] = dx_[i]*e;
-    dz_[i] = dz_[i]*e;
-    vol_[i] = vol_[i]*e*e*e;
-  }
+  for (int i=0; i < n_zones; i++) vol_[i] = vol_[i]*e*e*e;
 }
 
 //************************************************************
@@ -363,7 +365,7 @@ int grid_2D_cyln::get_next_zone
   if (Dz > 0)
   {
     // up interface
-    double zt = z_out_.right(iz) + dz_[i]*tiny;
+    double zt = z_out_.right(iz) + dz_[iz]*tiny;
     lz   = (zt - z)/Dz;
     //std::cout << "iz_up = "<< iz << "; Dz = " << Dz << "; zt = " << zt << "; z = " << z << "; lz = " << lz << "\n";
     d_iz = 1;
@@ -371,7 +373,7 @@ int grid_2D_cyln::get_next_zone
   else
   {
     // down interface
-    double zt = z_out_.left(iz) - dz_[i]*tiny;
+    double zt = z_out_.left(iz) - dz_[iz]*tiny;
     lz   = (zt - z)/Dz;
     if (Dz == 0) lz = std::numeric_limits<double>::infinity();
     //std::cout << "Dz_dn = " << Dz << ";zt = " << zt << "; z = " << z << "; lz = " << lz << "\n";
@@ -387,7 +389,7 @@ int grid_2D_cyln::get_next_zone
   else
   {
     // outer interface
-    pt = x_out_.right(ix) + dx_[i]*tiny;
+    pt = x_out_.right(ix) + dx_[ix]*tiny;
     c  = p*p - pt*pt;
     det = b*b - 4*a*c;
     if (det < 0) lp_out =  std::numeric_limits<double>::infinity();
@@ -395,7 +397,7 @@ int grid_2D_cyln::get_next_zone
     if (lp_out < 0) lp_out =  std::numeric_limits<double>::infinity();
 
     // inner interface
-    pt = x_out_.left(ix) - dx_[i]*tiny;
+    pt = x_out_.left(ix) - dx_[ix]*tiny;
     c = p*p - pt*pt;
     det = b*b - 4*a*c;
     if (det < 0) lp_in =  std::numeric_limits<double>::infinity();
@@ -516,7 +518,7 @@ void grid_2D_cyln::sample_in_zone(int i, std::vector<double> ran, double r[3])
 
   r[0] = p_samp*cos(phi);
   r[1] = p_samp*sin(phi);
-  r[2] = z_out_.left(iz) + ran[2]*dz_[i];
+  r[2] = z_out_.left(iz) + ran[2]*dz_[iz];
 }
 
 //************************************************************
@@ -565,11 +567,11 @@ void grid_2D_cyln::writeCheckpointGrid(std::string fname) {
     x_out_.writeCheckpoint(fname, "grid", "x_out");
     z_out_.writeCheckpoint(fname, "grid", "z_out");
 
+    writeVector(fname, "grid", "dx", dx_, H5T_NATIVE_DOUBLE);
+    writeVector(fname, "grid", "dz", dz_, H5T_NATIVE_DOUBLE);
     writeVector(fname, "grid", "index_x", index_x_, H5T_NATIVE_INT);
     writeVector(fname, "grid", "index_z", index_z_, H5T_NATIVE_INT);
     writeVector(fname, "grid", "vol", vol_, H5T_NATIVE_DOUBLE);
-    writeVector(fname, "grid", "dx", dx_, H5T_NATIVE_DOUBLE);
-    writeVector(fname, "grid", "dz", dz_, H5T_NATIVE_DOUBLE);
   }
   MPI_Barrier(MPI_COMM_WORLD);
 }
@@ -584,11 +586,11 @@ void grid_2D_cyln::readCheckpointGrid(std::string fname, bool test) {
       x_out_new_.readCheckpoint(fname, "grid", "x_out");
       z_out_new_.readCheckpoint(fname, "grid", "z_out");
 
+      readVector(fname, "grid", "dx", dx_new_, H5T_NATIVE_DOUBLE);
+      readVector(fname, "grid", "dz", dz_new_, H5T_NATIVE_DOUBLE);
       readVector(fname, "grid", "index_x", index_x_new_, H5T_NATIVE_INT);
       readVector(fname, "grid", "index_z", index_z_new_, H5T_NATIVE_INT);
       readVector(fname, "grid", "vol", vol_new_, H5T_NATIVE_DOUBLE);
-      readVector(fname, "grid", "dx", dx_new_, H5T_NATIVE_DOUBLE);
-      readVector(fname, "grid", "dz", dz_new_, H5T_NATIVE_DOUBLE);
 
       if (not test) {
         nx_ = nx_new_;

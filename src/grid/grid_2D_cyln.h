@@ -22,7 +22,7 @@ private:
   // these arrays are indexed by the x-index and z-index, respectively
   locate_array x_out_, z_out_;
 
-  // store precomputed zone widths in each direction. These arrays are indexed by the index in the flattened 1D array of all zones
+  // store precomputed zone widths in each direction. These arrays are indexed by the x-index and z-index, respectively
   std::vector<double> dx_, dz_;
 
   // store precomputed zone volumes. These arrays are indexed by the index in the flattened 1D array of all zones
