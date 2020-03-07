@@ -318,9 +318,9 @@ void grid_3D_cart::expand(double e)
   z_out_.min *= e;
 
   for (int i=0; i < n_zones; i++){
-    dx_[i] *= e;
-    dy_[i] *= e;
-    dz_[i] *= e;
+    dx_[i] = dx_[i]*e;
+    dy_[i] = dy_[i]*e;
+    dz_[i] = dz_[i]*e;
     vol_[i] = vol_[i]*e*e*e;
   }
 }
@@ -344,6 +344,13 @@ int grid_3D_cart::get_zone(const double *x) const
   // int ind =  i*ny_*nz_ + j*nz_ + k;
   // return ind;
 
+  if (x[0] < x_out_.min) return -2;
+  if (x[0] > x_out_[nx_-1]) return -2;
+  if (x[1] < y_out_.min) return -2;
+  if (x[1] > y_out_.[ny_-1]) return -2;
+  if (x[2] < z_out_.min) return -2;
+  if (x[2] > z_out_[nz_-1]) return -2;
+
   int i = x_out_.locate_within_bounds(x[0]);
   int j = y_out_.locate_within_bounds(x[1]);
   int k = z_out_.locate_within_bounds(x[2]);
@@ -359,6 +366,10 @@ int grid_3D_cart::get_zone(const double *x) const
 int grid_3D_cart::get_next_zone
 (const double *x, const double *D, int i, double r_core, double *l) const
 {
+  int ix = index_x_[i];
+  int iy = index_y_[i];
+  int iz = index_z_[i];
+
   // tiny offset so we don't land exactly on boundaries
   double tiny = 1e-10;
 
@@ -368,9 +379,9 @@ int grid_3D_cart::get_next_zone
   // distance to x interfaces
   //---------------------------------
   if (D[0] > 0)
-    bn = dx_[i]*(index_x_[i] + 1 + tiny) + x_out_.min;
+    bn = x_out_.right(ix) + dx_[i]*tiny;
   else
-    bn = dx_[i]*(index_x_[i] + tiny) + x_out_.min;
+    bn = x_out_.left(ix) - dx_[i]*tiny;
   //std::cout << bn << " ";
   len[0] = (bn - x[0])/D[0];
 
@@ -378,9 +389,9 @@ int grid_3D_cart::get_next_zone
   // distance to y interfaces
   //---------------------------------
   if (D[1] > 0)
-    bn = dy_[i]*(index_y_[i] + 1 + tiny) + y_out_.min;
+    bn = y_out_.right(iy) + dy_[i]*tiny;
   else
-    bn = dy_[i]*(index_y_[i] + tiny) + y_out_.min;
+    bn = y_out_.left(iy) - dy_[i]*tiny;
   len[1] = (bn - x[1])/D[1];
 //  std::cout << bn << " ";
 
@@ -388,9 +399,9 @@ int grid_3D_cart::get_next_zone
   // distance to z interfaces
   //---------------------------------
   if (D[2] > 0)
-    bn = dz_[i]*(index_z_[i] + 1 + tiny) + z_out_.min;
+    bn = z_out_.right(iz) + dz_[i]*tiny;
   else
-    bn = dz_[i]*(index_z_[i] + tiny) + z_out_.min;
+    bn = z_out_.left(iz) - dz_[i]*tiny;
   len[2] = (bn - x[2])/D[2];
   //std::cout << bn << "\n";
 
@@ -443,21 +454,28 @@ double grid_3D_cart::zone_volume(const int i) const
 void grid_3D_cart::sample_in_zone
 (const int i, const std::vector<double> ran,double r[3])
 {
-  r[0] = x_out_.min + (index_x_[i] + ran[0])*dx_[i];
-  r[1] = y_out_.min + (index_y_[i] + ran[1])*dy_[i];
-  r[2] = z_out_.min + (index_z_[i] + ran[2])*dz_[i];
+  int ix = index_x_[i];
+  int iy = index_y_[i];
+  int iz = index_z_[i];
+
+  r[0] = x_out_.left(ix) + ran[2]*dx_[i];
+  r[1] = y_out_.left(iy) + ran[2]*dy_[i];
+  r[2] = z_out_.left(iz) + ran[2]*dz_[i];
 }
 
-//************************************************************
-// get coordinates of zone center
-//************************************************************
-void grid_3D_cart::coordinates(int i,double r[3])
-{
-  r[0] = x_out_.min + (index_x_[i] + 0.5)*dx_[i];
-  r[1] = y_out_.min + (index_y_[i] + 0.5)*dy_[i];
-  r[2] = z_out_.min + (index_z_[i] + 0.5)*dz_[i];
-}
+// //************************************************************
+// // get coordinates of zone center
+// //************************************************************
+// void grid_3D_cart::coordinates(int i,double r[3])
+// {
+//   int ix = index_x_[i];
+//   int iy = index_y_[i];
+//   int iz = index_z_[i];
 
+//   r[0] = x_out_.left(ix) + 0.5*dx_[i];
+//   r[1] = y_out_.left(iy) + 0.5*dy_[i];
+//   r[2] = z_out_.left(iz) + 0.5*dz_[i];
+// }
 
 //------------------------------------------------------------
 // get the velocity vector
