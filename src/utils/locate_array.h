@@ -10,64 +10,71 @@
 
 #include "h5utils.h"
 
+enum LAType {flex, do_lin, do_log, none};
+
 class locate_array {
 
-public:
-
+private:
   // where applicable, these values are the right bin wall (i.e. not the left)
-  std::vector<double> x;
-  double min;
+  std::vector<double> x_;
+  double min_;
+  double del_ = 0;
 
   // other parameters
-  int do_log_interpolate = 0;
+  int do_log_interpolate_ = 0;
+  // by default, flexible grid -- no assumptions about grid spacing
+  LAType locate_type_ = flex;
 
+public:
   // constructors
   locate_array()  {}
   locate_array(int n) {init(n);}
 
   // Return size of array (also, # of bins)
-  int size() const {return (int)x.size();}
+  int size() const {return (int)x_.size();}
 
   void init(const int);
   void init(const double,const double,const double);
   void log_init(const double,const double,const double);
   void init(const double,const double,const int);
-  void init(const std::vector<double>, const double minval);
+  void init(const std::vector<double>&, const double minval);
+  void init(const double*, const int n, const double minval);
   void copy(locate_array l);
   void swap(locate_array new_array);
 
   // operators for easy access
-  double  operator[] (const int i) const {return x[i];};
-  double& operator[] (const int i)       {return x[i];};
-  void resize(int i) {x.resize(i);};
+  double  operator[] (const int i) const {return x_[i];};
+  double& operator[] (const int i)       {return x_[i];};
+  void resize(int i) {x_.resize(i);};
 
   // equality
   bool is_equal(locate_array l, bool complain);
 
   // center of the bin left of nu_i
   double center(const int i) const{
-    if (i == 0) return 0.5*(min    + x[0]);
-    else        return 0.5*(x[i-1] + x[i]);
+    if (i == 0) return 0.5*(min_    + x_[0]);
+    else        return 0.5*(x_[i-1] + x_[i]);
   }
 
   // left side of bin i
   double left(const int i) const{
-    if (i == 0) return min;
-    else return x[i-1];}
+    if (i == 0) return min_;
+    else return x_[i-1];}
 
   // right side of bin i
   double right(const int i) const{
-    return x[i];  }
+    return x_[i];  }
 
   // width of the bin left of nu_i
   double delta(const int i) const{
-    if (i == 0) return x[0] - min;
-    else        return x[i] - x[i-1];
+    if (i == 0) return x_[0] - min_;
+    else        return x_[i] - x_[i-1];
   }
 
 
-  double maxval() {return x[x.size() - 1]; }
-  double minval() {return min; }
+  double maxval() const {return x_[x_.size() - 1]; }
+  double minval() const {return min_; }
+  void setmin(double minval) {min_ = minval;}
 
   int    locate(const double) const;
   int    locate_within_bounds(const double xval) const;
@@ -84,9 +91,9 @@ public:
 template<typename T>
 T interpolate_between(const double xval, const int i1, const int i2, const std::vector<T>& y) const
 {
-  if (x.size() == 1) return y[0];
-  double slope = (y[i2]-y[i1]) / (x[i2]-x[i1]);
-  double yval = y[i1] + slope*(xval - x[i1]);
+  if (x_.size() == 1) return y[0];
+  double slope = (y[i2]-y[i1]) / (x_[i2]-x_[i1]);
+  double yval = y[i1] + slope*(xval - x_[i1]);
   return yval;
 }
 
@@ -97,7 +104,7 @@ T interpolate_between(const double xval, const int i1, const int i2, const std::
 template<typename T>
 T log_interpolate_between(const double xval, const int i1, const int i2, const std::vector<T>& y) const
 {
-  if (x.size() == 1) return y[0];
+  if (x_.size() == 1) return y[0];
 
   // safeguard against equal opacities
   if(y[i1]==y[i2]) return y[i1];
@@ -106,8 +113,8 @@ T log_interpolate_between(const double xval, const int i1, const int i2, const s
   if(y[i1]<=0 || y[i2]<=0) return interpolate_between(xval, i1, i2, y);
 
   // do logarithmic interpolation
-  double slope = log(y[i2]/y[i1]) / log(x[i2]/x[i1]);
-  double logyval = log(y[i1]) + slope*log(xval/x[i1]);
+  double slope = log(y[i2]/y[i1]) / log(x_[i2]/x_[i1]);
+  double logyval = log(y[i1]) + slope*log(xval/x_[i1]);
   return exp(logyval);
 }
 
@@ -165,8 +172,8 @@ T value_at(const double xval, const std::vector<T>& y) const
 template<typename T>
 T value_at_with_zero_edges(const double xval, const std::vector<T>& y) const
 {
-  if (xval < min) return 0;
-  if (xval > x.back()) return 0;
+  if (xval < min_) return 0;
+  if (xval > x_.back()) return 0;
   int ind = locate_within_bounds(xval);
   return value_at(xval,y,ind);
 }

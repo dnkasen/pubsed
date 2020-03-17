@@ -81,7 +81,7 @@ void grid_1D_sphere::read_hdf5_file(std::string model_file, ParameterReader* par
   double rm[1];
   status = H5LTread_dataset_double(file_id,"/r_min",rm);
   if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find r_min" << endl;
-  r_out.min = rm[0];
+  r_out.setmin(rm[0]);
 
   v_inner_ = 0.; // just like in .mod case
 
@@ -190,7 +190,7 @@ void grid_1D_sphere::read_hdf5_file(std::string model_file, ParameterReader* par
   {
     // calculate shell volume
     double r0;
-    if(i==0) r0 = r_out.min;
+    if(i==0) r0 = r_out.minval();
     else     r0 = r_out[i-1];
     vol[i] = 4.0*pc::pi/3.0*(r_out[i]*r_out[i]*r_out[i] - r0*r0*r0);
   }
@@ -286,8 +286,10 @@ void grid_1D_sphere::read_ascii_file(std::string model_file, ParameterReader* pa
 
   // read header, general properties
   double texp;
-  infile >> r_out.min;
+  double rmin;
+  infile >> rmin;
   infile >> texp;
+  r_out.setmin(rmin);
   this->t_now = texp;
 
   // set v at inner boundary = 0
@@ -362,7 +364,7 @@ void grid_1D_sphere::read_ascii_file(std::string model_file, ParameterReader* pa
 
     // calculate shell volume
     double r0;
-    if(i==0) r0 = r_out.min;
+    if(i==0) r0 = r_out.minval();
     else     r0 = r_out[i-1];
     vol[i] = 4.0*pc::pi/3.0*(r_out[i]*r_out[i]*r_out[i] - r0*r0*r0);
   }
@@ -412,13 +414,13 @@ void grid_1D_sphere::expand(double e)
 {
   for (int i=0;i<n_zones;i++)
     r_out[i] *= e;
-  r_out.min *=e;
+  r_out.setmin(r_out.minval() *e);
 
   // recalculate shell volume
   for (int i=0;i<n_zones;i++)
   {
     double r0;
-    if(i==0) r0 = r_out.min;
+    if(i==0) r0 = r_out.minval();
     else     r0 = r_out[i-1];
     vol[i] = 4.0*pc::pi/3.0*(r_out[i]*r_out[i]*r_out[i] - r0*r0*r0);
   }
@@ -496,7 +498,7 @@ int grid_1D_sphere::get_zone(const double *x) const
   double r = sqrt(x[0]*x[0] + x[1]*x[1] + x[2]*x[2]);
 
   // check if off the boundaries
-  if(r < r_out.min             ) return -1;
+  if(r < r_out.minval()         ) return -1;
   if(r >= r_out[r_out.size()-1] ) return -2;
 
   // find in zone array using stl algorithm up_bound and subtracting iterators
@@ -529,7 +531,7 @@ int grid_1D_sphere::get_next_zone(const double *x, const double *D, int i, doubl
   // for innermost shell, use minimum r
   else
   {
-    r_in = r_out.min;
+    r_in = r_out.minval();
     ind_in = -1;
   }
 
@@ -604,7 +606,7 @@ void grid_1D_sphere::write_plotfile(int iw, double tt, int write_mass_fracs)
   FILE *outfile;
   outfile = fopen(zonefile,"w");
 
-  fprintf(outfile,"# t = %8.4e ; rmin = %8.4e\n",tt, r_out.min);
+  fprintf(outfile,"# t = %8.4e ; rmin = %8.4e\n",tt, r_out.minval());
   fprintf(outfile, "#  %-12.12s %-15.15s %-15.15s %-15.15s %-15.15s %-15.15s %-15.15s %-15.15s","r", "rho","v", "T_gas", "T_rad", "n_elec", "L_dep_nuc","L_emit_nuc");
   if (write_mass_fracs) // output mass fractions
   {
@@ -620,7 +622,7 @@ void grid_1D_sphere::write_plotfile(int iw, double tt, int write_mass_fracs)
 
   for (int i=0;i<n_zones;i++)
   {
-    double rin = r_out.min;
+    double rin = r_out.minval();
     if (i > 0) rin = r_out[i-1];
     double T_rad = pow(z[i].e_rad/pc::a,0.25);
 
@@ -651,7 +653,7 @@ void grid_1D_sphere::write_plotfile(int iw, double tt, int write_mass_fracs)
   // print out r min
   // print out time
   hsize_t  dims_r[1]={1};
-  float r0 = r_out.min;
+  float r0 = r_out.minval();
   H5LTmake_dataset(file_id,"r_inner",1,dims_r,H5T_NATIVE_FLOAT,&r0);
 
   hsize_t  dims_g[1]={(hsize_t) n_zones};
@@ -682,7 +684,7 @@ void grid_1D_sphere::sample_in_zone(int i, std::vector<double> ran, double r[3])
 {
   // inner radius of shell
   double r_0;
-  if (i == 0) r_0 = r_out.min;
+  if (i == 0) r_0 = r_out.minval();
   else r_0 = r_out[i-1];
 
   // sample radial position in shell weighted by volume
@@ -719,7 +721,7 @@ void grid_1D_sphere::get_velocity(int i, double x[3], double D[3], double v[3], 
 
     // linearly interpolate velocity here
     double v_0, r_0;
-    if (i == 0) {v_0 = v_inner_; r_0 = r_out.min; }
+    if (i == 0) {v_0 = v_inner_; r_0 = r_out.minval(); }
     else {v_0 = z[i-1].v[0]; r_0 = r_out[i-1]; }
     double dr = rr - r_0;
     double dv_dr = (z[i].v[0] - v_0)/(r_out[i] - r_0);
@@ -752,14 +754,14 @@ void grid_1D_sphere::get_radial_edges
     r[i] = r_out[i];
     v[i] = z[i].v[0];
   }
-  r0 = r_out.min;
+  r0 = r_out.minval();
   v0 = v_inner_;
 }
   void grid_1D_sphere::set_radial_edges
 (const std::vector<double> r, const double r0,
  const std::vector<double> v, const double v0)
 {
-  r_out.min = r0;
+  r_out.setmin(r0);
   v_inner_ = v0;
   for (int i=0;i<n_zones;i++)
   {
@@ -768,7 +770,7 @@ void grid_1D_sphere::get_radial_edges
 
     // calculate shell volume
     double r0;
-    if(i==0) r0 = r_out.min;
+    if(i==0) r0 = r_out.minval();
     else     r0 = r_out[i-1];
     vol[i] = 4.0*pc::pi/3.0*(r_out[i]*r_out[i]*r_out[i] - r0*r0*r0);
   }

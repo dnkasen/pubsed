@@ -78,48 +78,67 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   for (int k=0;k<n_elems;k++) elems_A.push_back(etmp[k]);
   delete [] etmp;
 
-  // read minima in each direction
-  herr_t status_rmin = H5LTfind_dataset(file_id,"rmin");
-  if (status_rmin == 1){
-    double rmin[2];
-    status = H5LTread_dataset_double(file_id,"/rmin",rmin);
-    x_out_.min = rmin[0];
-    z_out_.min = rmin[1];
-  }
-  else {if (verbose) std::cerr << "# Grid Err; can't find rmin" << endl;}
-
-  herr_t status_dr = H5LTfind_dataset(file_id,"dr");
-  if (status_dr == 1) {
-    double dr[2];
-    status = H5LTread_dataset_double(file_id,"/dr",dr);
-    if (status_rmin == 0){
-      if (verbose) std::cerr << "# Setting minimum values to x_min = 0, z_min = -dz*nz/2" << endl;
-      x_out_.min = 0;
-      z_out_.min = -dr[1]*nz_/2.0;
-    }
-    for (int i=0; i < nx_; i++) x_out_[i] = x_out_.min + (i+1.)*dr[0];
-    for (int k=0; k < nz_; k++) z_out_[k] = z_out_.min + (k+1.)*dr[1];
-  }
-
-  // read x bins
+  // read x & z grids -- read everything in that exists and piece it together
+  double* xtmp;
+  double* ztmp;
+  double xmin;
+  double zmin;
+  double dr[2];
+  double rmin[2];
+  // Check which grid inputs exist
   herr_t status_x = H5LTfind_dataset(file_id,"x_out");
-  if (status_x == 1) {
-    double *btmp = new double[nx_];
-    status = H5LTread_dataset_double(file_id,"/x_out",btmp);
-    for (int i=0; i < nx_; i++) x_out_[i] = btmp[i];
-    delete [] btmp;
-  }
-  // read z bins
   herr_t status_z = H5LTfind_dataset(file_id,"z_out");
-  if (status_z == 1) {
-    double *btmp = new double[nz_];
-    status = H5LTread_dataset_double(file_id,"/z_out",btmp);
-    for (int i=0; i < nz_; i++) z_out_[i] = btmp[i];
-    delete [] btmp;
+  herr_t status_dr = H5LTfind_dataset(file_id,"dr");
+  herr_t status_rmin = H5LTfind_dataset(file_id,"rmin");
+  // Read in data if exists
+  if (status_dr) {
+    status = H5LTread_dataset_double(file_id,"/dr",dr);
   }
-
-  if ( (status_dr == 0) && ( (status_x == 0) || (status_z == 0) ) ) {
+  if (status_rmin) {
+    status = H5LTread_dataset_double(file_id,"/rmin",rmin);
+    xmin = rmin[0];
+    zmin = rmin[1];
+  }
+  else {
+    if (status_dr) {
+      xmin = 0;
+      zmin = -dr[1]*nz_/2.0;
+    }
+  }
+  if (status_x && status_z) {
+    xtmp = new double[nx_];
+    status = H5LTread_dataset_double(file_id,"/x_out",xtmp);
+    ztmp = new double[nz_];
+    status = H5LTread_dataset_double(file_id,"/z_out",ztmp);
+  }
+  // Initialize x_out_ and z_out_ if possible
+  if (status_x && status_z && status_rmin) {
+    x_out_.init(xtmp, nx_, xmin);
+    z_out_.init(xtmp, nz_, zmin);
+    delete [] xtmp;
+    delete [] ztmp;
+  }
+  else if (status_x && status_z && (!status_rmin)) {
+    std::cerr << "Error: Missing rmin in grid. Exiting." << std::endl;
+    delete [] xtmp;
+    delete [] ztmp;
+    exit(99);
+  }
+  else if (status_dr && status_rmin) {
+    double xmax = xmin + dr[0] * nx_;
+    double zmax = zmin + dr[1] * nz_;
+    x_out_.init(xmin, xmax, dr[0]);
+    z_out_.init(zmin, zmax, dr[1]);
+  }
+  else if (status_dr && !status_rmin) {
+    xmin = 0;
+    zmin = -dr[1]*nz_/2.0;
+    x_out_.init(xmin, nx_, dr[0]);
+    z_out_.init(zmin, nz_, dr[1]);
+  }
+  else {
     if (verbose) std::cerr << "# Grid Err; can't find one of the following inputs to define the grid: 1) dr or 2) x_out, z_out" << endl;
+    exit(10);
   }
 
   for (int i=0; i < nx_; i++) dx_[i] = x_out_.delta(i);
@@ -270,9 +289,9 @@ void grid_2D_cyln::write_plotfile(int iw, double tt, int write_mass_fractions)
   delete [] zarr;
 
   hsize_t  dims_min[1]={1};
-  float x0 = x_out_.min;
+  float x0 = x_out_.minval();
   H5LTmake_dataset(file_id,"x_min",1,dims_min,H5T_NATIVE_FLOAT,&x0);
-  float z0 = z_out_.min;
+  float z0 = z_out_.minval();
   H5LTmake_dataset(file_id,"z_min",1,dims_min,H5T_NATIVE_FLOAT,&z0);
 
   hsize_t  dims_g[2]={(hsize_t) nx_,(hsize_t) nz_};
@@ -298,8 +317,8 @@ void grid_2D_cyln::expand(double e)
     z_out_[k] *= e;
     dz_[k] = dz_[k]*e;
   }
-  x_out_.min *= e;
-  z_out_.min *= e;
+  x_out_.setmin(x_out_.minval() * e);
+  z_out_.setmin(x_out_.minval() * e);
 
   for (int i=0; i < n_zones; i++) vol_[i] = vol_[i]*e*e*e;
 }
@@ -322,9 +341,9 @@ int grid_2D_cyln::get_zone(const double *x) const
 
   double p = sqrt(x[0]*x[0] + x[1]*x[1]);
 
-  if (p < x_out_.min) return -2;
+  if (p < x_out_.minval()) return -2;
   if (p > x_out_[nx_-1]) return -2;
-  if (x[2] < z_out_.min) return -2;
+  if (x[2] < z_out_.minval()) return -2;
   if (x[2] > z_out_[nz_-1]) return -2;
 
   int i = x_out_.locate_within_bounds(p);
