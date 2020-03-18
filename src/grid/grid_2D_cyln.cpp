@@ -90,6 +90,7 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   herr_t status_z = H5LTfind_dataset(file_id,"z_out");
   herr_t status_dr = H5LTfind_dataset(file_id,"dr");
   herr_t status_rmin = H5LTfind_dataset(file_id,"rmin");
+  std::cerr << "x " << status_x << " z " << status_z << " dr " << status_dr << " rmin " << status_rmin << std::endl;
   // Read in data if exists
   if (status_dr) {
     status = H5LTread_dataset_double(file_id,"/dr",dr);
@@ -125,16 +126,21 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
     exit(99);
   }
   else if (status_dr && status_rmin) {
+    std::cerr << "doing things the non-traditional way" << std::endl;
     double xmax = xmin + dr[0] * nx_;
     double zmax = zmin + dr[1] * nz_;
     x_out_.init(xmin, xmax, dr[0]);
     z_out_.init(zmin, zmax, dr[1]);
   }
-  else if (status_dr && !status_rmin) {
-    xmin = 0;
+  else if (status_dr && (!status_rmin)) {
+    std::cerr << "doing things the traditional way" << std::endl;
+    xmin = 0.;
     zmin = -dr[1]*nz_/2.0;
-    x_out_.init(xmin, nx_, dr[0]);
-    z_out_.init(zmin, nz_, dr[1]);
+    std::cerr << xmin << " " << zmin << std::endl;
+    double xmax = xmin + dr[0] * nx_;
+    double zmax = zmin + dr[1] * nz_;
+    x_out_.init(xmin, xmax, dr[0]);
+    z_out_.init(zmin, zmax, dr[1]);
   }
   else {
     if (verbose) std::cerr << "# Grid Err; can't find one of the following inputs to define the grid: 1) dr or 2) x_out, z_out" << endl;

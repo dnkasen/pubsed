@@ -181,15 +181,19 @@ bool locate_array::is_equal(locate_array l, bool complain) {
     
 
 //---------------------------------------------------------
-// locate (return closest index below the value)
+// locate (return closest index above the value)
 // if off left side of boundary, returns 0
 // if off right side of boundary, returns size
 // Warning: The returned index will be out of bounds
-// if off right hand side
+// if off right hand side.
+// Bins are closed to the left and open to the right
 //---------------------------------------------------------
 int locate_array::locate(const double xval) const
 {
+  // First handle some trivial cases
   if (size() == 1) return 0;
+  if (xval >= maxval()) return size();
+  if (xval < minval()) return 0;
   int ind;
   if (locate_type_ == flex) {
     ind = upper_bound(x_.begin(), x_.end(), xval) - x_.begin();
@@ -198,6 +202,7 @@ int locate_array::locate(const double xval) const
     ind = floor((xval - min_) / del_);
   }
   else if (locate_type_ == do_log) {
+    if (xval / min_ <= 0) return 0; 
     ind = floor(log(xval/min_) / log(1 + del_));
   }
   else if (locate_type_ == none) {
@@ -207,8 +212,11 @@ int locate_array::locate(const double xval) const
     std::cerr << "locate_type not recognized, falling back to flex" << std::endl;
     ind = upper_bound(x_.begin(), x_.end(), xval) - x_.begin();
   }
-  if (locate_type_ != none && ind != 0 && ind != size() && (left(ind) >= xval or right(ind) < xval)) {
-    std::cerr << "Calculated index incorrect. " << locate_type_ << " " << ind << " " << left(ind) << " " << xval << " " << right(ind) << " Falling back to flex" << std::endl;
+  // If off to right of grid, set index to size
+  if (ind > size()) ind = size();
+  // If off to left of grid, set index to 0
+  if (locate_type_ != none && ind != 0 && ind != size() && (left(ind) > xval or right(ind) <= xval)) {
+    std::cerr << "Calculated index incorrect. " << "type: " << locate_type_ << " ind: " << ind << " left: " << left(ind) << " val: " << xval << " right: " << right(ind) << " min del: " <<  min_ << " " <<  del_ << std::endl;
     ind = upper_bound(x_.begin(), x_.end(), xval) - x_.begin();
   }
   return ind;
@@ -246,7 +254,7 @@ void locate_array::print() const
   printf("# Print Locate Array; n_elements = %lu\n",x_.size());
   printf("min %12.4e\n",min_);
   printf("del %12.4e\n",del_);
-  printf("type %12.4e\n",locate_type_);
+  printf("type %4d\n",locate_type_);
   for (int i=0;i<x_.size();i++)
     printf("%4d %12.4e\n",i,x_[i]);
 }
