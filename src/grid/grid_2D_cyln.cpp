@@ -324,7 +324,7 @@ void grid_2D_cyln::expand(double e)
     dz_[k] = dz_[k]*e;
   }
   x_out_.setmin(x_out_.minval() * e);
-  z_out_.setmin(x_out_.minval() * e);
+  z_out_.setmin(z_out_.minval() * e);
 
   for (int i=0; i < n_zones; i++) vol_[i] = vol_[i]*e*e*e;
 }
@@ -352,6 +352,7 @@ int grid_2D_cyln::get_zone(const double *x) const
   if (x[2] < z_out_.minval()) return -2;
   if (x[2] > z_out_[nz_-1]) return -2;
 
+  std::cerr << z_out_.minval() << std::endl;
   int i = x_out_.locate_within_bounds(p);
   int k = z_out_.locate_within_bounds(x[2]);
 
