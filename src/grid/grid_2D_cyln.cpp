@@ -114,7 +114,7 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   // Initialize x_out_ and z_out_ if possible
   if (status_x && status_z && status_rmin) {
     x_out_.init(xtmp, nx_, xmin);
-    z_out_.init(xtmp, nz_, zmin);
+    z_out_.init(ztmp, nz_, zmin);
     delete [] xtmp;
     delete [] ztmp;
   }

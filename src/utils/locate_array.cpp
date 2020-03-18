@@ -127,6 +127,7 @@ void locate_array::init(const double* a, const int n, const double minval)
   locate_type_ = flex;
   min_ = minval;
   do_log_interpolate_ = 0;
+  x_.resize(n);
   for (int i = 0; i < n; i++) x_[i] = a[i];
 }
 
@@ -188,6 +189,7 @@ bool locate_array::is_equal(locate_array l, bool complain) {
 //---------------------------------------------------------
 int locate_array::locate(const double xval) const
 {
+  if (size() == 1) return 0;
   int ind;
   if (locate_type_ == flex) {
     ind = upper_bound(x_.begin(), x_.end(), xval) - x_.begin();
