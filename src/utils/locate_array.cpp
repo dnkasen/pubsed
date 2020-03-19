@@ -200,10 +200,8 @@ int locate_array::locate(const double xval) const
   }
   else if (locate_type_ == do_lin) {
     ind = floor((xval - min_) / del_);
-    std::cerr << xval - min_ << " " << del_ << std::endl;
   }
   else if (locate_type_ == do_log) {
-    if (xval / min_ <= 0) return 0; 
     ind = floor(log(xval/min_) / log(1 + del_));
   }
   else if (locate_type_ == none) {
@@ -213,15 +211,12 @@ int locate_array::locate(const double xval) const
     std::cerr << "locate_type not recognized, falling back to flex" << std::endl;
     ind = upper_bound(x_.begin(), x_.end(), xval) - x_.begin();
   }
-  // If off to right of grid, set index to size
-  if (ind > size()) ind = size();
-  // If off to left of grid, set index to 0
   if (locate_type_ != none && ind != 0 && ind != size() && (left(ind) > xval or right(ind) <= xval)) {
-    std::cerr << "Calculated index incorrect. " << "type: " << locate_type_ << " ind: " << ind << " left: " << left(ind) << " val: " << xval << " right: " << right(ind) << " min del: " <<  min_ << " " <<  del_ << std::endl;
+    std::cerr << "Calculated index incorrect. " << "type: " << locate_type_ << " ind: " << ind
+      << " left: " << left(ind) << " val: " << xval << " right: " << right(ind) << " min del: "
+      <<  min_ << " " <<  del_ << std::endl;
     ind = upper_bound(x_.begin(), x_.end(), xval) - x_.begin();
-    std::cerr << ind << std::endl;
   }
-
   return ind;
 }
 
@@ -326,3 +321,14 @@ void locate_array::swap(locate_array new_array){
   locate_type_ = new_array.locate_type_;
   new_array.locate_type_ = locate_tmp;
 }
+
+void locate_array::scale(double e) {
+  for (int i = 0; i < size(); i++) {
+    x_[i] *= e;
+  }
+  if (locate_type_ == do_lin) {
+    del_ *= e;
+  }
+  min_ *= e;
+}
+

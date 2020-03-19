@@ -412,9 +412,7 @@ void grid_1D_sphere::read_ascii_file(std::string model_file, ParameterReader* pa
 //************************************************************
 void grid_1D_sphere::expand(double e)
 {
-  for (int i=0;i<n_zones;i++)
-    r_out[i] *= e;
-  r_out.setmin(r_out.minval() *e);
+  r_out.scale(e);
 
   // recalculate shell volume
   for (int i=0;i<n_zones;i++)

@@ -76,6 +76,8 @@ public:
   double minval() const {return min_; }
   void setmin(double minval) {min_ = minval;}
 
+  void scale(double e);
+
   int    locate(const double) const;
   int    locate_within_bounds(const double xval) const;
 

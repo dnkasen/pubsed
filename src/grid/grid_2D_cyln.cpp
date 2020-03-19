@@ -315,16 +315,8 @@ void grid_2D_cyln::write_plotfile(int iw, double tt, int write_mass_fractions)
 //************************************************************
 void grid_2D_cyln::expand(double e)
 {
-  for (int i=0; i < nx_; i++){
-    x_out_[i] *= e;
-    dx_[i] = dx_[i]*e;
-  }
-  for (int k=0; k < nz_; k++){
-    z_out_[k] *= e;
-    dz_[k] = dz_[k]*e;
-  }
-  x_out_.setmin(x_out_.minval() * e);
-  z_out_.setmin(z_out_.minval() * e);
+  x_out_.scale(e);
+  z_out_.scale(e);
 
   for (int i=0; i < n_zones; i++) vol_[i] = vol_[i]*e*e*e;
 }
@@ -352,7 +344,6 @@ int grid_2D_cyln::get_zone(const double *x) const
   if (x[2] < z_out_.minval()) return -2;
   if (x[2] > z_out_[nz_-1]) return -2;
 
-  std::cerr << z_out_.minval() << std::endl;
   int i = x_out_.locate_within_bounds(p);
   int k = z_out_.locate_within_bounds(x[2]);
 
