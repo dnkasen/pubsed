@@ -88,20 +88,20 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   // Check which grid inputs exist
   herr_t status_x = H5LTfind_dataset(file_id,"x_out");
   herr_t status_z = H5LTfind_dataset(file_id,"z_out");
-  herr_t status_dr = H5LTfind_dataset(file_id,"dr");
-  herr_t status_rmin = H5LTfind_dataset(file_id,"rmin");
-  std::cerr << "x " << status_x << " z " << status_z << " dr " << status_dr << " rmin " << status_rmin << std::endl;
+  status_dr_ = H5LTfind_dataset(file_id,"dr");
+  status_rmin_ = H5LTfind_dataset(file_id,"rmin");
+  status_xz_ = (status_x && status_z);
   // Read in data if exists
-  if (status_dr) {
+  if (status_dr_) {
     status = H5LTread_dataset_double(file_id,"/dr",dr);
   }
-  if (status_rmin) {
+  if (status_rmin_) {
     status = H5LTread_dataset_double(file_id,"/rmin",rmin);
     xmin = rmin[0];
     zmin = rmin[1];
   }
   else {
-    if (status_dr) {
+    if (status_dr_) {
       xmin = 0;
       zmin = -dr[1]*nz_/2.0;
     }
@@ -113,27 +113,25 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
     status = H5LTread_dataset_double(file_id,"/z_out",ztmp);
   }
   // Initialize x_out_ and z_out_ if possible
-  if (status_x && status_z && status_rmin) {
+  if (status_xz_ && status_rmin_) {
     x_out_.init(xtmp, nx_, xmin);
     z_out_.init(ztmp, nz_, zmin);
     delete [] xtmp;
     delete [] ztmp;
   }
-  else if (status_x && status_z && (!status_rmin)) {
+  else if (status_xz_ && (!status_rmin_)) {
     std::cerr << "Error: Missing rmin in grid. Exiting." << std::endl;
     delete [] xtmp;
     delete [] ztmp;
     exit(99);
   }
-  else if (status_dr && status_rmin) {
-    std::cerr << "doing things the non-traditional way" << std::endl;
+  else if (status_dr_ && status_rmin_) {
     double xmax = xmin + dr[0] * nx_;
     double zmax = zmin + dr[1] * nz_;
     x_out_.init(xmin, xmax, dr[0]);
     z_out_.init(zmin, zmax, dr[1]);
   }
-  else if (status_dr && (!status_rmin)) {
-    std::cerr << "doing things the traditional way" << std::endl;
+  else if (status_dr_ && (!status_rmin_)) {
     xmin = 0.;
     zmin = -dr[1]*nz_/2.0;
     std::cerr << xmin << " " << zmin << std::endl;
@@ -273,12 +271,14 @@ void grid_2D_cyln::write_plotfile(int iw, double tt, int write_mass_fractions)
   // open hdf5 file
   hid_t file_id = H5Fcreate( zonefile, H5F_ACC_TRUNC, H5P_DEFAULT,  H5P_DEFAULT);
 
-  // // print out radial size
-  // hsize_t  dims_dr[1]={2};
-  // float dr[2];
-  // dr[0] = dx_;
-  // dr[1] = dz_;
-  // H5LTmake_dataset(file_id,"dr",1,dims_dr,H5T_NATIVE_FLOAT,dr);
+  // If fixed dr's exist, output them. Some tests want it
+  if (status_dr_) {
+    hsize_t  dims_dr[1]={2};
+    float dr[2];
+    dr[0] = x_out_.delval();
+    dr[1] = z_out_.delval();
+    H5LTmake_dataset(file_id,"dr",1,dims_dr,H5T_NATIVE_FLOAT,dr);
+  }
 
   // print out x array
   hsize_t  dims_x[1]={(hsize_t)nx_};
@@ -572,12 +572,15 @@ void grid_2D_cyln::writeCheckpointGrid(std::string fname) {
     writeCheckpointGeneralGrid(fname);
     hsize_t single_val = 1;
     
+    createDataset(fname, "grid", "status_dr", 1, &single_val, H5T_NATIVE_INT);
+    createDataset(fname, "grid", "status_rmin", 1, &single_val, H5T_NATIVE_INT);
+    createDataset(fname, "grid", "status_xz", 1, &single_val, H5T_NATIVE_INT);
     createDataset(fname, "grid", "nx", 1, &single_val, H5T_NATIVE_INT);
     createDataset(fname, "grid", "nz", 1, &single_val, H5T_NATIVE_INT);
-    createDataset(fname, "grid", "dx", 1, &single_val, H5T_NATIVE_DOUBLE);
-    createDataset(fname, "grid", "dz", 1, &single_val, H5T_NATIVE_DOUBLE);
-    createDataset(fname, "grid", "zcen", 1, &single_val, H5T_NATIVE_DOUBLE);
 
+    writeSimple(fname, "grid", "status_dr", &status_dr_, H5T_NATIVE_INT);
+    writeSimple(fname, "grid", "status_rmin", &status_rmin_, H5T_NATIVE_INT);
+    writeSimple(fname, "grid", "status_xz", &status_xz_, H5T_NATIVE_INT);
     writeSimple(fname, "grid", "nx", &nx_, H5T_NATIVE_INT);
     writeSimple(fname, "grid", "nz", &nz_, H5T_NATIVE_INT);
 
@@ -597,6 +600,10 @@ void grid_2D_cyln::readCheckpointGrid(std::string fname, bool test) {
   for (int rank = 0; rank < nproc; rank++) {
     if (my_rank == rank) {
       readCheckpointGeneralGrid(fname, test);
+      readSimple(fname, "grid", "status_dr", &status_dr_, H5T_NATIVE_INT);
+      readSimple(fname, "grid", "status_rmin", &status_rmin_, H5T_NATIVE_INT);
+      readSimple(fname, "grid", "status_xz", &status_xz_, H5T_NATIVE_INT);
+      readSimple(fname, "grid", "nx", &nx_new_, H5T_NATIVE_INT);
       readSimple(fname, "grid", "nx", &nx_new_, H5T_NATIVE_INT);
       readSimple(fname, "grid", "nz", &nz_new_, H5T_NATIVE_INT);
 
