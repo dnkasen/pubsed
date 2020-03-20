@@ -55,20 +55,18 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
 
   // get grid size and dimensions
   hsize_t     dims[3];
-  double dr[2];
   status = H5LTget_dataset_info(file_id,"/comp",dims, NULL, NULL);
   if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find comp" << endl;
-  status = H5LTread_dataset_double(file_id,"/dr",dr);
-  if (status < 0) if (verbose) std::cerr << "# Grid Err; can't find dr" << endl;
 
   nx_     = dims[0];
   nz_     = dims[1];
   n_elems = dims[2];
-  dx_ = dr[0];
-  dz_ = dr[1];
-  n_zones = nz_*nx_;
-  zcen_ = dz_*nz_/2.0;
+  n_zones = nx_*nz_;
+  x_out_.resize(nx_);
+  z_out_.resize(nz_);
   z.resize(n_zones);
+  dx_.resize(nx_);
+  dz_.resize(nz_);
   vol_.resize(n_zones);
 
   int *etmp = new int[n_elems];
@@ -80,6 +78,77 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   for (int k=0;k<n_elems;k++) elems_A.push_back(etmp[k]);
   delete [] etmp;
 
+  // read x & z grids -- read everything in that exists and piece it together
+  double* xtmp;
+  double* ztmp;
+  double xmin;
+  double zmin;
+  double dr[2];
+  double rmin[2];
+  // Check which grid inputs exist
+  herr_t status_x = H5LTfind_dataset(file_id,"x_out");
+  herr_t status_z = H5LTfind_dataset(file_id,"z_out");
+  status_dr_ = H5LTfind_dataset(file_id,"dr");
+  status_rmin_ = H5LTfind_dataset(file_id,"rmin");
+  status_xz_ = (status_x && status_z);
+  // Read in data if exists
+  if (status_dr_) {
+    status = H5LTread_dataset_double(file_id,"/dr",dr);
+  }
+  if (status_rmin_) {
+    status = H5LTread_dataset_double(file_id,"/rmin",rmin);
+    xmin = rmin[0];
+    zmin = rmin[1];
+  }
+  else {
+    if (status_dr_) {
+      xmin = 0;
+      zmin = -dr[1]*nz_/2.0;
+    }
+  }
+  if (status_x && status_z) {
+    xtmp = new double[nx_];
+    status = H5LTread_dataset_double(file_id,"/x_out",xtmp);
+    ztmp = new double[nz_];
+    status = H5LTread_dataset_double(file_id,"/z_out",ztmp);
+  }
+  // Initialize x_out_ and z_out_ if possible
+  if (status_xz_ && status_rmin_) {
+    x_out_.init(xtmp, nx_, xmin);
+    z_out_.init(ztmp, nz_, zmin);
+    delete [] xtmp;
+    delete [] ztmp;
+  }
+  else if (status_xz_ && (!status_rmin_)) {
+    std::cerr << "Error: Missing rmin in grid. Exiting." << std::endl;
+    delete [] xtmp;
+    delete [] ztmp;
+    exit(99);
+  }
+  else if (status_dr_ && status_rmin_) {
+    double xmax = xmin + dr[0] * nx_;
+    double zmax = zmin + dr[1] * nz_;
+    x_out_.init(xmin, xmax, dr[0]);
+    z_out_.init(zmin, zmax, dr[1]);
+  }
+  else if (status_dr_ && (!status_rmin_)) {
+    xmin = 0.;
+    zmin = -dr[1]*nz_/2.0;
+    std::cerr << xmin << " " << zmin << std::endl;
+    double xmax = xmin + dr[0] * nx_;
+    double zmax = zmin + dr[1] * nz_;
+    x_out_.init(xmin, xmax, dr[0]);
+    z_out_.init(zmin, zmax, dr[1]);
+  }
+  else {
+    if (verbose) std::cerr << "# Grid Err; can't find one of the following inputs to define the grid: 1) dr or 2) x_out, z_out" << endl;
+    exit(10);
+  }
+
+  for (int i=0; i < nx_; i++) dx_[i] = x_out_.delta(i);
+  for (int i=0; i < nz_; i++) dz_[i] = z_out_.delta(i);
+
+  // read zone properties
   double *tmp = new double[n_zones];
   // read density
   status = H5LTread_dataset_double(file_id,"/rho",tmp);
@@ -135,6 +204,10 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   // close HDF5 input file
   H5Fclose (file_id);
 
+  // allocate indexs
+  index_x_.resize(n_zones);
+  index_z_.resize(n_zones);
+
   //---------------------------------------------------
   // Calculate volume, indices, model properties
   //---------------------------------------------------
@@ -145,12 +218,14 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   for (int i=0;i<nx_;++i)
     for (int j=0;j<nz_;++j)
     {
-      double r0   = i*dx_;
-      double r1   = (i+1)*dx_;
+      double r0 = x_out_.left(i);
+      double r1 = x_out_.right(i);
+      vol_[cnt] = pc::pi*(r1*r1 - r0*r0)*dz_[j];
+
+      index_x_[cnt] = i;
+      index_z_[cnt] = j;
+
       double vrsq = z[cnt].v[0]*z[cnt].v[0] + z[cnt].v[2]*z[cnt].v[2];
-      vol_[cnt]   = pc::pi*(r1*r1 - r0*r0)*dz_;
-      index_x_.push_back(i);
-      index_z_.push_back(j);
 
       // compute integral quantities
       totmass    += vol_[cnt]*z[cnt].rho;
@@ -168,7 +243,7 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
     std::cout << "# gridtype: 2D cylindrical\n";
     std::cout << "# n_zones = " << n_zones << "\n";
     std::cout << "# (nx,nz) = (" << nx_ << ", " << nz_ << ")\n";
-    std::cout << "# (dx,dz) = (" << dx_ << ", " << dz_ << ")\n";
+    // std::cout << "# (dx,dz) = (" << dx_ << ", " << dz_ << ")\n";
 
     printf("# mass = %.4e (%.4e Msun)\n",totmass,totmass/pc::m_sun);
     for (int k=0;k<n_elems;k++) {
@@ -196,26 +271,34 @@ void grid_2D_cyln::write_plotfile(int iw, double tt, int write_mass_fractions)
   // open hdf5 file
   hid_t file_id = H5Fcreate( zonefile, H5F_ACC_TRUNC, H5P_DEFAULT,  H5P_DEFAULT);
 
-  // print out radial size
-  hsize_t  dims_dr[1]={2};
-  float dr[2];
-  dr[0] = dx_;
-  dr[1] = dz_;
-  H5LTmake_dataset(file_id,"dr",1,dims_dr,H5T_NATIVE_FLOAT,dr);
-
-  // print out z array
-  hsize_t  dims_z[1]={(hsize_t)nz_};
-  float *zarr = new float[nz_];
-  for (int i=0;i<nz_;i++) zarr[i] = i*dz_ - zcen_;
-  H5LTmake_dataset(file_id,"z",1,dims_z,H5T_NATIVE_FLOAT,zarr);
-  delete [] zarr;
+  // If fixed dr's exist, output them. Some tests want it
+  if (status_dr_) {
+    hsize_t  dims_dr[1]={2};
+    float dr[2];
+    dr[0] = x_out_.delval();
+    dr[1] = z_out_.delval();
+    H5LTmake_dataset(file_id,"dr",1,dims_dr,H5T_NATIVE_FLOAT,dr);
+  }
 
   // print out x array
   hsize_t  dims_x[1]={(hsize_t)nx_};
   float *xarr = new float[nx_];
-  for (int i=0;i<nx_;i++) xarr[i] = i*dx_;
+  for (int i=0;i<nx_;i++) xarr[i] = x_out_.left(i);
   H5LTmake_dataset(file_id,"r",1,dims_x,H5T_NATIVE_FLOAT,xarr);
   delete [] xarr;
+
+  // print out z array
+  hsize_t  dims_z[1]={(hsize_t)nz_};
+  float *zarr = new float[nz_];
+  for (int i=0;i<nz_;i++) zarr[i] = z_out_.left(i);
+  H5LTmake_dataset(file_id,"z",1,dims_z,H5T_NATIVE_FLOAT,zarr);
+  delete [] zarr;
+
+  hsize_t  dims_min[1]={1};
+  float x0 = x_out_.minval();
+  H5LTmake_dataset(file_id,"x_min",1,dims_min,H5T_NATIVE_FLOAT,&x0);
+  float z0 = z_out_.minval();
+  H5LTmake_dataset(file_id,"z_min",1,dims_min,H5T_NATIVE_FLOAT,&z0);
 
   hsize_t  dims_g[2]={(hsize_t) nx_,(hsize_t) nz_};
   write_hdf5_plotfile_zones(file_id, dims_g, 2, tt);
@@ -232,16 +315,10 @@ void grid_2D_cyln::write_plotfile(int iw, double tt, int write_mass_fractions)
 //************************************************************
 void grid_2D_cyln::expand(double e)
 {
-  dx_ *= e;
-  dz_ *= e;
-  zcen_ = dz_*nz_/2.0;
+  x_out_.scale(e);
+  z_out_.scale(e);
 
-  // recalculate shell volume
-  for (int i=0;i<n_zones;i++)
-  {
-    vol_[i] = vol_[i]*e*e*e;
-  }
-
+  for (int i=0; i < n_zones; i++) vol_[i] = vol_[i]*e*e*e;
 }
 
 //************************************************************
@@ -249,16 +326,29 @@ void grid_2D_cyln::expand(double e)
 //************************************************************
 int grid_2D_cyln::get_zone(const double *x) const
 {
+  // double p = sqrt(x[0]*x[0] + x[1]*x[1]);
+  // int ix = floor(p/dx_);
+  // int iz = floor((x[2] + zcen_)/dz_);
+
+  // // check if off boundaries
+  // if (ix >= nx_) return -2;
+  // if (iz <    0) return -2;
+  // if (iz >= nz_) return -2;
+
+  // return ix*nz_ + iz;
+
   double p = sqrt(x[0]*x[0] + x[1]*x[1]);
-  int ix = floor(p/dx_);
-  int iz = floor((x[2] + zcen_)/dz_);
 
-  // check if off boundaries
-  if (ix >= nx_) return -2;
-  if (iz <    0) return -2;
-  if (iz >= nz_) return -2;
+  if (p < x_out_.minval()) return -2;
+  if (p > x_out_[nx_-1]) return -2;
+  if (x[2] < z_out_.minval()) return -2;
+  if (x[2] > z_out_[nz_-1]) return -2;
 
-  return ix*nz_ + iz;
+  int i = x_out_.locate_within_bounds(p);
+  int k = z_out_.locate_within_bounds(x[2]);
+
+  int ind =  i*nz_ + k;
+  return ind;
 }
 
 
@@ -274,8 +364,8 @@ int grid_2D_cyln::get_next_zone
   double  z = x[2];
   double Dz = D[2];
 
-  int ix = index_x_[i]; //floor(p/dx_);
-  int iz = index_z_[i]; //floor(z/dz_); // note this index can be negative
+  int ix = index_x_[i];
+  int iz = index_z_[i];
 
   double lp,lz;
   int d_ip = 0;
@@ -292,7 +382,7 @@ int grid_2D_cyln::get_next_zone
   if (Dz > 0)
   {
     // up interface
-    double zt = dz_*(iz + 1) - zcen_ + dz_*tiny;
+    double zt = z_out_.right(iz) + dz_[iz]*tiny;
     lz   = (zt - z)/Dz;
     //std::cout << "iz_up = "<< iz << "; Dz = " << Dz << "; zt = " << zt << "; z = " << z << "; lz = " << lz << "\n";
     d_iz = 1;
@@ -300,7 +390,7 @@ int grid_2D_cyln::get_next_zone
   else
   {
     // down interface
-    double zt = dz_*iz - zcen_ - dz_*tiny;
+    double zt = z_out_.left(iz) - dz_[iz]*tiny;
     lz   = (zt - z)/Dz;
     if (Dz == 0) lz = std::numeric_limits<double>::infinity();
     //std::cout << "Dz_dn = " << Dz << ";zt = " << zt << "; z = " << z << "; lz = " << lz << "\n";
@@ -316,7 +406,7 @@ int grid_2D_cyln::get_next_zone
   else
   {
     // outer interface
-    pt = dx_*(ix + 1) + dx_*tiny;
+    pt = x_out_.right(ix) + dx_[ix]*tiny;
     c  = p*p - pt*pt;
     det = b*b - 4*a*c;
     if (det < 0) lp_out =  std::numeric_limits<double>::infinity();
@@ -324,7 +414,7 @@ int grid_2D_cyln::get_next_zone
     if (lp_out < 0) lp_out =  std::numeric_limits<double>::infinity();
 
     // inner interface
-    pt = dx_*(ix) - dx_*tiny;
+    pt = x_out_.left(ix) - dx_[ix]*tiny;
     c = p*p - pt*pt;
     det = b*b - 4*a*c;
     if (det < 0) lp_in =  std::numeric_limits<double>::infinity();
@@ -435,17 +525,18 @@ double  grid_2D_cyln::zone_volume(const int i) const
 //************************************************************
 void grid_2D_cyln::sample_in_zone(int i, std::vector<double> ran, double r[3])
 {
+  int ix = index_x_[i];
+  int iz = index_z_[i];
+
   double phi = 2*pc::pi*ran[1];
-  double p_in = index_x_[i]*dx_;
-  double p_out = index_x_[i]*dx_ + dx_;
+  double p_in = x_out_.left(ix);
+  double p_out = x_out_.right(ix);
   double p_samp = sqrt( p_in*p_in + ran[0]*( p_out*p_out-p_in*p_in ) );
 
   r[0] = p_samp*cos(phi);
   r[1] = p_samp*sin(phi);
-  r[2] = index_z_[i]*dz_ - zcen_ + dz_*ran[2];
+  r[2] = z_out_.left(iz) + ran[2]*dz_[iz];
 }
-
-
 
 //************************************************************
 // get the velocity vector
@@ -481,18 +572,23 @@ void grid_2D_cyln::writeCheckpointGrid(std::string fname) {
     writeCheckpointGeneralGrid(fname);
     hsize_t single_val = 1;
     
+    createDataset(fname, "grid", "status_dr", 1, &single_val, H5T_NATIVE_INT);
+    createDataset(fname, "grid", "status_rmin", 1, &single_val, H5T_NATIVE_INT);
+    createDataset(fname, "grid", "status_xz", 1, &single_val, H5T_NATIVE_INT);
     createDataset(fname, "grid", "nx", 1, &single_val, H5T_NATIVE_INT);
     createDataset(fname, "grid", "nz", 1, &single_val, H5T_NATIVE_INT);
-    createDataset(fname, "grid", "dx", 1, &single_val, H5T_NATIVE_DOUBLE);
-    createDataset(fname, "grid", "dz", 1, &single_val, H5T_NATIVE_DOUBLE);
-    createDataset(fname, "grid", "zcen", 1, &single_val, H5T_NATIVE_DOUBLE);
 
+    writeSimple(fname, "grid", "status_dr", &status_dr_, H5T_NATIVE_INT);
+    writeSimple(fname, "grid", "status_rmin", &status_rmin_, H5T_NATIVE_INT);
+    writeSimple(fname, "grid", "status_xz", &status_xz_, H5T_NATIVE_INT);
     writeSimple(fname, "grid", "nx", &nx_, H5T_NATIVE_INT);
     writeSimple(fname, "grid", "nz", &nz_, H5T_NATIVE_INT);
-    writeSimple(fname, "grid", "dx", &dx_, H5T_NATIVE_DOUBLE);
-    writeSimple(fname, "grid", "dz", &dz_, H5T_NATIVE_DOUBLE);
-    writeSimple(fname, "grid", "zcen", &zcen_, H5T_NATIVE_DOUBLE);
 
+    x_out_.writeCheckpoint(fname, "grid", "x_out");
+    z_out_.writeCheckpoint(fname, "grid", "z_out");
+
+    writeVector(fname, "grid", "dx", dx_, H5T_NATIVE_DOUBLE);
+    writeVector(fname, "grid", "dz", dz_, H5T_NATIVE_DOUBLE);
     writeVector(fname, "grid", "index_x", index_x_, H5T_NATIVE_INT);
     writeVector(fname, "grid", "index_z", index_z_, H5T_NATIVE_INT);
     writeVector(fname, "grid", "vol", vol_, H5T_NATIVE_DOUBLE);
@@ -504,12 +600,18 @@ void grid_2D_cyln::readCheckpointGrid(std::string fname, bool test) {
   for (int rank = 0; rank < nproc; rank++) {
     if (my_rank == rank) {
       readCheckpointGeneralGrid(fname, test);
+      readSimple(fname, "grid", "status_dr", &status_dr_, H5T_NATIVE_INT);
+      readSimple(fname, "grid", "status_rmin", &status_rmin_, H5T_NATIVE_INT);
+      readSimple(fname, "grid", "status_xz", &status_xz_, H5T_NATIVE_INT);
+      readSimple(fname, "grid", "nx", &nx_new_, H5T_NATIVE_INT);
       readSimple(fname, "grid", "nx", &nx_new_, H5T_NATIVE_INT);
       readSimple(fname, "grid", "nz", &nz_new_, H5T_NATIVE_INT);
-      readSimple(fname, "grid", "dx", &dx_new_, H5T_NATIVE_DOUBLE);
-      readSimple(fname, "grid", "dz", &dz_new_, H5T_NATIVE_DOUBLE);
-      readSimple(fname, "grid", "zcen", &zcen_new_, H5T_NATIVE_DOUBLE);
 
+      x_out_new_.readCheckpoint(fname, "grid", "x_out");
+      z_out_new_.readCheckpoint(fname, "grid", "z_out");
+
+      readVector(fname, "grid", "dx", dx_new_, H5T_NATIVE_DOUBLE);
+      readVector(fname, "grid", "dz", dz_new_, H5T_NATIVE_DOUBLE);
       readVector(fname, "grid", "index_x", index_x_new_, H5T_NATIVE_INT);
       readVector(fname, "grid", "index_z", index_z_new_, H5T_NATIVE_INT);
       readVector(fname, "grid", "vol", vol_new_, H5T_NATIVE_DOUBLE);
@@ -517,13 +619,15 @@ void grid_2D_cyln::readCheckpointGrid(std::string fname, bool test) {
       if (not test) {
         nx_ = nx_new_;
         nz_ = nz_new_;
-        dx_ = dx_new_;
-        dz_ = dz_new_;
-        zcen_ = zcen_new_;
+
+        x_out_ = x_out_new_;
+        z_out_ = z_out_new_;
 
         index_x_ = index_x_new_;
         index_z_ = index_z_new_;
         vol_ = vol_new_;
+        dx_ = dx_new_;
+        dz_ = dz_new_;
       }
     }
     MPI_Barrier(MPI_COMM_WORLD);
