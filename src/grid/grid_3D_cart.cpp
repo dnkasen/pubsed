@@ -146,7 +146,7 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
     xmin = -dr[0]*nx_/2.0;
     ymin = -dr[1]*ny_/2.0;
     zmin = -dr[2]*nz_/2.0;
-    std::cerr << xmin << " " << zmin << std::endl;
+    std::cerr << xmin << " " << ymin << " " << zmin << std::endl;
     double xmax = xmin + dr[0] * nx_;
     double ymax = ymin + dr[1] * ny_;
     double zmax = zmin + dr[2] * nz_;
@@ -155,7 +155,7 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
     z_out_.init(zmin, zmax, dr[2]);
   }
   else {
-    if (verbose) std::cerr << "# Grid Err; can't find one of the following inputs to define the grid: 1) dr or 2) x_out, z_out" << endl;
+    if (verbose) std::cerr << "# Grid Err; can't find one of the following inputs to define the grid: 1) dr or 2) x_out, y_out, z_out" << endl;
     exit(10);
   }
 
@@ -345,6 +345,10 @@ void grid_3D_cart::expand(double e)
   x_out_.scale(e);
   y_out_.scale(e);
   z_out_.scale(e);
+
+  for (int i=0; i < nx_; i++) dx_[i] = dx_[i]*e;
+  for (int j=0; j < ny_; j++) dy_[j] = dy_[j]*e;
+  for (int k=0; k < nz_; k++) dz_[k] = dz_[k]*e;
 
   for (int i=0; i < n_zones; i++) vol_[i] = vol_[i]*e*e*e;
 }

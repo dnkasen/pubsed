@@ -78,66 +78,99 @@ void grid_3D_sphere::read_model_file(ParameterReader* params)
   for (int k=0;k<n_elems;k++) elems_A.push_back(etmp[k]);
   delete [] etmp;
 
-  // read minima in each direction
-  herr_t status_rmin = H5LTfind_dataset(file_id,"rmin");
-  if (status_rmin == 1){
-    double rmin[1];
-    status = H5LTread_dataset_double(file_id,"/rmin",rmin);
-    r_out_.min = rmin[0];
-  }
-  else {if (verbose) std::cerr << "# Grid Err; can't find rmin" << endl;}
-
-  theta_out_.min = 0;
-  phi_out_.min = 0;
-
-  herr_t status_dr = H5LTfind_dataset(file_id,"dr");
-  if (status_dr == 1) {
-    double dr[3];
-    status = H5LTread_dataset_double(file_id,"/dr",dr);
-    for (int i=0; i < nr_; i++) r_out_[i] = r_out_.min + (i+1.)*dr[0];
-    for (int j=0; j < ntheta_; j++) theta_out_[j] = theta_out_.min + (j+1.)*dr[1];
-    for (int k=0; k < nphi_; k++) phi_out_[k] = phi_out_.min + (k+1.)*dr[2];
-  }
-
-  // read r bins
+  double* rtmp;
+  double* thetatmp;
+  double* phitmp;
+  double r_minimum;
+  double theta_minimum;
+  double phi_minimum;
+  double dr[3];
+  double rmin[1];
+  // Check which grid inputs exist
   herr_t status_r = H5LTfind_dataset(file_id,"r_out");
-  if (status_r == 1) {
-    double *rbtmp = new double[nr_];
-    status = H5LTread_dataset_double(file_id,"/r_out",rbtmp);
-    for (int i=0; i < nr_; i++) r_out_[i] = rbtmp[i];
-    delete [] rbtmp;
-  }
-  // read theta bins
   herr_t status_theta = H5LTfind_dataset(file_id,"theta_out");
-  if (status_theta == 1) {
-    double *tbtmp = new double[ntheta_];
-    status = H5LTread_dataset_double(file_id,"/theta_out",tbtmp);
-    for (int i=0; i < ntheta_; i++) theta_out_[i] = tbtmp[i];
-    delete [] tbtmp;
-    if (fabs(theta_out_[ntheta_-1] - pc::pi)/pc::pi > 1e-6){
-      if (verbose) std::cerr << "# Grid Err; rightmost value of theta grid not equal to pi" << endl;
-    }
-    else{
-      theta_out_[ntheta_-1] = pc::pi;
-    }
-  }
-  // read phi bins
   herr_t status_phi = H5LTfind_dataset(file_id,"phi_out");
-  if (status_phi == 1) {
-    double *pbtmp = new double[nphi_];
-    status = H5LTread_dataset_double(file_id,"/phi_out",pbtmp);
-    for (int i=0; i < nphi_; i++) phi_out_[i] = pbtmp[i];
-    delete [] pbtmp;
-    if (fabs(phi_out_[nphi_-1] - 2.*pc::pi)/(2.*pc::pi) > 1e-6){
-      if (verbose) std::cerr << "# Grid Err; rightmost value of phi grid not equal to 2*pi" << endl;
-    }
-    else{
-      phi_out_[nphi_-1] = 2.*pc::pi;
+  status_dr_ = H5LTfind_dataset(file_id,"dr");
+  status_rmin_ = H5LTfind_dataset(file_id,"rmin");
+  status_rthetaphi_ = (status_r && status_theta && status_phi);
+  // Read in data if exists
+  if (status_dr_) {
+    status = H5LTread_dataset_double(file_id,"/dr",dr);
+  }
+  if (status_rmin_) {
+    status = H5LTread_dataset_double(file_id,"/rmin",rmin);
+    r_minimum = rmin[0];
+    theta_minimum = 0;
+    phi_minimum = 0;
+  }
+  else {
+    if (status_dr_) {
+      r_minimum = 0;
+      theta_minimum = 0;
+      phi_minimum = 0;
     }
   }
-
-  if ( (status_dr == 0) && ( (status_r == 0) || (status_theta == 0) || (status_phi == 0) ) ) {
+  if (status_rthetaphi_) {
+    rtmp = new double[nr_];
+    status = H5LTread_dataset_double(file_id,"/r_out",rtmp);
+    thetatmp = new double[ntheta_];
+    status = H5LTread_dataset_double(file_id,"/theta_out",thetatmp);
+    phitmp = new double[nphi_];
+    status = H5LTread_dataset_double(file_id,"/phi_out",phitmp);
+  }
+  // Initialize r_out_, theta_out_ and phi_out_ if possible
+  if (status_rthetaphi_ && status_rmin_) {
+    if (fabs(thetatmp[ntheta_-1] - pc::pi)/pc::pi > 1e-6){
+      if (verbose) std::cerr << "# Grid Err; rightmost value of theta grid not equal to pi" << endl;
+      exit(99);
+    }
+    else{
+      thetatmp[ntheta_-1] = pc::pi;
+    }
+    if (fabs(phitmp[nphi_-1] - 2.*pc::pi)/(2.*pc::pi) > 1e-6){
+      if (verbose) std::cerr << "# Grid Err; rightmost value of phi grid not equal to 2*pi" << endl;
+      exit(99);
+    }
+    else{
+      phitmp[nphi_-1] = 2.*pc::pi;
+    }
+    r_out_.init(rtmp, nr_, r_minimum);
+    theta_out_.init(thetatmp, ntheta_, theta_minimum);
+    phi_out_.init(phitmp, nphi_, phi_minimum);
+    delete [] rtmp;
+    delete [] thetatmp;
+    delete [] phitmp;
+  }
+  else if (status_rthetaphi_ && (!status_rmin_)) {
+    std::cerr << "Error: Missing rmin in grid. Exiting." << std::endl;
+    delete [] rtmp;
+    delete [] thetatmp;
+    delete [] phitmp;
+    exit(99);
+  }
+  else if (status_dr_ && status_rmin_) {
+    double r_maximum = r_minimum + dr[0] * nr_;
+    double theta_maximum = theta_minimum + dr[1] * ntheta_;
+    double phi_maximum = phi_minimum + dr[2] * nphi_;
+    r_out_.init(r_minimum, r_maximum, dr[0]);
+    theta_out_.init(theta_minimum, theta_maximum, dr[1]);
+    phi_out_.init(phi_minimum, phi_maximum, dr[2]);
+  }
+  else if (status_dr_ && (!status_rmin_)) {
+    r_minimum = 0;
+    theta_minimum = 0;
+    phi_minimum = 0;
+    std::cerr << r_minimum << " " << theta_minimum << " " << phi_minimum << std::endl;
+    double r_maximum = r_minimum + dr[0] * nr_;
+    double theta_maximum = theta_minimum + dr[1] * ntheta_;
+    double phi_maximum = phi_minimum + dr[2] * nphi_;
+    r_out_.init(r_minimum, r_maximum, dr[0]);
+    theta_out_.init(theta_minimum, theta_maximum, dr[1]);
+    phi_out_.init(phi_minimum, phi_maximum, dr[2]);
+  }
+  else {
     if (verbose) std::cerr << "# Grid Err; can't find one of the following inputs to define the grid: 1) dr or 2) r_out, theta_out, phi_out" << endl;
+    exit(10);
   }
 
   for (int i=0; i < nr_; i++) dr_[i] = r_out_.delta(i);
@@ -258,7 +291,7 @@ void grid_3D_sphere::read_model_file(ParameterReader* params)
     // std::cout << "# (dx,dy,dz) = (";
     // std::cout << dx_ << ", " << dy_ << ", " << dz_ << ")\n";
     std::cout << "# (r_min,theta_min,phi_min) = (";
-    std::cout << r_out_.min << ", " << theta_out_.min << ", " << phi_out_.min << ")\n";
+    std::cout << r_out_.minval() << ", " << theta_out_.minval() << ", " << phi_out_.minval() << ")\n";
     printf("# mass = %.4e (%.4e Msun)\n",totmass,totmass/pc::m_sun);
     for (int k=0;k<n_elems;k++) {
       cout << "# " << elems_Z[k] << "." << elems_A[k] <<  "\t";
@@ -329,11 +362,9 @@ void grid_3D_sphere::write_plotfile(int iw, double tt, int write_mass_fractions)
 //************************************************************
 void grid_3D_sphere::expand(double e)
 {
-  for (int i=0; i < nr_; i++){
-    r_out_[i] *= e;
-    dr_[i] = dr_[i]*e;
-  }
-  r_out_.min *= e;
+  r_out_.scale(e);
+
+  for (int i=0; i < nr_; i++) dr_[i] = dr_[i]*e;
 
   for (int i=0; i < n_zones; i++) vol_[i] = vol_[i]*e*e*e;
 }
@@ -364,7 +395,7 @@ int grid_3D_sphere::get_zone(const double *x) const
     phi += 2.*pc::pi;
   }
 
-  if (r < r_out_.min) return -1;
+  if (r < r_out_.minval()) return -1;
   if (r > r_out_[nr_-1]) return -2;
 
   int i = r_out_.locate_within_bounds(r);
@@ -629,7 +660,7 @@ int grid_3D_sphere::get_next_zone
   if ((lr < ltheta) && (lr < lphi)){
     *l = lr;
     new_ir += d_ir;
-    if ((new_ir == -1) && (r_out_.min > 0)) return -1;
+    if ((new_ir == -1) && (r_out_.minval() > 0)) return -1;
     else if (new_ir == nr_) return -2;
   }
   else if (ltheta < lphi){
@@ -732,9 +763,9 @@ void grid_3D_sphere::get_velocity(int i, double x[3], double D[3], double v[3], 
   //   npts[1] = ny_;
   //   npts[2] = nz_;
   //   double rmin[3];
-  //   rmin[0] = x_out_.min;
-  //   rmin[1] = y_out_.min;
-  //   rmin[2] = z_out_.min;
+  //   rmin[0] = x_out_.minval();
+  //   rmin[1] = y_out_.minval();
+  //   rmin[2] = z_out_.minval();
   //   double del[3];
   //   del[0] = dx_[ic[0]];
   //   del[1] = dy_[ic[1]];
