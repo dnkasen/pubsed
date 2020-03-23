@@ -536,7 +536,7 @@ double GasState::get_planck_mean
 	if ((abs.size() != nu_grid_.size())||(scat.size() != nu_grid_.size()))
 	{
 		if (verbose_) {
-			std::cerr << "# Warning: pacity vector of wrong length in get_planck_mean";
+			std::cerr << "# Warning: opacity vector of wrong length in get_planck_mean";
 			std::cerr << std::endl; }
 		return 0;
 	}

@@ -15,6 +15,11 @@ class grid_3D_cart: public grid_general
 
 private:
 
+  // Flags to remember how grid was read in
+  herr_t status_dr_;
+  herr_t status_rmin_;
+  herr_t status_xyz_;
+
   int nx_, ny_, nz_; // number of zones in each dimension
 
   // the right zone edge in each direction

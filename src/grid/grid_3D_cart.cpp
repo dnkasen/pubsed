@@ -78,53 +78,85 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
   for (int k=0;k<n_elems;k++) elems_A.push_back(etmp[k]);
   delete [] etmp;
 
-  // read minima in each direction
-  herr_t status_rmin = H5LTfind_dataset(file_id,"rmin");
-  if (status_rmin == 1){
-    double rmin[3];
-    status = H5LTread_dataset_double(file_id,"/rmin",rmin);
-    x_out_.min = rmin[0];
-    y_out_.min = rmin[1];
-    z_out_.min = rmin[2];
-  }
-  else {if (verbose) std::cerr << "# Grid Err; can't find rmin" << endl;}
-
-  herr_t status_dr = H5LTfind_dataset(file_id,"dr");
-  if (status_dr == 1) {
-    double dr[3];
-    status = H5LTread_dataset_double(file_id,"/dr",dr);
-    for (int i=0; i < nx_; i++) x_out_[i] = x_out_.min + (i+1.)*dr[0];
-    for (int j=0; j < ny_; j++) y_out_[j] = y_out_.min + (j+1.)*dr[1];
-    for (int k=0; k < nz_; k++) z_out_[k] = z_out_.min + (k+1.)*dr[2];
-  }
-
-  // read x bins
+  double* xtmp;
+  double* ytmp;
+  double* ztmp;
+  double xmin;
+  double ymin;
+  double zmin;
+  double dr[3];
+  double rmin[3];
+  // Check which grid inputs exist
   herr_t status_x = H5LTfind_dataset(file_id,"x_out");
-  if (status_x == 1) {
-    double *btmp = new double[nx_];
-    status = H5LTread_dataset_double(file_id,"/x_out",btmp);
-    for (int i=0; i < nx_; i++) x_out_[i] = btmp[i];
-    delete [] btmp;
-  }
-  // read y bins
   herr_t status_y = H5LTfind_dataset(file_id,"y_out");
-  if (status_y == 1) {
-    double *btmp = new double[ny_];
-    status = H5LTread_dataset_double(file_id,"/y_out",btmp);
-    for (int i=0; i < ny_; i++) y_out_[i] = btmp[i];
-    delete [] btmp;
-  }
-  // read z bins
   herr_t status_z = H5LTfind_dataset(file_id,"z_out");
-  if (status_z == 1) {
-    double *btmp = new double[nz_];
-    status = H5LTread_dataset_double(file_id,"/z_out",btmp);
-    for (int i=0; i < nz_; i++) z_out_[i] = btmp[i];
-    delete [] btmp;
+  status_dr_ = H5LTfind_dataset(file_id,"dr");
+  status_rmin_ = H5LTfind_dataset(file_id,"rmin");
+  status_xyz_ = (status_x && status_y && status_z);
+  // Read in data if exists
+  if (status_dr_) {
+    status = H5LTread_dataset_double(file_id,"/dr",dr);
   }
-
-  if ( (status_dr == 0) && ( (status_x == 0) || (status_y == 0) || (status_z == 0) ) ) {
-    if (verbose) std::cerr << "# Grid Err; can't find one of the following inputs to define the grid: 1) dr or 2) x_out, y_out, z_out" << endl;
+  if (status_rmin_) {
+    status = H5LTread_dataset_double(file_id,"/rmin",rmin);
+    xmin = rmin[0];
+    ymin = rmin[1];
+    zmin = rmin[2];
+  }
+  else {
+    if (status_dr_) {
+      xmin = -dr[0]*nx_/2.0;
+      ymin = -dr[1]*ny_/2.0;
+      zmin = -dr[2]*nz_/2.0;
+    }
+  }
+  if (status_xyz_) {
+    xtmp = new double[nx_];
+    status = H5LTread_dataset_double(file_id,"/x_out",xtmp);
+    ytmp = new double[ny_];
+    status = H5LTread_dataset_double(file_id,"/y_out",ytmp);
+    ztmp = new double[nz_];
+    status = H5LTread_dataset_double(file_id,"/z_out",ztmp);
+  }
+  // Initialize x_out_, y_out_ and z_out_ if possible
+  if (status_xyz_ && status_rmin_) {
+    x_out_.init(xtmp, nx_, xmin);
+    y_out_.init(ytmp, ny_, ymin);
+    z_out_.init(ztmp, nz_, zmin);
+    delete [] xtmp;
+    delete [] ytmp;
+    delete [] ztmp;
+  }
+  else if (status_xyz_ && (!status_rmin_)) {
+    std::cerr << "Error: Missing rmin in grid. Exiting." << std::endl;
+    delete [] xtmp;
+    delete [] ytmp;
+    delete [] ztmp;
+    exit(99);
+  }
+  else if (status_dr_ && status_rmin_) {
+    double xmax = xmin + dr[0] * nx_;
+    double ymax = ymin + dr[1] * ny_;
+    double zmax = zmin + dr[2] * nz_;
+    x_out_.init(xmin, xmax, dr[0]);
+    y_out_.init(ymin, ymax, dr[1]);
+    z_out_.init(zmin, zmax, dr[2]);
+  }
+  else if (status_dr_ && (!status_rmin_)) {
+    xmin = -dr[0]*nx_/2.0;
+    ymin = -dr[1]*ny_/2.0;
+    zmin = -dr[2]*nz_/2.0;
+    std::cerr << xmin << " " << zmin << std::endl;
+    double xmax = xmin + dr[0] * nx_;
+    double ymax = ymin + dr[1] * ny_;
+    double zmax = zmin + dr[2] * nz_;
+    x_out_.init(xmin, xmax, dr[0]);
+    y_out_.init(ymin, ymax, dr[1]);
+    z_out_.init(zmin, zmax, dr[2]);
+  }
+  else {
+    if (verbose) std::cerr << "# Grid Err; can't find one of the following inputs to define the grid: 1) dr or 2) x_out, z_out" << endl;
+    exit(10);
   }
 
   for (int i=0; i < nx_; i++) dx_[i] = x_out_.delta(i);
@@ -239,7 +271,7 @@ void grid_3D_cart::read_model_file(ParameterReader* params)
     // std::cout << "# (dx,dy,dz) = (";
     // std::cout << dx_ << ", " << dy_ << ", " << dz_ << ")\n";
     std::cout << "# (x_min,y_min,z_min) = (";
-    std::cout << x_out_.min << ", " << y_out_.min << ", " << z_out_.min << ")\n";
+    std::cout << x_out_.minval() << ", " << y_out_.minval() << ", " << z_out_.minval() << ")\n";
     printf("# mass = %.4e (%.4e Msun)\n",totmass,totmass/pc::m_sun);
     for (int k=0;k<n_elems;k++) {
       cout << "# " << elems_Z[k] << "." << elems_A[k] <<  "\t";
@@ -310,21 +342,9 @@ void grid_3D_cart::write_plotfile(int iw, double tt, int write_mass_fractions)
 //************************************************************
 void grid_3D_cart::expand(double e)
 {
-  for (int i=0; i < nx_; i++){
-    x_out_[i] *= e;
-    dx_[i] = dx_[i]*e;
-  }
-  for (int j=0; j < ny_; j++){
-    y_out_[j] *= e;
-    dy_[j] = dy_[j]*e;
-  }
-  for (int k=0; k < nz_; k++){
-    z_out_[k] *= e;
-    dz_[k] = dz_[k]*e;
-  }
-  x_out_.min *= e;
-  y_out_.min *= e;
-  z_out_.min *= e;
+  x_out_.scale(e);
+  y_out_.scale(e);
+  z_out_.scale(e);
 
   for (int i=0; i < n_zones; i++) vol_[i] = vol_[i]*e*e*e;
 }
@@ -348,11 +368,11 @@ int grid_3D_cart::get_zone(const double *x) const
   // int ind =  i*ny_*nz_ + j*nz_ + k;
   // return ind;
 
-  if (x[0] < x_out_.min) return -2;
+  if (x[0] < x_out_.minval()) return -2;
   if (x[0] > x_out_[nx_-1]) return -2;
-  if (x[1] < y_out_.min) return -2;
+  if (x[1] < y_out_.minval()) return -2;
   if (x[1] > y_out_[ny_-1]) return -2;
-  if (x[2] < z_out_.min) return -2;
+  if (x[2] < z_out_.minval()) return -2;
   if (x[2] > z_out_[nz_-1]) return -2;
 
   int i = x_out_.locate_within_bounds(x[0]);
@@ -511,9 +531,9 @@ void grid_3D_cart::get_velocity(int i, double x[3], double D[3], double v[3], do
     npts[1] = ny_;
     npts[2] = nz_;
     double rmin[3];
-    rmin[0] = x_out_.min;
-    rmin[1] = y_out_.min;
-    rmin[2] = z_out_.min;
+    rmin[0] = x_out_.minval();
+    rmin[1] = y_out_.minval();
+    rmin[2] = z_out_.minval();
     double del[3];
     del[0] = dx_[ic[0]];
     del[1] = dy_[ic[1]];

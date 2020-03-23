@@ -16,24 +16,28 @@ void grid_2D_cyln::testCheckpointGrid(std::string fname) {
         std::cerr << "issue at nz on rank " << rank << std::endl;
         fail = true;
       }
-      if (dx_ != dx_new_) {
-        std::cerr << "issue at dx on rank " << rank << std::endl;
-        fail = true;
-      }
-      if (dz_ != dz_new_) {
-        std::cerr << "issue at dz on rank " << rank << std::endl;
-        fail = true;
-      }
-      if (zcen_ != zcen_new_) {
-        std::cerr << "issue at zcen on rank " << rank << std::endl;
-        fail = true;
-      }
+      // if (x_out_ != x_out_new_) {
+      //   std::cerr << "issue at x_out on rank " << rank << std::endl;
+      //   fail = true;
+      // }
+      // if (z_out_ != z_out_new_) {
+      //   std::cerr << "issue at z_out on rank " << rank << std::endl;
+      //   fail = true;
+      // }
       if (index_x_ != index_x_new_) {
         std::cerr << "issue at index_x on rank " << rank << std::endl;
         fail = true;
       }
       if (index_z_ != index_z_new_) {
         std::cerr << "issue at index_z on rank " << rank << std::endl;
+        fail = true;
+      }
+      if (dx_ != dx_new_) {
+        std::cerr << "issue at dx on rank " << rank << std::endl;
+        fail = true;
+      }
+      if (dz_ != dz_new_) {
+        std::cerr << "issue at dz on rank " << rank << std::endl;
         fail = true;
       }
       for (int i = 0; i < vol_.size(); i++) {
