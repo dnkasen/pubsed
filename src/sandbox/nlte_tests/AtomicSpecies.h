@@ -13,6 +13,13 @@
 #include "VoigtProfile.h"
 #include "AtomicData.h"
 
+#include <Sparse>
+#include <SparseQR>
+#include <SparseLU>
+
+
+typedef Eigen::Triplet<double> E_T;
+
 
 class AtomicSpecies
 {
@@ -20,11 +27,17 @@ class AtomicSpecies
 private:
 
   // matrices, vectors to solve NLTE
-  double     **rates_;
-  gsl_matrix *M_nlte_;
-  gsl_vector *b_nlte_;
-  gsl_vector *x_nlte_;
-  gsl_permutation *p_nlte_;
+  // double     **rates_;
+  // gsl_matrix *M_nlte_;
+  // gsl_vector *b_nlte_;
+  // gsl_vector *x_nlte_;
+  // gsl_permutation *p_nlte_;
+
+
+  Eigen::SparseMatrix<double,Eigen::RowMajor> M_nlte_;
+  Eigen::VectorXd b_nlte_;
+  Eigen::VectorXd x_nlte_;
+  std::vector<E_T> rates_;
 
 
   // frequency bin array
@@ -81,7 +94,7 @@ public:
   ~AtomicSpecies();
 
   // solve state
-  void calculate_radiative_rates(std::vector<real> J_nu);
+  void calculate_radiative_rates(std::vector<real_> J_nu);
   int  solve_state(double ne);
   int  solve_lte (double ne);
   int  solve_nlte(double ne);

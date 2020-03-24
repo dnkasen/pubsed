@@ -195,7 +195,7 @@ double GasState::get_ionization_state()
 //-----------------------------------------------------------
 int GasState::solve_state()
 {
-  std::vector<real> J_nu;
+  std::vector<real_> J_nu;
   return solve_state(J_nu);
 }
 
@@ -205,7 +205,7 @@ int GasState::solve_state()
 // further calculations
 // Returns: any error
 //-----------------------------------------------------------
-int GasState::solve_state(std::vector<real>& J_nu)
+int GasState::solve_state(std::vector<real_>& J_nu)
 {
   // set key properties of all atoms
   for (size_t i=0;i<atoms.size();++i)
@@ -239,7 +239,7 @@ int GasState::solve_state(std::vector<real>& J_nu)
 // for the root, thus determining N_e.  This equation is
 // basically just the one for charge conservation.
 //-----------------------------------------------------------
-double GasState::charge_conservation(double ne,std::vector<real> J_nu)
+double GasState::charge_conservation(double ne,std::vector<real_> J_nu)
 {
   // start with charge conservation function f set to zero
   double f  = 0;
@@ -268,7 +268,7 @@ double GasState::charge_conservation(double ne,std::vector<real> J_nu)
 // equation for electron density ne
 //-----------------------------------------------------------
 #define SIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
-double GasState::ne_brent_method(double x1,double x2,double tol,std::vector<real> J_nu)
+double GasState::ne_brent_method(double x1,double x2,double tol,std::vector<real_> J_nu)
 {
   int ITMAX = 100;
   double EPS = 3.0e-8;
@@ -474,7 +474,7 @@ void GasState::write_levels(int iz)
     for(int k=0;k<this_nl;k++)
       tmp_level[k] = get_level_fraction(j,k);
     H5LTmake_dataset(atom_id,"level_fraction",RANK,dims_level,H5T_NATIVE_DOUBLE,tmp_level);
-    
+
     for(int k=0;k<this_nl;k++)
       tmp_level[k] = get_level_departure(j,k);
     H5LTmake_dataset(atom_id,"level_departure",RANK,dims_level,H5T_NATIVE_DOUBLE,tmp_level);

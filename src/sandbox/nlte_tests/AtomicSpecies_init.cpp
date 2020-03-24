@@ -82,27 +82,35 @@ int AtomicSpecies::set_use_nlte()
 {
   use_nlte_ = true;
 
+  //allocate memory for the Eigen nLTE solver
+  M_nlte_.resize(n_levels_,n_levels_);
+  b_nlte_.resize(n_levels_);
+  x_nlte_.resize(n_levels_);
+
+  //allocate memory for the rate matrix (this becomes M_nlte_)
+  rates_.reserve(n_levels_*n_levels_);
+
   //----------------------------------------------
   // allocate memory for arrays
   //----------------------------------------------
-  rates_ = new double*[n_levels_];
-  for (int i=0;i<n_levels_;++i) rates_[i] = new double[n_levels_];
-
-  // matrix to solve
-  M_nlte_ = gsl_matrix_calloc(n_levels_,n_levels_);
-  gsl_matrix_set_zero(M_nlte_);
-
-  // vector of level populations
-  x_nlte_ = gsl_vector_calloc(n_levels_);
-  gsl_vector_set_zero(x_nlte_);
-
-  // right hand side vector
-  b_nlte_ = gsl_vector_calloc(n_levels_);
-  gsl_vector_set_zero(b_nlte_);
-
-  // permuation vector, used internally for linear algebra solve
-  p_nlte_ = gsl_permutation_alloc(n_levels_);
-  gsl_permutation_init(p_nlte_);
+  // rates_ = new double*[n_levels_];
+  // for (int i=0;i<n_levels_;++i) rates_[i] = new double[n_levels_];
+  //
+  // // matrix to solve
+  // M_nlte_ = gsl_matrix_calloc(n_levels_,n_levels_);
+  // gsl_matrix_set_zero(M_nlte_);
+  //
+  // // vector of level populations
+  // x_nlte_ = gsl_vector_calloc(n_levels_);
+  // gsl_vector_set_zero(x_nlte_);
+  //
+  // // right hand side vector
+  // b_nlte_ = gsl_vector_calloc(n_levels_);
+  // gsl_vector_set_zero(b_nlte_);
+  //
+  // // permuation vector, used internally for linear algebra solve
+  // p_nlte_ = gsl_permutation_alloc(n_levels_);
+  // gsl_permutation_init(p_nlte_);
 
   return 0;
 

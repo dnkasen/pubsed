@@ -133,35 +133,54 @@ int AtomicSpecies::solve_nlte(double ne)
   // initialize with LTE populations
   solve_lte(ne);
 
+
   // Calculate all of the transition rates
   set_rates(ne);
 
+
   // zero out matrix and vectors
-  gsl_matrix_set_zero(M_nlte_);
-  gsl_vector_set_zero(b_nlte_);
-  gsl_vector_set_zero(x_nlte_);
-  gsl_permutation_init(p_nlte_);
+  // gsl_matrix_set_zero(M_nlte_);
+  // gsl_vector_set_zero(b_nlte_);
+  // gsl_vector_set_zero(x_nlte_);
+  // gsl_permutation_init(p_nlte_);
+
+  // set M_nlte_ = rates_, where rates_ is filled with the actual transitions
+  M_nlte_.setFromTriplets(rates_.begin(),rates_.end());
+
 
   // set up diagonal elements of rate matrix
   for (int i=0;i<n_levels_;++i)
   {
-    double Rout = 0.0;
-    // don't worry i = j rate should be zero
-    for (int j=0;j<n_levels_;++j)
-      Rout += rates_[i][j];
-    Rout = -1*Rout;
-    gsl_matrix_set(M_nlte_,i,i,Rout);
+    // M_nlte_(i,i) should be the negative sum of the row
+    double rsum = M_nlte_.row(i).sum();
+    M_nlte_.insert(i,i) = -1.*rsum;
+    // double Rout = 0.0;
+    // // don't worry i = j rate should be zero
+    // for (int j=0;j<n_levels_;++j)
+    //   Rout += rates_[i][j];
+    // Rout = -1*Rout;
+    // gsl_matrix_set(M_nlte_,i,i,Rout);
   }
 
+  //M_nlte_ is in row major ordering, so need to transpose for the solver
+  M_nlte_ = M_nlte_.transpose();
+
+
   // set off diagonal elements of rate matrix
-  for (int i=0;i<n_levels_;++i)
-    for (int j=0;j<n_levels_;++j)
-      if (i != j) gsl_matrix_set(M_nlte_,i,j,rates_[j][i]);
+    // for (int j=0;j<n_levels_;++j)
+    //   if (i != j) gsl_matrix_set(M_nlte_,i,j,rates_[j][i]);
 
   // last row expresses number conservation
+  int cons_row = n_levels_-1;
   for (int i=0;i<n_levels_;++i)
-    gsl_matrix_set(M_nlte_,n_levels_-1,i,lev_lte_[i]);
-  gsl_vector_set(b_nlte_,n_levels_-1,1.0);
+    M_nlte_.coeffRef(cons_row,i) = lev_lte_[i];
+  // for (int i=0;i<n_levels_;++i)
+  //   gsl_matrix_set(M_nlte_,n_levels_-1,i,lev_lte_[i]);
+  // gsl_vector_set(b_nlte_,n_levels_-1,1.0);
+
+  //set M*x=b where b is the zero vector except for the number conservation row
+  b_nlte_.setZero();
+  b_nlte_(cons_row) = 1.;
 
     //printf("----\n");
     //for (int i=0;i<n_levels_;++i)
@@ -170,19 +189,47 @@ int AtomicSpecies::solve_nlte(double ne)
     // printf("----\n");
 
   // solve rate matrix
-  int status;
-  gsl_linalg_LU_decomp(M_nlte_, p_nlte_, &status);
-  gsl_linalg_LU_solve(M_nlte_, p_nlte_, b_nlte_, x_nlte_);
+  // int status;
+  // gsl_linalg_LU_decomp(M_nlte_, p_nlte_, &status);
+  // gsl_linalg_LU_solve(M_nlte_, p_nlte_, b_nlte_, x_nlte_);
+
+  //Eigen::LeastSquaresConjugateGradient<Eigen::SparseMatrix<double>,Eigen::LeastSquareDiagonalPreconditioner<double>> solver;
+
+
+
+
+  //setup the Eigen solver; here we use the SparseQR with no preconditioner
+  Eigen::SparseQR<Eigen::SparseMatrix<double>,Eigen::COLAMDOrdering<int>> solver;
+
+  //perform setup operations to improve efficiency
+  solver.analyzePattern(M_nlte_);
+  solver.factorize(M_nlte_);
+
+
+  //perform the decomposition
+  solver.compute(M_nlte_);
+
+  //solve for the decomposed matrix
+  x_nlte_ = solver.solve(b_nlte_);
 
   // the x vector should now have the solved level
   // depature coefficients
   for (int i=0;i<n_levels_;++i)
   {
-    double b = gsl_vector_get(x_nlte_,i);
-    lev_n_[i] = b*lev_lte_[i];
-    if (lev_n_[i] < min_level_pop_)
-      lev_n_[i] = min_level_pop_;
+
+    double b_nlte = x_nlte_(i);
+
+    double n_nlte = b_nlte*lev_lte_[i];
+    b_nlte = 0.;
+    // double b = gsl_vector_get(x_nlte_,i);
+    // lev_n_[i] = b*lev_lte_[i];
+     // if (n_nlte < min_level_pop_)
+     //   n_nlte = min_level_pop_;
+
+    lev_n_[i] = n_nlte;
   }
+
+
 
   // set the ionization fraction
   for (int i=0;i<n_ions_;++i)
@@ -200,7 +247,7 @@ int AtomicSpecies::solve_nlte(double ne)
 // to get the line J and over bound-free to get the
 // photoionization rates
 //-------------------------------------------------------
-void AtomicSpecies::calculate_radiative_rates(std::vector<real> J_nu)
+void AtomicSpecies::calculate_radiative_rates(std::vector<real_> J_nu)
 {
   // zero out recombination/photoionization rates
   for (int j=0;j<n_levels_;++j)
@@ -294,9 +341,9 @@ void AtomicSpecies::calculate_radiative_rates(std::vector<real> J_nu)
 void AtomicSpecies::set_rates(double ne)
 {
   // zero out rate matrix
-  for (int i=0;i<n_levels_;++i)
-    for (int j=0;j<n_levels_;++j)
-      rates_[i][j] = 0;
+  // for (int i=0;i<n_levels_;++i)
+  //   for (int j=0;j<n_levels_;++j)
+  //     rates_[i][j] = 0;
 
   // ------------------------------------------------
   // radiative bound-bound transitions
@@ -315,8 +362,12 @@ void AtomicSpecies::set_rates(double ne)
       { R_ul = 0; R_lu = 0;}
 
     // add into rates
-    rates_[ll][lu] += R_lu;
-    rates_[lu][ll] += R_ul;
+    // rates_[ll][lu] += R_lu;
+    // rates_[lu][ll] += R_ul;
+
+
+    rates_.push_back(E_T(ll,lu,R_lu*lev_lte_[ll]));
+    rates_.push_back(E_T(lu,ll,R_ul*lev_lte_[lu]));
 
    // printf("RR %d %d %e\n",ll,lu,R_lu);
    // printf("RR %d %d %e\n",lu,ll,R_ul);
@@ -376,8 +427,10 @@ void AtomicSpecies::set_rates(double ne)
 
 	    double C_down = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) * ne * effective_f_lu * gl/gu;
 
-	    rates_[ll][lu] += C_up;
-      rates_[lu][ll] += C_down;
+	    // rates_[ll][lu] += C_up;
+      // rates_[lu][ll] += C_down;
+      rates_.push_back(E_T(ll,lu,C_up*lev_lte_[ll]));
+      rates_.push_back(E_T(lu,ll,C_down*lev_lte_[lu]));
     }
   }
 
@@ -400,13 +453,15 @@ void AtomicSpecies::set_rates(double ne)
     if (use_collisions_nlte_)
     {
 	    double C_ion = 2.7/zeta/zeta*pow(gas_temp_,-1.5)*exp(-zeta)*ne;
-	    rates_[i][ic] += C_ion;
+	    //rates_[i][ic] += C_ion;
+      rates_.push_back(E_T(i,ic,C_ion*lev_lte_[i]));
 
 	    // collisional recombination rate
 	    int gi = adata_->get_lev_g(i);
 	    int gc = adata_->get_lev_g(ic);
 	    double C_rec = 5.59080e-16/zeta/zeta*pow(gas_temp_,-3)*gi/gc*ne*ne;
-	    rates_[ic][i] += C_rec;
+	    //rates_[ic][i] += C_rec;
+      rates_.push_back(E_T(ic,i,C_rec*lev_lte_[ic]));
     }
 
     // photoionization and radiative recombination
@@ -416,8 +471,10 @@ void AtomicSpecies::set_rates(double ne)
     {
 	     if (adata_->get_lev_E(i) == 0) lev_Rci_[i] = 0.;
     }
-    rates_[ic][i] += lev_Rci_[i]*ne;
-    rates_[i][ic] += lev_Pic_[i];
+    // rates_[ic][i] += lev_Rci_[i]*ne;
+    // rates_[i][ic] += lev_Pic_[i];
+    rates_.push_back(E_T(ic,i,lev_Rci_[i]*ne*lev_lte_[ic]));
+    rates_.push_back(E_T(i,ic,lev_Pic_[i]*lev_lte_[i]));
 
     //printf("pc::pi: %d %d %e\n",i,ic,levels_[i].P_ic);
     //printf("CI: %d %d %e %e\n",i,ic,C_rec,C_ion);
@@ -426,16 +483,16 @@ void AtomicSpecies::set_rates(double ne)
 
    // multiply by rates by lte pop in level coming from
   // (becuase we will solve for depature coeffs)
-  for (int i=0;i<n_levels_;++i)
-      for (int j=0;j<n_levels_;++j)
-        rates_[i][j] *= lev_lte_[i];
-
-  // print out rates if you so like
-  //printf("------- rates ----------\n");
-  for (int i=0;i<n_levels_;++i)
-    for (int j=0;j<n_levels_;++j)
-      if (isnan(rates_[i][j]))
-       printf("%5d %5d %14.5e\n",i,j,rates_[i][j]);
+  // for (int i=0;i<n_levels_;++i)
+  //     for (int j=0;j<n_levels_;++j)
+  //       rates_[i][j] *= lev_lte_[i];
+  //
+  // // print out rates if you so like
+  // //printf("------- rates ----------\n");
+  // for (int i=0;i<n_levels_;++i)
+  //   for (int j=0;j<n_levels_;++j)
+  //     if (isnan(rates_[i][j]))
+  //      printf("%5d %5d %14.5e\n",i,j,rates_[i][j]);
    //printf("\n");
    //for (int i=0;i<n_levels_;++i)
    // for (int j=0;j<n_levels_;++j)   {
