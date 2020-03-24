@@ -145,7 +145,8 @@ int AtomicSpecies::solve_nlte(double ne)
   // gsl_permutation_init(p_nlte_);
 
   // set M_nlte_ = rates_, where rates_ is filled with the actual transitions
-  M_nlte_.setFromTriplets(rates_.begin(),rates_.end());
+  M_nlte_ = rates_;
+  //M_nlte_.setFromTriplets(rates_.begin(),rates_.end());
 
 
   // set up diagonal elements of rate matrix
@@ -153,7 +154,7 @@ int AtomicSpecies::solve_nlte(double ne)
   {
     // M_nlte_(i,i) should be the negative sum of the row
     double rsum = M_nlte_.row(i).sum();
-    M_nlte_.insert(i,i) = -1.*rsum;
+    M_nlte_(i,i) = -1.*rsum;
     // double Rout = 0.0;
     // // don't worry i = j rate should be zero
     // for (int j=0;j<n_levels_;++j)
@@ -163,7 +164,7 @@ int AtomicSpecies::solve_nlte(double ne)
   }
 
   //M_nlte_ is in row major ordering, so need to transpose for the solver
-  M_nlte_ = M_nlte_.transpose();
+  //M_nlte_ = M_nlte_.transpose();
 
 
   // set off diagonal elements of rate matrix
@@ -199,18 +200,19 @@ int AtomicSpecies::solve_nlte(double ne)
 
 
   //setup the Eigen solver; here we use the SparseQR with no preconditioner
-  Eigen::SparseQR<Eigen::SparseMatrix<double>,Eigen::COLAMDOrdering<int>> solver;
-
-  //perform setup operations to improve efficiency
-  solver.analyzePattern(M_nlte_);
-  solver.factorize(M_nlte_);
-
-
-  //perform the decomposition
-  solver.compute(M_nlte_);
+  // Eigen::SparseQR<Eigen::SparseMatrix<double>,Eigen::COLAMDOrdering<int>> solver;
+  //
+  // //perform setup operations to improve efficiency
+  // solver.analyzePattern(M_nlte_);
+  // solver.factorize(M_nlte_);
+  //
+  //
+  // //perform the decomposition
+  // solver.compute(M_nlte_);
 
   //solve for the decomposed matrix
-  x_nlte_ = solver.solve(b_nlte_);
+  Eigen::FullPivLU<Eigen::MatrixXd> dec(M_nlte_);
+  x_nlte_ = dec.solve(b_nlte_);
 
   // the x vector should now have the solved level
   // depature coefficients
@@ -366,8 +368,11 @@ void AtomicSpecies::set_rates(double ne)
     // rates_[lu][ll] += R_ul;
 
 
-    rates_.push_back(E_T(ll,lu,R_lu*lev_lte_[ll]));
-    rates_.push_back(E_T(lu,ll,R_ul*lev_lte_[lu]));
+
+    rates_(ll,lu)+=R_lu*lev_lte_[ll];
+    rates_(lu,ll)+=R_ul*lev_lte_[lu];
+    // rates_.push_back(E_T(ll,lu,R_lu*lev_lte_[ll]));
+    // rates_.push_back(E_T(lu,ll,R_ul*lev_lte_[lu]));
 
    // printf("RR %d %d %e\n",ll,lu,R_lu);
    // printf("RR %d %d %e\n",lu,ll,R_ul);
@@ -429,8 +434,10 @@ void AtomicSpecies::set_rates(double ne)
 
 	    // rates_[ll][lu] += C_up;
       // rates_[lu][ll] += C_down;
-      rates_.push_back(E_T(ll,lu,C_up*lev_lte_[ll]));
-      rates_.push_back(E_T(lu,ll,C_down*lev_lte_[lu]));
+      // rates_.push_back(E_T(ll,lu,C_up*lev_lte_[ll]));
+      // rates_.push_back(E_T(lu,ll,C_down*lev_lte_[lu]));
+      rates_(ll,lu)+=C_up*lev_lte_[ll];
+      rates_(lu,ll)+=C_down*lev_lte_[lu];
     }
   }
 
@@ -454,14 +461,16 @@ void AtomicSpecies::set_rates(double ne)
     {
 	    double C_ion = 2.7/zeta/zeta*pow(gas_temp_,-1.5)*exp(-zeta)*ne;
 	    //rates_[i][ic] += C_ion;
-      rates_.push_back(E_T(i,ic,C_ion*lev_lte_[i]));
+      //rates_.push_back(E_T(i,ic,C_ion*lev_lte_[i]));
+      rates_(i,ic)+=C_ion*lev_lte_[i];
 
 	    // collisional recombination rate
 	    int gi = adata_->get_lev_g(i);
 	    int gc = adata_->get_lev_g(ic);
 	    double C_rec = 5.59080e-16/zeta/zeta*pow(gas_temp_,-3)*gi/gc*ne*ne;
 	    //rates_[ic][i] += C_rec;
-      rates_.push_back(E_T(ic,i,C_rec*lev_lte_[ic]));
+      //rates_.push_back(E_T(ic,i,C_rec*lev_lte_[ic]));
+      rates_(ic,i)+=C_rec*lev_lte_[ic];
     }
 
     // photoionization and radiative recombination
@@ -473,8 +482,10 @@ void AtomicSpecies::set_rates(double ne)
     }
     // rates_[ic][i] += lev_Rci_[i]*ne;
     // rates_[i][ic] += lev_Pic_[i];
-    rates_.push_back(E_T(ic,i,lev_Rci_[i]*ne*lev_lte_[ic]));
-    rates_.push_back(E_T(i,ic,lev_Pic_[i]*lev_lte_[i]));
+    // rates_.push_back(E_T(ic,i,lev_Rci_[i]*ne*lev_lte_[ic]));
+    // rates_.push_back(E_T(i,ic,lev_Pic_[i]*lev_lte_[i]));
+    rates_(ic,i)+=lev_Rci_[i]*ne*lev_lte_[ic];
+    rates_(i,ic)+=lev_Pic_[i]*lev_lte_[i];
 
     //printf("pc::pi: %d %d %e\n",i,ic,levels_[i].P_ic);
     //printf("CI: %d %d %e %e\n",i,ic,C_rec,C_ion);

@@ -23,7 +23,7 @@ int main(int argc, char **argv)
   std::string atomdata = "../../../data/cmfgen_levelcap100.hdf5";
 
   double time = 20*3600.0*24.0;
-  double temp = 1e4;
+  double temp = 10000;
   double dens = 1e-13;
 
   double nu_start = 1e13;

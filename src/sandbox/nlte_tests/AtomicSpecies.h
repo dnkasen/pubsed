@@ -17,6 +17,7 @@
 #include <SparseQR>
 #include <SparseLU>
 
+#include <Dense>
 
 typedef Eigen::Triplet<double> E_T;
 
@@ -34,10 +35,12 @@ private:
   // gsl_permutation *p_nlte_;
 
 
-  Eigen::SparseMatrix<double,Eigen::RowMajor> M_nlte_;
+  //Eigen::SparseMatrix<double,Eigen::RowMajor> M_nlte_;
+  Eigen::MatrixXd M_nlte_;
   Eigen::VectorXd b_nlte_;
   Eigen::VectorXd x_nlte_;
-  std::vector<E_T> rates_;
+  Eigen::MatrixXd rates_;
+  //std::vector<E_T> rates_;
 
 
   // frequency bin array

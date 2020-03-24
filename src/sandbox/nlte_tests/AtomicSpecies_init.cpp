@@ -84,11 +84,12 @@ int AtomicSpecies::set_use_nlte()
 
   //allocate memory for the Eigen nLTE solver
   M_nlte_.resize(n_levels_,n_levels_);
+  rates_.resize(n_levels_,n_levels_);
   b_nlte_.resize(n_levels_);
   x_nlte_.resize(n_levels_);
 
   //allocate memory for the rate matrix (this becomes M_nlte_)
-  rates_.reserve(n_levels_*n_levels_);
+  //rates_.reserve(n_levels_*n_levels_);
 
   //----------------------------------------------
   // allocate memory for arrays
