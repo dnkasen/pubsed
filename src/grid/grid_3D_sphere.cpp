@@ -494,7 +494,10 @@ int grid_3D_sphere::get_next_zone
   c = x[2]*x[2] - (x[0]*x[0] + x[1]*x[1] + x[2]*x[2])*cos(theta_op)*cos(theta_op);
   det = b*b - 4.*a*c;
 
-  if (theta_op == pc::pi/2.){
+  if (theta_op == 0){
+    ltheta_out = std::numeric_limits<double>::infinity();
+  }
+  else if (theta_op == pc::pi/2.){
     if (D[2] == 0) ltheta_out = std::numeric_limits<double>::infinity();
     else ltheta_out = -x[2]/D[2];
     if (ltheta_out < 0) ltheta_out = std::numeric_limits<double>::infinity();    
@@ -541,7 +544,10 @@ int grid_3D_sphere::get_next_zone
   c = x[2]*x[2] - (x[0]*x[0] + x[1]*x[1] + x[2]*x[2])*cos(theta_op)*cos(theta_op);
   det = b*b - 4.*a*c;
 
-  if (theta_op == pc::pi/2.){
+  if (theta_op == 0){
+    ltheta_in = std::numeric_limits<double>::infinity();
+  }
+  else if (theta_op == pc::pi/2.){
     if (D[2] == 0) ltheta_in = std::numeric_limits<double>::infinity();
     else ltheta_in = -x[2]/D[2];
     if (ltheta_in < 0) ltheta_in = std::numeric_limits<double>::infinity();    
