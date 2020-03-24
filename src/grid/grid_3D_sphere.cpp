@@ -437,38 +437,47 @@ int grid_3D_sphere::get_next_zone
   // one must calculate the intersection of a ray and a sphere, since the inner and outer boundaries of constant radius are spheres
   //---------------------------------
 
-  double r_bnd, lr_out, lr_in;
+  double r_bnd_out, r_bnd_in, lr_out, lr_in;
   double a = D[0]*D[0] + D[1]*D[1] + D[2]*D[2];
   double b = 2*(x[0]*D[0] + x[1]*D[1] + x[2]*D[2]);
   double c, det;
 
   // outer interface
-  r_bnd = r_out_.right(ir);
-  c = r*r - r_bnd*r_bnd;
+  r_bnd_out = r_out_.right(ir);
+  c = r*r - r_bnd_out*r_bnd_out;
   det = b*b - 4*a*c;
   if (det < 0) lr_out = std::numeric_limits<double>::infinity();
   else lr_out = (-1.*b + sqrt(det))/(2.*a);
   if (lr_out < 0) lr_out = std::numeric_limits<double>::infinity();
 
   // inner interface
-  r_bnd = r_out_.left(ir);
-  c = r*r - r_bnd*r_bnd;
+  r_bnd_in = r_out_.left(ir);
+  // check if inner boundary is from a core
+  if (r_bnd_in <= r_core) r_bnd_in = r_core;
+  c = r*r - r_bnd_in*r_bnd_in;
   det = b*b - 4*a*c;
   if (det < 0) lr_in = std::numeric_limits<double>::infinity();
   else lr_in = (-1.*b - sqrt(det))/(2.*a);
   if (lr_in < 0) lr_in = std::numeric_limits<double>::infinity();
-  if ((ir == 0) && (r_bnd <= 0)) lr_in = std::numeric_limits<double>::infinity();
+  // if in innermost zone and there is no inner boundary (i.e. both r_min = 0 and r_core = 0), then we never hit the inner shell
+  if ((ir == 0) && (r_bnd_in == 0)) lr_in = std::numeric_limits<double>::infinity();
 
+  // if moving inward
   if(lr_in < lr_out){
     d_ir = -1;
-    // lr = lr_in * (1. + tiny);
-    if ((ir == 0) && (r_bnd > 0)) lr = lr_in - tiny*dr_[ir];
+    // if inner boundary is from a core
+    if ((r_core > 0) && (r_bnd_in <= r_core)) lr = lr_in - tiny*dr_[ir];
+    // if in innermost zone and there is an inner boundary
+    else if ((ir == 0) && (r_bnd_in > 0)) lr = lr_in - tiny*dr_[ir];
+    // if normal boundary crossing
     else lr = lr_in + tiny*dr_[ir+d_ir];
   }
+  // if moving outward
   else{
     d_ir = 1;
-    // lr = lr_out * (1. + tiny);
+    // if in outermost boundary
     if (ir == nr_-1) lr = lr_out - tiny*dr_[ir];
+    // if normal boundary crossing
     else lr = lr_out + tiny*dr_[ir+d_ir];
   }
 
@@ -583,6 +592,7 @@ int grid_3D_sphere::get_next_zone
     }
   }
 
+  // if moving inward
   if(ltheta_in < ltheta_out){
     d_itheta = -1;
     double x_new[3] = {x[0] + ltheta_in*D[0], x[1] + ltheta_in*D[1], x[2] + ltheta_in*D[2]};
@@ -591,6 +601,7 @@ int grid_3D_sphere::get_next_zone
     if (new_itheta == -1) new_itheta = 1;
     ltheta = ltheta_in + tiny*r_new*dtheta_[new_itheta];
   }
+  // if moving outward
   else{
     d_itheta = 1;
     double x_new[3] = {x[0] + ltheta_out*D[0], x[1] + ltheta_out*D[1], x[2] + ltheta_out*D[2]};
@@ -640,6 +651,7 @@ int grid_3D_sphere::get_next_zone
     cout << x[0] << " " << x[1] << " " << x[2] << " " << D[0] << " " << D[1] << " " << D[2] << endl;
   }
 
+  // if moving inward
   if(lphi_in < lphi_out){
     d_iphi = -1;
     double x_new[3] = {x[0] + lphi_in*D[0], x[1] + lphi_in*D[1], x[2] + lphi_in*D[2]};
@@ -649,6 +661,7 @@ int grid_3D_sphere::get_next_zone
     if (new_iphi == -1) new_iphi = nphi_-1;
     lphi = lphi_in + tiny*r_new*sin(theta_new)*dphi_[new_iphi];
   }
+  // if moving outward
   else{
     d_iphi = 1;
     double x_new[3] = {x[0] + lphi_out*D[0], x[1] + lphi_out*D[1], x[2] + lphi_out*D[2]};
@@ -659,22 +672,32 @@ int grid_3D_sphere::get_next_zone
     lphi = lphi_out + tiny*r_new*sin(theta_new)*dphi_[new_iphi];
   }
 
+  //---------------------------------
   // find shortest distance
+  //---------------------------------
+
   int new_ir = ir;
   int new_itheta = itheta;
   int new_iphi = iphi;
+  // if particle hits a r interface first
   if ((lr < ltheta) && (lr < lphi)){
     *l = lr;
     new_ir += d_ir;
-    if ((new_ir == -1) && (r_out_.minval() > 0)) return -1;
+    // if moving inward and inner boundary is from a core
+    if ((d_ir == -1) && (r_core > 0) && (r_bnd_in <= r_core)) return -1;
+    // if moving inward and in innermost zone and there is an inner boundary
+    else if ((new_ir == -1) && (r_bnd_in > 0)) return -1;
+    // if moving outward and in outermost zone
     else if (new_ir == nr_) return -2;
   }
+  // if particles hits a theta interface first
   else if (ltheta < lphi){
     *l = ltheta;
     new_itheta += d_itheta;
     if (new_itheta == -1) new_itheta = 1;
     else if (new_itheta == ntheta_) new_itheta = ntheta_-2;
   }
+  // if particles hits a phi interface first
   else{
     *l = lphi;
     new_iphi += d_iphi;
