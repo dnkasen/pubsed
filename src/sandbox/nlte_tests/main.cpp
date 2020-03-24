@@ -20,7 +20,9 @@ int main(int argc, char **argv)
   std::vector<int>      elems_A = {28,32,40};
   std::vector<double> massfrac  = {0.55,0.35,0.1};
   std::vector<int>  atoms_in_nlte = {14,16,20};
-  std::string atomdata = "../../../data/cmfgen_levelcap100.hdf5";
+
+  std::vector<int> atoms_sparse = {14,16,20};
+  std::string atomdata = "../../../data/chianti_atomdata.hdf5";
 
   double time = 20*3600.0*24.0;
   double temp = 10000;
@@ -65,6 +67,7 @@ int main(int argc, char **argv)
   GasState gas;
   gas.initialize(atomic_data,elems_Z,elems_A,nu_grid);
   gas.set_mass_fractions(massfrac);
+  gas.set_atoms_in_sparse(atoms_sparse);
   gas.set_atoms_in_nlte(atoms_in_nlte);
 
   // set gas parameters

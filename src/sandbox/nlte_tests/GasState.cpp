@@ -126,6 +126,29 @@ void GasState::set_atoms_in_nlte
 
 }
 
+
+//-----------------------------------------------------------------
+// Choose the atoms to be solve in nlte using SPARSE solve
+//-----------------------------------------------------------------
+
+void GasState::set_atoms_in_sparse
+(std::vector<int> sparseatoms)
+{
+
+  for (int i=0;i<sparseatoms.size();++i)
+  {
+    for (int j=0;j<atoms.size();++j)
+    {
+	    if (elem_Z[j] == sparseatoms[i])
+	    {
+	      atoms[j].use_sparse_ = 1.;
+	    }
+    }
+  }
+
+
+}
+
 //-----------------------------------------------------------------
 // Set mass fractions of each element in the gas
 // this function will enforce that the mass fractions are

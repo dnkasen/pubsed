@@ -109,6 +109,12 @@ class GasState
   void set_atoms_in_nlte
   (std::vector<int> useatoms);
 
+  //-----------------------------------------------------------
+  // set which atoms to treat in nlte using SPARSE solver
+  //-----------------------------------------------------------
+  void set_atoms_in_sparse
+  (std::vector<int> sparseatoms);
+
 
   //-----------------------------------------------------------
   // read fuzz lines from a file

@@ -13,14 +13,14 @@
 #include "VoigtProfile.h"
 #include "AtomicData.h"
 
-#include <Sparse>
-#include <SparseQR>
-#include <SparseLU>
-
 #include <Dense>
+#include <Sparse>
+
+
 
 typedef Eigen::Triplet<double> E_T;
 
+using namespace Eigen;
 
 class AtomicSpecies
 {
@@ -36,11 +36,20 @@ private:
 
 
   //Eigen::SparseMatrix<double,Eigen::RowMajor> M_nlte_;
-  Eigen::MatrixXd M_nlte_;
+
+  //dense solver types
+  Eigen::MatrixXd M_nlte_d_;
+  Eigen::MatrixXd rates_d_;
+
+  //sparse solver types
+  Eigen::SparseMatrix<double,Eigen::RowMajor> M_nlte_s_;
+  std::vector<E_T> rates_s_;
+
+
   Eigen::VectorXd b_nlte_;
   Eigen::VectorXd x_nlte_;
-  Eigen::MatrixXd rates_;
-  //std::vector<E_T> rates_;
+
+
 
 
   // frequency bin array
@@ -72,6 +81,7 @@ public:
   int use_betas_;               // include escape probabilites in nlte
   int no_ground_recomb_;        // suppress recombinations to ground
   bool use_nlte_;               // treat this atom in nlte or not
+  bool use_sparse_;             // whether to use the sparse solver or not
   int use_collisions_nlte_;    // use collisional transitions in NLTE solve and heating/cooling
 
   // atomic state values
@@ -101,6 +111,8 @@ public:
   int  solve_state(double ne);
   int  solve_lte (double ne);
   int  solve_nlte(double ne);
+  int solve_nlte_dense(double ne);
+  int solve_nlte_sparse(double ne);
   void print();
 
   // sobolev

@@ -25,6 +25,7 @@ AtomicSpecies::AtomicSpecies()
   use_betas_          = 0;
   minimum_extinction_ = 0;
   use_nlte_           = 0;
+  use_sparse_         = 0;
 
   n_levels_            = 0;
   n_lines_             = 0;
@@ -83,8 +84,15 @@ int AtomicSpecies::set_use_nlte()
   use_nlte_ = true;
 
   //allocate memory for the Eigen nLTE solver
-  M_nlte_.resize(n_levels_,n_levels_);
-  rates_.resize(n_levels_,n_levels_);
+  if(use_sparse_){
+    M_nlte_s_.resize(n_levels_,n_levels_);
+    rates_s_.reserve(n_levels_*n_levels_/10000);
+  }
+  else{
+  M_nlte_d_.resize(n_levels_,n_levels_);
+  rates_d_.resize(n_levels_,n_levels_);
+  }
+
   b_nlte_.resize(n_levels_);
   x_nlte_.resize(n_levels_);
 
@@ -116,6 +124,9 @@ int AtomicSpecies::set_use_nlte()
   return 0;
 
 }
+
+
+
 
 
 
