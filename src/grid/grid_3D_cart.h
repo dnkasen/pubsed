@@ -15,14 +15,27 @@ class grid_3D_cart: public grid_general
 
 private:
 
-  // specifics to this geometry
- // specifics to this geometry
+  // Flags to remember how grid was read in
+  herr_t status_dr_;
+  herr_t status_rmin_;
+  herr_t status_xyz_;
 
-  int    nx_, ny_, nz_; // number of zones in each dimension
-  double dx_, dy_, dz_; // length of each zone in each dimension
-  double x0_, y0_, z0_; // leftmost points
-  double vol_;        // volume of each zone = dx*dy*dz
-  int *index_x_,*index_y_,*index_z_;
+  int nx_, ny_, nz_; // number of zones in each dimension
+
+  // the right zone edge in each direction
+  // the lengths of these arrays are nx_, ny_, and nz_, respectively
+  // these arrays are indexed by the x-index, y-index, and z-index, respectively
+  locate_array x_out_, y_out_, z_out_;
+
+  // store precomputed zone widths in each direction. These arrays are indexed by the x-index, y-index, and z-index, respectively
+  std::vector<double> dx_, dy_, dz_;
+
+  // store precomputed zone volumes. These arrays are indexed by the index in the flattened 1D array of all zones
+  std::vector<double> vol_;
+
+  std::vector<int> index_x_; // map to x index from the index in the flattened 1D array of all zones
+  std::vector<int> index_y_; // map to y index from the index in the flattened 1D array of all zones
+  std::vector<int> index_z_; // map to z index from the index in the flattened 1D array of all zones
 
   int get_index(int i, int j, int k)
   {

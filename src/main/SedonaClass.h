@@ -8,6 +8,7 @@
 #include "grid_1D_sphere.h"
 #include "grid_2D_cyln.h"
 #include "grid_3D_cart.h"
+#include "grid_3D_sphere.h"
 #include "hydro_general.h"
 #include "hydro_homologous.h"
 #include "hydro_1D_lagrangian.h"

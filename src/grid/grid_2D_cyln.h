@@ -15,6 +15,11 @@ class grid_2D_cyln: public grid_general
 
 private:
 
+  // Flags to remember how grid was read in
+  herr_t status_dr_;
+  herr_t status_rmin_;
+  herr_t status_xz_;
+
   int nx_, nz_; // number of zones in each dimension
 
   // the right zone edge in each direction

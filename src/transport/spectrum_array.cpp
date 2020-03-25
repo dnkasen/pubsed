@@ -215,7 +215,10 @@ int spectrum_array::index(int t, int l, int m, int p)
 void spectrum_array::count(double t, double w, double E, double *D)
 {
   double mu  = D[2];
-  double phi = atan2(D[1],D[0]) + pc::pi;
+  double phi = atan2(D[1],D[0]);
+  if (phi < 0){
+    phi += 2.*pc::pi;
+  }
 
   // locate bin number in all dimensions
   int t_bin = time_grid.locate(t);
@@ -323,7 +326,7 @@ void spectrum_array::print(int suppress_txt = 0)
 
   tmp_array = new float[n_nu+1];
   hsize_t  dims_nu_edges[RANK]={(hsize_t)(n_nu+1)};
-  tmp_array[0] = wave_grid.min;
+  tmp_array[0] = wave_grid.minval();
   for (int j=0;j<n_nu;j++) tmp_array[j+1] = wave_grid[j];
   H5LTmake_dataset(file_id,"nu_edges",RANK,dims_nu_edges,H5T_NATIVE_FLOAT,tmp_array);
   delete[] tmp_array;
@@ -337,7 +340,7 @@ void spectrum_array::print(int suppress_txt = 0)
 
   tmp_array = new float[n_mu+1];
   hsize_t  dims_mu_edges[RANK]={(hsize_t)(n_mu+1)};
-  tmp_array[0] = mu_grid.min;
+  tmp_array[0] = mu_grid.minval();
   for (int j=0;j<n_mu;j++) tmp_array[j+1] = mu_grid[j];
   H5LTmake_dataset(file_id,"mu_edges",RANK,dims_mu_edges,H5T_NATIVE_FLOAT,tmp_array);
   delete[] tmp_array;
@@ -351,7 +354,7 @@ void spectrum_array::print(int suppress_txt = 0)
 
   tmp_array = new float[n_phi+1];
   hsize_t  dims_phi_edges[RANK]={(hsize_t)(n_phi+1)};
-  tmp_array[0] = phi_grid.min;
+  tmp_array[0] = phi_grid.minval();
   for (int j=0;j<n_phi;j++) tmp_array[j+1] = phi_grid[j];
   H5LTmake_dataset(file_id,"phi_edges",RANK,dims_phi_edges,H5T_NATIVE_FLOAT,tmp_array);
   delete[] tmp_array;
@@ -366,7 +369,7 @@ void spectrum_array::print(int suppress_txt = 0)
 
   tmp_array = new float[n_t+1];
   hsize_t dims_t_edges[RANK]={(hsize_t)(n_t+1)};
-  tmp_array[0] = time_grid.min;
+  tmp_array[0] = time_grid.minval();
   for (int j=0;j<n_t;j++) tmp_array[j+1] = time_grid[j];
   H5LTmake_dataset(file_id,"time_edges",RANK,dims_t_edges,H5T_NATIVE_FLOAT,tmp_array);
   delete[] tmp_array;
