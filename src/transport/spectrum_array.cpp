@@ -215,7 +215,10 @@ int spectrum_array::index(int t, int l, int m, int p)
 void spectrum_array::count(double t, double w, double E, double *D)
 {
   double mu  = D[2];
-  double phi = atan2(D[1],D[0]) + pc::pi;
+  double phi = atan2(D[1],D[0]);
+  if (phi < 0){
+    phi += 2.*pc::pi;
+  }
 
   // locate bin number in all dimensions
   int t_bin = time_grid.locate(t);

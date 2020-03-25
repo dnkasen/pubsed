@@ -12,6 +12,7 @@
 #include "grid_1D_sphere.h"
 #include "grid_2D_cyln.h"
 #include "grid_3D_cart.h"
+#include "grid_3D_sphere.h"
 #include "hydro_general.h"
 #include "hydro_homologous.h"
 #include "hydro_1D_lagrangian.h"
@@ -171,6 +172,7 @@ void SedonaClass::setup()
   if      (grid_type == "grid_1D_sphere") grid_ = new grid_1D_sphere;
   else if (grid_type == "grid_2D_cyln"  ) grid_ = new grid_2D_cyln;
   else if (grid_type == "grid_3D_cart"  ) grid_ = new grid_3D_cart;
+  else if (grid_type == "grid_3D_sphere"  ) grid_ = new grid_3D_sphere;
   else
   {
     if(verbose_) cerr << "# ERROR: the grid type is not implemented" << endl;

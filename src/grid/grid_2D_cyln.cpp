@@ -318,6 +318,9 @@ void grid_2D_cyln::expand(double e)
   x_out_.scale(e);
   z_out_.scale(e);
 
+  for (int i=0; i < nx_; i++) dx_[i] = dx_[i]*e;
+  for (int k=0; k < nz_; k++) dz_[k] = dz_[k]*e;
+
   for (int i=0; i < n_zones; i++) vol_[i] = vol_[i]*e*e*e;
 }
 
