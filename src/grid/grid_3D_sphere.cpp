@@ -317,14 +317,6 @@ void grid_3D_sphere::write_plotfile(int iw, double tt, int write_mass_fractions)
 	// open hdf5 file
 	hid_t file_id = H5Fcreate(plotfilename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-	// // print out zone sizes
-	// hsize_t  dims_dr[1]={3};
-	// float dr[3];
-	// dr[0] = dx_;
- //  dr[1] = dy_;
- //  dr[2] = dz_;
- //  H5LTmake_dataset(file_id,"dr",1,dims_dr,H5T_NATIVE_FLOAT,dr);
-
 	// print out r array
 	hsize_t  dims_r[1]={(hsize_t)nr_};
 	float *rarr = new float[nr_];
