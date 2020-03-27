@@ -128,7 +128,11 @@ for this_test in testlist:
     sys.path.append(os.getcwd())
     import run_test
     sys.path.remove(os.getcwd())
-    status = run_test.run_test(pdf,runcommand)
+    try:
+      status = run_test.run_test(pdf,runcommand)
+    except:
+      status = 1
+      print "CRASHED"
     del sys.modules['run_test']
 
     stoptime = timeit.default_timer()
