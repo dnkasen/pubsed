@@ -50,6 +50,7 @@ if (opts.nproc): nproc = opts.nproc
 ## executable directory and file
 exec_dir   = "../src/"
 executable = "sedona6.ex"
+paramname = "param.lua"
 
 homedir = os.getcwd()
 date = time.strftime("%m-%d-%y")
@@ -63,9 +64,9 @@ else:
     pdffile = homedir + '/test_results_' + date + '.pdf'
 pdf = PdfPages(pdffile)
 
-runcommand = "mpirun -np " + str(nproc) + " ./" + executable
+runcommand = "mpirun -np " + str(nproc) + " ./" + executable + " " + paramname
 if (not opts.verbose):
-    runcommand = runcommand + " 2>&1 " + outfile
+    runcommand = runcommand + " > " + outfile + " 2>&1"
 
 
 ########################################
@@ -131,8 +132,7 @@ for this_test in testlist:
     try:
       status = run_test.run_test(pdf,runcommand)
     except:
-      status = 1
-      print "CRASHED"
+      status = 200
     del sys.modules['run_test']
 
     stoptime = timeit.default_timer()
@@ -140,6 +140,8 @@ for this_test in testlist:
 
     if (status == 0):
         print "PASSED"
+    elif (status == 200):
+        print "CRASHED"
     else:
         print "FAILED: error code = ", status
     print "------------------------------------------\n"
