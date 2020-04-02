@@ -212,9 +212,6 @@ int locate_array::locate(const double xval) const
     ind = upper_bound(x_.begin(), x_.end(), xval) - x_.begin();
   }
   if (locate_type_ != none && ind != 0 && ind != size() && (left(ind) > xval or right(ind) <= xval)) {
-    std::cerr << "Calculated index incorrect. " << "type: " << locate_type_ << " ind: " << ind
-      << " left: " << left(ind) << " val: " << xval << " right: " << right(ind) << " min del: "
-      <<  min_ << " " <<  del_ << std::endl;
     ind = upper_bound(x_.begin(), x_.end(), xval) - x_.begin();
   }
   return ind;
