@@ -16,7 +16,7 @@ tstep_min_dt     = 0.0
 tstep_max_delta  = 0.05
 
 -- emission parameters
-particles_n_emit_radioactive = 5e4
+particles_n_emit_radioactive = 2e5
 
 -- output spectrum
 spectrum_time_grid = {-0.5*days,100*days,0.5*days}

@@ -26,19 +26,19 @@ n_elems = len(Z)
 ##################################
 # Make sedona 3D hdf5 model
 #################################
-nr = 100
+nr = 50
 r_out = np.linspace(rmin0, rmax0, nr+1, endpoint=True)[1:]
 vr = r_out/texp
 nr_array = np.arange(nr)
 
-ntheta = 10
+ntheta = 2
 costheta_out = np.linspace(1, -1, ntheta+1, endpoint=True)[1:]
 theta_out = np.arccos(costheta_out)
 # theta_out = np.linspace(0, np.pi, ntheta+1, endpoint=True)[1:]
 vtheta = np.zeros(ntheta)
 ntheta_array = np.arange(ntheta)
 
-nphi = 10
+nphi = 4
 phi_out = np.linspace(0, 2*np.pi, nphi+1, endpoint=True)[1:]
 vphi = np.zeros(nphi)
 nphi_array = np.arange(nphi)
