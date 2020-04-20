@@ -66,7 +66,7 @@ pdf = PdfPages(pdffile)
 
 runcommand = "mpirun -np " + str(nproc) + " ./" + executable + " " + paramname
 if (not opts.verbose):
-    runcommand = runcommand + " > " + outfile + " 2>&1"
+    runcommand = runcommand + " >> " + outfile + " 2>&1"
 
 
 ########################################
