@@ -58,6 +58,38 @@ def run_test(pdf="",runcommand=""):
         plt.show()
         j = raw_input()
 
+    #-------------------------------------------
+
+    plt.clf()
+    for p in ['plt_00015.h5','plt_00030.h5','plt_00060.h5']:
+
+        fin = h5py.File(p)
+        r = np.array(fin['velr'])
+        Trad =  np.array(fin['T_rad'])
+        plt.plot(r,Trad,'o',color='k')
+        fin.close()
+
+        fin = h5py.File('../comparefiles/plt_files/' + p)
+        rc = np.array(fin['velr'])
+        Tradc =  np.array(fin['T_rad'])
+        plt.plot(rc,Tradc,lw=1,color='r')
+        fin.close()
+
+        use = (r > 1e8)*(r < 9.8e8)
+        max_err,mean_err = get_error(Trad,Tradc,x=r,x_comp=rc,use = use)
+        if (max_err > 0.5 or mean_err > 0.02): failure = 3
+
+    ## make plot
+    plt.title('1D Lucy SN - DDMC, radiation field')
+    plt.legend(['sedona','reference'])
+    plt.ylabel('radiation temperature',size=13)
+    plt.xlabel('velocity (cm/s)',size=13)
+    if (pdf != ''): pdf.savefig()
+    else:
+        plt.ion()
+        plt.show()
+        j = raw_input()
+
     return failure
 
 
@@ -110,4 +142,24 @@ def get_error(a,b,x=[],x_comp=[],use=[]):
 
     return max_err,mean_err
 
-if __name__=='__main__': run_test('')
+#-----------------------------------------
+# little function to just plot up and
+# compare results. Assumes code has
+# already been run and output files
+# are present
+#----------------------------------------
+if __name__=='__main__':
+
+    # Support Python 2 and 3 input
+    # Default to Python 3's input()
+    get_input = input
+
+    # If this is Python 2, use raw_input()
+    if sys.version_info[:2] <= (2, 7):
+        get_input = raw_input
+
+    status = run_test('')
+    if (status == 0):
+        print ('SUCCESS')
+    else:
+        print ('FAILURE, code = ' + str(status))
