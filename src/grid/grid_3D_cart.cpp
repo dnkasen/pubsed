@@ -488,8 +488,8 @@ void grid_3D_cart::sample_in_zone
   int iy = index_y_[i];
   int iz = index_z_[i];
 
-  r[0] = x_out_.left(ix) + ran[2]*dx_[ix];
-  r[1] = y_out_.left(iy) + ran[2]*dy_[iy];
+  r[0] = x_out_.left(ix) + ran[0]*dx_[ix];
+  r[1] = y_out_.left(iy) + ran[1]*dy_[iy];
   r[2] = z_out_.left(iz) + ran[2]*dz_[iz];
 }
 
