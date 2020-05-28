@@ -297,7 +297,7 @@ void transport::writeCheckpointParticlesAll(std::string fname) {
   writeCheckpointParticles(particles_escaped, fname, "particles_escaped");
 }
 
-void transport::writeCheckpointParticles(std::vector<particle>& particle_list, 
+void transport::writeCheckpointParticles(std::vector<particle>& particle_list,
     std::string fname, std::string groupname) {
   // Figures out what every rank's offset is going to be in the big particle list
   int my_n_particles = particle_list.size();
@@ -319,10 +319,10 @@ void transport::writeCheckpointParticles(std::vector<particle>& particle_list,
   if (MPI_myID == 0) {
     //createFile(fname);
     int ndim1 = 1;
-    hsize_t dims1[1] =  {global_n_particles_total};
-    hsize_t nranks_dim[1] = {MPI_nprocs};
+    hsize_t dims1[1] =  {hsize_t(global_n_particles_total)};
+    hsize_t nranks_dim[1] = {hsize_t(MPI_nprocs)};
     int ndim3 = 2;
-    hsize_t dims3[2] = {global_n_particles_total, 3};
+    hsize_t dims3[2] = {hsize_t(global_n_particles_total), 3};
     createGroup(fname, groupname);
     createDataset(fname, groupname, "counts_by_rank", ndim1, nranks_dim, H5T_NATIVE_INT);
     writeSimple(fname, groupname, "counts_by_rank", global_n_particles, H5T_NATIVE_INT);
@@ -364,7 +364,7 @@ void transport::writeCheckpointParticles(std::vector<particle>& particle_list,
 
 // Writes out particle data, assuming that the particles group already exists in
 // the hdf5 file named file. The
-void transport::writeParticleProp(std::string fname, std::string fieldname, 
+void transport::writeParticleProp(std::string fname, std::string fieldname,
     std::string groupname, std::vector<particle>& particle_list, int total_particles, int offset) {
   int n_dims = 1;
   int n_particles_local = particle_list.size();

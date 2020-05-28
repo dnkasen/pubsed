@@ -125,9 +125,9 @@ void grid_general::writeCheckpointZones(std::string fname) {
 
 void grid_general::writeScalarZoneProp(std::string fname, std::string fieldname) {
   int ndim1 = 1;
-  hsize_t dims1[1] =  {n_zones};
+  hsize_t dims1[1] =  {hsize_t(n_zones)};
   int ndim3 = 2;
-  hsize_t dims3[2] = {n_zones, 3};
+  hsize_t dims3[2] = {hsize_t(n_zones), 3};
   real* buffer = new real[n_zones * 3];
   hid_t t;
 
@@ -226,7 +226,7 @@ void grid_general::writeVectorZoneProp(std::string fname, std::string fieldname)
   real* buffer = new real[n_zones * n_elems];
   if (fieldname == "X_gas") {
     int ndim = 2;
-    hsize_t dims[2] = {n_zones, n_elems};
+    hsize_t dims[2] = {hsize_t(n_zones), hsize_t(n_elems)};
     createDataset(fname, "zones", fieldname, ndim, dims, t);
     for (int i = 0; i < n_zones; i++) {
       for (int j = 0; j < n_elems; j++) {
@@ -451,7 +451,7 @@ void grid_general::write_integrated_quantities(int iw, double tt)
     // write header
     fprintf(fout,"#    time(sec)     E_radiation         L_dep        L_nuc_emit         Mass ");
     fprintf(fout,"          E_gas         E_ke\n");
-  }  
+  }
 
   // integrated quantities
   double L_dep = 0, L_emit = 0, E_rad = 0, mass = 0, E_gas = 0, E_ke = 0;
