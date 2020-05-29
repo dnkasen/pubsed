@@ -82,6 +82,7 @@ public:
 
   int    locate(const double) const;
   int    locate_within_bounds(const double xval) const;
+  int    locate_check_bounds(const double xval) const;
 
   double sample(const int, const double) const;
   void   print() const;
