@@ -421,16 +421,33 @@ class CMFGENDataReader:
         # data file and put all the cross-sections into
         # this array of subclasses
         # For now -- just file with faked data
-        for i in range(0,2):
+    #    for i in range(0,2):
+    #        cs = CrossSection(i)
+    #        cs.type = "ME"
+    #        cs.configuration = "4D(3)" + str(i)
+    #        cs.E = np.arange(13.6,100,1)
+    #        cs.s = 6e-18*(cs.E/13.6)**(-2.5)
+    #        self.cs_data.append(cs)
+
+
+        fin = h5py.File("topbase_photo_cs/topbase_PI.hdf5","r")
+        n_cs = np.array(fin["1/0/n_cs"])
+        print n_cs
+        for i in range(n_cs):
+            base = "1/0/cs_" + str(i) + "/"
+            print base
             cs = CrossSection(i)
+            cs.E = np.array(fin[base + "E_ev"])
+            cs.s = np.array(fin[base + "sigma"])
             cs.type = "ME"
             cs.configuration = "4D(3)" + str(i)
-            cs.E = np.arange(13.6,100,1)
-            cs.s = 6e-18*(cs.E/13.6)**(-2.5)
             self.cs_data.append(cs)
 
+
         # here need to figure out which level is which cs
-        self.level_cs = np.arange(self.nlevels)
+        self.level_cs = 0*np.arange(self.nlevels)  - 1 + n_cs
+        for i in range(n_cs):
+            self.level_cs[i] = i
 
     ####################################
     ## Read in photoionizaiton cross-section
@@ -535,7 +552,29 @@ def write_simple_ion(fname,species,ion,chi,E,g):
     #    ion_group.create_dataset("level_i", data=self.lev)
     ion_group.create_dataset("level_g", data=g)
     ion_group.create_dataset("level_E", data=E)
-    ion_group.create_dataset("level_cs", data=g*0,dtype='i')
+    ion_group.create_dataset("level_cs", data=[0],dtype='i')
+
+
+    # create fake photoionization cross-section data
+    cs = CrossSection(0)
+    cs.id = 0
+    cs.type = "ME"
+    cs.configuration = "ground"
+    cs.E = np.arange(chi,100*chi,chi/10.0)
+    cs.s = 6e-18*(cs.E/chi)**(-2.5)
+
+    # write photoionization data
+    cs_group = ion_group.create_group("photoion_data")
+    cs_group.create_dataset("n_photo_cs",data = 1)
+    cbase = "cs_" + str(cs.id) + "/"
+    cs_group.create_group(cbase)
+    cs_group.create_dataset(cbase+"type",data = cs.type)
+    cs_group.create_dataset(cbase+"configuration",data = cs.configuration)
+    cs_group.create_dataset(cbase+"E",data = cs.E)
+    cs_group.create_dataset(cbase+"sigma",data = cs.s)
+    cs_group.create_dataset(cbase+"n_pts",data = len(cs.E),dtype='i')
+
+
     h5f.close()
 
 
@@ -581,7 +620,25 @@ if __name__ == '__main__':
 #    s.write_to_file(outname,14,1)
 #    exit(0)
 
+    # fake up simple hydrogen for tests
+#    outname = 'fake_H.hdf5'
+#    chi = 13.6
+#    E = [0.0]
+#    g = [2.0]
+#    write_simple_ion(outname,1,0,chi,E,g)
+
+    # write version
+#    h5f = h5py.File(outname, 'a')
+#    h5f.create_dataset("file_version",data = 1,dtype='i')
+#    h5f.close()
+#    exit(0)
+
     outname = 'cmfgen_newdata.hdf5'
+
+    data_sources = {
+         '1':
+               {1: 'HYD/I/5dec96/hi_osc.dat'}
+    }
 
     # loop over species
     for species, species_data in iteritems(data_sources):
@@ -593,16 +650,14 @@ if __name__ == '__main__':
             s.write_to_file(outname,species,ion-1)
             n_ions += 1
 
-    # add an atrribute for number of ions
-    #    h5f = h5py.File(outname, 'a')
-    #    h5f[str(species)].attrs['n_ions'] = n_ions
-    #    h5f.close()
 
+    # cmfgen is missing data for CoI -- add in stub
     chi = 7.88101
     E   = [0.0]
     g   = [10.0]
     write_simple_ion(outname,27,0,chi,E,g)
 
+    # cmfgen is missing data for NiI -- add in stub
     chi = 7.639878
     E   = [0.0]
     g   = [10.0]
