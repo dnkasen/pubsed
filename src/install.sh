@@ -1,13 +1,10 @@
 #!/bin/bash
 
-USAGE="usage: ./install.sh TARGET, where TARGET indicates that Makefile.TARGET will be executed
-                    help: prints usage
-                    clean: deletes code, binary, and object files
-                    realclean: clean + deletes Makefiles"
+USAGE=""
 
 if [ $# == 0 ]; then
   echo "Must specify argument"
-  echo "$USAGE"
+  echo "Type ./install.sh help for more information"
   exit 1
 fi
 
@@ -17,7 +14,13 @@ MAKEDIR=./makefiles
 
 if [ $TARGET == "help" ]
 then
-  echo $USAGE
+  printf '\nTo compile type: ./install.sh TARGET\n\nWhere TARGET indicates that Makefile.TARGET that will be used \n'
+  printf 'Available machines with a TARGET (in the makefiles/ directory) are:\n    '
+  for filename in makefiles/Makefile.*; do
+    printf ${filename#"makefiles/Makefile."},
+    printf ' '
+  done
+  printf '\n\nOther usage:\n\n ./install.sh help: prints this help \n ./install.sh clean: deletes code, binary, and object files\n ./install.sh realclean: clean + deletes Makefiles\n'
   exit 0
 fi
 if [ $TARGET == "clean" ]
@@ -37,7 +40,21 @@ else
 	cp -p grid/*.cpp grid/*.h $EXECDIR
   cp -p $MAKEDIR/make.exec $EXECDIR/make.exec
   cp -p $MAKEDIR/Makefile.$TARGET $EXECDIR/Makefile
-  cd $EXECDIR; make
+  cd $EXECDIR;
+
+  default:
+    if make  ; then \
+      printf '\n .-._.-._.-._.-._.-. \n'
+      printf '(                   ) \n'
+      printf ' )    IT WORKED    (  \n'
+      printf '(                   ) \n'
+      printf ' ._.-._.-._.-._.-._. \n\n'
+      printf 'The executable ./sedona6.ex should now be in your src/ directory\n\n' ; \
+  else printf "\n *** Compilation Failed *** \n\n" ; fi
+
   cd ..
   cp $EXECDIR/gomc sedona6.ex
+
+
+
 fi
