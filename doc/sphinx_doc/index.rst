@@ -11,7 +11,7 @@ Sedona6 Users Guide
    :maxdepth: 2
    :caption: Contents:
 
-   getting_started
+   installing
    input_files
    output_files
    code_execution
