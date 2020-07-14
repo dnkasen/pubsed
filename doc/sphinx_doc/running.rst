@@ -50,7 +50,7 @@ Sets core by using core_radius, core_temperature.  Sets the number of photons em
 
 Produces output...
 
-Can change parameters, opacity to see the effects.  
+Can change parameters, opacity to see the effects.
 
 -------------------------------------------
 Example #2: Type Ia Supernova Spectrum

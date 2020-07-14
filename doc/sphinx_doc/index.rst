@@ -12,6 +12,7 @@ Sedona6 Users Guide
    :caption: Contents:
 
    installing
+   running
    input_files
    output_files
    code_execution
