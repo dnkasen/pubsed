@@ -2,6 +2,9 @@ import numpy as np
 import h5py
 import physical_constants as pc
 from numpy import newaxis
+from Filter import *
+from scipy.interpolate import interp1d
+from scipy import integrate as integrate
 
 class SpectrumFile():
     """
@@ -10,27 +13,37 @@ class SpectrumFile():
 
     Allowed units:
     spec_units: 'hz','angstrom','cm'
+    time_units: 'day','sec'
 
     The spectrum data is stored as a 4D array of the form
     L[n_times, n_freq, n_mu, n_phi]
     where L is the specific luminosity (ergs/s/Hz or ergs/s/Ang)
 
     """
-    def __init__(self,name,spec_units='angstrom',time_units='day',verbose=True):
+
+    def __init__(self,name,spec_units=None,time_units='day',verbose=True):
 
         self.verbose = verbose
         self.filename = name
 
         allowed_spec_units = ['angstrom','hz','cm','micron']
-        self.default_spec_unit = 'angstrom'
         allowed_time_units = ['sec','day']
+
+        # default spectral units
+        if (spec_units is None):
+            spec_units = 'hz'
+
+        # default time unit
+        if (time_units is None):
+            time_units = 'day'
 
         self.spec_units = spec_units
         if (self.spec_units not in allowed_spec_units):
             if (verbose):
                 print ('ERROR: unknown spectrum units; using default ')
-            self.spec_units = 'angstrom'
+            self.spec_units = 'hz'
 
+        # set the time units
         if (time_units == "s"):
             time_units = "sec"
         if (time_units == "days"):
@@ -40,6 +53,8 @@ class SpectrumFile():
             if (verbose):
                 print ('ERROR: unknown time units; using default = day')
             self.time_units = 'day'
+
+        self.filter = Filter()
 
         self.Lbol = None
         self.read_data()
@@ -55,12 +70,13 @@ class SpectrumFile():
         return self.L.shape
 
     def read_data(self):
+        """
+        Read data in from a spectrum hdf5 file
+        """
 
         fin = h5py.File(self.filename,"r")
-        self.x     = np.array(fin['nu'])
+        self.nu     = np.array(fin['nu'])
         self.L     = np.array(fin['Lnu'])
- #       self.click = np.array(fin['click'])
-
         self.t         = np.array(fin['time'])
         try:
             self.mu  = np.array(fin['mu'])
@@ -71,6 +87,13 @@ class SpectrumFile():
         except:
             self.phi = np.zeros(1)
 
+        self.lam = pc.c/self.nu*pc.cm_to_angs
+        # default is nu
+        self.x = self.nu
+
+
+# Stuff that may not be defined
+ #       self.click = np.array(fin['click'])
     #    self.phi_edges = np.array(fin['phi_edges'])
    #     self.mu_edges  = np.array(fin['mu_edges'])
   #      self.t_edges   = np.array(fin['time_edges'])
@@ -117,9 +140,317 @@ class SpectrumFile():
 
         return val
 
+
+    def print_filters(self):
+        self.filter.list()
+
     def switch_units(self,spec_units='angstroms'):
 
         new_spec_units = spec_units
+
+    ## return functions
+
+    def get_nu(self):
+        return self.nu
+    def get_nu_range(self):
+        return [min(self.nu),max(self.nu)]
+
+    def get_lambda(self):
+        return self.lam
+    def get_lambda_range(self):
+        return [min(self.lam),max(self.lam)]
+
+    def get_time(self):
+        return self.t
+
+    def view_lightcurve(self,thisL,view=None):
+        """
+        Function takes in a light curve of format
+        L[ntimes,nmu,nphi] and returns one viewed from angle 'view'
+        If 'view'
+        """
+        print 'shape = ',thisL.shape
+
+        # if spherically symmetric, just return time-dependent lc
+        if (self.n_mu == 1 and self.n_phi == 1):
+            return self.t,thisL[:,0,0]
+
+        # if viewing angle not specified, return the full thing
+        if (view is None):
+            if (self.n_mu > 1 and self.n_phi == 1):
+                return self.t,thisL[:,:,0]
+            if (self.n_mu == 1 and self.n_phi > 1):
+                return self.t,thisL[:,0,:]
+            return self.t,thisL
+
+
+        # interpolate to particular viewing angle
+        # need to implement
+
+
+
+    def get_lightcurve(self,band=None,magnitudes=None,view=None):
+        """
+        General function to return a light curve in a given band
+
+        if 'band' is not passed, returns the bolometric light curve
+
+        Parameters
+        ----------
+        band : str or wavelength region
+
+        view : array --
+            The viewing angle, in the format [theta,phi] or just [theta]
+            Will interpolate to that viewing angle
+
+        magnitudes : str, optional
+            The magnitude system to use, if any
+            allowed values are
+                None -- will return Lnu
+                "nuFnu" -- will return Lnu*nu_mean
+                "AB" -- AB magnitude system
+                "vega" -- vega system
+
+        """
+
+        # if no band specified, then return bolometric light curve
+        if (band is None):
+            lc = self.get_bolometric_lightcurve()
+
+
+        # if band is a string, the return the lightcurve in that filter
+        if (isinstance(band,str)):
+
+            if (band == "bol" or band == "bolometric"):
+                lc = self.get_bolometric_lightcurve()
+            else:
+                lc = self.get_band_lightcurve(band,magnitudes=magnitudes,view=view)
+
+        # if band is a list of two numbers, then return the lightcurve
+        # in that filter
+        if (isinstance(band,list)):
+            print band
+            if (len(band) == 2):
+                lc = self.get_range_lightcurve(band,magnitudes=magnitudes,view=view)
+
+        return lc
+
+
+    def get_bolometric_lightcurve(self,view=None,magnitudes=None):
+        """
+        Returns the bolometric light curve of the spectrum
+        Stores value in Lbol
+        """
+
+        # compute bolometric light curve, store it locally
+        if (self.Lbol is None):
+            self.Lbol = np.zeros([self.n_times,self.n_mu,self.n_phi],dtype='d')
+            self.Lave = np.zeros([self.n_times])
+
+        # integrate bolometric light curve
+        for it,im,ip in np.ndindex(self.n_times,self.n_mu,self.n_phi):
+            if (self.n_x == 1):
+                self.Lbol[it,im,ip] = self.L[it,0,im,ip]
+                self.Lave[it] += self.L[it,0,im,ip]
+            else:
+                self.Lbol[it,im,ip] = np.trapz(self.L[it,:,im,ip],x=self.x)
+                self.Lave[it] += self.Lbol[it,im,ip]
+
+                self.Lave = self.Lave/(1.0*self.n_mu*self.n_phi)
+
+        Lbol = self.Lbol
+        Lave = self.Lave
+
+        #thisL = self.Lbol
+        #if (angle_average):
+        #    thisL = self.Lave
+
+        thisL = self.Lbol
+        if (magnitudes is not None):
+            thisL = -2.5*np.log10(thisL)+88.697425
+
+        return self.view_lightcurve(thisL,view)
+
+
+    def get_band_lightcurve(self,band,magnitudes=None, view=None):
+        """
+        returns the light curve in a given filter band
+
+        Parameters
+        ----------
+        band : str
+            name of the filter to calculate the light curve in
+        magnitudes :str
+
+        """
+        filt_norm = self.filter.getNormalization_nu(band,self.x)
+
+        print magnitudes
+        filt_trans = self.filter.transFunc_nu(band)(self.x)
+
+        print filt_norm
+
+        L_return = np.zeros([self.n_times,self.n_mu,self.n_phi],dtype='d')
+        for it,im,ip in np.ndindex(self.n_times,self.n_mu,self.n_phi):
+
+            if (magnitudes is None):
+                thisL = self.L[it,:,im,ip]
+            else:
+                thisL = self.L[it,:,im,ip]/self.x
+
+
+            sample_points = thisL*filt_trans
+            L_return[it,im,ip] = integrate.trapz(sample_points,x=self.x)
+
+            if (magnitudes is not None):
+                L_return[it,im,ip] /= filt_norm
+
+        if (magnitudes == "AB"):
+
+            print 'hi'
+            # convert to flux at 10 parsecs
+            L_return /= (4.*np.pi*(10.*3.0857e18)**2)
+
+            #set 0's to some small number so not taking log(0)
+            L_return[np.where(L_return==0.)] = 1e-99
+
+            #get the AB magnitude
+            L_return = -2.5*np.log10(L_return)-48.6
+
+            #set minimum mag to 0
+            L_return[np.where(L_return>0)] = 0.
+
+
+        return self.view_lightcurve(L_return,view)
+
+
+
+    def get_range_lightcurve(self,range,magnitudes=None, view=None):
+        """
+        Returns the lightcurve integrated over the wavelength region
+        specified in 'range'
+
+        Parameters
+        -----------
+
+        """
+
+        print range
+
+        thisL = np.zeros([self.n_times,self.n_mu,self.n_phi],dtype='d')
+
+        # define region to integrate over
+        b = (self.x >= range[0])*(self.x <= range[1])
+        if (sum(b) == 0):
+            message = "Wavelength range for band light curve not in spectrum range"
+            raise ValueError(message)
+
+        # integrate light curve
+        for it,im,ip in np.ndindex(self.n_times,self.n_mu,self.n_phi):
+            thisL[it,im,ip] = np.trapz(self.L[it,b,im,ip],x=self.x[b])
+
+        if (magnitudes == "Lnu" or magnitudes == "Llam"):
+            thisL = thisL/(range[1] - range[0])
+
+        return self.view_lightcurve(thisL,view)
+
+
+
+###############
+    def plot_lightcurve(self,band=None,magnitudes=None,view=None,xrange=None,yrange=None,logx=None,logy=None,logxy=None):
+        """
+        Make a simple plot of the light curve
+        """
+
+        print magnitudes
+        import matplotlib.pyplot as plt
+
+        if (band is None):
+            band = ["bol"]
+
+        for b in band:
+            print b
+            t,l = self.get_lightcurve(band=b,magnitudes=magnitudes,view=view)
+
+            col = 'k'
+            if (b == 'B'): col = 'b'
+            if (b == 'V'): col = 'g'
+
+
+            plt.plot(t,l,lw=3,color=col)
+
+        if (xrange is not None):
+            plt.xlim(xrange)
+        if (yrange is not None):
+            plt.ylim(yrange)
+
+        if (logx is not None):
+            plt.xscale("log")
+        if (logy is not None):
+            plt.yscale("log")
+        if (logxy is not None):
+            plt.xscale("log")
+            plt.yscale("log")
+
+
+        plt.xlabel('time (' + self.time_units + ')',size=12 )
+        if (magnitudes is None):
+            ylab = "luminosity (erg/s)"
+        else:
+            ylab = magnitudes + " magnitude"
+            plt.gca().invert_yaxis()
+        plt.ylabel(ylab,size=12)
+
+
+        plt.legend(band)
+        plt.show()
+
+
+    def write_lightcurve(self,band=None,outfile=None,magnitudes=None,view=None,format=None):
+        """
+        Function to write out lightcurve data to a file
+
+        Parameters
+        --------------
+
+        """
+        if (band is None):
+            band = ["bol"]
+
+        if (format is None):
+            format = "ascii"
+
+        lc_list = []
+        for b in band:
+            t,lc = self.get_lightcurve(band=b,magnitudes=magnitudes,view=view)
+            lc_list.append(lc)
+
+        nt = len(t)
+        nb = len(band)
+
+        if (format == "ascii"):
+            fout = open(outfile,'w')
+
+            # write header
+            fout.write("#{0:^11}  ".format('t (' + self.time_units + ')'))
+            for b in band:
+                fout.write("{0:^11}  ".format(b))
+            fout.write("\n")
+            if (magnitudes is not None):
+                fout.write("# magnitudes in the " + magnitudes + " system\n")
+
+            for i in range(nt):
+                fout.write("{0:11.4e}  ".format(t[i]))
+                for j in range(nb):
+                    fout.write("{0:11.4e}  ".format(lc_list[j][i]))
+                fout.write("\n")
+            fout.close()
+
+
+###############
+## OLDER stuff
+##############
+
 
     def get_band_lc(self,wrange,view=None,angle_average=False,magnitudes=False):
 
@@ -144,7 +475,7 @@ class SpectrumFile():
             return self.t,Lband[:,0,:]
         return self.t,Lband
 
-    def get_bolometric_lc(self,view=None,angle_average=False,magnitudes=False):
+    def get_bolometric_lc_old(self,view=None,angle_average=False,magnitudes=False):
 
         # compute bolometric light curve
         if (self.Lbol is None):
