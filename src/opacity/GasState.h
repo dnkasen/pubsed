@@ -13,8 +13,8 @@ class GasState
 
  private:
 
-  double ne_brent_method(double,double,double,std::vector<real>);
-  double charge_conservation(double,std::vector<real>);
+  double ne_brent_method(double,double,double,std::vector<SedonaReal>);
+  double charge_conservation(double,std::vector<SedonaReal>);
 
   locate_array nu_grid_;
   int verbose_;
@@ -52,7 +52,7 @@ class GasState
   int use_bound_free_opacity;
   int use_bound_bound_opacity;
   int use_user_opacity_;
-  int use_zone_specific_grey_opacity_;
+  int use_zone_dependent_grey_opacity_;
   double line_velocity_width_;
 
   // calculate means
@@ -69,8 +69,8 @@ class GasState
   int use_nlte_;
   int use_collisions_nlte_;
 
-  double bulk_grey_opacity_;    // bulk component of the grey opacity (cm^2/g), which is the same in every zone
-  double total_grey_opacity_;   // total grey opacity (cm^2/g), which is the sum of the bulk component and the zone-specific component
+  double smooth_grey_opacity_;  // smooth component of the grey opacity (cm^2/g) that is the same in all zones
+  double total_grey_opacity_;   // total grey opacity (cm^2/g) that includes the smooth component and the zone-dependent component
   double epsilon_;
   std::vector<int> atom_zero_epsilon_;
 
@@ -142,7 +142,7 @@ class GasState
   //    == 1 root not bracketed in electron density solve
   //    == 2 maximum iterations reached in n_e solve
   //-----------------------------------------------------------
-  int solve_state(std::vector<real>&);
+  int solve_state(std::vector<SedonaReal>&);
   int solve_state();
 
 
@@ -218,10 +218,10 @@ class GasState
 		      std::vector<OpacityType>&);
   double electron_scattering_opacity();
   void free_free_opacity  (std::vector<double>&, std::vector<double>&);
-  double free_free_heating_rate(double, std::vector<real>);
+  double free_free_heating_rate(double, std::vector<SedonaReal>);
   double free_free_cooling_rate(double);
   void bound_free_opacity (std::vector<double>&, std::vector<double>&);
-  double bound_free_heating_rate (double, std::vector<real>);
+  double bound_free_heating_rate (double, std::vector<SedonaReal>);
   double bound_free_cooling_rate(double);
   double collisional_net_cooling_rate(double);
   void bound_bound_opacity(std::vector<double>&, std::vector<double>&);
