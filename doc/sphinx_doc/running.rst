@@ -35,22 +35,24 @@ The ``examples/`` directory if the [sedona] installation provides example setups
 Example #1: Spherical Lightbulb Test
 --------------------------------------
 
-The *spherical lightbulb* is a quick test problem consisting of a spherical surface that
-uniformly emits blackbody radiation into an empty medium. The radial dependence of the radiation field in steady state can be calculated analytically
+The *spherical lightbulb* is a quick test problem consisting of a spherical surface (the "core") that
+uniformly emits blackbody radiation into an optically thin medium. The radial dependence of the radiation field in steady state can be calculated analytically
 
 .. math::
 
-  T_{\rm rad}(r) = T_{\rm ph} \left[ \frac{1}{2} \left(1 - \sqrt{1 - R_{\rm ph}^2/r^2} \right) \right]^{1/4}
+  T_{\rm rad}(r) = T_{\rm c} \left[ \frac{1}{2} \left(1 - \sqrt{1 - R_{\rm c}^2/r^2} \right) \right]^{1/4}
 
-where :math:`R_{\rm ph}` is the radius and :math:`T_{\rm ph}` the blackbody temperature of the emitting spherical surface.  The observed spectrum should be a blackbody of temperature :math:`T_{\rm ph}`.
+where :math:`R_{\rm c}` is the radius and :math:`T_{\rm c}` the blackbody temperature of the emitting spherical core.  The observed spectrum should be a blackbody of temperature :math:`T_{\rm c}`.
 
-To run the problem, change to the ``examples/spherical_lightbulb/1D`` directory and copy the executable *sedona6.ex* there. You will see two input files: a parameter file and model file.  See section for description of the files.
+To run the problem, change to the ``examples/spherical_lightbulb/1D`` directory and copy the executable *sedona6.ex* there. You will see a parameter file called *param.lua* which is used to set the runtime parameters. The comments in this file explain the meaning of the parameters being used in the run (see :ref:`parameter_file` for a full description of these files).
 
-Sets core by using core_radius, core_temperature.  Sets the number of photons emitted. Sets a vacuum by using grey opacity with a very small value....
+Run the code as described in the section above. The calculation should only take a few seconds. The code outputs two spectrum files (*spectrum_1.dat* and *spectrum_1.h5*) which both contain the same observed spectrum, just in different formats (ascii and hdf5 respectively). See section ?? for a more complete description of output spectrum files.
 
-Produces output...
+The code also outputs  plot files (such as *plt_00001.dat* and *plt_00001.h5*) which contain information on the properties on the model grid. The files labeled *plt_00000* represent the initial conditions of the model, while those labeled *plt_00001* represent the state of the model after the first iteration (i.e., after the transport has run). The ascii format only contains a few of the basic radial variables, such as density, temperature, velocity. The hdf5 format also stores the detailed radiation properties in each zone (e.g., the frequency dependent spectrum and opacity, found within the ``zonedata/`` group).  See  section ?? for a more complete description of the plot files.
 
-Can change parameters, opacity to see the effects.
+The file *integrated_quantities.dat* provides some of the model properties integrated over the entire grid, for the initial conditions and the state after each iteration.
+
+Once you have successful run the code, you can try changing runtime parameters, such as the properties of the core, the number of photon packets emitted, or the opacity. The model density is set so that using a grey opacity = 1 gives an radial optical depth of 1.
 
 -------------------------------------------
 Example #2: Type Ia Supernova Spectrum
