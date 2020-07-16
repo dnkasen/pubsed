@@ -1,7 +1,7 @@
 #ifndef _SEDONA_H
 #define _SEDONA_H
 
-// define real to choose either double or float precision
+// define SedonaReal to choose either double or float precision
 //typedef float SedonaReal;
 typedef double SedonaReal;
 typedef double  OpacityType;
