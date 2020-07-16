@@ -1,8 +1,8 @@
-from SpectrumFile import *
+from .SpectrumFile import *
 
-def read_spectrum(name):
+def read_spectrum_file(name,spec_units=None):
 
-    return SpectrumFile(name)
+    return SpectrumFile(name,spec_units=spec_units)
 
 
 def get_spectrum(name,time=None,mu=None,phi=None):

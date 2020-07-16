@@ -1,4 +1,5 @@
 import os
+import re
 
 class SedonaParam(dict):
 
@@ -54,7 +55,7 @@ class SedonaParam(dict):
 
             # remove comments, tabs, etc...
             line_clean = line.partition("--")[0]
-            line_clean = line_clean.translate(None, '\t\n ')
+            line_clean = ''.join(line_clean.split())
 
             if (not "=" in line_clean):
                 continue
@@ -69,6 +70,23 @@ class SedonaParam(dict):
         fin.close()
 
 
+    def print_templates(self):
+
+        tm_dir = os.environ['SEDONA_HOME'] + "/defaults/templates"
+
+        print("\nAvailable parameter templates are: ")
+
+        templates = []
+
+        # get all the template names
+        for subdir, dirs, files in os.walk(tm_dir):
+            for file in files:
+                templates.append(os.path.join(subdir, file))
+
+        for i,t in enumerate(templates):
+            name = t.replace(tm_dir + "/","")
+            name = name.replace(".lua","")
+            print (str(i) + ') ' + name)
 
 
     def set_template(self,fname=None):
@@ -94,13 +112,13 @@ class SedonaParam(dict):
             for i,t in enumerate(templates):
                 name = t.replace(tm_dir + "/","")
                 name = name.replace(".lua","")
-                print str(i) + ') ' + name
+                print (str(i) + ') ' + name)
 
-            num = raw_input("choose template number >")
+            num = input("choose template number >")
 
             num = int(num)
             if (num < 0 or num >= len(templates)):
-                print "Not a valid selection"
+                print ("Not a valid selection")
                 return
             fname = templates[num]
         else:
@@ -116,7 +134,7 @@ class SedonaParam(dict):
 
             # remove comments, tabs, etc...
             line_clean = line.partition("--")[0]
-            line_clean = line_clean.translate(None, '\t\n ')
+            line_clean = ''.join(line_clean.split())
 
             if (not "=" in line_clean):
                 continue
@@ -161,12 +179,12 @@ class SedonaParam(dict):
 
         for key in sorted(self.param_dict.keys()):
             if ("\"" in key):
-                print "string",key,self.param_dict[key]
+                print ("string",key,self.param_dict[key])
 
         try:
             fout = open(filename,"w")
         except:
-            print "Can't open output param filename " + filename
+            print ("Can't open output param filename " + filename)
 
         linebreak = "--------------------------------------------\n"
 

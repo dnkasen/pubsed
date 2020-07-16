@@ -1,2 +1,2 @@
-from SedonaParam import *
-from read_param import *
+from .SedonaParam import *
+from .read_param import *
