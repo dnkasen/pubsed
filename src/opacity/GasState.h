@@ -69,8 +69,8 @@ class GasState
   int use_nlte_;
   int use_collisions_nlte_;
 
-  double smooth_grey_opacity_;  // smooth component of the grey opacity (cm^2/g) that is the same in all zones
-  double total_grey_opacity_;   // total grey opacity (cm^2/g) that includes the smooth component and the zone-dependent component
+  double bulk_grey_opacity_;    // bulk component of the grey opacity (cm^2/g), which is the same in every zone
+  double total_grey_opacity_;   // total grey opacity (cm^2/g), which is the sum of the bulk component and the zone-specific component
   double epsilon_;
   std::vector<int> atom_zero_epsilon_;
 
