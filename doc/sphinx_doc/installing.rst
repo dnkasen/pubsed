@@ -17,7 +17,7 @@ Or you can clone from the command line using::
 Installing Dependencies
 --------------------------
 
-[sedona] requires a C++ compiler for instalation. In addition. the following dependencies must be installed:
+[sedona] requires a C++ compiler for instalation. If you are using the gcc family of compilers, you will need to make sure that you are using a version that supports the c++11 standard (should be true for gcc 4.8.x and later). In addition, the following dependencies must be installed:
 
 * `HDF5 <https://www.hdfgroup.org/solutions/hdf5/>`_ (file formating)
 * `GSL <https://www.gnu.org/software/gsl/doc/html/>`_ (gnu scientific library)
