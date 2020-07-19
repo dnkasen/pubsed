@@ -29,6 +29,9 @@ OBJECTS=$(SOURCES:.cpp=.o)
 
 
 all: $(OBJECTS)
+	make gomc snopac
+
+tests: $(OBJECTS)
 	make gomc snopac chk spectrum la_test
 
 gomc: $(OBJECTS) main.cpp
@@ -39,7 +42,7 @@ snopac: $(OBJECTS) snopac.cpp
 
 chk: $(OBJECTS) hdf5check.cpp
 	$(CXX) $(CXXFLAGS) -o chk $(OBJECTS) hdf5check.cpp $(CLOPT)
-  
+
 spectrum: $(OBJECTS) compute_spectrum.cpp
 	$(CXX) $(CXXFLAGS) -o spectrum $(OBJECTS) compute_spectrum.cpp $(CLOPT)
 

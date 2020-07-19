@@ -178,7 +178,7 @@ bool locate_array::is_equal(locate_array l, bool complain) {
   return equal;
 }
 
-    
+
 
 //---------------------------------------------------------
 // locate (return closest index above the value)
@@ -212,9 +212,6 @@ int locate_array::locate(const double xval) const
     ind = upper_bound(x_.begin(), x_.end(), xval) - x_.begin();
   }
   if (locate_type_ != none && ind != 0 && ind != size() && (left(ind) > xval or right(ind) <= xval)) {
-    std::cerr << "Calculated index incorrect. " << "type: " << locate_type_ << " ind: " << ind
-      << " left: " << left(ind) << " val: " << xval << " right: " << right(ind) << " min del: "
-      <<  min_ << " " <<  del_ << std::endl;
     ind = upper_bound(x_.begin(), x_.end(), xval) - x_.begin();
   }
   return ind;
@@ -232,6 +229,21 @@ int locate_array::locate_within_bounds(const double xval) const
   return ind;
 }
 
+
+//---------------------------------------------------------
+// locate (return closest index below the value)
+// if otuside the boundaries, returns -1
+// to indicate error
+//---------------------------------------------------------
+int locate_array::locate_check_bounds(const double xval) const
+{
+  if (xval >= maxval()) return -1;
+  if (xval < minval())  return -1;
+
+  int ind = locate(xval);
+  if (ind == x_.size()) return x_.size()-1;
+  return ind;
+}
 
 
 //---------------------------------------------------------
@@ -256,25 +268,25 @@ void locate_array::print() const
   for (int i=0;i<x_.size();i++)
     printf("%4d %12.4e\n",i,x_[i]);
 }
-  
+
 void locate_array::writeCheckpoint(std::string fname, std::string gname, std::string dset) {
   hsize_t single_val = 1;
   hid_t h5file = openH5File(fname);
   hid_t h5group = openH5Group(h5file, gname);
   createGroup(h5group, dset);
   hid_t h5_locatearray_group = openH5Group(h5group, dset);
-  
+
   writeVector(h5_locatearray_group, "x", x_, H5T_NATIVE_DOUBLE);
 
-  createDataset(h5_locatearray_group, "min", 1, &single_val, H5T_NATIVE_DOUBLE); 
+  createDataset(h5_locatearray_group, "min", 1, &single_val, H5T_NATIVE_DOUBLE);
   writeSimple(h5_locatearray_group, "min", &min_, H5T_NATIVE_DOUBLE);
   createDataset(h5_locatearray_group, "do_log_interpolate", 1, &single_val, H5T_NATIVE_INT);
   writeSimple(h5_locatearray_group, "do_log_interpolate", &do_log_interpolate_, H5T_NATIVE_INT);
-  createDataset(h5_locatearray_group, "del", 1, &single_val, H5T_NATIVE_DOUBLE); 
+  createDataset(h5_locatearray_group, "del", 1, &single_val, H5T_NATIVE_DOUBLE);
   writeSimple(h5_locatearray_group, "del", &del_, H5T_NATIVE_DOUBLE);
-  createDataset(h5_locatearray_group, "locate_type", 1, &single_val, H5T_NATIVE_INT); 
+  createDataset(h5_locatearray_group, "locate_type", 1, &single_val, H5T_NATIVE_INT);
   writeSimple(h5_locatearray_group, "locate_type", &locate_type_, H5T_NATIVE_INT);
-  
+
   closeH5Group(h5_locatearray_group);
   closeH5Group(h5group);
   closeH5File(h5file);
@@ -315,7 +327,7 @@ void locate_array::swap(locate_array new_array){
   double del_tmp = del_;
   del_ = new_array.del_;
   new_array.del_ = del_tmp;
-  
+
   // swap locate array types
   LAType locate_tmp = locate_type_;
   locate_type_ = new_array.locate_type_;
@@ -331,4 +343,3 @@ void locate_array::scale(double e) {
   }
   min_ *= e;
 }
-

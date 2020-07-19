@@ -297,13 +297,15 @@ void grid_3D_cart::write_plotfile(int iw, double tt, int write_mass_fractions)
 	// open hdf5 file
 	hid_t file_id = H5Fcreate(plotfilename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-	// // print out zone sizes
-	// hsize_t  dims_dr[1]={3};
-	// float dr[3];
-	// dr[0] = dx_;
- //  dr[1] = dy_;
- //  dr[2] = dz_;
- //  H5LTmake_dataset(file_id,"dr",1,dims_dr,H5T_NATIVE_FLOAT,dr);
+  // If fixed dr's exist, output them. Some tests want it
+  if (status_dr_) {
+  	hsize_t  dims_dr[1]={3};
+  	float dr[3];
+  	dr[0] = x_out_.delval();
+    dr[1] = y_out_.delval();
+    dr[2] = z_out_.delval();
+    H5LTmake_dataset(file_id,"dr",1,dims_dr,H5T_NATIVE_FLOAT,dr);
+  }
 
 	// print out x array
 	hsize_t  dims_x[1]={(hsize_t)nx_};
@@ -486,8 +488,8 @@ void grid_3D_cart::sample_in_zone
   int iy = index_y_[i];
   int iz = index_z_[i];
 
-  r[0] = x_out_.left(ix) + ran[2]*dx_[ix];
-  r[1] = y_out_.left(iy) + ran[2]*dy_[iy];
+  r[0] = x_out_.left(ix) + ran[0]*dx_[ix];
+  r[1] = y_out_.left(iy) + ran[1]*dy_[iy];
   r[2] = z_out_.left(iz) + ran[2]*dz_[iz];
 }
 

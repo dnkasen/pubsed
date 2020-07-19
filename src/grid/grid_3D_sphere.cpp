@@ -317,14 +317,6 @@ void grid_3D_sphere::write_plotfile(int iw, double tt, int write_mass_fractions)
 	// open hdf5 file
 	hid_t file_id = H5Fcreate(plotfilename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-	// // print out zone sizes
-	// hsize_t  dims_dr[1]={3};
-	// float dr[3];
-	// dr[0] = dx_;
- //  dr[1] = dy_;
- //  dr[2] = dz_;
- //  H5LTmake_dataset(file_id,"dr",1,dims_dr,H5T_NATIVE_FLOAT,dr);
-
 	// print out r array
 	hsize_t  dims_r[1]={(hsize_t)nr_};
 	float *rarr = new float[nr_];
@@ -632,10 +624,6 @@ int grid_3D_sphere::get_next_zone
   else lphi_out = a/b;
   if (lphi_out < 0) lphi_out = std::numeric_limits<double>::infinity();
 
-  if (lphi_out == 0){
-    cout << x[0] << " " << x[1] << " " << x[2] << " " << D[0] << " " << D[1] << " " << D[2] << endl;
-  }
-
   // inner interface
   phi_bnd = phi_out_.left(iphi);
   n[0] = -sin(phi_bnd);
@@ -646,10 +634,6 @@ int grid_3D_sphere::get_next_zone
   if (b == 0) lphi_in = std::numeric_limits<double>::infinity();
   else lphi_in = a/b;
   if (lphi_in < 0) lphi_in = std::numeric_limits<double>::infinity();
-
-  if (lphi_in == 0){
-    cout << x[0] << " " << x[1] << " " << x[2] << " " << D[0] << " " << D[1] << " " << D[2] << endl;
-  }
 
   // if moving inward
   if(lphi_in < lphi_out){

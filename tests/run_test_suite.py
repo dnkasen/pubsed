@@ -27,7 +27,7 @@ import timeit
 #   (will run on 2 mpi ranks, more generally -n nranks
 #   will run on nranks ranks where nranks is an integer)
 #
-#  -testlist "spherical_lightbulb/1D","lucy_supernova/1D"
+#  --testlist "spherical_lightbulb/1D","lucy_supernova/1D"
 #   (will run the tests given after the --testlist flag)
 #
 #  --testfile "my_tests.txt"
@@ -50,6 +50,7 @@ if (opts.nproc): nproc = opts.nproc
 ## executable directory and file
 exec_dir   = "../src/"
 executable = "sedona6.ex"
+paramname = "param.lua"
 
 homedir = os.getcwd()
 date = time.strftime("%m-%d-%y")
@@ -63,9 +64,9 @@ else:
     pdffile = homedir + '/test_results_' + date + '.pdf'
 pdf = PdfPages(pdffile)
 
-runcommand = "mpirun -np " + str(nproc) + " ./" + executable
+runcommand = "mpirun -np " + str(nproc) + " ./" + executable + " " + paramname
 if (not opts.verbose):
-    runcommand = runcommand + " >> " + outfile
+    runcommand = runcommand + " >> " + outfile + " 2>&1"
 
 
 ########################################
@@ -86,7 +87,7 @@ else:
             testlist.append(line)
 
 line = "echo \"Testing SEDONA code on " + date + "\"  > " + outfile
-print "Testing SEDONA code on " + date + "\n"
+print("Testing SEDONA code on " + date + "\n")
 os.system(line)
 
 # get number of threads
@@ -95,15 +96,15 @@ try:
 except:
     nthreads = 1
 
-print "Will run " + str(len(testlist)) + " tests on " +str(nproc)  + " mpi ranks,",
-print "with " + str(nthreads) + " threads per rank\n";
-print "------------------------------------------"
+print("Will run " + str(len(testlist)) + " tests on " +str(nproc)  + " mpi ranks,"),
+print("with " + str(nthreads) + " threads per rank\n");
+print("------------------------------------------")
 i = 1
 for this_test in testlist:
-    print str(i) +') ' + this_test
+    print(str(i) +') ' + this_test)
     i = i + 1
-print "------------------------------------------"
-print "\n"
+print("------------------------------------------")
+print("\n")
 
 
 total_status = 0
@@ -118,8 +119,8 @@ for this_test in testlist:
     cmd = "echo \"" + hdr + "\"" +  " >> " + outfile
     os.system(cmd)
 
-    print "------------------------------------------"
-    print "- test " + str(cnt) + ") " + this_test
+    print("------------------------------------------")
+    print("- test " + str(cnt) + ") " + this_test)
 
     os.system("cp " + exec_dir + executable + " " + this_test)
     os.chdir(this_test)
@@ -128,17 +129,22 @@ for this_test in testlist:
     sys.path.append(os.getcwd())
     import run_test
     sys.path.remove(os.getcwd())
-    status = run_test.run_test(pdf,runcommand)
+    try:
+      status = run_test.run_test(pdf,runcommand)
+    except:
+      status = 200
     del sys.modules['run_test']
 
     stoptime = timeit.default_timer()
-    print 'time = {:.1f} seconds'.format(stoptime - starttime)
+    print("time = {:.1f} seconds".format(stoptime - starttime))
 
     if (status == 0):
-        print "PASSED"
+        print("PASSED")
+    elif (status == 200):
+        print("CRASHED")
     else:
-        print "FAILED: error code = ", status
-    print "------------------------------------------\n"
+        print("FAILED: error code = ", status)
+    print("------------------------------------------\n")
     total_status += status
 
     # return home

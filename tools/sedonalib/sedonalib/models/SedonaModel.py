@@ -2,35 +2,6 @@ import numpy as np
 
 class SedonaBaseModel():
 
-
-    @property
-    def n_zones(self):
-        return self.n_zones
-
-    @property
-    def n_elements(self):
-        return len(self.elem_A)
-
-    @property
-    def dims(self):
-        return self.dims
-
-    @property
-    def density(self):
-        return self.dens
-
-    @property
-    def rho(self):
-        return self.dens
-
-    @property
-    def ke(self):
-        return self.kinetic_energy
-
-    @property
-    def composition(self):
-        return self.comp
-
     def __init__(self):
         pass
 
@@ -138,7 +109,7 @@ class SedonaBaseModel():
         n_add = 0
         for e in elist:
 
-            if (not isinstance(e, basestring)):
+            if (not isinstance(e, str)):
                 e = str(e)
 
             if (e not in self.elem_list):
@@ -161,30 +132,30 @@ class SedonaBaseModel():
     def check_base_model_validity(self):
 
         if (self.elem_A is None or self.elem_Z is None):
-            print 'Error: no elements defined in composition'
+            print('Error: no elements defined in composition')
             return False
 
         if (len(self.elem_Z) <= 0):
-            print 'Error: no elements defined in composition'
+            print ('Error: no elements defined in composition')
             return False
 
         if (self.dens is None):
-            print 'Error: density has not been set'
+            print ('Error: density has not been set')
             return False
 
         if (self.temp is None):
-            print 'Error: temperature has not been set'
+            print ('Error: temperature has not been set')
             return False
 
         if (self.comp is None):
-            print 'Error: composition has not been set'
+            print ('Error: composition has not been set')
             return False
 
         if (np.any(self.dens <= 0)):
-            print 'Warning: zero or negative densities in model'
+            print ('Warning: zero or negative densities in model')
 
         if (np.any(self.temp <= 0)):
-            print 'Warning: zero or negative temperatures in model'
+            print ('Warning: zero or negative temperatures in model')
 
 
         return True

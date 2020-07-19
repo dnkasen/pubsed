@@ -1,6 +1,6 @@
-from SedonaModel import SedonaBaseModel
-from Sedona2DCylnModel import Sedona2DCylnModel
-import physical_constants as pc
+from .SedonaModel import SedonaBaseModel
+from .Sedona2DCylnModel import Sedona2DCylnModel
+import sedonalib.physical_constants as pc
 import numpy as np
 
 class Sedona1DSphereModel(SedonaBaseModel):
@@ -147,10 +147,10 @@ class Sedona1DSphereModel(SedonaBaseModel):
                 r0 = self.r_edge[i-1]
                 m0 = self.m_edge[i-1]
             self.vol[i] = 4.0*np.pi/3.0*(self.r_edge[i]**3.0 - r0**3.0)
-            self.m_edge[i] = m0 + self.vol[i]*self.rho[i]
+            self.m_edge[i] = m0 + self.vol[i]*self.dens[i]
 
     def resize(self,new_nz):
-        print "this is not implemented yet"
+        print ("this is not implemented yet")
 
 ##############################################################
 # Set composition functions
@@ -403,11 +403,11 @@ class Sedona1DSphereModel(SedonaBaseModel):
             return False
 
         if (len(self.elem_Z) <= 0):
-            print 'Error: no elements defined in composition'
+            print ('Error: no elements defined in composition')
             return False
 
         if (self.dens is None):
-            print 'Error: density has not been set'
+            print ('Error: density has not been set')
             return False
 
         return True

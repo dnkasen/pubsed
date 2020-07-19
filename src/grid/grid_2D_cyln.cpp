@@ -134,7 +134,6 @@ void grid_2D_cyln::read_model_file(ParameterReader* params)
   else if (status_dr_ && (!status_rmin_)) {
     xmin = 0.;
     zmin = -dr[1]*nz_/2.0;
-    std::cerr << xmin << " " << zmin << std::endl;
     double xmax = xmin + dr[0] * nx_;
     double zmax = zmin + dr[1] * nz_;
     x_out_.init(xmin, xmax, dr[0]);

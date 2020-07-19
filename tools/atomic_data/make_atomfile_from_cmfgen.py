@@ -25,7 +25,7 @@ from util import \
 
 # this should point to the directory containing the raw cmfgen data
 # on your machine, (i.e. the directory containing the ascii files)
-base_dir = '/Users/kasen/cmfgen_atomic_raw/'
+base_dir = '/Users/kasen/data/cmfgen_atomic_raw/'
 
 
 # this dictionary specifies which data files to use for each species.
@@ -242,6 +242,8 @@ class CMFGENDataReader:
     transition_matcher = re.compile("(.*?)([0-9]+-\s*[0-9]+)(.*)")
 
     def __init__(self, base,fn):
+        print(base + '/' + fn)
+        self.data_source = np.string_("CMFGEN: " + fn)
         self._read_data(base + '/' + fn)
         self._convert_index()
         self._read_photoion_data("namehere")
@@ -254,7 +256,6 @@ class CMFGENDataReader:
 
         assert(os.path.isfile(fn))
 
-        print fn
         with open_text_file(fn, "r") as f:
             header = self._read_header(f)
 
@@ -263,11 +264,9 @@ class CMFGENDataReader:
             self.ion_chi = float(header['Ionization energy'])
             # convert from cm^(-1) to eV
             self.ion_chi *= inv_cm_to_ev
-            print self.ion_chi
-
 
             assert(self.nlevels > 0)
-            assert(self.nlines  > 0)
+            assert(self.nlines  >= 0)
             assert(np.all(self.ion_chi > 0))
 
             self.E, self.g, self.lev = [], [], []
@@ -304,8 +303,17 @@ class CMFGENDataReader:
 
                 line = f.readline()
 
+
             self.nlevels = len(self.E)
             self.max_level = self.nlevels  # note, 1-based indexing
+
+            self.E, self.g, self.lev = to_array(self.E, self.g, self.lev)
+            self.measured, self.orbitals, self.parity = to_array(self.measured, self.orbitals, self.parity)
+
+
+            # Read line transition
+            if (self.nlines == 0):
+                return
 
             skip_until_found('Transition', f)
 
@@ -329,9 +337,8 @@ class CMFGENDataReader:
             assert(len(self.line_l) == len(self.line_u) == len(self.line_A))
             self.nlines = len(self.line_l)
 
-            self.E, self.g, self.lev = to_array(self.E, self.g, self.lev)
             self.line_l, self.line_u, self.line_A = to_array(self.line_l, self.line_u, self.line_A)
-            self.measured, self.orbitals, self.parity = to_array(self.measured, self.orbitals, self.parity)
+
 
 
 
@@ -385,6 +392,7 @@ class CMFGENDataReader:
                 return False
 
         results = [is_integer(s) for s in entries]
+
         assert(sum(results) == 1)  # should only have integer per line
         return results.index(True)
 
@@ -396,8 +404,9 @@ class CMFGENDataReader:
         '''
 
         self.lev -= 1
-        self.line_l -= 1
-        self.line_u -= 1
+        if (self.nlines > 0):
+            self.line_l -= 1
+            self.line_u -= 1
 
 
     ####################################
@@ -412,16 +421,33 @@ class CMFGENDataReader:
         # data file and put all the cross-sections into
         # this array of subclasses
         # For now -- just file with faked data
-        for i in range(0,2):
+    #    for i in range(0,2):
+    #        cs = CrossSection(i)
+    #        cs.type = "ME"
+    #        cs.configuration = "4D(3)" + str(i)
+    #        cs.E = np.arange(13.6,100,1)
+    #        cs.s = 6e-18*(cs.E/13.6)**(-2.5)
+    #        self.cs_data.append(cs)
+
+
+        fin = h5py.File("topbase_photo_cs/topbase_PI.hdf5","r")
+        n_cs = np.array(fin["1/0/n_cs"])
+        print n_cs
+        for i in range(n_cs):
+            base = "1/0/cs_" + str(i) + "/"
+            print base
             cs = CrossSection(i)
+            cs.E = np.array(fin[base + "E_ev"])
+            cs.s = np.array(fin[base + "sigma"])
             cs.type = "ME"
             cs.configuration = "4D(3)" + str(i)
-            cs.E = np.arange(13.6,100,1)
-            cs.s = 6e-18*(cs.E/13.6)**(-2.5)
             self.cs_data.append(cs)
 
+
         # here need to figure out which level is which cs
-        self.level_cs = np.arange(self.nlevels)
+        self.level_cs = 0*np.arange(self.nlevels)  - 1 + n_cs
+        for i in range(n_cs):
+            self.level_cs[i] = i
 
     ####################################
     ## Read in photoionizaiton cross-section
@@ -457,6 +483,11 @@ class CMFGENDataReader:
 
         ion_group.attrs['n_levels'] = int(self.nlevels)
         ion_group.attrs['n_lines']  = self.nlines
+
+        ion_group.create_dataset('data_source',data =self.data_source)
+        ion_group.create_dataset('n_levels',data=int(self.nlevels))
+        ion_group.create_dataset('n_lines',data=int(self.nlines))
+
         #ion_group.cattrs['ion_chi']  = self.ion_chi
         ion_group.create_dataset('ion_chi',data=self.ion_chi)
 
@@ -469,14 +500,14 @@ class CMFGENDataReader:
         ion_group.create_dataset("level_config", data=self.orbitals)
         ion_group.create_dataset("level_parity",   data=self.parity)
 
-        ion_group.create_dataset("line_l", data=self.line_l)
-        ion_group.create_dataset("line_u", data=self.line_u)
-        ion_group.create_dataset("line_A", data=self.line_A)
+        if (self.nlines > 0):
+            ion_group.create_dataset("line_l", data=self.line_l)
+            ion_group.create_dataset("line_u", data=self.line_u)
+            ion_group.create_dataset("line_A", data=self.line_A)
 
         # write photoionization data
         cs_group = ion_group.create_group("photoion_data")
         cs_group.create_dataset("n_photo_cs",data = len(self.cs_data))
-        print  len(self.cs_data)
 
         for cs in self.cs_data:
             cbase = "cs_" + str(cs.id) + "/"
@@ -499,59 +530,140 @@ class CMFGENDataReader:
 
         h5f.close()
 
+
+def write_simple_ion(fname,species,ion,chi,E,g):
+
+    h5f = h5py.File(fname, 'a')
+
+    if (not str(species) in h5f):
+        species_group = h5f.create_group(str(species))
+    ion_group = h5f.create_group(str(species) +'/' + str(ion))
+
+    ion_group.create_dataset('data_source',data = np.string_("by hand"))
+
+    ion_group.attrs['n_levels'] = len(E)
+    ion_group.attrs['n_lines']  = 0
+
+    ion_group.create_dataset('n_levels',data=int(len(E)))
+    ion_group.create_dataset('n_lines',data=int(0))
+
+            #ion_group.cattrs['ion_chi']  = self.ion_chi
+    ion_group.create_dataset('ion_chi',data=chi)
+    #    ion_group.create_dataset("level_i", data=self.lev)
+    ion_group.create_dataset("level_g", data=g)
+    ion_group.create_dataset("level_E", data=E)
+    ion_group.create_dataset("level_cs", data=[0],dtype='i')
+
+
+    # create fake photoionization cross-section data
+    cs = CrossSection(0)
+    cs.id = 0
+    cs.type = "ME"
+    cs.configuration = "ground"
+    cs.E = np.arange(chi,100*chi,chi/10.0)
+    cs.s = 6e-18*(cs.E/chi)**(-2.5)
+
+    # write photoionization data
+    cs_group = ion_group.create_group("photoion_data")
+    cs_group.create_dataset("n_photo_cs",data = 1)
+    cbase = "cs_" + str(cs.id) + "/"
+    cs_group.create_group(cbase)
+    cs_group.create_dataset(cbase+"type",data = cs.type)
+    cs_group.create_dataset(cbase+"configuration",data = cs.configuration)
+    cs_group.create_dataset(cbase+"E",data = cs.E)
+    cs_group.create_dataset(cbase+"sigma",data = cs.s)
+    cs_group.create_dataset(cbase+"n_pts",data = len(cs.E),dtype='i')
+
+
+    h5f.close()
+
+
+
 if __name__ == '__main__':
 
 
-    # need to write a main here that will loop over allow
-    # cmfgen data files.
+
     # Will need to specify not only the level/ion (i.e., "osc")
     # filenames but also the photoionization and collisional data
 
-    outname = 'cmfgen_data.hdf5'
-    name = 'HYD/I/5dec96/hi_osc.dat'
-    s = CMFGENDataReader(base_dir,name)
-    s.write_to_file(outname,1,0)
-    h5f = h5py.File(outname, 'a')
-    h5f[str(1)].attrs['n_ions'] = 1
-    h5f.close()
+    outname = 'cmfgen_newdata.hdf5'
+    name = 'NIST_data/COB/I/nist_27.0_levlin.dat'
+    #s = CMFGENDataReader(base_dir,name)
+    #s.write_to_file(outname,27,0)
+    #h5f = h5py.File(outname, 'a')
+    #h5f[str(27)].attrs['n_ions'] = 1
+    #h5f.close()
+    #exit(0)
 
-    name = 'HE/I/15jul15/hei_osc'
-    s = CMFGENDataReader(base_dir,name)
-    s.write_to_file(outname,2,0)
-    name = 'HE/II/5dec96/he2_osc.dat'
-    s = CMFGENDataReader(base_dir,name)
-    s.write_to_file(outname,2,1)
-    h5f = h5py.File(outname, 'a')
-    h5f[str(2)].attrs['n_ions'] = 2
-    h5f.close()
 
-    exit(0)
+    # outname = 'cmfgen_newdata.hdf5'
+    # name = 'HYD/I/5dec96/hi_osc.dat'
+    # s = CMFGENDataReader(base_dir,name)
+    # s.write_to_file(outname,1,0)
+    # h5f = h5py.File(outname, 'a')
+    # h5f[str(1)].attrs['n_ions'] = 1
+    # h5f.close()
+    #
+    # name = 'HE/I/15jul15/hei_osc'
+    # s = CMFGENDataReader(base_dir,name)
+    # s.write_to_file(outname,2,0)
+    # name = 'HE/II/5dec96/he2_osc.dat'
+    # s = CMFGENDataReader(base_dir,name)
+    # s.write_to_file(outname,2,1)
+    # h5f = h5py.File(outname, 'a')
+    # h5f[str(2)].attrs['n_ions'] = 2
+    # h5f.close()
+    #
+    # exit(0)
 #    base = base_dir + 'SIL/I/23nov11/'
 #    s = CMFGENDataReader(base,'SiI_OSC')
 #    s.write_to_file(outname,14,1)
 #    exit(0)
 
+    # fake up simple hydrogen for tests
+#    outname = 'fake_H.hdf5'
+#    chi = 13.6
+#    E = [0.0]
+#    g = [2.0]
+#    write_simple_ion(outname,1,0,chi,E,g)
+
+    # write version
+#    h5f = h5py.File(outname, 'a')
+#    h5f.create_dataset("file_version",data = 1,dtype='i')
+#    h5f.close()
+#    exit(0)
+
+    outname = 'cmfgen_newdata.hdf5'
+
+    data_sources = {
+         '1':
+               {1: 'HYD/I/5dec96/hi_osc.dat'}
+    }
+
+    # loop over species
     for species, species_data in iteritems(data_sources):
-        for species, species_data in iteritems(data_sources):
-            n_ions = 0
-            for ion, ion_data_file in iteritems(species_data):
-                print species,ion_data_file
-                s = CMFGENDataReader(base_dir,ion_data_file)
-                s.write_to_file(outname,species,ion-1)
-                n_ions += 1
-            h5f = h5py.File(outname, 'a')
-            h5f[str(species)].attrs['n_ions'] = n_ions
-            h5f.close()
+        n_ions = 0
+        # loop over ions
+        for ion, ion_data_file in iteritems(species_data):
+            print(species,ion-1,ion_data_file)
+            s = CMFGENDataReader(base_dir,ion_data_file)
+            s.write_to_file(outname,species,ion-1)
+            n_ions += 1
 
-    exit(0)
 
-    with h5py.File('cmfgen_data.hdf5', 'w') as h5f:
-        for species, species_data in iteritems(data_sources):
-            print species,species_data
-            species_group = h5f.create_group(species)
+    # cmfgen is missing data for CoI -- add in stub
+    chi = 7.88101
+    E   = [0.0]
+    g   = [10.0]
+    write_simple_ion(outname,27,0,chi,E,g)
 
-            for ion, ion_data_file in iteritems(species_data):
-                full_path = os.path.join(base_dir, ion_data_file)
-                print(ion_data_file)
-                s = CMFGENDataReader(full_path)
-#                ion_group = species_group.create_group(str(ion))
+    # cmfgen is missing data for NiI -- add in stub
+    chi = 7.639878
+    E   = [0.0]
+    g   = [10.0]
+    write_simple_ion(outname,28,0,chi,E,g)
+
+    # write version
+    h5f = h5py.File(outname, 'a')
+    h5f.create_dataset("file_version",data = 1,dtype='i')
+    h5f.close()

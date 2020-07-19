@@ -6,14 +6,14 @@ import sys
 
 
 def run_test(pdf="",runcommand=""):
- 
+
     ###########################################
     # clean up old results and run the code
     ###########################################
-    if (runcommand != ""): 
+    if (runcommand != ""):
     	os.system("rm spectrum_* plt_* integrated_quantities.dat")
     	os.system(runcommand)
-     
+
     ###########################################
     # compare the output
     ###########################################
@@ -27,7 +27,7 @@ def run_test(pdf="",runcommand=""):
     ts2,erad,Ls2,Lnuc = np.loadtxt('integrated_quantities.dat',usecols=[0,1,2,3],unpack=1,skiprows=1)
     ts2 = ts2/3600.0/24.0
     plt.plot(ts2,Ls2,'o',markeredgecolor='blue',markersize=8,markeredgewidth=2,markerfacecolor='none')
-        
+
     # benchmark results
     tl1,Ll1 = np.loadtxt('../comparefiles/lucy_lc.dat',unpack=1)
     plt.plot(tl1,Ll1,color='red',linewidth=3)
@@ -58,6 +58,38 @@ def run_test(pdf="",runcommand=""):
         plt.show()
         j = raw_input()
 
+    #-------------------------------------------
+
+    plt.clf()
+    for p in ['plt_00015.h5','plt_00030.h5','plt_00060.h5']:
+
+        fin = h5py.File(p)
+        r = np.array(fin['velr'])
+        Trad =  np.array(fin['T_rad'])
+        plt.plot(r,Trad,'o',color='k')
+        fin.close()
+
+        fin = h5py.File('../comparefiles/plt_files/' + p)
+        rc = np.array(fin['velr'])
+        Tradc =  np.array(fin['T_rad'])
+        plt.plot(rc,Tradc,lw=1,color='r')
+        fin.close()
+
+        use = (r > 1e8)*(r < 9.8e8)
+        max_err,mean_err = get_error(Trad,Tradc,x=r,x_comp=rc,use = use)
+        if (max_err > 0.5 or mean_err > 0.02): failure = 3
+
+    ## make plot
+    plt.title('1D Lucy SN - MC, radiation field')
+    plt.legend(['sedona','reference'])
+    plt.ylabel('radiation temperature',size=13)
+    plt.xlabel('velocity (cm/s)',size=13)
+    if (pdf != ''): pdf.savefig()
+    else:
+        plt.ion()
+        plt.show()
+        j = raw_input()
+
     return failure
 
 
@@ -70,8 +102,8 @@ def get_error(a,b,x=[],x_comp=[],use=[]):
     """ Function to calculate the error between two arrays
 
         Args:
-        a: numpy array of result 
-        b: numpy array of comparison 
+        a: numpy array of result
+        b: numpy array of comparison
         use: an array of 0's and 1's telling which element
              in the arrays to include
         x: optional array of x values to go along with a
@@ -100,7 +132,7 @@ def get_error(a,b,x=[],x_comp=[],use=[]):
         y_comp = np.interp(x,x_comp,y_comp)
 
     # cut the array length if wanted
-    if (len(use) > 0): 
+    if (len(use) > 0):
         y = y[use]
         y_comp = y_comp[use]
     err = abs(y - y_comp)
@@ -110,5 +142,24 @@ def get_error(a,b,x=[],x_comp=[],use=[]):
 
     return max_err,mean_err
 
-if __name__=='__main__': run_test('')
+#-----------------------------------------
+# little function to just plot up and
+# compare results. Assumes code has
+# already been run and output files
+# are present
+#----------------------------------------
+if __name__=='__main__':
 
+    # Support Python 2 and 3 input
+    # Default to Python 3's input()
+    get_input = input
+
+    # If this is Python 2, use raw_input()
+    if sys.version_info[:2] <= (2, 7):
+        get_input = raw_input
+
+    status = run_test('')
+    if (status == 0):
+        print ('SUCCESS')
+    else:
+        print ('FAILURE, code = ' + str(status))

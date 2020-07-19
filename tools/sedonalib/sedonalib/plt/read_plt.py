@@ -1,4 +1,4 @@
-from SedonaPltFile import *
+from sedonalib.plt.SedonaPltFile import *
 
 def read_pltfile(name):
 

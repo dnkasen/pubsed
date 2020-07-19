@@ -64,13 +64,13 @@ void transport::step(double dt)
     if (particles[i].fate == escaped)
     {
       // account for light crossing time, relative to grid center
-        double t_obs = particles[i].t - particles[i].x_dot_d()/pc::c;
-        if (particles[i].type == photon)
-          optical_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
-        if (particles[i].type == gammaray)
-          gamma_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
-        particles[i].t = t_obs;
-        if (save_escaped_particles_) {
+      double t_obs = particles[i].t - particles[i].x_dot_d()/pc::c;
+      if (particles[i].type == photon)
+        optical_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
+      if (particles[i].type == gammaray)
+        gamma_spectrum.count(t_obs,particles[i].nu,particles[i].e,particles[i].D);
+      particles[i].t = t_obs;
+      if (save_escaped_particles_) {
 #pragma omp critical
         {
           if (maxn_escaped_particles_ >= particles_escaped.size()) {
@@ -83,8 +83,8 @@ void transport::step(double dt)
             clearEscapedParticles();
           }
         }
-        }
       }
+    }
   }
 
   // Remove escaped and absorbed particles from the particle vector

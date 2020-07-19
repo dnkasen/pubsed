@@ -94,28 +94,28 @@ void GasState::computeOpacity(std::vector<OpacityType>& abs,
     //---
     if (use_line_expansion_opacity)
     {
-      line_expansion_opacity(opac);
+      line_expansion_opacity(opac,aopac);
       for (int i=0;i<ns;i++) {
-    	 abs[i]  += epsilon_*opac[i];
-    	 scat[i] += (1-epsilon_)*opac[i];
+    	 abs[i]  += aopac[i];
+    	 scat[i] += opac[i] - aopac[i];
        double nu = nu_grid_.center(i);
        double ezeta = exp(1.0*pc::h*nu/pc::k/temp_);
        double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(ezeta-1);
-       tot_emis[i] += bb*epsilon_*opac[i];
+       tot_emis[i] += bb*aopac[i];
       }
     }
 
     //---
     if (use_fuzz_expansion_opacity)
     {
-      fuzz_expansion_opacity(opac);
+      fuzz_expansion_opacity(opac,aopac);
       for (int i=0;i<ns;i++) {
-	     abs[i]  += epsilon_*opac[i];
-	     scat[i] += (1-epsilon_)*opac[i];
+	     abs[i]  += aopac[i];
+	     scat[i] += opac[i] - aopac[i];
        double nu = nu_grid_.center(i);
        double ezeta = exp(1.0*pc::h*nu/pc::k/temp_);
        double bb =  2.0*nu*nu*nu*pc::h/pc::c/pc::c/(ezeta-1);
-       tot_emis[i] += bb*epsilon_*opac[i];
+       tot_emis[i] += bb*aopac[i];
       }
     }
 
@@ -415,26 +415,42 @@ void GasState::bound_bound_opacity(int iatom, std::vector<double>& opac, std::ve
 // Calculate a binned expansion opacity based on nlte line data
 // Passed:
 //   opac -- double vector of the same size of the frequency
-//   grid, which will be filled up with the opacities
+//   grid, which will be filled up with the opacity (scat + abs)
+//   aopac -- double vector of the same size of frequency grid,
+//   which will be filled up with just the absorptive opacity
 // UNITS are cm^{-1}
 // So this is really an extinction coefficient
 //----------------------------------------------------------------
-void GasState::line_expansion_opacity(std::vector<double>& opac)
+void GasState::line_expansion_opacity
+(std::vector<double>& opac, std::vector<double>& aopac)
 {
-	int ng = nu_grid_.size();
-	int na = atoms.size();
+  int ng = nu_grid_.size();
+  int na = atoms.size();
 
-	// zero out opacity array
-	std::fill(opac.begin(),opac.end(),0);
+  // zero out opacity array
+  std::fill(opac.begin(),opac.end(),0);
+  std::fill(aopac.begin(),aopac.end(),0);
 
   // Add in contribution of every atom
-	std::vector<double> atom_opac(ng);
-	for (int i=0;i<na;i++)
-	{
-	  atoms[i].line_expansion_opacity(atom_opac, time_);
-		for (size_t j=0;j<ng;++j)
-			opac[j] += atom_opac[j];
-	}
+  std::vector<double> atom_opac(ng);
+  for (int i=0;i<na;i++)
+  {
+    // get epsilon (absorptive fraction) for this atom
+    double this_eps = epsilon_;
+    for (unsigned int k=0;k<atom_zero_epsilon_.size();k++)
+      if (atom_zero_epsilon_[k] == atoms[i].atomic_number)
+        this_eps = 0;
+
+    // have atom calculate the opacity
+    atoms[i].line_expansion_opacity(atom_opac, time_);
+
+    // store the opacities in place
+    for (size_t j=0;j<ng;++j)
+    {
+      opac[j]  += atom_opac[j];
+      aopac[j] += atom_opac[j]*this_eps;
+    }
+  }
 }
 
 //----------------------------------------------------------------
@@ -445,23 +461,38 @@ void GasState::line_expansion_opacity(std::vector<double>& opac)
 // UNITS are cm^{-1}
 // So this is really an extinction coefficient
 //----------------------------------------------------------------
-void GasState::fuzz_expansion_opacity(std::vector<double>& opac)
+void GasState::fuzz_expansion_opacity
+(std::vector<double>& opac, std::vector<double>& aopac)
 {
   int ng = nu_grid_.size();
   int na = atoms.size();
 
-  // zero out opacity array
+  // zero out opacity arrays
   std::fill(opac.begin(),opac.end(),0);
+  std::fill(aopac.begin(),aopac.end(),0);
 
   // Add in contribution of every atom
   std::vector<double> atom_opac(ng);
   for (int i=0;i<na;i++)
   {
+    // get epsilon (absorptive fraction) for this atom
+    double this_eps = epsilon_;
+    for (unsigned int k=0;k<atom_zero_epsilon_.size();k++)
+      if (atom_zero_epsilon_[k] == atoms[i].atomic_number)
+        this_eps = 0;
+
+    // have atom calculate the opacity
     atoms[i].fuzzline_expansion_opacity(atom_opac, time_);
+
+    // store the opacities in place
     for (size_t j=0;j<ng;++j)
+    {
       opac[j]  += atom_opac[j];
+      aopac[j] += atom_opac[j]*this_eps;
+    }
   }
 }
+
 
 
   // double exp_min = 1e-6;
@@ -477,7 +508,7 @@ void GasState::fuzz_expansion_opacity(std::vector<double>& opac)
   // // loop over atoms
   // for (size_t i=0;i<atoms.size();i++)
   // {
-  //   double this_eps = epsilon_;
+  //
   //   for (unsigned int k=0;k<atom_zero_epsilon_.size();k++)
   //     if (atom_zero_epsilon_[k] == atoms[i].atomic_number)
   //       this_eps = 0;

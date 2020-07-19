@@ -171,6 +171,8 @@ public:
 
   // name of the data file that we read from
   std::string atom_datafile_;
+  // version of the atomic data file
+  int datafile_version_;
 
   // array of structures for the atomic data
   // of all possible atoms
@@ -179,16 +181,22 @@ public:
   locate_array nu_grid_;
 
   int initialize(std::string, locate_array ng);
+  int read_atomic_data(std::string fname, int z);
   int read_atomic_data(int z,int max_ion);
   int read_atomic_data(int z);
-  int read_atomic_data_oldstyle(int z);
-  int read_atomic_data_newstyle(int z);
+  int read_oldstyle_atomic_data(int z);
+  int read_newstyle_atomic_data(int z);
 
   void print();
   void print_detailed(int);
 
   int read_fuzzfile_data(std::string fname);
   int read_fuzzfile_data_for_atom(std::string fname, int);
+
+  std::string get_input_filename()
+  {
+    return atom_datafile_;
+  }
 
   IndividualAtomData* get_pointer_to_individual_atom(int z)
   {

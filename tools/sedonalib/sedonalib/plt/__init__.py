@@ -1,2 +1,2 @@
-from SedonaPltFile import *
-from read_plt import *
+from .SedonaPltFile import *
+from .read_plt import *
