@@ -81,7 +81,7 @@ public:
   ~AtomicSpecies();
 
   // solve state
-  void calculate_radiative_rates(std::vector<real> J_nu);
+  void calculate_radiative_rates(std::vector<SedonaReal> J_nu);
   int  solve_state(double ne);
   int  solve_lte (double ne);
   int  solve_nlte(double ne);

@@ -432,13 +432,14 @@ void transport::setup_MPI()
   // get mpi rank
   MPI_Comm_size( MPI_COMM_WORLD, &MPI_nprocs );
   MPI_Comm_rank( MPI_COMM_WORLD, &MPI_myID  );
-  MPI_real = ( sizeof(real)==4 ? MPI_FLOAT : MPI_DOUBLE );
+  MPI_real = ( sizeof(SedonaReal)==4 ? MPI_FLOAT : MPI_DOUBLE );
 #else
   MPI_nprocs = 1;
   MPI_myID= 0;
 #endif
   verbose = (MPI_myID==0);
 }
+
 
 void transport::setup_MB_cdf(double min_v, double max_v, int num_v)
 {
