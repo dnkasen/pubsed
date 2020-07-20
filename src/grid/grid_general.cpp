@@ -127,7 +127,7 @@ void grid_general::writeScalarZoneProp(std::string fname, std::string fieldname)
   int ndim1 = 1;
   hsize_t dims1[1] =  {hsize_t(n_zones)};
   int ndim3 = 2;
-  hsize_t dims3[2] = {n_zones, 3};
+  hsize_t dims3[2] = {hsize_t(n_zones), 3};
   SedonaReal* buffer = new SedonaReal[n_zones * 3];
   hid_t t;
 
