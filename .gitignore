@@ -1,4 +1,4 @@
-src/Makefile
+src/makefiles
 EXEC/
 grid*h5
 ray*dat
