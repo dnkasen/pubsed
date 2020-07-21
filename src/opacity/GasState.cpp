@@ -207,6 +207,23 @@ int GasState::solve_state()
 //-----------------------------------------------------------
 int GasState::solve_state(std::vector<SedonaReal>& J_nu)
 {
+
+#ifdef USE_EIGEN
+  if (use_nlte_)
+    {
+      if (verbose_)
+	printf("# Will solve NLTE matrix equation with eigen\n");
+    }
+
+#else
+  if (use_nlte_)
+    {
+      if (verbose_)
+	printf("# Will solve NLTE matrix equation with GSL\n");
+    }
+#endif
+
+  
   // set key properties of all atoms
   for (size_t i=0;i<atoms.size();++i)
   {
