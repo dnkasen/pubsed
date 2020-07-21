@@ -1,5 +1,5 @@
 #ifndef _ATOMIC_DATA_H
-#define _ATOMiC_DATA_H 1
+#define _ATOMIC_DATA_H 1
 
 #define MAX_N_ATOMS 120
 

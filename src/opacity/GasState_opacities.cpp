@@ -221,7 +221,7 @@ double GasState::free_free_cooling_rate(double T)
 
 }
 
-double GasState::free_free_heating_rate(double T, std::vector<real> J_nu )
+double GasState::free_free_heating_rate(double T, std::vector<SedonaReal> J_nu )
 {
 
   int npts   = nu_grid_.size();
@@ -259,7 +259,7 @@ double GasState::free_free_heating_rate(double T, std::vector<real> J_nu )
 }
 
 
-double GasState::bound_free_heating_rate(double T, std::vector<real> J_nu )
+double GasState::bound_free_heating_rate(double T, std::vector<SedonaReal> J_nu )
 {
   int npts = nu_grid_.size();
   int natoms = atoms.size();
@@ -603,7 +603,7 @@ double GasState::get_planck_mean(const std::vector<OpacityType>& x)
 	if (x.size() != nu_grid_.size())
 	{
 		if (verbose_) {
-			std::cerr << "# Warning: pacity vector of wrong length in get_planck_mean";
+			std::cerr << "# Warning: opacity vector of wrong length in get_planck_mean";
 			std::cerr << std::endl; }
 		return 0;
 	}
@@ -641,7 +641,7 @@ double GasState::get_rosseland_mean
 	if ((abs.size() != nu_grid_.size())||(scat.size() != nu_grid_.size()))
 	{
 		if (verbose_) {
-			std::cerr << "# Warning: pacity vector of wrong length in get_planck_mean";
+			std::cerr << "# Warning: opacity vector of wrong length in get_planck_mean";
 			std::cerr << std::endl; }
 		return 0;
 	}
@@ -677,7 +677,7 @@ double GasState::get_rosseland_mean(const std::vector<OpacityType>& x)
 	if (x.size() != nu_grid_.size())
 	{
 		if (verbose_) {
-			std::cerr << "# Warning: pacity vector of wrong length in get_planck_mean";
+			std::cerr << "# Warning: opacity vector of wrong length in get_planck_mean";
 			std::cerr << std::endl; }
 		return 0;
 	}

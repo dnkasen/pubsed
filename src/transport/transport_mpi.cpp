@@ -445,7 +445,7 @@ void transport::reduce_opacities()
 
 
 
-//   vector<real> send, receive;
+//   vector<SedonaReal> send, receive;
 //   int my_begin, my_end, size;
 
 //   //-- EACH PROCESSOR GETS THE REDUCTION INFORMATION IT NEEDS
@@ -463,7 +463,7 @@ void transport::reduce_opacities()
 //     // reduce e_rad
 //     for(int i=my_begin; i<my_end; i++) send[i-my_begin] = grid->z[i].e_abs;
 //     MPI_Reduce(&send.front(), &receive.front(), size, MPI_real, MPI_SUM, proc, MPI_COMM_WORLD);
-//     for(int i=my_begin; i<my_end; i++) grid->z[i].e_abs = receive[i-my_begin] / (real)MPI_nprocs;
+//     for(int i=my_begin; i<my_end; i++) grid->z[i].e_abs = receive[i-my_begin] / (SedonaReal)MPI_nprocs;
 //     }
 
 //     // TODO - need to put in other quantities...

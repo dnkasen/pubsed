@@ -128,12 +128,12 @@ void grid_general::writeScalarZoneProp(std::string fname, std::string fieldname)
   hsize_t dims1[1] =  {hsize_t(n_zones)};
   int ndim3 = 2;
   hsize_t dims3[2] = {hsize_t(n_zones), 3};
-  real* buffer = new real[n_zones * 3];
+  SedonaReal* buffer = new SedonaReal[n_zones * 3];
   hid_t t;
 
-  if (std::is_same<real, float>())
+  if (std::is_same<SedonaReal, float>())
     t = H5T_NATIVE_FLOAT;
-  else if (std::is_same<real, double>())
+  else if (std::is_same<SedonaReal, double>())
     t = H5T_NATIVE_DOUBLE;
   else {
     std::cerr << "real type not known. Cannot set up HDF5 data sets" << std::endl;
@@ -215,15 +215,15 @@ void grid_general::writeScalarZoneProp(std::string fname, std::string fieldname)
 
 void grid_general::writeVectorZoneProp(std::string fname, std::string fieldname) {
   hid_t t;
-  if (std::is_same<real, float>())
+  if (std::is_same<SedonaReal, float>())
     t = H5T_NATIVE_FLOAT;
-  else if (std::is_same<real, double>())
+  else if (std::is_same<SedonaReal, double>())
     t = H5T_NATIVE_DOUBLE;
   else {
     std::cerr << "real type not known. Cannot set up HDF5 data sets" << std::endl;
   }
 
-  real* buffer = new real[n_zones * n_elems];
+  SedonaReal* buffer = new SedonaReal[n_zones * n_elems];
   if (fieldname == "X_gas") {
     int ndim = 2;
     hsize_t dims[2] = {hsize_t(n_zones), hsize_t(n_elems)};
@@ -291,11 +291,11 @@ void grid_general::readCheckpointZones(std::string fname, bool test) {
 }
 
 void grid_general::readScalarZoneProp(std::string fname, std::string fieldname) {
-  real* buffer = new real[n_zones * 3];
+  SedonaReal* buffer = new SedonaReal[n_zones * 3];
   hid_t t;
-  if (std::is_same<real, float>())
+  if (std::is_same<SedonaReal, float>())
     t = H5T_NATIVE_FLOAT;
-  else if (std::is_same<real, double>())
+  else if (std::is_same<SedonaReal, double>())
     t = H5T_NATIVE_DOUBLE;
   else {
     std::cerr << "real type not known. Cannot set up HDF5 data sets" << std::endl;
@@ -371,15 +371,15 @@ void grid_general::readScalarZoneProp(std::string fname, std::string fieldname) 
 
 void grid_general::readVectorZoneProp(std::string fname, std::string fieldname) {
   hid_t t;
-  if (std::is_same<real, float>())
+  if (std::is_same<SedonaReal, float>())
     t = H5T_NATIVE_FLOAT;
-  else if (std::is_same<real, double>())
+  else if (std::is_same<SedonaReal, double>())
     t = H5T_NATIVE_DOUBLE;
   else {
     std::cerr << "real type not known. Cannot read HDF5 data sets" << std::endl;
   }
 
-  real* buffer = new real[n_zones * n_elems];
+  SedonaReal* buffer = new SedonaReal[n_zones * n_elems];
   readSimple(fname, "zones", fieldname, buffer, t);
 
   if (fieldname == "X_gas") {

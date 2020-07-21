@@ -13,6 +13,14 @@
 #include "VoigtProfile.h"
 #include "AtomicData.h"
 
+#include <Dense>
+#include <Sparse>
+
+
+
+typedef Eigen::Triplet<double> E_T;
+
+using namespace Eigen;
 
 class AtomicSpecies
 {
@@ -20,11 +28,28 @@ class AtomicSpecies
 private:
 
   // matrices, vectors to solve NLTE
-  double     **rates_;
-  gsl_matrix *M_nlte_;
-  gsl_vector *b_nlte_;
-  gsl_vector *x_nlte_;
-  gsl_permutation *p_nlte_;
+  // double     **rates_;
+  // gsl_matrix *M_nlte_;
+  // gsl_vector *b_nlte_;
+  // gsl_vector *x_nlte_;
+  // gsl_permutation *p_nlte_;
+
+
+  //Eigen::SparseMatrix<double,Eigen::RowMajor> M_nlte_;
+
+  //dense solver types
+  Eigen::MatrixXd M_nlte_d_;
+  Eigen::MatrixXd rates_d_;
+
+  //sparse solver types
+  Eigen::SparseMatrix<double,Eigen::RowMajor> M_nlte_s_;
+  std::vector<E_T> rates_s_;
+
+
+  Eigen::VectorXd b_nlte_;
+  Eigen::VectorXd x_nlte_;
+
+
 
 
   // frequency bin array
@@ -56,6 +81,7 @@ public:
   int use_betas_;               // include escape probabilites in nlte
   int no_ground_recomb_;        // suppress recombinations to ground
   bool use_nlte_;               // treat this atom in nlte or not
+  bool use_sparse_;             // whether to use the sparse solver or not
   int use_collisions_nlte_;    // use collisional transitions in NLTE solve and heating/cooling
 
   // atomic state values
@@ -81,10 +107,12 @@ public:
   ~AtomicSpecies();
 
   // solve state
-  void calculate_radiative_rates(std::vector<real> J_nu);
+  void calculate_radiative_rates(std::vector<real_> J_nu);
   int  solve_state(double ne);
   int  solve_lte (double ne);
   int  solve_nlte(double ne);
+  int solve_nlte_dense(double ne);
+  int solve_nlte_sparse(double ne);
   void print();
 
   // sobolev
