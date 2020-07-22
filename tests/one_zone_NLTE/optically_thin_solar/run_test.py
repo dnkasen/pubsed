@@ -9,6 +9,8 @@ import sys
 
 def run_test(pdf="",runcommand=""):
 
+    fail_flag = 0
+
     ###########################################
     # clean up old results and run the code
     ###########################################
@@ -72,41 +74,69 @@ def run_test(pdf="",runcommand=""):
     #------------------------------------------
     plt.clf()
 
-    with open("onezone.mod", 'r') as modelfile:
-        for i, line in enumerate(modelfile):
-            if (i == 2):
-                elem_id_string = line
+    elements = []
+    element_ion_stage_indices = []
 
+    for groupname in fin['/zonedata/0'].keys():
+        if (groupname[0] == 'Z'):
+            elements.append(str(groupname))
+            ion_stage_indices = []
+            max_ion_stages = len(fin['/zonedata/0/' + str(groupname) + '/ion_fraction'] )
+            sample_ion_fractions = np.array((fin['/zonedata/0/' + str(groupname) + '/ion_fraction'] ))
+            for ion_stage in range(max_ion_stages):
+                if (sample_ion_fractions[ion_stage] > -1):
+                    ion_stage_indices.append(ion_stage)
+            element_ion_stage_indices.append(ion_stage_indices)
+
+    num_elements = len(elements)
+        
     Z_elem = []
-    for elem_id in elem_id_string.split():
-        Z_elem.append(elem_id.split('.')[0])
+    for elem in elements:
+        Z_elem.append(int(elem.split('_')[1]))
 
-    num_elems = len(Z_elem)
-    counter = 0
 
-    atomic_database = h5py.File('./atom_data.hdf5', 'r')
-
-    nrow = num_elems
+    nrow = num_elements
     ncol = 1
     fig, axs = plt.subplots(nrows=nrow, ncols=ncol)
 
-    fig.suptitle("Departure coefficients, optically thin solar\n\n", fontsize=10)
+    lte_fraction_threshhold_plot = 1.e-18
+    lte_fraction_threshhold_test = 1.e-12
+    fig.suptitle("Departure coefficients, optically thin solar\nNot plotting levels with LTE fraction < %.1e\nTest success depends only on levels with LTE fraction > %.1e\n\n" % (lte_fraction_threshhold_plot,lte_fraction_threshhold_test), fontsize=10)
 
-    counter = 0
+
+    atomic_database =h5py.File('./atom_data.hdf5', 'r')
+    element_index = 0
     for ax in axs.reshape(-1):
-        this_Z = str(Z_elem[counter])
-        b = np.array(fin['zonedata/0/Z_' + this_Z + '/level_departure'])
-        ax.plot([-1 * len(b)/10,len(b) + len(b)/10],[1,1],color='black')
-        ax.plot(b,'o',color='green')
-        ion_ground_states = np.array(atomic_database[this_Z + '/ion_ground'])
+        this_Z = str(Z_elem[element_index])
+        num_stages = len(element_ion_stage_indices[element_index])
+        ion_ground_states = np.array(atomic_database[str(this_Z) + '/ion_ground'])
+        level_bs = np.array(fin['zonedata/0/Z_' + this_Z + '/level_departure'])
+        level_ns = np.array(fin['zonedata/0/Z_' + this_Z + '/level_fraction'])
+        level_n_ltes = level_ns / level_bs 
+        num_levels_element = len(level_bs)
+        for level_index in range(num_levels_element):
+            if (level_n_ltes[level_index] > lte_fraction_threshhold_plot):
+                if (level_bs[level_index] <= 1.5 and level_bs[level_index]  >= 0.5):
+                    ax.plot(level_index, level_bs[level_index],'o',color='green')
+                elif (level_bs[level_index] >= 1.5):
+                    if (level_n_ltes[level_index] >= lte_fraction_threshhold_test):
+                        fail_flag = 1
+                    ax.plot(level_index,1.5,'o',c='r')
+                else:
+                    if (level_n_ltes[level_index] >= lte_fraction_threshhold_test):
+                        fail_flag = 1
+                    ax.plot(level_index,0.5,'o',c='r')
+            else:
+                ax.axvline(level_index,0,2,linewidth=2,c=plt.cm.binary(50))
+        ax.plot([0,num_levels_element],[1,1],color='black')
         for ground_state in ion_ground_states:
-            ax.axvline(ground_state,0,2)
+            ax.axvline(ground_state,0,2,linewidth=2,c='k')
         ax.set_ylim(0.5,1.5)
         ax.set_title("Z = " + this_Z,fontsize=8)
-        counter += 1
-
+        element_index += 1
+    
     plt.tight_layout()
-    plt.subplots_adjust(top=0.9)
+    plt.subplots_adjust(top=0.82)
 
     fin.close()
     atomic_database.close()
@@ -119,7 +149,7 @@ def run_test(pdf="",runcommand=""):
 
     # this should return !=0 if failed
     plt.clf()
-    return 0
+    return fail_flag
 
 
 if __name__=='__main__': run_test('')
