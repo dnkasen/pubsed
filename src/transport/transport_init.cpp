@@ -110,11 +110,6 @@ void transport::init(ParameterReader* par, grid_general *g)
   // set temperature control parameters, check for conflicts
   if (radiative_eq != 0)
   {
-    if (fix_Tgas_during_transport_ == 1 )
-    {
-	  cerr << "# ERROR: radiative equilibrium turned on, skip_gas_temp_update_during_transport cannot be set to 1\n";
-	  exit(1);
-	}
     if (set_Tgas_to_Trad_ == 1)
 	{
 	  cerr << "# ERROR: radiative equilibrium turned on, set_Tgas_to_Trad_ cannot be set to 1.\n";
