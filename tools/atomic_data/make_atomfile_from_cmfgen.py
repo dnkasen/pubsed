@@ -427,7 +427,7 @@ class CMFGENDataReader:
             n_cs = np.array(fin["1/0/n_cs"])
             for i in range(n_cs):
                 base = str(species) + "/" + str(ion) + "/cs_" + str(i) + "/"
-                print base
+                print(base)
                 cs = CrossSection(i)
                 cs.E = np.array(fin[base + "E_ev"])
                 cs.s = np.array(fin[base + "sigma"])
@@ -575,42 +575,6 @@ if __name__ == '__main__':
 
 
 
-    # Will need to specify not only the level/ion (i.e., "osc")
-    # filenames but also the photoionization and collisional data
-
-    outname = 'cmfgen_newdata.hdf5'
-    name = 'NIST_data/COB/I/nist_27.0_levlin.dat'
-    #s = CMFGENDataReader(base_dir,name)
-    #s.write_to_file(outname,27,0)
-    #h5f = h5py.File(outname, 'a')
-    #h5f[str(27)].attrs['n_ions'] = 1
-    #h5f.close()
-    #exit(0)
-
-
-    # outname = 'cmfgen_newdata.hdf5'
-    # name = 'HYD/I/5dec96/hi_osc.dat'
-    # s = CMFGENDataReader(base_dir,name)
-    # s.write_to_file(outname,1,0)
-    # h5f = h5py.File(outname, 'a')
-    # h5f[str(1)].attrs['n_ions'] = 1
-    # h5f.close()
-    #
-    # name = 'HE/I/15jul15/hei_osc'
-    # s = CMFGENDataReader(base_dir,name)
-    # s.write_to_file(outname,2,0)
-    # name = 'HE/II/5dec96/he2_osc.dat'
-    # s = CMFGENDataReader(base_dir,name)
-    # s.write_to_file(outname,2,1)
-    # h5f = h5py.File(outname, 'a')
-    # h5f[str(2)].attrs['n_ions'] = 2
-    # h5f.close()
-    #
-    # exit(0)
-#    base = base_dir + 'SIL/I/23nov11/'
-#    s = CMFGENDataReader(base,'SiI_OSC')
-#    s.write_to_file(outname,14,1)
-#    exit(0)
 
     # fake up simple hydrogen for tests
 #    outname = 'fake_H.hdf5'
@@ -627,13 +591,15 @@ if __name__ == '__main__':
 
     outname = 'cmfgen_newdata.hdf5'
 
-    data_sources = {
-         '1':
-               {1: 'HYD/I/5dec96/hi_osc.dat'},
-         '2':
-               {1: 'HE/I/15jul15/hei_osc',
-                2: 'HE/II/5dec96/he2_osc.dat'}
-    }
+#    Can redefine data sources here if we want to just
+#    make a file with just few species
+#    data_sources = {
+#         '1':
+#               {1: 'HYD/I/5dec96/hi_osc.dat'},
+#         '2':
+#               {1: 'HE/I/15jul15/hei_osc',
+#                2: 'HE/II/5dec96/he2_osc.dat'}
+#    }
 
     # loop over species
     for species, species_data in iteritems(data_sources):
