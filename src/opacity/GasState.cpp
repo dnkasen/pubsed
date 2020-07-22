@@ -100,7 +100,7 @@ void GasState::initialize
 
 
 //-----------------------------------------------------------------
-// Choose the atoms to be solve in nlte
+// Set the atoms to be solved in nlte
 //-----------------------------------------------------------------
 
 void GasState::set_atoms_in_nlte
@@ -115,15 +115,13 @@ void GasState::set_atoms_in_nlte
   {
     for (int j=0;j<atoms.size();++j)
     {
-	    if (elem_Z[j] == useatoms[i])
-	    {
-	      atoms[j].set_use_nlte();
-	      atoms[j].use_collisions_nlte_ = use_collisions_nlte_;
-	    }
+      if (elem_Z[j] == useatoms[i])
+      {
+        atoms[j].set_use_nlte();
+	atoms[j].use_collisions_nlte_ = use_collisions_nlte_;
+      }
     }
   }
-
-
 }
 
 //-----------------------------------------------------------------
@@ -208,22 +206,6 @@ int GasState::solve_state()
 int GasState::solve_state(std::vector<SedonaReal>& J_nu)
 {
 
-#ifdef USE_EIGEN
-  if (use_nlte_)
-    {
-      if (verbose_)
-	printf("# Will solve NLTE matrix equation with eigen\n");
-    }
-
-#else
-  if (use_nlte_)
-    {
-      if (verbose_)
-	printf("# Will solve NLTE matrix equation with GSL\n");
-    }
-#endif
-
-  
   // set key properties of all atoms
   for (size_t i=0;i<atoms.size();++i)
   {
@@ -442,7 +424,14 @@ void GasState::print_properties()
         }
       if (n_in_nlte == 0)
         std::cout << "None";
-     std::cout << "\n";
+      std::cout << "\n";
+
+#ifdef USE_EIGEN
+      std::cout << "# Will solve NLTE matrix equation with eigen\n";
+#else
+      std::cout << "# Will solve NLTE matrix equation with GSL\n");
+#endif
+
     }
   }
   std::cout << "#---------------------------------------" << std::endl;
