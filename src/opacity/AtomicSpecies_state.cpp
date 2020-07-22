@@ -10,7 +10,13 @@
 #include <gsl/gsl_linalg.h>
 #include <iostream>
 
+#ifdef USE_EIGEN
+#include <Eigen/Dense>
+using namespace Eigen;
+#endif
+
 using namespace std;
+
 
 // ---------------------------------------------------
 // For the NLTE problem, we are solving a matrix equation
@@ -130,6 +136,7 @@ int AtomicSpecies::solve_lte(double ne)
 //-------------------------------------------------------
 int AtomicSpecies::solve_nlte(double ne)
 {
+
   // initialize with LTE populations
   solve_lte(ne);
 
@@ -169,20 +176,65 @@ int AtomicSpecies::solve_nlte(double ne)
     //   printf("%5d %5d %14.3e\n",i,j,gsl_matrix_get(M_nlte_,i,j));
     // printf("----\n");
 
-  // solve rate matrix
-  int status;
-  gsl_linalg_LU_decomp(M_nlte_, p_nlte_, &status);
-  gsl_linalg_LU_solve(M_nlte_, p_nlte_, b_nlte_, x_nlte_);
+
+  #ifdef USE_EIGEN
+  // solve the rate matrix with eigen
+  MatrixXd eigen_nlte(n_levels_,n_levels_);
+  VectorXd eigen_b(n_levels_);
+  VectorXd eigen_x(n_levels_);
+  for (int i=0;i<n_levels_;++i) {
+    for (int j=0;j<n_levels_;++j) {
+      eigen_nlte(i,j) = gsl_matrix_get(M_nlte_,i,j);
+    }
+    eigen_b(i) = gsl_vector_get(b_nlte_,i);
+  }
+
+  eigen_x = eigen_nlte.fullPivLu().solve(eigen_b);
 
   // the x vector should now have the solved level
   // depature coefficients
   for (int i=0;i<n_levels_;++i)
   {
-    double b = gsl_vector_get(x_nlte_,i);
-    lev_n_[i] = b*lev_lte_[i];
+    lev_n_[i] = eigen_x[i]*lev_lte_[i];
+    // check that level populations aren't too negative or too large
+    if (lev_n_[i] < -1.0e-5 || lev_n_[i] > 1.00001) {
+      printf("problem with NLTE level pops\n");
+      for (int j=0;j<n_levels_;++j) {
+        printf("lev: %5d pop: %14.3e\n", j, lev_n_[j]);
+      }
+      exit(1);
+    }
+
     if (lev_n_[i] < min_level_pop_)
       lev_n_[i] = min_level_pop_;
   }
+
+  #else
+
+  int status;
+  gsl_linalg_LU_decomp(M_nlte_, p_nlte_, &status);
+  gsl_linalg_LU_solve(M_nlte_, p_nlte_, b_nlte_, x_nlte_);
+
+    // the x vector should now have the solved level
+  // depature coefficients
+  for (int i=0;i<n_levels_;++i)
+  {
+    double b = gsl_vector_get(x_nlte_,i);
+    lev_n_[i] = b*lev_lte_[i];
+    // check that level populations aren't too negative or too large
+    if (lev_n_[i] < -1.0e-5 || lev_n_[i] > 1.00001) {
+      printf("problem with NLTE level pops\n");
+      for (int j=0;j<n_levels_;++j) {
+        printf("lev: %5d pop: %14.3e\n", j, lev_n_[j]);
+      }
+      exit(1);
+    }
+
+    if (lev_n_[i] < min_level_pop_)
+      lev_n_[i] = min_level_pop_;
+  }
+
+  #endif
 
   // set the ionization fraction
   for (int i=0;i<n_ions_;++i)
@@ -200,7 +252,7 @@ int AtomicSpecies::solve_nlte(double ne)
 // to get the line J and over bound-free to get the
 // photoionization rates
 //-------------------------------------------------------
-void AtomicSpecies::calculate_radiative_rates(std::vector<real> J_nu)
+void AtomicSpecies::calculate_radiative_rates(std::vector<SedonaReal> J_nu)
 {
   // zero out recombination/photoionization rates
   for (int j=0;j<n_levels_;++j)
@@ -232,7 +284,7 @@ void AtomicSpecies::calculate_radiative_rates(std::vector<real> J_nu)
       if (E_ev < chi) continue;
 
       // photoionization term
-      double sigma = adata_->get_lev_photo_cs(j,E_ev);
+      double sigma = adata_->get_lev_photo_cs(j,i);
       double Jterm = sigma*J/E_ergs;
       lev_Pic_[j] += Jterm*dnu;
 

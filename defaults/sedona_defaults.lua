@@ -10,6 +10,9 @@ data_fuzzline_file = ""
 -- grid
 grid_type      = "grid_1D_sphere"  -- grid geometry; must match input model
 
+-- name of model file
+model_file     = "NOT_SET"
+
 -- job run (i.e., checkpoint/restart) parameters
 run_do_restart              = 0
 run_do_checkpoint           = 0
@@ -17,7 +20,7 @@ run_do_checkpoint_test      = 0
 run_restart_file            = "chk.h5"
 run_checkpoint_name_base    = "chk"
 run_chk_timestep_interval   = 0
-run_chk_walltime_interval   = 0. 
+run_chk_walltime_interval   = 0.
 run_chk_simtime_interval    = 0.
 run_chk_walltime_max_buffer = 0.
 run_chk_walltime_max       = 0.

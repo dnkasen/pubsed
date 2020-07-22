@@ -1,9 +1,9 @@
 #ifndef _SEDONA_H
 #define _SEDONA_H
 
-// define real to choose either double or float precision
-//typedef float real;
-typedef double real;
+// define SedonaReal to choose either double or float precision
+//typedef float SedonaReal;
+typedef double SedonaReal;
 typedef double  OpacityType;
 
 #define DEFAULT_PARAM_FILE_NAME "param.lua"

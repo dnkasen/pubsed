@@ -221,7 +221,7 @@ double GasState::free_free_cooling_rate(double T)
 
 }
 
-double GasState::free_free_heating_rate(double T, std::vector<real> J_nu )
+double GasState::free_free_heating_rate(double T, std::vector<real_> J_nu )
 {
 
   int npts   = nu_grid_.size();
@@ -259,7 +259,7 @@ double GasState::free_free_heating_rate(double T, std::vector<real> J_nu )
 }
 
 
-double GasState::bound_free_heating_rate(double T, std::vector<real> J_nu )
+double GasState::bound_free_heating_rate(double T, std::vector<real_> J_nu )
 {
   int npts = nu_grid_.size();
   int natoms = atoms.size();

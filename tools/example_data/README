@@ -1,0 +1,9 @@
+This directory has example output (and input) files from sedona.
+
+
+1D_lucy_lightcurve: single frequency 1D spherical light curve
+2D_lucy_lightcurve: single frequency 2D cylndrical light curve
+3D_lucy_lightcurve: single frequency 3D cartesian light cuve
+1D_toy_TypeIa_lightcurve: multi-frequency 1D spherical light curve
+2D_toy_TypeIa_spectrum: multi-frequency 2D spectrum (snapshot)
+input_models: directory of model files used for these runs (+ other model files)

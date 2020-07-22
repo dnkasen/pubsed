@@ -9,5 +9,5 @@ setup(name='sedonalib',
       packages=find_packages(),
       package_data={"sedonalib": ["models/*", "params/lightcurve/*",
                                   "plt/*", "spectrum/*"]},
-      install_requires=['numpy', 'scipy', 'h5py','matplotlib==2.1.0'],
+      install_requires=['numpy', 'scipy', 'h5py','matplotlib>=2.1.0'],
       zip_safe=False)

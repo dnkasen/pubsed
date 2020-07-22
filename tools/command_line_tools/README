@@ -1,0 +1,13 @@
+These command line tools are intended to provide an easy way to interact with sedona output/input data.
+
+The idea is that the user can type something like
+
+>> ./sedplot.py my_spectrum.h5
+
+and it will pull up an interactive plot for seeing the spectra and light curves.  A similar command with a plt file would bring up a different interactive plotting environment.
+
+The sedonalib package is used internal for reading in the data, calculating light curves, etc... The command line tool is just a convenient graphical interface to these capabilities.
+
+Right now, I just have two rough bokeh plotting scripts (plot_spectra.py and plot_lc.py) and a wrapper (sedplot.py) that calls them. 
+
+Data to play around with is in tools/example_data

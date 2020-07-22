@@ -25,6 +25,7 @@ AtomicSpecies::AtomicSpecies()
   use_betas_          = 0;
   minimum_extinction_ = 0;
   use_nlte_           = 0;
+  use_sparse_         = 0;
 
   n_levels_            = 0;
   n_lines_             = 0;
@@ -82,31 +83,50 @@ int AtomicSpecies::set_use_nlte()
 {
   use_nlte_ = true;
 
+  //allocate memory for the Eigen nLTE solver
+  if(use_sparse_){
+    M_nlte_s_.resize(n_levels_,n_levels_);
+    rates_s_.reserve(n_levels_*n_levels_/10000);
+  }
+  else{
+  M_nlte_d_.resize(n_levels_,n_levels_);
+  rates_d_.resize(n_levels_,n_levels_);
+  }
+
+  b_nlte_.resize(n_levels_);
+  x_nlte_.resize(n_levels_);
+
+  //allocate memory for the rate matrix (this becomes M_nlte_)
+  //rates_.reserve(n_levels_*n_levels_);
+
   //----------------------------------------------
   // allocate memory for arrays
   //----------------------------------------------
-  rates_ = new double*[n_levels_];
-  for (int i=0;i<n_levels_;++i) rates_[i] = new double[n_levels_];
-
-  // matrix to solve
-  M_nlte_ = gsl_matrix_calloc(n_levels_,n_levels_);
-  gsl_matrix_set_zero(M_nlte_);
-
-  // vector of level populations
-  x_nlte_ = gsl_vector_calloc(n_levels_);
-  gsl_vector_set_zero(x_nlte_);
-
-  // right hand side vector
-  b_nlte_ = gsl_vector_calloc(n_levels_);
-  gsl_vector_set_zero(b_nlte_);
-
-  // permuation vector, used internally for linear algebra solve
-  p_nlte_ = gsl_permutation_alloc(n_levels_);
-  gsl_permutation_init(p_nlte_);
+  // rates_ = new double*[n_levels_];
+  // for (int i=0;i<n_levels_;++i) rates_[i] = new double[n_levels_];
+  //
+  // // matrix to solve
+  // M_nlte_ = gsl_matrix_calloc(n_levels_,n_levels_);
+  // gsl_matrix_set_zero(M_nlte_);
+  //
+  // // vector of level populations
+  // x_nlte_ = gsl_vector_calloc(n_levels_);
+  // gsl_vector_set_zero(x_nlte_);
+  //
+  // // right hand side vector
+  // b_nlte_ = gsl_vector_calloc(n_levels_);
+  // gsl_vector_set_zero(b_nlte_);
+  //
+  // // permuation vector, used internally for linear algebra solve
+  // p_nlte_ = gsl_permutation_alloc(n_levels_);
+  // gsl_permutation_init(p_nlte_);
 
   return 0;
 
 }
+
+
+
 
 
 

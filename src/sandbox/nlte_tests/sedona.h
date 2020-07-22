@@ -3,7 +3,7 @@
 
 // define real to choose either double or float precision
 //typedef float real;
-typedef double real;
+typedef double real_;
 typedef double  OpacityType;
 
 #define DEFAULT_PARAM_FILE_NAME "param.lua"

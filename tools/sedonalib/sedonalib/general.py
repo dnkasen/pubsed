@@ -1,6 +1,7 @@
-from spectrum import *
+from sedonalib.spectrum import *
+from sedonalib.params import *
 
-def read(fname):
+def read(fname,spec_units=None):
 
      ascii_extensions = [".dat",".mod",".txt"]
      hdf5_extensions = [".h5",".hdf5"]
@@ -20,7 +21,7 @@ def read(fname):
          fin = h5py.File(fname,'r')
 
          if ("nu/" in fin):
-             return read_spectrum(fname)
+             return read_spectrum_file(fname,spec_units=spec_units)
 
 
      # throw error if file format unknown
@@ -28,3 +29,9 @@ def read(fname):
          message = "Unknown file type, allowed values are "
          message += str(ascii_extensions + hdf5_extensions)
          raise Exception(message)
+
+
+def print_parameter_templates():
+
+    p = SedonaParam()
+    p.print_templates()

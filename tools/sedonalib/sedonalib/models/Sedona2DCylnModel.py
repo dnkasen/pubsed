@@ -1,6 +1,6 @@
-from SedonaModel import SedonaBaseModel
+from .SedonaModel import SedonaBaseModel
 #from Sedona1DSphereModel import Sedona1DSphereModel
-import physical_constants as pc
+import sedonalib.physical_constants as pc
 import numpy as np
 import h5py
 
@@ -186,7 +186,7 @@ class Sedona2DCylnModel(SedonaBaseModel):
         rho_fac = 1e-10
 
         self.time = mod1d.time
-        
+
         # copy over elements
         self.elem_A = list(mod1d.elem_A)
         self.elem_Z = list(mod1d.elem_Z)
@@ -282,11 +282,11 @@ class Sedona2DCylnModel(SedonaBaseModel):
             return False
 
         if (self.dr is None):
-            print 'Error: size of zones dr not set'
+            print ('Error: size of zones dr not set')
             return False
 
         if (self.dims is None):
-            print 'Error: dimensions of grid not set'
+            print ('Error: dimensions of grid not set')
             return False
 
         return True

@@ -26,7 +26,7 @@ AtomicData::AtomicData()
 
     // default is to include all ion stages
     atomlist_[i].max_ion_stage_ = 9999;
-    atomlist_[i].max_n_levels_  = 100; //9999999;
+    atomlist_[i].max_n_levels_  = 9999999;
   }
 }
 
@@ -34,6 +34,9 @@ AtomicData::~AtomicData()
 {
 }
 
+//------------------------------------------------------------------------
+// Initialization
+//------------------------------------------------------------------------
 
 int AtomicData::initialize(std::string fname, locate_array ng)
 {
@@ -69,7 +72,43 @@ int AtomicData::initialize(std::string fname, locate_array ng)
   return 0;
 }
 
+//------------------------------------------------------------------------
+// Return photo-ionization cross-section of level i
+// at the center of frequency bin inu
+// If the cross-section array does not exist, will calculate
+// hydrogenic on the fly
+//------------------------------------------------------------------------
+double IndividualAtomData::get_lev_photo_cs(int i, int inu)
+{
 
+  // get index of this cross-section object
+  int ics = levels_[i].cs;
+
+  // if index ics < 0 the cross-section array doesn't exist
+  // calculate hydrogenic cross-section on fly
+  if (ics < 0)
+  {
+    double nu = nu_grid_->center(inu);
+    double E = nu*pc::h/pc::ev_to_ergs;
+
+    double E_ion = levels_[i].E_ion;
+    double nu_t = E_ion*pc::ev_to_ergs/pc::h;
+    if (nu < nu_t) return 0;
+
+    double E_ground = ions_[levels_[i].ion].chi;
+    double n_eff = pow(1 - (E_ground - E_ion)/E_ground,-0.5);
+    double s_fac = n_eff/(levels_[i].ion+1)/(levels_[i].ion + 1);
+    return 6.3e-18*s_fac*pow(E/E_ion,-3.0); //2.5);
+  }
+
+  // if frequency bin is less than threshorld, cs = 0
+  if (inu < photo_cs_[ics].i_start) return 0;
+
+  // shift index (since cross-section arrays are only
+  // stored for frequencies above threshold, which is at index i_start )
+  int ishift = inu - photo_cs_[ics].i_start;
+  return photo_cs_[ics].s[ishift];
+}
 
 
 //------------------------------------------------------------------------
@@ -134,6 +173,22 @@ void AtomicData::print_detailed(int z)
     std::cout << atom->lines_[i].nu << "\t" << atom->lines_[i].ll << "\t" << atom->lines_[i].lu << "\t"
       << atom->lines_[i].bin << std::endl;
   }
+  std::cout << "#------------------------------------------------" << std::endl;;
+  std::cout << std::endl;
+
+  std::cout << "#---------- photoion_cs ---------------------------------" << std::endl;;
+  for (int i=0;i<atom->photo_cs_.size();++i)
+  {
+    std::cout << "# photocs: " << atom->photo_cs_[i].id << std::endl;
+    std::cout << "# ----------------------" << std::endl;
+    for (int j=0;j<atom->photo_cs_[i].n_pts;++j)
+    {
+      int ishift = j + atom->photo_cs_[i].i_start;
+      std::cout << nu_grid_.center(ishift) << "\t" << atom->photo_cs_[i].s[j] << std::endl;
+    }
+    std::cout << "#------------------------------------------------" << std::endl;;
+  }
+  std::cout << std::endl;
 }
 
 //------------------------------------------------------------------------
@@ -155,6 +210,7 @@ int AtomicData::read_atomic_data(int z, int max_ion)
     return 0;
 
   atomlist_[z].max_ion_stage_ = max_ion;
+  atomlist_[z].nu_grid_ = &nu_grid_;
 
   if (datafile_version_ == 1)
     return read_newstyle_atomic_data(z);
@@ -398,35 +454,61 @@ int AtomicData::read_newstyle_atomic_data(int z)
     status = H5LTread_dataset_int(file_id, dset,&n_photo_cs);
     if (status != 0) n_photo_cs = 0;
 
-    // find max number of photo_cs needed
-    int max_n_photo_cs = 0;
-    for (int i=0;i<atom->levels_.size();++i)
-      if (atom->levels_[i].cs > max_n_photo_cs)
-        max_n_photo_cs = atom->levels_[i].cs;
-    if (n_photo_cs > max_n_photo_cs)
-        n_photo_cs = max_n_photo_cs;
-
-    atom->photo_cs_.resize(n_photo_cs);
     for (int i=0;i<n_photo_cs;++i)
     {
+      // check that this cross-section is used by some level
+      int used = 0;
+      for (int ilev=0;ilev<atom->levels_.size();++ilev)
+        if (atom->levels_[ilev].cs  == i)
+          used = 1;
+      if (used == 0) continue;
+
+      // set up to read in cross-section data
       sprintf(dset,"%s/photoion_data/cs_%d/n_pts",ionname,i);
       int n_pts;
       status = H5LTread_dataset_int(file_id, dset,&n_pts);
-      atom->photo_cs_[i].n_pts = n_pts;
+      xy_array cs_data(n_pts);
 
+      // read the energy array
       double *darray = new double[n_pts];
-      atom->photo_cs_[i].E.resize(n_pts);
       sprintf(dset,"%s/photoion_data/cs_%d/E",ionname,i);
       status = H5LTread_dataset_double(file_id, dset,darray);
-      for (int j=0;j<n_pts;j++)
-        atom->photo_cs_[i].E[j] = darray[j];
+      for (int j=0;j<n_pts;++j)
+        cs_data.x[j] = darray[j]*pc::ev_to_ergs/pc::h;
 
-      atom->photo_cs_[i].s.resize(n_pts);
+      // read the cross-section array
       sprintf(dset,"%s/photoion_data/cs_%d/sigma",ionname,i);
-      status = H5LTread_dataset_double(file_id, dset,darray);
-      for (int j=0;j<n_pts;j++)
-        atom->photo_cs_[i].s[j] = darray[j];
+      status = H5LTread_dataset_double(file_id, dset, darray);
+      for (int j=0;j<n_pts;++j)
+        cs_data.y[j] = darray[j];
 
+      // edge data values
+      double nu_edge = cs_data.x[n_pts-1];
+      double s_edge = cs_data.y[n_pts-1];
+
+      // create a new cross-section object to store this in
+      AtomicPhotoCS this_cs;
+      this_cs.id = i;
+
+      // find the lowest frequency defined at
+      double nu_t = cs_data.x[0];
+      this_cs.i_start = nu_grid_.locate(nu_t);
+      this_cs.n_pts = nu_grid_.size() - this_cs.i_start;
+
+      this_cs.s.resize(this_cs.n_pts);
+      for (int j=0;j<this_cs.n_pts;++j)
+      {
+        int ishift = j + this_cs.i_start;
+        double nu = nu_grid_.center(ishift);
+        if (nu < nu_edge) {
+          this_cs.s[j] = cs_data.value_at_with_zero_edges(nu); }
+        else {
+          this_cs.s[j] = s_edge*pow(nu_edge/nu,3.0);
+  }
+      }
+
+      // store this cross-section and clean up
+      atom->photo_cs_.push_back(this_cs);
       delete [] darray;
     }
    }
@@ -451,6 +533,7 @@ int AtomicData::read_newstyle_atomic_data(int z)
    atom->n_lines_  = atom->lines_.size();
 
    H5Fclose(file_id);
+
    return 0;
 
 }
@@ -463,7 +546,6 @@ int AtomicData::read_newstyle_atomic_data(int z)
 int AtomicData::read_oldstyle_atomic_data(int z)
 {
 
-  std::cout << "OLD\n";
   // open hdf5 file
   herr_t status;
   status = H5Eset_auto1(NULL, NULL);
@@ -598,6 +680,9 @@ int AtomicData::read_oldstyle_atomic_data(int z)
     for (int j=0;j<atom->n_ions_;j++)
       if (atom->ions_[j].stage == atom->levels_[i].ion + 1)
       	atom->levels_[i].ic  = atom->ions_[j].ground;
+
+      // set photoionization cross-section to just hydrogenic
+      atom->levels_[i].cs = -1;
   }
 
   // clean up

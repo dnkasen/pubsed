@@ -1,5 +1,5 @@
-from SedonaModel import SedonaBaseModel
-import physical_constants as pc
+from   .SedonaModel import SedonaBaseModel
+import sedonalib.physical_constants as pc
 import numpy as np
 import h5py
 
@@ -242,15 +242,15 @@ class Sedona3DCartModel(SedonaBaseModel):
             return False
 
         if (self.dr is None):
-            print 'Error: size of zones dr not set'
+            print ('Error: size of zones dr not set')
             return False
 
         if (self.dims is None):
-            print 'Error: dimensions of grid not set'
+            print ('Error: dimensions of grid not set')
             return False
 
         if (self.rmin is None):
-            print 'Error: rmin boundary of grid not set'
+            print ('Error: rmin boundary of grid not set')
             return False
 
         return True

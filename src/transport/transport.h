@@ -149,7 +149,7 @@ class transport
   int boundary_in_reflect_, boundary_out_reflect_;
 
   // array to weight the emissivity(size of nu_grid)
-  vector<real>  emissivity_weight_;
+  vector<SedonaReal>  emissivity_weight_;
 
   // the zone opacity/emissivity variables
   vector< cdf_array<OpacityType> >    emissivity_;
@@ -157,32 +157,32 @@ class transport
   vector< vector<OpacityType> >       scat_opacity_;
   vector<OpacityType> planck_mean_opacity_;
   vector<OpacityType> rosseland_mean_opacity_;
-  vector< vector<real> > J_nu_;
-  vector<real> compton_opac;
-  vector<real> photoion_opac;
+  vector< vector<SedonaReal> > J_nu_;
+  vector<SedonaReal> compton_opac;
+  vector<SedonaReal> photoion_opac;
 
   // the following are only resized and used if gas_state_.use_nlte_ is set to 1
-  vector<real> bf_heating;
-  vector<real> bf_cooling;
-  vector<real> ff_heating;
-  vector<real> ff_cooling;
-  vector<real> coll_cooling;
+  vector<SedonaReal> bf_heating;
+  vector<SedonaReal> bf_cooling;
+  vector<SedonaReal> ff_heating;
+  vector<SedonaReal> ff_cooling;
+  vector<SedonaReal> coll_cooling;
 
   // discrete diffusion probabilities
-  vector<real> ddmc_P_up_, ddmc_P_dn_;
-  vector<real> ddmc_P_adv_;
-  vector<real> ddmc_P_abs_;
-  vector<real> ddmc_P_stay_;
-  vector<real> ddmc_use_in_zone_;
+  vector<SedonaReal> ddmc_P_up_, ddmc_P_dn_;
+  vector<SedonaReal> ddmc_P_adv_;
+  vector<SedonaReal> ddmc_P_abs_;
+  vector<SedonaReal> ddmc_P_stay_;
+  vector<SedonaReal> ddmc_use_in_zone_;
   int use_ddmc_;
   double ddmc_tau_;
   locate_array randomwalk_x;
   vector<double> randomwalk_Pescape;
 
   // the radiation quantities in the zone
-  vector <real> e_rad;
+  vector <SedonaReal> e_rad;
   // line mean intensity
-  vector< vector<real> > line_J_;
+  vector< vector<SedonaReal> > line_J_;
   double line_velocity_width_;
 
   // setup functions

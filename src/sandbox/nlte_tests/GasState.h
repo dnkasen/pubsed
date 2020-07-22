@@ -13,8 +13,8 @@ class GasState
 
  private:
 
-  double ne_brent_method(double,double,double,std::vector<real>);
-  double charge_conservation(double,std::vector<real>);
+  double ne_brent_method(double,double,double,std::vector<real_>);
+  double charge_conservation(double,std::vector<real_>);
 
   locate_array nu_grid_;
   int verbose_;
@@ -109,6 +109,12 @@ class GasState
   void set_atoms_in_nlte
   (std::vector<int> useatoms);
 
+  //-----------------------------------------------------------
+  // set which atoms to treat in nlte using SPARSE solver
+  //-----------------------------------------------------------
+  void set_atoms_in_sparse
+  (std::vector<int> sparseatoms);
+
 
   //-----------------------------------------------------------
   // read fuzz lines from a file
@@ -142,7 +148,7 @@ class GasState
   //    == 1 root not bracketed in electron density solve
   //    == 2 maximum iterations reached in n_e solve
   //-----------------------------------------------------------
-  int solve_state(std::vector<real>&);
+  int solve_state(std::vector<real_>&);
   int solve_state();
 
 
@@ -218,10 +224,10 @@ class GasState
 		      std::vector<OpacityType>&);
   double electron_scattering_opacity();
   void free_free_opacity  (std::vector<double>&, std::vector<double>&);
-  double free_free_heating_rate(double, std::vector<real>);
+  double free_free_heating_rate(double, std::vector<real_>);
   double free_free_cooling_rate(double);
   void bound_free_opacity (std::vector<double>&, std::vector<double>&);
-  double bound_free_heating_rate (double, std::vector<real>);
+  double bound_free_heating_rate (double, std::vector<real_>);
   double bound_free_cooling_rate(double);
   double collisional_net_cooling_rate(double);
   void bound_bound_opacity(std::vector<double>&, std::vector<double>&);

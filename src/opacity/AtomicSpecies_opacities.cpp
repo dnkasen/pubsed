@@ -125,7 +125,7 @@ void AtomicSpecies::bound_free_opacity_general
       // get extinction coefficient and emissivity
       double zeta_net = (Eion - E)/kt_ev;
       double ezeta_net = exp(zeta_net);
-      double sigma = adata_->get_lev_photo_cs(j,E);
+      double sigma = adata_->get_lev_photo_cs(j,i);
       double opac_fac = n_dens_ * lev_n_[j]  - nc_phifac[j] * ne * ezeta_net;
       // kill maser
       if (opac_fac < 0)

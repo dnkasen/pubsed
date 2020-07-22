@@ -100,7 +100,7 @@ void GasState::initialize
 
 
 //-----------------------------------------------------------------
-// Choose the atoms to be solve in nlte
+// Set the atoms to be solved in nlte
 //-----------------------------------------------------------------
 
 void GasState::set_atoms_in_nlte
@@ -115,15 +115,13 @@ void GasState::set_atoms_in_nlte
   {
     for (int j=0;j<atoms.size();++j)
     {
-	    if (elem_Z[j] == useatoms[i])
-	    {
-	      atoms[j].set_use_nlte();
-	      atoms[j].use_collisions_nlte_ = use_collisions_nlte_;
-	    }
+      if (elem_Z[j] == useatoms[i])
+      {
+        atoms[j].set_use_nlte();
+	atoms[j].use_collisions_nlte_ = use_collisions_nlte_;
+      }
     }
   }
-
-
 }
 
 //-----------------------------------------------------------------
@@ -195,7 +193,7 @@ double GasState::get_ionization_state()
 //-----------------------------------------------------------
 int GasState::solve_state()
 {
-  std::vector<real> J_nu;
+  std::vector<SedonaReal> J_nu;
   return solve_state(J_nu);
 }
 
@@ -205,8 +203,9 @@ int GasState::solve_state()
 // further calculations
 // Returns: any error
 //-----------------------------------------------------------
-int GasState::solve_state(std::vector<real>& J_nu)
+int GasState::solve_state(std::vector<SedonaReal>& J_nu)
 {
+
   // set key properties of all atoms
   for (size_t i=0;i<atoms.size();++i)
   {
@@ -239,7 +238,7 @@ int GasState::solve_state(std::vector<real>& J_nu)
 // for the root, thus determining N_e.  This equation is
 // basically just the one for charge conservation.
 //-----------------------------------------------------------
-double GasState::charge_conservation(double ne,std::vector<real> J_nu)
+double GasState::charge_conservation(double ne,std::vector<SedonaReal> J_nu)
 {
   // start with charge conservation function f set to zero
   double f  = 0;
@@ -268,7 +267,7 @@ double GasState::charge_conservation(double ne,std::vector<real> J_nu)
 // equation for electron density ne
 //-----------------------------------------------------------
 #define SIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
-double GasState::ne_brent_method(double x1,double x2,double tol,std::vector<real> J_nu)
+double GasState::ne_brent_method(double x1,double x2,double tol,std::vector<SedonaReal> J_nu)
 {
   int ITMAX = 100;
   double EPS = 3.0e-8;
@@ -379,11 +378,14 @@ double GasState::get_level_departure(int i, int j)
 void GasState::print_properties()
 {
 
-  std::cout << "#-------------------------------------------------\n";
-  std::cout << "# atomic data from: " << atomdata_file_ << "\n";
-  std::cout << "#--------------------------------------------------\n";
-  std::cout << "#  Z    n_ions  n_levels  n_lines  n_fuzz_lines\n";
-  std::cout << "#-------------------------------------------------\n";
+  std::cout << "#-------------------------------------------------" << std::endl;
+  std::cout << "# atomic data from file: " << std::endl;
+  std::cout << "#   -> " << atomic_data_->get_input_filename() << std::endl;
+  std::cout << "# File is sedona hdf5 format version = " << atomic_data_->get_version() << std::endl;
+  std::cout << "# " << std::endl << "# Atomic species and data to be used are:" << std::endl;
+  std::cout << "#--------------------------------------------------" << std::endl;
+  std::cout << "#  Z    n_ions  n_levels  n_lines  n_fuzz_lines" << std::endl;
+  std::cout << "#-------------------------------------------------" << std::endl;
   for (size_t i=0;i<atoms.size();++i)
   {
     printf("# %2d.%d ",elem_Z[i],elem_A[i]);
@@ -391,7 +393,8 @@ void GasState::print_properties()
         atoms[i].get_n_fuzz_lines());
     printf("\n");
   }
-  std::cout << "#-------------------------------------------------\n";
+  std::cout << "#-------------------------------------------------" << std::endl;
+  std::cout << "#" << std::endl;
 
 
   std::cout << "# opacity settings\n";
@@ -425,7 +428,14 @@ void GasState::print_properties()
         }
       if (n_in_nlte == 0)
         std::cout << "None";
-     std::cout << "\n";
+      std::cout << "\n";
+
+#ifdef USE_EIGEN
+      std::cout << "# Will solve NLTE matrix equation with eigen\n";
+#else
+      std::cout << "# Will solve NLTE matrix equation with GSL\n";
+#endif
+
     }
   }
   std::cout << "#---------------------------------------" << std::endl;
@@ -474,7 +484,7 @@ void GasState::write_levels(int iz)
     for(int k=0;k<this_nl;k++)
       tmp_level[k] = get_level_fraction(j,k);
     H5LTmake_dataset(atom_id,"level_fraction",RANK,dims_level,H5T_NATIVE_DOUBLE,tmp_level);
-    
+
     for(int k=0;k<this_nl;k++)
       tmp_level[k] = get_level_departure(j,k);
     H5LTmake_dataset(atom_id,"level_departure",RANK,dims_level,H5T_NATIVE_DOUBLE,tmp_level);
@@ -505,7 +515,7 @@ std::string format_with_commas(long int value)
     return numWithCommas;
 }
 
-void GasState::print_memory_footprint()
+double GasState::print_memory_footprint()
 {
     long int n_tot_lines  = 0;
     long int n_tot_levels = 0;
@@ -540,4 +550,6 @@ void GasState::print_memory_footprint()
     std::cout << std::setw(12) <<  " |";
     std::cout << std::setw(18) << format_with_commas(total) + " |\n";
     std::cout << "#-----------------------------------------------------|\n";
+
+    return total;
 }

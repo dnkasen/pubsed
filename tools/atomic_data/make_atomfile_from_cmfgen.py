@@ -241,12 +241,12 @@ class CMFGENDataReader:
     # each transition out of the ascii file
     transition_matcher = re.compile("(.*?)([0-9]+-\s*[0-9]+)(.*)")
 
-    def __init__(self, base,fn):
-        print(base + '/' + fn)
+    def __init__(self, base,fn,species,ion):
+        print(base + '/' + fn, species, ion)
         self.data_source = np.string_("CMFGEN: " + fn)
         self._read_data(base + '/' + fn)
         self._convert_index()
-        self._read_photoion_data("namehere")
+        self._read_photoion_data(species,ion)
         self._read_collisional_data("namehere")
 
     ## Read in level, line data of ion
@@ -413,41 +413,33 @@ class CMFGENDataReader:
     ## Read in photoionizaiton cross-section
     ## data from file
     ####################################
-    def _read_photoion_data(self,fname):
+    def _read_photoion_data(self,species,ion):
 
         self.cs_data  = []
 
-        # Need to have this read a CMFGEN photoion
-        # data file and put all the cross-sections into
-        # this array of subclasses
-        # For now -- just file with faked data
-    #    for i in range(0,2):
-    #        cs = CrossSection(i)
-    #        cs.type = "ME"
-    #        cs.configuration = "4D(3)" + str(i)
-    #        cs.E = np.arange(13.6,100,1)
-    #        cs.s = 6e-18*(cs.E/13.6)**(-2.5)
-    #        self.cs_data.append(cs)
+        # default is no detailed photoionization cross section data
+        self.level_cs = 0*np.arange(self.nlevels)  - 1
 
 
-        fin = h5py.File("topbase_photo_cs/topbase_PI.hdf5","r")
-        n_cs = np.array(fin["1/0/n_cs"])
-        print n_cs
-        for i in range(n_cs):
-            base = "1/0/cs_" + str(i) + "/"
-            print base
-            cs = CrossSection(i)
-            cs.E = np.array(fin[base + "E_ev"])
-            cs.s = np.array(fin[base + "sigma"])
-            cs.type = "ME"
-            cs.configuration = "4D(3)" + str(i)
-            self.cs_data.append(cs)
+        # right now we only have detailed data for hydrogen
+        if (int(species) == 1):
+            fin = h5py.File("topbase_photo_cs/topbase_PI.hdf5","r")
+            n_cs = np.array(fin["1/0/n_cs"])
+            for i in range(n_cs):
+                base = str(species) + "/" + str(ion) + "/cs_" + str(i) + "/"
+                print(base)
+                cs = CrossSection(i)
+                cs.E = np.array(fin[base + "E_ev"])
+                cs.s = np.array(fin[base + "sigma"])
+                cs.type = "Topbase"
+                cs.configuration = "4D(3)" + str(i)
+                self.cs_data.append(cs)
 
+                # here need to figure out which level is which cs
+                self.level_cs = 0*np.arange(self.nlevels)  - 1 + n_cs
+                for i in range(n_cs):
+                    self.level_cs[i] = i
 
-        # here need to figure out which level is which cs
-        self.level_cs = 0*np.arange(self.nlevels)  - 1 + n_cs
-        for i in range(n_cs):
-            self.level_cs[i] = i
 
     ####################################
     ## Read in photoionizaiton cross-section
@@ -583,42 +575,6 @@ if __name__ == '__main__':
 
 
 
-    # Will need to specify not only the level/ion (i.e., "osc")
-    # filenames but also the photoionization and collisional data
-
-    outname = 'cmfgen_newdata.hdf5'
-    name = 'NIST_data/COB/I/nist_27.0_levlin.dat'
-    #s = CMFGENDataReader(base_dir,name)
-    #s.write_to_file(outname,27,0)
-    #h5f = h5py.File(outname, 'a')
-    #h5f[str(27)].attrs['n_ions'] = 1
-    #h5f.close()
-    #exit(0)
-
-
-    # outname = 'cmfgen_newdata.hdf5'
-    # name = 'HYD/I/5dec96/hi_osc.dat'
-    # s = CMFGENDataReader(base_dir,name)
-    # s.write_to_file(outname,1,0)
-    # h5f = h5py.File(outname, 'a')
-    # h5f[str(1)].attrs['n_ions'] = 1
-    # h5f.close()
-    #
-    # name = 'HE/I/15jul15/hei_osc'
-    # s = CMFGENDataReader(base_dir,name)
-    # s.write_to_file(outname,2,0)
-    # name = 'HE/II/5dec96/he2_osc.dat'
-    # s = CMFGENDataReader(base_dir,name)
-    # s.write_to_file(outname,2,1)
-    # h5f = h5py.File(outname, 'a')
-    # h5f[str(2)].attrs['n_ions'] = 2
-    # h5f.close()
-    #
-    # exit(0)
-#    base = base_dir + 'SIL/I/23nov11/'
-#    s = CMFGENDataReader(base,'SiI_OSC')
-#    s.write_to_file(outname,14,1)
-#    exit(0)
 
     # fake up simple hydrogen for tests
 #    outname = 'fake_H.hdf5'
@@ -635,10 +591,15 @@ if __name__ == '__main__':
 
     outname = 'cmfgen_newdata.hdf5'
 
-    data_sources = {
-         '1':
-               {1: 'HYD/I/5dec96/hi_osc.dat'}
-    }
+#    Can redefine data sources here if we want to just
+#    make a file with just few species
+#    data_sources = {
+#         '1':
+#               {1: 'HYD/I/5dec96/hi_osc.dat'},
+#         '2':
+#               {1: 'HE/I/15jul15/hei_osc',
+#                2: 'HE/II/5dec96/he2_osc.dat'}
+#    }
 
     # loop over species
     for species, species_data in iteritems(data_sources):
@@ -646,7 +607,7 @@ if __name__ == '__main__':
         # loop over ions
         for ion, ion_data_file in iteritems(species_data):
             print(species,ion-1,ion_data_file)
-            s = CMFGENDataReader(base_dir,ion_data_file)
+            s = CMFGENDataReader(base_dir,ion_data_file,species,ion-1)
             s.write_to_file(outname,species,ion-1)
             n_ions += 1
 

@@ -1,8 +1,8 @@
 import numpy as np
 import h5py
-import physical_constants as pc
+import sedonalib.physical_constants as pc
+from .Filter import *
 from numpy import newaxis
-from Filter import *
 from scipy.interpolate import interp1d
 from scipy import integrate as integrate
 
@@ -37,10 +37,19 @@ class SpectrumFile():
         if (time_units is None):
             time_units = 'day'
 
+
+        # fix up close units
+        if (spec_units == "angstroms"):
+            spec_units = "angstrom"
+
+        if (time_units == "days"):
+            time_units = "day"
+
         self.spec_units = spec_units
         if (self.spec_units not in allowed_spec_units):
             if (verbose):
                 print ('ERROR: unknown spectrum units; using default ')
+                print (self.spec_units)
             self.spec_units = 'hz'
 
         # set the time units
@@ -59,15 +68,6 @@ class SpectrumFile():
         self.Lbol = None
         self.read_data()
 
-
-    # was hoping this would keep user from changing stuff...
-    @property
-    def mu(self):
-        return self.mu
-
-    @property
-    def shape(self):
-        return self.L.shape
 
     def read_data(self):
         """
@@ -169,8 +169,6 @@ class SpectrumFile():
         L[ntimes,nmu,nphi] and returns one viewed from angle 'view'
         If 'view'
         """
-        print 'shape = ',thisL.shape
-
         # if spherically symmetric, just return time-dependent lc
         if (self.n_mu == 1 and self.n_phi == 1):
             return self.t,thisL[:,0,0]
@@ -229,7 +227,6 @@ class SpectrumFile():
         # if band is a list of two numbers, then return the lightcurve
         # in that filter
         if (isinstance(band,list)):
-            print band
             if (len(band) == 2):
                 lc = self.get_range_lightcurve(band,magnitudes=magnitudes,view=view)
 
@@ -284,11 +281,7 @@ class SpectrumFile():
 
         """
         filt_norm = self.filter.getNormalization_nu(band,self.x)
-
-        print magnitudes
         filt_trans = self.filter.transFunc_nu(band)(self.x)
-
-        print filt_norm
 
         L_return = np.zeros([self.n_times,self.n_mu,self.n_phi],dtype='d')
         for it,im,ip in np.ndindex(self.n_times,self.n_mu,self.n_phi):
@@ -307,7 +300,6 @@ class SpectrumFile():
 
         if (magnitudes == "AB"):
 
-            print 'hi'
             # convert to flux at 10 parsecs
             L_return /= (4.*np.pi*(10.*3.0857e18)**2)
 
@@ -335,8 +327,6 @@ class SpectrumFile():
 
         """
 
-        print range
-
         thisL = np.zeros([self.n_times,self.n_mu,self.n_phi],dtype='d')
 
         # define region to integrate over
@@ -362,14 +352,12 @@ class SpectrumFile():
         Make a simple plot of the light curve
         """
 
-        print magnitudes
         import matplotlib.pyplot as plt
 
         if (band is None):
             band = ["bol"]
 
         for b in band:
-            print b
             t,l = self.get_lightcurve(band=b,magnitudes=magnitudes,view=view)
 
             col = 'k'
@@ -521,8 +509,6 @@ class SpectrumFile():
             m1 = self.mu[i1]
             m2 = self.mu[i2]
             dm = mu - m1
-    #        print i1,i2,m1,m2,mu
-
 
             jphi = bisect.bisect_left(self.phi,phi)
             nphi = len(self.phi)
@@ -541,8 +527,6 @@ class SpectrumFile():
                 j2 = jphi
                 p1 = self.phi[j1]
                 p2 = self.phi[j2]
-
-            print p1,phi,p2, jphi,j1,j2
 
             p1 = self.phi[j1]
             p2 = self.phi[j2]
