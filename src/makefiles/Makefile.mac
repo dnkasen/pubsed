@@ -1,4 +1,12 @@
 CXX   = /usr/local/bin/mpicxx
-CXXFLAGS = -O3 -pedantic -Wall -std=c++11
+CXXFLAGS = -g -pedantic -Wall -std=c++11
+
+# Set to USE_EIGEN = 1 if you want to use eigen for NLTE
+USE_EIGEN = 1
+EIG_INC = /usr/local/include/eigen3
+
+# location of lua 
+LUA_INC = /usr/local/include/lua
+
 
 include make.exec
