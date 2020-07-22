@@ -112,7 +112,8 @@ void SedonaClass::setup()
   if (verbose_)
     std::cout << "# compiled on " << compile_time << std::endl;
 #endif
-  cout << "#" << endl;
+  if (verbose_)
+    std::cout << "#" << endl;
 
   // Handle restart bookkeeping
   do_restart_ = params_.getScalar<int>("run_do_restart");
@@ -244,18 +245,20 @@ void SedonaClass::evolve_to_start()
     // printout what we are going to do to the model
     if (verbose_)
     {
-      cout << "# t_start = " << t_start << ", t_now = " << grid_->t_now;
+      cout << "# t_start = " << t_start << ", t_model = " << grid_->t_now;
       if (t_start < grid_->t_now)
       {
-        cout << "#" << endl;
+        cout  << endl;
         cout << "# Adiabatically compressing rho and T from input model" << endl;
         cout << "# Assumes rad pressure dominated; no radioactive heating" << endl;
+        cout << "# " << endl;
       }
       else
       {
         cout << "#" << endl;
         cout << "# Adiabatically expanding rho and T from input model" << endl;
         cout << "# Assumes rad pressure dominated; includes radioactive heating" << endl;
+        cout << "# " << endl;
       }
     }
     int force_rproc  = params_.getScalar<int>("force_rprocess_heating");
@@ -303,6 +306,8 @@ void SedonaClass::evolve_system()
   {
     cout << "# writing initial plot file" << endl;
     grid_->write_plotfile(0,grid_->t_now,write_mass_fracs);
+    cout << "# Proceeding to calculation" << endl;
+    cout << "#" << endl;
   }
 
   std::cout << std::scientific;

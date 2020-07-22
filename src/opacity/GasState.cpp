@@ -378,11 +378,14 @@ double GasState::get_level_departure(int i, int j)
 void GasState::print_properties()
 {
 
-  std::cout << "#-------------------------------------------------\n";
-  std::cout << "# atomic data from: " << atomdata_file_ << "\n";
-  std::cout << "#--------------------------------------------------\n";
-  std::cout << "#  Z    n_ions  n_levels  n_lines  n_fuzz_lines\n";
-  std::cout << "#-------------------------------------------------\n";
+  std::cout << "#-------------------------------------------------" << std::endl;
+  std::cout << "# atomic data from file: " << std::endl;
+  std::cout << "#   -> " << atomic_data_->get_input_filename() << std::endl;
+  std::cout << "# File is sedona hdf5 format version = " << atomic_data_->get_version() << std::endl;
+  std::cout << "# " << std::endl << "# Atomic species and data to be used are:" << std::endl;
+  std::cout << "#--------------------------------------------------" << std::endl;
+  std::cout << "#  Z    n_ions  n_levels  n_lines  n_fuzz_lines" << std::endl;
+  std::cout << "#-------------------------------------------------" << std::endl;
   for (size_t i=0;i<atoms.size();++i)
   {
     printf("# %2d.%d ",elem_Z[i],elem_A[i]);
@@ -390,7 +393,8 @@ void GasState::print_properties()
         atoms[i].get_n_fuzz_lines());
     printf("\n");
   }
-  std::cout << "#-------------------------------------------------\n";
+  std::cout << "#-------------------------------------------------" << std::endl;
+  std::cout << "#" << std::endl;
 
 
   std::cout << "# opacity settings\n";
@@ -480,7 +484,7 @@ void GasState::write_levels(int iz)
     for(int k=0;k<this_nl;k++)
       tmp_level[k] = get_level_fraction(j,k);
     H5LTmake_dataset(atom_id,"level_fraction",RANK,dims_level,H5T_NATIVE_DOUBLE,tmp_level);
-    
+
     for(int k=0;k<this_nl;k++)
       tmp_level[k] = get_level_departure(j,k);
     H5LTmake_dataset(atom_id,"level_departure",RANK,dims_level,H5T_NATIVE_DOUBLE,tmp_level);
@@ -511,7 +515,7 @@ std::string format_with_commas(long int value)
     return numWithCommas;
 }
 
-void GasState::print_memory_footprint()
+double GasState::print_memory_footprint()
 {
     long int n_tot_lines  = 0;
     long int n_tot_levels = 0;
@@ -546,4 +550,6 @@ void GasState::print_memory_footprint()
     std::cout << std::setw(12) <<  " |";
     std::cout << std::setw(18) << format_with_commas(total) + " |\n";
     std::cout << "#-----------------------------------------------------|\n";
+
+    return total;
 }

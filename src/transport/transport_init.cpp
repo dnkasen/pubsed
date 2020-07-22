@@ -144,6 +144,7 @@ void transport::init(ParameterReader* par, grid_general *g)
 
 
   // initialize the frequency grid
+  int log_freq_grid = 0;
   std::vector<double> nu_dims = params_->getVector<double>("transport_nu_grid");
   if ((nu_dims.size() != 4)&&(nu_dims.size() != 3)) {
     cerr << "# improperly defined nu_grid; need {nu_1, nu_2, dnu, (log?)}; exiting" << endl;
@@ -152,12 +153,19 @@ void transport::init(ParameterReader* par, grid_general *g)
     nu_grid_.init(nu_dims[0],nu_dims[1],nu_dims[2]);
   if (nu_dims.size() == 4)
   {
-    if (nu_dims[3] == 1) nu_grid_.log_init(nu_dims[0],nu_dims[1],nu_dims[2]);
+    if (nu_dims[3] == 1) {
+        nu_grid_.log_init(nu_dims[0],nu_dims[1],nu_dims[2]);
+        log_freq_grid = 1; }
     else nu_grid_.init(nu_dims[0],nu_dims[1],nu_dims[2]);
   }
   if (verbose)
   {
-     std::cout << "# frequency grid: n = " << nu_grid_.size() << "\n";
+    std::cout << "# Frequency grid runs from nu = ";
+    std::cout << nu_grid_.minval() << " Hz to " << nu_grid_.maxval() << " Hz" << std::endl;
+    std::cout << "#    with " << nu_grid_.size() << " points";
+    if (log_freq_grid)
+      std::cout << " (logarithmically spaced)";
+    std::cout << std::endl << "#" << std::endl;
   }
 
   if (do_restart)
@@ -178,7 +186,7 @@ void transport::init(ParameterReader* par, grid_general *g)
   else
     save_escaped_particles_ = 1;
   maxn_escaped_particles_ = params_->getScalar<double>("spectrum_particle_list_maxn");
-  
+
   // check if atomfile is there
   atomdata_file_ = params_->getScalar<string>("data_atomic_file");
   std::ifstream afile(atomdata_file_);
@@ -242,8 +250,7 @@ void transport::init(ParameterReader* par, grid_general *g)
     line_velocity_width_ = params_->getScalar<double>("line_velocity_width");
     i_gas_state->line_velocity_width_ = line_velocity_width_;
   }
-  if (verbose) std::cout << "# From fuzzfile \"" << fuzzfile << "\" " <<
-       n_fuzzlines << " lines used\n";
+
   if (verbose) gas_state_vec_[0].print_properties();
 
   maximum_opacity_ = params_->getScalar<double>("opacity_maximum_opacity");
@@ -390,9 +397,7 @@ void transport::init(ParameterReader* par, grid_general *g)
     long int osize = sizeof(OpacityType);
 
     std::cout << std::endl;
-    std::cout << "# There are " << gas_state_vec_.size();
-    std::cout << " instances of the GasState class. For each:" << std::endl;
-    std::cout << "# Memory usage for transport data (for each gas state class)";
+    std::cout << "# Estimated Memory usage for zone data";
     std::cout << std::endl;
     std::cout << "#---------------------------------------------------------|";
     std::cout << std::endl;
@@ -419,8 +424,22 @@ void transport::init(ParameterReader* par, grid_general *g)
     std::cout << "#---------------------------------------------------------|";
     std::cout << std::endl;
 
-    gas_state_vec_[0].print_memory_footprint();
-    std::cout << std::endl;
+    double zone_mem = n_grid_variables*nz*sizeof(double) + n_freq_variables*nfreq*osize;
+
+    std::cout << "# Estimated Memory usage for atomic data" << std::endl;
+    double atom_mem = gas_state_vec_[0].print_memory_footprint();
+
+    double total_mem = zone_mem + atom_mem;
+    std::cout << "# Estimated total memory usage > ";
+    if (total_mem < 1e6)
+      std::cout << total_mem/1e3 << " kB";
+    else if (total_mem < 1e9)
+      std::cout << total_mem/1e6 << " MB";
+    else
+      std::cout << total_mem/1e9 << " GB";
+
+
+    std::cout << std::endl << "#" << std::endl;
     }
 
 
