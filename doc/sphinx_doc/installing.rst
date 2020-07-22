@@ -89,10 +89,18 @@ If you wish to run mpi and openMP parallel jobs, you should also install::
 
 Many clusters and supercomputer centers will have some of the dependencies already installed.  Use the module load
 
+....
 
+**The Eigen Linear Algebra Library (For NLTE Users Only)**
 
+If you will be using the NLTE capabilities of [sedona], you may wish to additionally install the *Eigen* linear algebra library to solve the linear system for the NLTE electron states. In this case, once *Eigen* has been installed using a similar method to the ones listed above, you will also need to create an ``EIG_DIR`` variable with the path to the *Eigen* header files. Finally, in your machine-specific Makefile.x (see below), include the following::
 
+  USE_EIGEN=1
 
+If that flag is not set, the code will default to using GSL for the matrix solution.
+
+....
+  
 -----------------------
 Compiling the Code
 -----------------------
