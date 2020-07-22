@@ -429,7 +429,7 @@ void GasState::print_properties()
 #ifdef USE_EIGEN
       std::cout << "# Will solve NLTE matrix equation with eigen\n";
 #else
-      std::cout << "# Will solve NLTE matrix equation with GSL\n");
+      std::cout << "# Will solve NLTE matrix equation with GSL\n";
 #endif
 
     }
