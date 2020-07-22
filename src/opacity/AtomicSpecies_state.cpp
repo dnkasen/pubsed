@@ -13,7 +13,7 @@
 #ifdef USE_EIGEN
 #include <Eigen/Dense>
 using namespace Eigen;
-#endif 
+#endif
 
 using namespace std;
 
@@ -176,7 +176,7 @@ int AtomicSpecies::solve_nlte(double ne)
     //   printf("%5d %5d %14.3e\n",i,j,gsl_matrix_get(M_nlte_,i,j));
     // printf("----\n");
 
-  
+
   #ifdef USE_EIGEN
   // solve the rate matrix with eigen
   MatrixXd eigen_nlte(n_levels_,n_levels_);
@@ -233,7 +233,7 @@ int AtomicSpecies::solve_nlte(double ne)
     if (lev_n_[i] < min_level_pop_)
       lev_n_[i] = min_level_pop_;
   }
-  
+
   #endif
 
   // set the ionization fraction
@@ -284,7 +284,7 @@ void AtomicSpecies::calculate_radiative_rates(std::vector<SedonaReal> J_nu)
       if (E_ev < chi) continue;
 
       // photoionization term
-      double sigma = adata_->get_lev_photo_cs(j,E_ev);
+      double sigma = adata_->get_lev_photo_cs(j,i);
       double Jterm = sigma*J/E_ergs;
       lev_Pic_[j] += Jterm*dnu;
 

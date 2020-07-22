@@ -59,8 +59,8 @@ struct AtomicPhotoCS
 {
     int id;
     int n_pts;
-    std::vector<double> E;
     std::vector<double> s;
+    int i_start;
 };
 
 
@@ -69,6 +69,7 @@ struct AtomicPhotoCS
 //---------------------------------------------
 class IndividualAtomData
 {
+
 
 public:
 
@@ -88,6 +89,9 @@ public:
   int n_lines_;             // number of line transitions
   int max_ion_stage_;       // maximum ionization stage to use
   int max_n_levels_;        // maximum number of levels per ion stage
+
+  locate_array *nu_grid_;
+
 
   fuzz_line_structure fuzz_lines_; // vector of fuzz lines
 
@@ -109,9 +113,19 @@ public:
   double get_lev_Eion(int i) {
     return levels_[i].E_ion;
   }
-  double get_lev_photo_cs(int i,double E_ev) {
-    return levels_[i].s_photo.value_at_with_zero_edges(E_ev);
+
+  // get photoionization cross-section of
+  // level i at frequency bin inu
+  double get_lev_photo_cs(int i, int inu);
+
+  int is_ground_state(int i)
+  {
+    int this_ion = levels_[i].ion;
+    if (i == ions_[this_ion].ground) return 1;
+    else return 0;
   }
+
+
   double get_line_nu(int i) {
     return lines_[i].nu;
   }
@@ -203,6 +217,10 @@ public:
     return &(atomlist_[z]);
   }
 
+  int get_version()
+  {
+    return datafile_version_;
+  }
 
 };
 
