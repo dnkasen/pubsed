@@ -44,8 +44,8 @@ def run_test(pdf="",runcommand=""):
     Trad = np.array(fin['T_rad'])
 
     # shift to cell centered
-    p = p + dr[0]/2.0
-    z = z + dr[1]/2.0
+    p = p - dr[0]/2.0
+    z = z - dr[1]/2.0
 
     #------------------------------------------
     # plot temperature image

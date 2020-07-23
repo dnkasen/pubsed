@@ -282,14 +282,14 @@ void grid_2D_cyln::write_plotfile(int iw, double tt, int write_mass_fractions)
   // print out x array
   hsize_t  dims_x[1]={(hsize_t)nx_};
   float *xarr = new float[nx_];
-  for (int i=0;i<nx_;i++) xarr[i] = x_out_.left(i);
+  for (int i=0;i<nx_;i++) xarr[i] = x_out_.right(i);
   H5LTmake_dataset(file_id,"r",1,dims_x,H5T_NATIVE_FLOAT,xarr);
   delete [] xarr;
 
   // print out z array
   hsize_t  dims_z[1]={(hsize_t)nz_};
   float *zarr = new float[nz_];
-  for (int i=0;i<nz_;i++) zarr[i] = z_out_.left(i);
+  for (int i=0;i<nz_;i++) zarr[i] = z_out_.right(i);
   H5LTmake_dataset(file_id,"z",1,dims_z,H5T_NATIVE_FLOAT,zarr);
   delete [] zarr;
 
