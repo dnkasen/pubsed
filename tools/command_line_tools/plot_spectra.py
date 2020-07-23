@@ -16,7 +16,7 @@ from bokeh.models import Slider
 from bokeh.models import Button
 from bokeh.models import Range1d
 from bokeh.models.widgets import RangeSlider
-from bokeh.models.formatters import PrintfTickFormatter
+from bokeh.models.formatters import PrintfTickFormatter, BasicTickFormatter
 
 import sedonalib as sed
 
@@ -43,9 +43,11 @@ full_trange = [min(t),max(t)]
 time_slider = Slider(start=full_trange[0], end=full_trange[1], value=init_time, step=1, title="time")
 
 # define sliders for setting plot ranges
-xrange_slider = RangeSlider(start=full_lrange[0], end=full_lrange[1], value=(init_lrange[0],init_lrange[1]), step=100, title="x range")
+xrange_slider = RangeSlider(start=full_lrange[0], end=full_lrange[1], value=(init_lrange[0],init_lrange[1]), step=100, title="Wavelength Range")
+xrange_slider.format = BasicTickFormatter(power_limit_high=6)
 # define sliders for setting plot ranges
-yrange_slider = RangeSlider(start=full_frange[0], end=full_frange[1], value=(full_frange[0],full_frange[1]), step=100, title="y range")
+yrange_slider = RangeSlider(start=full_frange[0], end=full_frange[1], value=(full_frange[0],full_frange[1]), step=100, title="Specific Luminosity Range")
+yrange_slider.format = BasicTickFormatter(power_limit_high=6)
 #tick_format = Slider(name='Distance', format=PrintfTickFormatter(format='%.3f m'))
 
 # define plot type
