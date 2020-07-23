@@ -1,0 +1,22 @@
+Test to compare sedona Rosseland mean opacities to OPAL results
+
+OPAL data is downloaded from
+https://opalopacity.llnl.gov/existing.html
+
+Specifically the file: GN93hz.dat
+
+The file opal_data_header.dat gives information about this file
+
+The files
+opal_X1.0_Y0.0_Z0.0.dat
+opal_X0.9_Y0.1_Z0.0.dat
+Pull tables for specific compositions out of GH93hz.dat
+
+Opal opacities are given as a function of temperature T and log R
+where R = rho/(T/1e6)**3
+
+Use snopac and param.lua to caculate for various
+compositions, temperatures, densities.
+It produces the file: mean_opacities.dat
+which gives Sedona rosseland mean opacities
+

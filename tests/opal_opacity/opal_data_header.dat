@@ -1,0 +1,188 @@
+Updated OPAL Rosseland mean opacity tables   (date 10/03/95)
+Description of modifications to appear in Iglesias & Rogers 1996, ApJ
+
+ lines 1-60 contain brief table description
+ lines 61-240 contain table summaries
+ lines 241-end contain tables. Each table is 77 lines long
+
+NOTE: File is compatible with interpolation routines.
+
+Definitions:
+
+The logarithm of the Rosseland mean opacity [cm**2/g] as a function
+of log(T) for columns of constant log(R), where
+
+   R=density[g/cm**3]/T6**3, T6=1.e-6*T[degrees]
+   log(T) range: 70 values from 3.75 to 8.70
+   log(R) range: 19 values from -8.0 to +1.0
+
+NOTE: Tables are NOT rectangular
+      values=9.999 or blanks are out of table range
+
+Composition parameters:
+  X   = Hydrogen mass fraction
+  Y   = Helium mass fraction
+  Z   = Metal mass fraction
+  dXc = extra C mass fraction beyond that in Z
+  dXo = extra O mass fraction beyond that in Z
+
+Abundances for $G&N'93 Solar$   composition:
+
+Element   Abundance - relative metal: number fraction   mass fraction
+  H     log(A)=12.000
+  He    log(A)=10.990
+  Li    log(A)= 1.160
+  Be    log(A)= 1.150
+  B     log(A)= 2.600
+  C     log(A)= 8.550  -----------------  0.245518        0.173285
+  N     log(A)= 7.970  -----------------  0.064578        0.053152
+  O     log(A)= 8.870  -----------------  0.512966        0.482273
+  F     log(A)= 4.560
+  Ne    log(A)= 8.080  -----------------  0.083210        0.098668
+  Na    log(A)= 6.330  -----------------  0.001479        0.001999
+  Mg    log(A)= 7.580  -----------------  0.026308        0.037573
+  Al    log(A)= 6.470  -----------------  0.002042        0.003238
+  Si    log(A)= 7.550  -----------------  0.024552        0.040520
+  P     log(A)= 5.450  -----------------  0.000195        0.000355
+  S     log(A)= 7.210  -----------------  0.011222        0.021142
+  Cl    log(A)= 5.500  -----------------  0.000219        0.000456
+  Ar    log(A)= 6.520  -----------------  0.002291        0.005379
+  K     log(A)= 5.120  -----------------  0.000091        0.000210
+  Ca    log(A)= 6.360  -----------------  0.001586        0.003734
+  Sc    log(A)= 3.170
+  Ti    log(A)= 5.020  -----------------  0.000075        0.000211
+  V     log(A)= 4.000
+  Cr    log(A)= 5.670  -----------------  0.000329        0.001005
+  Mn    log(A)= 5.390  -----------------  0.000170        0.000548
+  Fe    log(A)= 7.500  -----------------  0.021877        0.071794
+  Co    log(A)= 4.920
+  Ni    log(A)= 6.250  -----------------  0.001293        0.004459
+
+Table Summaries- There are 126 tables
+
+TABLE #  1  $G&N'93 Solar$    X=0.0000 Y=1.0000 Z=0.0000 dXc=0.0000 dXo=0.0000
+TABLE #  2  $G&N'93 Solar$    X=0.0000 Y=0.9999 Z=0.0001 dXc=0.0000 dXo=0.0000
+TABLE #  3  $G&N'93 Solar$    X=0.0000 Y=0.9997 Z=0.0003 dXc=0.0000 dXo=0.0000
+TABLE #  4  $G&N'93 Solar$    X=0.0000 Y=0.9990 Z=0.0010 dXc=0.0000 dXo=0.0000
+TABLE #  5  $G&N'93 Solar$    X=0.0000 Y=0.9980 Z=0.0020 dXc=0.0000 dXo=0.0000
+TABLE #  6  $G&N'93 Solar$    X=0.0000 Y=0.9960 Z=0.0040 dXc=0.0000 dXo=0.0000
+TABLE #  7  $G&N'93 Solar$    X=0.0000 Y=0.9900 Z=0.0100 dXc=0.0000 dXo=0.0000
+TABLE #  8  $G&N'93 Solar$    X=0.0000 Y=0.9800 Z=0.0200 dXc=0.0000 dXo=0.0000
+TABLE #  9  $G&N'93 Solar$    X=0.0000 Y=0.9700 Z=0.0300 dXc=0.0000 dXo=0.0000
+TABLE # 10  $G&N'93 Solar$    X=0.0000 Y=0.9600 Z=0.0400 dXc=0.0000 dXo=0.0000
+TABLE # 11  $G&N'93 Solar$    X=0.0000 Y=0.9400 Z=0.0600 dXc=0.0000 dXo=0.0000
+TABLE # 12  $G&N'93 Solar$    X=0.0000 Y=0.9200 Z=0.0800 dXc=0.0000 dXo=0.0000
+TABLE # 13  $G&N'93 Solar$    X=0.0000 Y=0.9000 Z=0.1000 dXc=0.0000 dXo=0.0000
+TABLE # 14  $G&N'93 Solar$    X=0.1000 Y=0.9000 Z=0.0000 dXc=0.0000 dXo=0.0000
+TABLE # 15  $G&N'93 Solar$    X=0.1000 Y=0.8999 Z=0.0001 dXc=0.0000 dXo=0.0000
+TABLE # 16  $G&N'93 Solar$    X=0.1000 Y=0.8997 Z=0.0003 dXc=0.0000 dXo=0.0000
+TABLE # 17  $G&N'93 Solar$    X=0.1000 Y=0.8990 Z=0.0010 dXc=0.0000 dXo=0.0000
+TABLE # 18  $G&N'93 Solar$    X=0.1000 Y=0.8980 Z=0.0020 dXc=0.0000 dXo=0.0000
+TABLE # 19  $G&N'93 Solar$    X=0.1000 Y=0.8960 Z=0.0040 dXc=0.0000 dXo=0.0000
+TABLE # 20  $G&N'93 Solar$    X=0.1000 Y=0.8900 Z=0.0100 dXc=0.0000 dXo=0.0000
+TABLE # 21  $G&N'93 Solar$    X=0.1000 Y=0.8800 Z=0.0200 dXc=0.0000 dXo=0.0000
+TABLE # 22  $G&N'93 Solar$    X=0.1000 Y=0.8700 Z=0.0300 dXc=0.0000 dXo=0.0000
+TABLE # 23  $G&N'93 Solar$    X=0.1000 Y=0.8600 Z=0.0400 dXc=0.0000 dXo=0.0000
+TABLE # 24  $G&N'93 Solar$    X=0.1000 Y=0.8400 Z=0.0600 dXc=0.0000 dXo=0.0000
+TABLE # 25  $G&N'93 Solar$    X=0.1000 Y=0.8200 Z=0.0800 dXc=0.0000 dXo=0.0000
+TABLE # 26  $G&N'93 Solar$    X=0.1000 Y=0.8000 Z=0.1000 dXc=0.0000 dXo=0.0000
+TABLE # 27  $G&N'93 Solar$    X=0.2000 Y=0.8000 Z=0.0000 dXc=0.0000 dXo=0.0000
+TABLE # 28  $G&N'93 Solar$    X=0.2000 Y=0.7999 Z=0.0001 dXc=0.0000 dXo=0.0000
+TABLE # 29  $G&N'93 Solar$    X=0.2000 Y=0.7997 Z=0.0003 dXc=0.0000 dXo=0.0000
+TABLE # 30  $G&N'93 Solar$    X=0.2000 Y=0.7990 Z=0.0010 dXc=0.0000 dXo=0.0000
+TABLE # 31  $G&N'93 Solar$    X=0.2000 Y=0.7980 Z=0.0020 dXc=0.0000 dXo=0.0000
+TABLE # 32  $G&N'93 Solar$    X=0.2000 Y=0.7960 Z=0.0040 dXc=0.0000 dXo=0.0000
+TABLE # 33  $G&N'93 Solar$    X=0.2000 Y=0.7900 Z=0.0100 dXc=0.0000 dXo=0.0000
+TABLE # 34  $G&N'93 Solar$    X=0.2000 Y=0.7800 Z=0.0200 dXc=0.0000 dXo=0.0000
+TABLE # 35  $G&N'93 Solar$    X=0.2000 Y=0.7700 Z=0.0300 dXc=0.0000 dXo=0.0000
+TABLE # 36  $G&N'93 Solar$    X=0.2000 Y=0.7600 Z=0.0400 dXc=0.0000 dXo=0.0000
+TABLE # 37  $G&N'93 Solar$    X=0.2000 Y=0.7400 Z=0.0600 dXc=0.0000 dXo=0.0000
+TABLE # 38  $G&N'93 Solar$    X=0.2000 Y=0.7200 Z=0.0800 dXc=0.0000 dXo=0.0000
+TABLE # 39  $G&N'93 Solar$    X=0.2000 Y=0.7000 Z=0.1000 dXc=0.0000 dXo=0.0000
+TABLE # 40  $G&N'93 Solar$    X=0.3500 Y=0.6500 Z=0.0000 dXc=0.0000 dXo=0.0000
+TABLE # 41  $G&N'93 Solar$    X=0.3500 Y=0.6499 Z=0.0001 dXc=0.0000 dXo=0.0000
+TABLE # 42  $G&N'93 Solar$    X=0.3500 Y=0.6497 Z=0.0003 dXc=0.0000 dXo=0.0000
+TABLE # 43  $G&N'93 Solar$    X=0.3500 Y=0.6490 Z=0.0010 dXc=0.0000 dXo=0.0000
+TABLE # 44  $G&N'93 Solar$    X=0.3500 Y=0.6480 Z=0.0020 dXc=0.0000 dXo=0.0000
+TABLE # 45  $G&N'93 Solar$    X=0.3500 Y=0.6460 Z=0.0040 dXc=0.0000 dXo=0.0000
+TABLE # 46  $G&N'93 Solar$    X=0.3500 Y=0.6400 Z=0.0100 dXc=0.0000 dXo=0.0000
+TABLE # 47  $G&N'93 Solar$    X=0.3500 Y=0.6300 Z=0.0200 dXc=0.0000 dXo=0.0000
+TABLE # 48  $G&N'93 Solar$    X=0.3500 Y=0.6200 Z=0.0300 dXc=0.0000 dXo=0.0000
+TABLE # 49  $G&N'93 Solar$    X=0.3500 Y=0.6100 Z=0.0400 dXc=0.0000 dXo=0.0000
+TABLE # 50  $G&N'93 Solar$    X=0.3500 Y=0.5900 Z=0.0600 dXc=0.0000 dXo=0.0000
+TABLE # 51  $G&N'93 Solar$    X=0.3500 Y=0.5700 Z=0.0800 dXc=0.0000 dXo=0.0000
+TABLE # 52  $G&N'93 Solar$    X=0.3500 Y=0.5500 Z=0.1000 dXc=0.0000 dXo=0.0000
+TABLE # 53  $G&N'93 Solar$    X=0.5000 Y=0.5000 Z=0.0000 dXc=0.0000 dXo=0.0000
+TABLE # 54  $G&N'93 Solar$    X=0.5000 Y=0.4999 Z=0.0001 dXc=0.0000 dXo=0.0000
+TABLE # 55  $G&N'93 Solar$    X=0.5000 Y=0.4997 Z=0.0003 dXc=0.0000 dXo=0.0000
+TABLE # 56  $G&N'93 Solar$    X=0.5000 Y=0.4990 Z=0.0010 dXc=0.0000 dXo=0.0000
+TABLE # 57  $G&N'93 Solar$    X=0.5000 Y=0.4980 Z=0.0020 dXc=0.0000 dXo=0.0000
+TABLE # 58  $G&N'93 Solar$    X=0.5000 Y=0.4960 Z=0.0040 dXc=0.0000 dXo=0.0000
+TABLE # 59  $G&N'93 Solar$    X=0.5000 Y=0.4900 Z=0.0100 dXc=0.0000 dXo=0.0000
+TABLE # 60  $G&N'93 Solar$    X=0.5000 Y=0.4800 Z=0.0200 dXc=0.0000 dXo=0.0000
+TABLE # 61  $G&N'93 Solar$    X=0.5000 Y=0.4700 Z=0.0300 dXc=0.0000 dXo=0.0000
+TABLE # 62  $G&N'93 Solar$    X=0.5000 Y=0.4600 Z=0.0400 dXc=0.0000 dXo=0.0000
+TABLE # 63  $G&N'93 Solar$    X=0.5000 Y=0.4400 Z=0.0600 dXc=0.0000 dXo=0.0000
+TABLE # 64  $G&N'93 Solar$    X=0.5000 Y=0.4200 Z=0.0800 dXc=0.0000 dXo=0.0000
+TABLE # 65  $G&N'93 Solar$    X=0.5000 Y=0.4000 Z=0.1000 dXc=0.0000 dXo=0.0000
+TABLE # 66  $G&N'93 Solar$    X=0.7000 Y=0.3000 Z=0.0000 dXc=0.0000 dXo=0.0000
+TABLE # 67  $G&N'93 Solar$    X=0.7000 Y=0.2999 Z=0.0001 dXc=0.0000 dXo=0.0000
+TABLE # 68  $G&N'93 Solar$    X=0.7000 Y=0.2997 Z=0.0003 dXc=0.0000 dXo=0.0000
+TABLE # 69  $G&N'93 Solar$    X=0.7000 Y=0.2990 Z=0.0010 dXc=0.0000 dXo=0.0000
+TABLE # 70  $G&N'93 Solar$    X=0.7000 Y=0.2980 Z=0.0020 dXc=0.0000 dXo=0.0000
+TABLE # 71  $G&N'93 Solar$    X=0.7000 Y=0.2960 Z=0.0040 dXc=0.0000 dXo=0.0000
+TABLE # 72  $G&N'93 Solar$    X=0.7000 Y=0.2900 Z=0.0100 dXc=0.0000 dXo=0.0000
+TABLE # 73  $G&N'93 Solar$    X=0.7000 Y=0.2800 Z=0.0200 dXc=0.0000 dXo=0.0000
+TABLE # 74  $G&N'93 Solar$    X=0.7000 Y=0.2700 Z=0.0300 dXc=0.0000 dXo=0.0000
+TABLE # 75  $G&N'93 Solar$    X=0.7000 Y=0.2600 Z=0.0400 dXc=0.0000 dXo=0.0000
+TABLE # 76  $G&N'93 Solar$    X=0.7000 Y=0.2400 Z=0.0600 dXc=0.0000 dXo=0.0000
+TABLE # 77  $G&N'93 Solar$    X=0.7000 Y=0.2200 Z=0.0800 dXc=0.0000 dXo=0.0000
+TABLE # 78  $G&N'93 Solar$    X=0.7000 Y=0.2000 Z=0.1000 dXc=0.0000 dXo=0.0000
+TABLE # 79  $G&N'93 Solar$    X=0.8000 Y=0.2000 Z=0.0000 dXc=0.0000 dXo=0.0000
+TABLE # 80  $G&N'93 Solar$    X=0.8000 Y=0.1999 Z=0.0001 dXc=0.0000 dXo=0.0000
+TABLE # 81  $G&N'93 Solar$    X=0.8000 Y=0.1997 Z=0.0003 dXc=0.0000 dXo=0.0000
+TABLE # 82  $G&N'93 Solar$    X=0.8000 Y=0.1990 Z=0.0010 dXc=0.0000 dXo=0.0000
+TABLE # 83  $G&N'93 Solar$    X=0.8000 Y=0.1980 Z=0.0020 dXc=0.0000 dXo=0.0000
+TABLE # 84  $G&N'93 Solar$    X=0.8000 Y=0.1960 Z=0.0040 dXc=0.0000 dXo=0.0000
+TABLE # 85  $G&N'93 Solar$    X=0.8000 Y=0.1900 Z=0.0100 dXc=0.0000 dXo=0.0000
+TABLE # 86  $G&N'93 Solar$    X=0.8000 Y=0.1800 Z=0.0200 dXc=0.0000 dXo=0.0000
+TABLE # 87  $G&N'93 Solar$    X=0.8000 Y=0.1700 Z=0.0300 dXc=0.0000 dXo=0.0000
+TABLE # 88  $G&N'93 Solar$    X=0.8000 Y=0.1600 Z=0.0400 dXc=0.0000 dXo=0.0000
+TABLE # 89  $G&N'93 Solar$    X=0.8000 Y=0.1400 Z=0.0600 dXc=0.0000 dXo=0.0000
+TABLE # 90  $G&N'93 Solar$    X=0.8000 Y=0.1200 Z=0.0800 dXc=0.0000 dXo=0.0000
+TABLE # 91  $G&N'93 Solar$    X=0.8000 Y=0.1000 Z=0.1000 dXc=0.0000 dXo=0.0000
+TABLE # 92  $G&N'93 Solar$    X=0.9000 Y=0.1000 Z=0.0000 dXc=0.0000 dXo=0.0000
+TABLE # 93  $G&N'93 Solar$    X=0.9000 Y=0.0999 Z=0.0001 dXc=0.0000 dXo=0.0000
+TABLE # 94  $G&N'93 Solar$    X=0.9000 Y=0.0997 Z=0.0003 dXc=0.0000 dXo=0.0000
+TABLE # 95  $G&N'93 Solar$    X=0.9000 Y=0.0990 Z=0.0010 dXc=0.0000 dXo=0.0000
+TABLE # 96  $G&N'93 Solar$    X=0.9000 Y=0.0980 Z=0.0020 dXc=0.0000 dXo=0.0000
+TABLE # 97  $G&N'93 Solar$    X=0.9000 Y=0.0960 Z=0.0040 dXc=0.0000 dXo=0.0000
+TABLE # 98  $G&N'93 Solar$    X=0.9000 Y=0.0900 Z=0.0100 dXc=0.0000 dXo=0.0000
+TABLE # 99  $G&N'93 Solar$    X=0.9000 Y=0.0800 Z=0.0200 dXc=0.0000 dXo=0.0000
+TABLE #100  $G&N'93 Solar$    X=0.9000 Y=0.0700 Z=0.0300 dXc=0.0000 dXo=0.0000
+TABLE #101  $G&N'93 Solar$    X=0.9000 Y=0.0600 Z=0.0400 dXc=0.0000 dXo=0.0000
+TABLE #102  $G&N'93 Solar$    X=0.9000 Y=0.0400 Z=0.0600 dXc=0.0000 dXo=0.0000
+TABLE #103  $G&N'93 Solar$    X=0.9000 Y=0.0200 Z=0.0800 dXc=0.0000 dXo=0.0000
+TABLE #104  $G&N'93 Solar$    X=0.9000 Y=0.0000 Z=0.1000 dXc=0.0000 dXo=0.0000
+TABLE #105  $G&N'93 Solar$    X=0.9500 Y=0.0500 Z=0.0000 dXc=0.0000 dXo=0.0000
+TABLE #106  $G&N'93 Solar$    X=0.9500 Y=0.0499 Z=0.0001 dXc=0.0000 dXo=0.0000
+TABLE #107  $G&N'93 Solar$    X=0.9500 Y=0.0497 Z=0.0003 dXc=0.0000 dXo=0.0000
+TABLE #108  $G&N'93 Solar$    X=0.9500 Y=0.0490 Z=0.0010 dXc=0.0000 dXo=0.0000
+TABLE #109  $G&N'93 Solar$    X=0.9500 Y=0.0480 Z=0.0020 dXc=0.0000 dXo=0.0000
+TABLE #110  $G&N'93 Solar$    X=0.9500 Y=0.0460 Z=0.0040 dXc=0.0000 dXo=0.0000
+TABLE #111  $G&N'93 Solar$    X=0.9500 Y=0.0400 Z=0.0100 dXc=0.0000 dXo=0.0000
+TABLE #112  $G&N'93 Solar$    X=0.9500 Y=0.0300 Z=0.0200 dXc=0.0000 dXo=0.0000
+TABLE #113  $G&N'93 Solar$    X=0.9500 Y=0.0200 Z=0.0300 dXc=0.0000 dXo=0.0000
+TABLE #114  $G&N'93 Solar$    X=0.9500 Y=0.0100 Z=0.0400 dXc=0.0000 dXo=0.0000
+TABLE #115  $G&N'93 Solar$    X=1.0000 Y=0.0000 Z=0.0000 dXc=0.0000 dXo=0.0000
+TABLE #116  $G&N'93 Solar$    X=0.9999 Y=0.0000 Z=0.0001 dXc=0.0000 dXo=0.0000
+TABLE #117  $G&N'93 Solar$    X=0.9997 Y=0.0000 Z=0.0003 dXc=0.0000 dXo=0.0000
+TABLE #118  $G&N'93 Solar$    X=0.9990 Y=0.0000 Z=0.0010 dXc=0.0000 dXo=0.0000
+TABLE #119  $G&N'93 Solar$    X=0.9980 Y=0.0000 Z=0.0020 dXc=0.0000 dXo=0.0000
+TABLE #120  $G&N'93 Solar$    X=0.9960 Y=0.0000 Z=0.0040 dXc=0.0000 dXo=0.0000
+TABLE #121  $G&N'93 Solar$    X=0.9900 Y=0.0000 Z=0.0100 dXc=0.0000 dXo=0.0000
+TABLE #122  $G&N'93 Solar$    X=0.9800 Y=0.0000 Z=0.0200 dXc=0.0000 dXo=0.0000
+TABLE #123  $G&N'93 Solar$    X=0.9700 Y=0.0000 Z=0.0300 dXc=0.0000 dXo=0.0000
+TABLE #124  $G&N'93 Solar$    X=0.9600 Y=0.0000 Z=0.0400 dXc=0.0000 dXo=0.0000
+TABLE #125  $G&N'93 Solar$    X=0.9400 Y=0.0000 Z=0.0600 dXc=0.0000 dXo=0.0000
+TABLE #126  $G&N'93 Solar$    X=0.9200 Y=0.0000 Z=0.0800 dXc=0.0000 dXo=0.0000
