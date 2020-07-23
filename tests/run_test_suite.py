@@ -41,6 +41,7 @@ parser.add_option("--testlist","-t",dest="testlist",type='string')
 parser.add_option("--testfile","-f",dest="testfile",type="string")
 parser.add_option("--outfile","-o",dest="outfile",type="string")
 parser.add_option("-v",action="store_true",dest="verbose")
+parser.add_option("--mpi_args",dest="mpi_args", type="string")
 
 (opts, args) = parser.parse_args()
 
@@ -64,7 +65,13 @@ else:
     pdffile = homedir + '/test_results_' + date + '.pdf'
 pdf = PdfPages(pdffile)
 
-runcommand = "mpirun -np " + str(nproc) + " ./" + executable + " " + paramname
+if (opts.mpi_args):
+  mpi_args = opts.mpi_args
+else:
+  mpi_args = ""
+
+runcommand = "mpirun -np " + str(nproc) + " " + mpi_args + " ./" + executable + " " + paramname
+print(runcommand)
 if (not opts.verbose):
     runcommand = runcommand + " >> " + outfile + " 2>&1"
 
