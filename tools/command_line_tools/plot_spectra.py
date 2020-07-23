@@ -64,12 +64,12 @@ redraw_button.on_click(change_click)
 source = ColumnDataSource(data=dict(x=[], y=[]))
 
 # make the plot
-p = figure(plot_height=600, plot_width=800, title="", toolbar_location="below")
+p = figure(plot_height=600, plot_width=800, title="", toolbar_location="below",
+           x_axis_label=r"λ [Å]", y_axis_label=r"L_λ [erg/s/Å]")
 p.line(x="x", y="y", source=source, line_width=2)
 p.background_fill_color = "#efefef"
 p.x_range=Range1d(1000,9000)
 p.y_range=Range1d(0,50)
-
 
 # function that updates data selected
 def select_data():
