@@ -71,7 +71,6 @@ else:
   mpi_args = ""
 
 runcommand = "mpirun -np " + str(nproc) + " " + mpi_args + " ./" + executable + " " + paramname
-print(runcommand)
 if (not opts.verbose):
     runcommand = runcommand + " >> " + outfile + " 2>&1"
 
