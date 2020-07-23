@@ -103,6 +103,8 @@ class SedonaPltFileBase():
         while using something of the form 'self.data[key]' does not.
         """
 
+        assert self.data is not None, "Must call load_data() before attempting data access"
+
         if key in self.data:
             return self.data[key]
         elif key in self.derived_fields:
