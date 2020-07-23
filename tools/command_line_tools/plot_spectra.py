@@ -67,7 +67,7 @@ source = ColumnDataSource(data=dict(x=[], y=[]))
 
 # make the plot
 p = figure(plot_height=600, plot_width=800, title="", toolbar_location="below",
-           x_axis_label=r"λ [Å]", y_axis_label=r"L_λ [erg/s/Å]")
+           x_axis_label=r"Wavelength [Å]", y_axis_label=r"Specific Luminosity [erg/s/Å]")
 p.line(x="x", y="y", source=source, line_width=2)
 p.background_fill_color = "#efefef"
 p.x_range=Range1d(1000,9000)
@@ -93,6 +93,11 @@ def update_range(newval,type):
 def update():
     x, y = select_data()
     source.data = dict(x=x, y=y)
+
+    xrange_slider.start = min(x)
+    xrange_slider.end   = max(x)
+    yrange_slider.start = min(y)
+    yrange_slider.end   = max(y)
 
     p.x_range.start = xrange_slider.value[0]
     p.x_range.end   = xrange_slider.value[1]
