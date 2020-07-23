@@ -68,17 +68,18 @@ class SedonaPltFileBase():
             self.data = data
             self.dim = len(data['rho'].shape)
             self.data_status = "loaded"
-            self.data_keys = self.data.keys()
+            self._set_fields_lists()
         elif autoload:
             # Load data from file
             self.load_data()
         else:
             # Delay loading until later
-            self.data = self.dim = self.data_keys = None
+            self.data = self.dim = None
+            self.data_keys = self.derived_fields = self.fields = ()
             self.data_status = "unloaded"
 
-        self.derived_fields = set(fetch_derived_fields(self))
-        self.fields = set(self.data_keys) | self.derived_fields
+        # Velocity data keys, cleared upon loading data
+        self._vel_keys = []
 
         #
         # What follows should be set by the extending subclass
@@ -86,8 +87,6 @@ class SedonaPltFileBase():
 
         # Tuple of coordinates (e.g. ('r', 'z'))
         self.coords    = ()
-        # Velocity data keys, cleared upon loading data
-        self._vel_keys = []
 
         # Default plot variables
         self.default_x_key = None
@@ -112,13 +111,19 @@ class SedonaPltFileBase():
         else:
             raise KeyError("Field {} is not in dataset {}".format(repr(key), repr(self.name)))
 
+    def _set_fields_lists(self):
+
+        self.data_keys = self.data.keys()
+        self.derived_fields = set(fetch_derived_fields(self))
+        self.fields = set(self.data_keys) | self.derived_fields
+
     def load_data(self):
         """ Load the data contained within the plt file. """
 
-        self.data, self.dim = load_plt_data(name)
+        self.data, self.dim = load_plt_data(self.name)
         self.data_status = "loaded"
-        self.data_keys = self.data.keys()
         self._vel_keys = []
+        self._set_fields_lists()
 
     def vel_keys(self):
         """ A list of the velocities in the dataset, in (r, x, y, z) order. """
