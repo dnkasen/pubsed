@@ -310,21 +310,21 @@ void grid_3D_cart::write_plotfile(int iw, double tt, int write_mass_fractions)
 	// print out x array
 	hsize_t  dims_x[1]={(hsize_t)nx_};
 	float *xarr = new float[nx_];
-	for (int i=0;i<nx_;i++) xarr[i] = x_out_.left(i);
+	for (int i=0;i<nx_;i++) xarr[i] = x_out_.right(i);
 	H5LTmake_dataset(file_id,"x",1,dims_x,H5T_NATIVE_FLOAT,xarr);
   delete [] xarr;
 
   // print out y array
 	hsize_t  dims_y[1]={(hsize_t)ny_};
 	float *yarr = new float[ny_];
-	for (int i=0;i<ny_;i++) yarr[i] = y_out_.left(i);
+	for (int i=0;i<ny_;i++) yarr[i] = y_out_.right(i);
 	H5LTmake_dataset(file_id,"y",1,dims_y,H5T_NATIVE_FLOAT,yarr);
   delete [] yarr;
 
   // print out z array
 	hsize_t  dims_z[1]={(hsize_t)nz_};
 	float *zarr = new float[nz_];
-	for (int i=0;i<nz_;i++) zarr[i] = z_out_.left(i);
+	for (int i=0;i<nz_;i++) zarr[i] = z_out_.right(i);
 	H5LTmake_dataset(file_id,"z",1,dims_z,H5T_NATIVE_FLOAT,zarr);
   delete [] zarr;
 

@@ -39,9 +39,9 @@ def run_test(pdf="",runcommand=""):
     # open up and read output file
     fin = h5py.File('plt_00001.h5','r')
     dr   = np.array(fin['dr'])
-    x    = np.array(fin['x']) + dr[0]/2.0
-    y    = np.array(fin['y']) + dr[1]/2.0
-    z    = np.array(fin['z']) + dr[2]/2.0
+    x    = np.array(fin['x']) - dr[0]/2.0
+    y    = np.array(fin['y']) - dr[1]/2.0
+    z    = np.array(fin['z']) - dr[2]/2.0
     Trad = np.array(fin['T_rad'])
 
 
