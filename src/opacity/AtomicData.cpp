@@ -89,16 +89,10 @@ double IndividualAtomData::get_lev_photo_cs(int i, int inu)
   if (ics < 0)
   {
     double nu = nu_grid_->center(inu);
-    double E = nu*pc::h/pc::ev_to_ergs;
-
-    double E_ion = levels_[i].E_ion;
-    double nu_t = E_ion*pc::ev_to_ergs/pc::h;
+    double nu_t = levels_[i].nu_t;
     if (nu < nu_t) return 0;
-
-    double E_ground = ions_[levels_[i].ion].chi;
-    double n_eff = pow(1 - (E_ground - E_ion)/E_ground,-0.5);
-    double s_fac = n_eff/(levels_[i].ion+1)/(levels_[i].ion + 1);
-    return 6.3e-18*s_fac*pow(E/E_ion,-3.0); //2.5);
+    double fac = levels_[i].nu_t/nu;
+    return levels_[i].sigma0*fac*fac*fac;
   }
 
   // if frequency bin is less than threshorld, cs = 0
@@ -349,10 +343,18 @@ int AtomicData::read_newstyle_atomic_data(int z)
       lev.ion = ion;
       lev.g = g_iarr[i];
       if (lev.g == 0) lev.g = 1;
-      lev.cs = cs_iarr[i];
       lev.E = E_darr[i];
       lev.E_ion = chi - lev.E;
       lev.ic = ibase + tot_n_levels;
+      lev.cs = cs_iarr[i];
+
+      // store hydrogenic photo cs stuff
+      lev.nu_t = lev.E_ion*pc::ev_to_ergs/pc::h;
+      lev.sigma0 = 6.3e-18;
+            // effective excitation quantum number
+      //double E_ground = atom->ions_[atom->levels_[i].ion].chi;
+      //double n_eff = pow(1 - (E_ground - E_ion)/E_ground,-0.5);
+      //double s_fac = n_eff/(atom->levels_[i].ion+1)/(atom->levels_[i].ion + 1);
       atom->levels_.push_back(lev);
     }
 
@@ -789,52 +791,22 @@ int AtomicData::read_oldstyle_atomic_data(int z)
   }
 
   // ----------------------------------------
-  // read photoionization cross-sections
-  // if not available, just use hydrogenic approx
+  // photoionization cross-sections
+  // for oldstyle files are just hydrogenic
   // ----------------------------------------
-  int npts     = 100;
-  double fmax  = 10;
   for (int i=0;i<atom->n_levels_;++i)
   {
      // set photoionization cross-section
      double E_ion = atom->levels_[i].E_ion;
-     double E_max = E_ion*fmax;
-     double dE = (E_max - E_ion)/npts;
-     atom->levels_[i].s_photo.init(E_ion,E_max, dE);
 
      // effective excitation quantum number
-     double E_ground = atom->ions_[atom->levels_[i].ion].chi;
-     double n_eff = pow(1 - (E_ground - E_ion)/E_ground,-0.5);
-     double s_fac = n_eff/(atom->levels_[i].ion+1)/(atom->levels_[i].ion + 1);
-
+     //double E_ground = atom->ions_[atom->levels_[i].ion].chi;
+     //double n_eff = pow(1 - (E_ground - E_ion)/E_ground,-0.5);
+     //double s_fac = n_eff/(atom->levels_[i].ion+1)/(atom->levels_[i].ion + 1);
     double nu_t = E_ion*pc::ev_to_ergs/pc::h;
-    int istart = 0; int istop = 0;
-    for (int k=0;k<nu_grid_.size();k++)
-    {
-      if (nu_grid_.center(k) > nu_t)
-        if (istart == 0) istart = k;
+    atom->levels_[i].nu_t   = nu_t;
+    atom->levels_[i].sigma0 =  6.3e-18;
 
-      if (nu_grid_.center(k) > 10*nu_t)
-        if (istop == 0) istop = k;
-    }
-//    std::cout << "is " << i << " " << nu_t << " " << E_ion << "\n"; //istop - istart << " " << istop << "\n";
-
-     //verner data
-     // double V_Eth = 0.1360E+02;
-     // double V_E0  = 0.4298E+00;
-     // double V_s0  = 0.5475E+05;
-     // double V_ya  = 0.3288E+02;
-     // double V_P   = 0.2963E+01;
-     // double V_yw  = 0.0000E+00;
-
-     for (int j=0;j<npts;j++)
-     {
-        double E = atom->levels_[i].s_photo.x[j];
-        //double y = E/V_E0;
-        //double Fr = ((y-1)*(y-1) + V_yw*V_yw)*
-        double sigma = 6.3e-18*s_fac*pow(E/E_ion,-3.0); //2.5);
-        atom->levels_[i].s_photo.y[j] = sigma;
-     }
   }
 
    H5Fclose(file_id);

@@ -48,10 +48,13 @@ struct AtomicLevel
   double E;             // excitation energy above ground (in eV)
   double E_ion;         // energy to ionize (in eV)
 
+  double nu_t;         // threshold frequency for ionization
+  double sigma0;       // threshold hydrogenic photo cs
+
   // photoionization cross-section as a function of wavelength
-  xy_array s_photo;
+  //xy_array s_photo;
   // recombination coefficient as a function of temperature
-  xy_array a_rec;
+  //xy_array a_rec;
 
 };
 
