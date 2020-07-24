@@ -19,6 +19,7 @@ Sedona6 Users Guide
    radiation_transport
    sources
    opacity
+   temperature_solver
    hydrodynamics
    plotting
    all_parameters
