@@ -4,6 +4,8 @@
 #include "transport.h"
 #include "physical_constants.h"
 #include "grid_general.h"
+#include "brent.h"
+#include "brent.cpp"
 
 namespace pc = physical_constants;
 
@@ -33,16 +35,34 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
     gas_state_ptr->dens_ = z->rho;
     gas_state_ptr->temp_ = z->T_gas;
 
+    transportMemFn f;
+
     // For LTE, do an initial solve of the gas state
     if (gas_state_ptr->use_nlte_ == 0)
     {
       solve_error = gas_state_ptr->solve_state();
       gas_state_ptr->computeOpacity(abs_opacity_[i],scat,emis);
+      f = &transport::rad_eq_wrapper_LTE;
     }
+    else f = &transport::rad_eq_wrapper_NLTE;
 
     // Calculate equilibrium temperature.
     // Additional gas_state solve may also happen here
-    grid->z[i].T_gas = temp_brent_method(gas_state_ptr, i,1,solve_error);
+    //    grid->z[i].T_gas = temp_brent_method(gas_state_ptr, i,1,solve_error);
+
+    brent_args.gas_state_ptr = gas_state_ptr;
+    brent_args.c = i;
+    brent_args.solve_flag = 1;
+    brent_args.solve_error = &solve_error;
+
+    brent_solver<transport> solver;
+
+    int n; // will store number of brent solver iterations
+    // still using hard-coded eps; that could be set here
+    // lower bracket and uppr bracket have been set in .lua files
+    double T_solution = solver.solve(*this, f, temp_min_value_,temp_max_value_,0.01, &n);
+    solve_error = *(brent_args.solve_error);
+    grid->z[i].T_gas = T_solution;
 
     if (gas_state_ptr->use_nlte_ == 0)
     {
@@ -74,8 +94,31 @@ void transport::solve_eq_temperature()
     grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
     else
   {
-      // solve_error won't be updated here because that's for the gas_state solve which isn't happening here
-     grid->z[i].T_gas = temp_brent_method(gas_state_ptr, i,0,solve_error);
+
+    transportMemFn f;
+    if (gas_state_ptr->use_nlte_ == 0)
+    {
+      f = &transport::rad_eq_wrapper_LTE;
+    }
+    else f = &transport::rad_eq_wrapper_NLTE;
+
+    
+    brent_args.gas_state_ptr = gas_state_ptr;
+    brent_args.c = i;
+    brent_args.solve_flag = 0;
+    brent_args.solve_error = &solve_error;  // solve_error won't actually be updated here because that's for the gas_state solve which isn't happening here
+
+    brent_solver<transport> solver;
+    int n; // will store number of brent solver iterations
+    // still using hard-coded eps; that could be set here
+    // lower bracket and uppr bracket have been set in .lua files
+    double T_solution = solver.solve(*this, f, temp_min_value_,temp_max_value_,0.01, &n);
+    //    solve_error = *(brent_args.solve_error); // see abovee
+
+    grid->z[i].T_gas = T_solution;
+
+    // solve_error won't be updated here because that's for the gas_state solve which isn't happening here
+    //     grid->z[i].T_gas = temp_brent_method(gas_state_ptr, i,0,solve_error);
 
 	  if (gas_state_ptr->use_nlte_)
     {
@@ -89,6 +132,11 @@ void transport::solve_eq_temperature()
 	}
   }
   reduce_Tgas();
+}
+
+double transport::rad_eq_wrapper_LTE(double T)
+{
+  return rad_eq_function_LTE(brent_args.gas_state_ptr, brent_args.c, T, brent_args.solve_flag, brent_args.solve_error);
 }
 
 
@@ -112,7 +160,7 @@ void transport::solve_eq_temperature()
 //              compute emission rates
 //
 //************************************************************/
-double transport::rad_eq_function_LTE(GasState* gas_state_ptr, int c,double T, int solve_flag, int & solve_error)
+double transport::rad_eq_function_LTE(GasState* gas_state_ptr, int c,double T, int solve_flag, int *solve_error)
 {
   zone* z = &(grid->z[c]);
   gas_state_ptr->dens_ = z->rho;
@@ -126,7 +174,8 @@ double transport::rad_eq_function_LTE(GasState* gas_state_ptr, int c,double T, i
   // recalculate opacities based on current T if desired
   if (solve_flag)
   {
-    // solve_error = gas_state_ptr->solve_state();
+    // if you want to resolve the LTE state on each T iteration:
+    // *solve_error = gas_state_ptr->solve_state();
     gas_state_ptr->computeOpacity(abs_opacity_[c],scat,emis);
   }
 
@@ -170,6 +219,11 @@ double transport::rad_eq_function_LTE(GasState* gas_state_ptr, int c,double T, i
 }
 
 
+double transport::rad_eq_wrapper_NLTE(double T)
+{
+  return rad_eq_function_NLTE(brent_args.gas_state_ptr, brent_args.c, T, brent_args.solve_flag, brent_args.solve_error);
+}
+
 //***************************************************************/
 // This is the function that expresses radiative equillibrium
 // in a cell (i.e. E_absorbed = E_emitted).  It is used in
@@ -185,7 +239,7 @@ double transport::rad_eq_function_LTE(GasState* gas_state_ptr, int c,double T, i
 //              compute emission rates
 //
 //************************************************************/
-double transport::rad_eq_function_NLTE(GasState* gas_state_ptr, int c,double T, int solve_flag, int &solve_error)
+double transport::rad_eq_function_NLTE(GasState* gas_state_ptr, int c,double T, int solve_flag, int *solve_error)
 {
 
   zone* z = &(grid->z[c]);
@@ -201,7 +255,7 @@ double transport::rad_eq_function_NLTE(GasState* gas_state_ptr, int c,double T, 
 
   // if flag set, recompute the entire NLTE problem for this iteration
   if (solve_flag)
-	solve_error = gas_state_ptr->solve_state(J_nu_[c]);
+	*solve_error = gas_state_ptr->solve_state(J_nu_[c]);
 
   // total energy absorbed
   double E_absorbed = gas_state_ptr->free_free_heating_rate(T,J_nu_[c]) +
@@ -219,105 +273,3 @@ double transport::rad_eq_function_NLTE(GasState* gas_state_ptr, int c,double T, 
   return (E_emitted - E_absorbed);
 }
 
-
-//-----------------------------------------------------------
-// Brents method (from Numerical Recipes) to solve
-// non-linear equation for T in rad equillibrium
-//-----------------------------------------------------------
-// definitions used for temperature solver
-
-#define SIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
-double transport::temp_brent_method(GasState* gas_state_ptr, int cell, int solve_flag, int &solve_error)
-{
-  double brent_solve_tolerance = 1.0e-2;
-  double temp_range_min = temp_min_value_;
-  double temp_range_max = temp_max_value_;
-
-  int ITMAX = 100;
-  double EPS = 3.0e-8;
-  int iter;
-
-  // Initial guesses
-  double a=temp_range_min;
-  double b=temp_range_max;
-  double c=b;
-  double d,e,min1,min2;
-  double fa,fb = 0.;
-  if (gas_state_ptr->use_nlte_ == 0)
-    {
-      fa=rad_eq_function_LTE(gas_state_ptr, cell,a,solve_flag,solve_error);
-      fb=rad_eq_function_LTE(gas_state_ptr, cell,b,solve_flag,solve_error);
-    }
-  else
-    {
-      fa=rad_eq_function_NLTE(gas_state_ptr, cell,a,solve_flag,solve_error);
-      fb=rad_eq_function_NLTE(gas_state_ptr, cell,b,solve_flag,solve_error);
-    }
-
-  double fc,p,q,r,s,tol1,xm;
-
-  //if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0))
-  //  printf("Root must be bracketed in zbrent");
-  fc=fb;
-  for (iter=1;iter<=ITMAX;iter++) {
-    if ((fb > 0.0 && fc > 0.0) || (fb < 0.0 && fc < 0.0)) {
-      c=a;
-      fc=fa;
-      e=d=b-a;
-    }
-    if (fabs(fc) < fabs(fb)) {
-      a=b;
-      b=c;
-      c=a;
-      fa=fb;
-      fb=fc;
-      fc=fa;
-    }
-    tol1=2.0*EPS*fabs(b)+0.5*brent_solve_tolerance;
-    xm=0.5*(c-b);
-    if (fabs(xm) <= tol1 || fb == 0.0) return b;
-    if (fabs(e) >= tol1 && fabs(fa) > fabs(fb)) {
-      s=fb/fa;
-      if (a == c) {
-         p=2.0*xm*s;
-         q=1.0-s;
-      } else {
-	q=fa/fc;
-	r=fb/fc;
-	p=s*(2.0*xm*q*(q-r)-(b-a)*(r-1.0));
-	q=(q-1.0)*(r-1.0)*(s-1.0);
-      }
-      if (p > 0.0) q = -q;
-      p=fabs(p);
-      min1=3.0*xm*q-fabs(tol1*q);
-      min2=fabs(e*q);
-      if (2.0*p < (min1 < min2 ? min1 : min2)) {
-	e=d;
-	d=p/q;
-      } else {
-	d=xm;
-	e=d;
-      }
-    } else {
-      d=xm;
-      e=d;
-    }
-    a=b;
-    fa=fb;
-    if (fabs(d) > tol1)
-      b += d;
-    else
-      b += SIGN(tol1,xm);
-
-    if (gas_state_ptr->use_nlte_ == 0)
-      {
-	fb=rad_eq_function_LTE(gas_state_ptr, cell,b,solve_flag,solve_error);
-      }
-    else
-      {
-	fb=rad_eq_function_NLTE(gas_state_ptr, cell,b,solve_flag,solve_error);
-      }
-  }
-  printf("Maximum number of iterations exceeded in zbrent");
-  return 0.0;
-}
