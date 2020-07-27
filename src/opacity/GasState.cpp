@@ -2,6 +2,8 @@
 #include <algorithm>
 #include "physical_constants.h"
 #include "GasState.h"
+#include "brent.h"
+#include "brent.cpp"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -221,16 +223,22 @@ int GasState::solve_state(std::vector<SedonaReal>& J_nu)
     if (use_nlte_) atoms[i].calculate_radiative_rates(J_nu);
   }
 
+  gasMemFn f = &GasState::charge_conservation;
+  solve_error_  = 0;
+  brent_args.solve_error = &solve_error_;
+
+  brent_solver<GasState> solver;
+
+  int n; // will store number of brent solver iterations
   double max_ne = 100*dens_/(mu_I*pc::m_p);
   double min_ne = 1e-10*dens_/(mu_I*pc::m_p);;
   double tol    = 1e-3;
-  solve_error_  = 0;
-  n_elec_ = ne_brent_method(min_ne,max_ne,tol,J_nu);
+
+  n_elec_ = solver.solve(*this, f, min_ne, max_ne,tol,&n);
 
   return solve_error_;
 
 }
-
 
 //-----------------------------------------------------------
 // This is the function that represents the non-linear equation
@@ -238,7 +246,7 @@ int GasState::solve_state(std::vector<SedonaReal>& J_nu)
 // for the root, thus determining N_e.  This equation is
 // basically just the one for charge conservation.
 //-----------------------------------------------------------
-double GasState::charge_conservation(double ne,std::vector<SedonaReal> J_nu)
+double GasState::charge_conservation(double ne)
 {
   // start with charge conservation function f set to zero
   double f  = 0;
@@ -261,79 +269,6 @@ double GasState::charge_conservation(double ne,std::vector<SedonaReal> J_nu)
   return f;
 }
 
-
-//-----------------------------------------------------------
-// Brents method from Numerical Recipes to solve non-linear
-// equation for electron density ne
-//-----------------------------------------------------------
-#define SIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
-double GasState::ne_brent_method(double x1,double x2,double tol,std::vector<SedonaReal> J_nu)
-{
-  int ITMAX = 100;
-  double EPS = 3.0e-8;
-  int iter;
-  double a=x1,b=x2,c=x2,d,e,min1,min2;
-  double fa=charge_conservation(a,J_nu);
-  double fb=charge_conservation(b,J_nu);
-  double fc,p,q,r,s,tol1,xm;
-
-  if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0))
-    solve_error_ = 1;
-  fc=fb;
-  for (iter=1;iter<=ITMAX;iter++) {
-    if ((fb > 0.0 && fc > 0.0) || (fb < 0.0 && fc < 0.0)) {
-      c=a;
-      fc=fa;
-      e=d=b-a;
-    }
-    if (fabs(fc) < fabs(fb)) {
-      a=b;
-      b=c;
-      c=a;
-      fa=fb;
-      fb=fc;
-      fc=fa;
-    }
-    tol1=2.0*EPS*fabs(b)+0.5*tol;
-    xm=0.5*(c-b);
-    if (fabs(xm) <= tol1 || fb == 0.0) return b;
-    if (fabs(e) >= tol1 && fabs(fa) > fabs(fb)) {
-      s=fb/fa;
-      if (a == c) {
-	p=2.0*xm*s;
-	q=1.0-s;
-      } else {
-	q=fa/fc;
-	r=fb/fc;
-	p=s*(2.0*xm*q*(q-r)-(b-a)*(r-1.0));
-	q=(q-1.0)*(r-1.0)*(s-1.0);
-      }
-      if (p > 0.0) q = -q;
-      p=fabs(p);
-      min1=3.0*xm*q-fabs(tol1*q);
-      min2=fabs(e*q);
-      if (2.0*p < (min1 < min2 ? min1 : min2)) {
-	e=d;
-	d=p/q;
-      } else {
-	d=xm;
-	e=d;
-      }
-    } else {
-      d=xm;
-      e=d;
-    }
-    a=b;
-    fa=fb;
-    if (fabs(d) > tol1)
-      b += d;
-    else
-      b += SIGN(tol1,xm);
-    fb=charge_conservation(b,J_nu);
-  }
-  solve_error_ = 2;
-  return 0.0;
-}
 
 
 

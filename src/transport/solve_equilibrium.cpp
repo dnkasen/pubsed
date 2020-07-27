@@ -60,9 +60,9 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
     int n; // will store number of brent solver iterations
     // still using hard-coded eps; that could be set here
     // lower bracket and uppr bracket have been set in .lua files
-    double T_solution = solver.solve(*this, f, temp_min_value_,temp_max_value_,0.01, &n);
-    solve_error = *(brent_args.solve_error);
-    grid->z[i].T_gas = T_solution;
+    // Calculate equilibrium temperature.
+    // Additional gas_state solve may also happen here
+    grid->z[i].T_gas = solver.solve(*this, f, temp_min_value_,temp_max_value_,0.01, &n);
 
     if (gas_state_ptr->use_nlte_ == 0)
     {
