@@ -33,12 +33,12 @@ double brent_solver<cl>::solve(cl& cl_instance, constraintMemFn func, double aa,
     fb = temp;
   }
   double c = a;
+  double fc = fa;
   double s = a;
   int stillrunning = 1;
   while( stillrunning ){
     //printf("%e %e %e %e %d\n",c,func(b),a,b,*n); // debugging output 
     //    printf("%e %e %e %e %d\n",c,CALL_MEMBER_FN(cl_instance,func)(b),a,b,*n); //debugging output
-    double fc = CALL_MEMBER_FN(cl_instance,func)(c);
     if( fa != fc && fb != fc ){
       s = a*fb*fc/(fa-fb)/(fa-fc) + b*fc*fa/(fb-fc)/(fb-fa) + c*fa*fb/(fc-fa)/(fc-fb);
     }else{
@@ -50,15 +50,15 @@ double brent_solver<cl>::solve(cl& cl_instance, constraintMemFn func, double aa,
     if( cond ){ s=m; }
 
     double fs = CALL_MEMBER_FN(cl_instance,func)(s);
-      
     c = b;
+    fc = fb;
 
     if( fa*fs < 0 ){ 
       b = s;
-      fb = CALL_MEMBER_FN(cl_instance,func)(b);
+      fb = fs;
     }else{
       a = s;
-      fa = CALL_MEMBER_FN(cl_instance,func)(a);
+      fa = fs;
     }
 
     if( fabs(fa) < fabs(fb) ){
