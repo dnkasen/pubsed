@@ -225,6 +225,32 @@ public:
     return datafile_version_;
   }
 
+  void set_max_n_levels(int n)
+  {
+    for (int i=0;i<MAX_N_ATOMS;++i)
+    {
+      atomlist_[i].max_n_levels_  = n;
+    }
+  }
+
+  void set_max_n_levels(int i, int n)
+  {
+    atomlist_[i].max_n_levels_  = n;
+  }
+
+  void set_max_ion_stage(int n)
+  {
+    for (int i=0;i<MAX_N_ATOMS;++i)
+    {
+      atomlist_[i].max_ion_stage_  = n;
+    }
+  }
+
+  void set_max_ion_stage(int i, int n)
+  {
+    atomlist_[i].max_ion_stage_  = n;
+  }
+
 };
 
 
