@@ -63,6 +63,11 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
     // Calculate equilibrium temperature.
     // Additional gas_state solve may also happen here
     grid->z[i].T_gas = solver.solve(*this, f, temp_min_value_,temp_max_value_,0.001, &n);
+    if (n == -1)
+      {
+	printf("ERROR: Brent failed in temperature solve; root not bracketed properly\n");
+	exit(1);
+      }
 
     if (gas_state_ptr->use_nlte_ == 0)
     {
@@ -113,6 +118,11 @@ void transport::solve_eq_temperature()
     // still using hard-coded eps; that could be set here
     // lower bracket and uppr bracket have been set in .lua files
     double T_solution = solver.solve(*this, f, temp_min_value_,temp_max_value_,0.001, &n);
+    if (n == -1)
+      {
+	printf("ERROR: Brent failed in temperature solve; root not bracketed properly\n");
+	exit(1);
+      }
     //    solve_error = *(brent_args.solve_error); // see abovee
 
     grid->z[i].T_gas = T_solution;

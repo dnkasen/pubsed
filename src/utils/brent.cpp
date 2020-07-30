@@ -20,7 +20,7 @@ double brent_solver<cl>::solve(cl& cl_instance, constraintMemFn func, double aa,
   double fb = CALL_MEMBER_FN(cl_instance,func)(b);
   *n = 0;
   if( fa*fb >= 0 ){
-    printf("Brent failed; not bracketed properly\n");
+    //    printf("Brent failed; not bracketed properly\n");
     *n = -1;
     return(0.0);
   }
@@ -37,8 +37,7 @@ double brent_solver<cl>::solve(cl& cl_instance, constraintMemFn func, double aa,
   double s = a;
   int stillrunning = 1;
   while( stillrunning ){
-    //printf("%e %e %e %e %d\n",c,func(b),a,b,*n); // debugging output 
-    //    printf("%e %e %e %e %d\n",c,CALL_MEMBER_FN(cl_instance,func)(b),a,b,*n); //debugging output
+    // printf("%e %e %e %e %d\n",c,fb,a,b,*n); // debugging output 
     if( fa != fc && fb != fc ){
       s = a*fb*fc/(fa-fb)/(fa-fc) + b*fc*fa/(fb-fc)/(fb-fa) + c*fa*fb/(fc-fa)/(fc-fb);
     }else{
