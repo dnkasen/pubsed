@@ -68,7 +68,11 @@ void transport::solve_eq_temperature()
   int solve_error = 0;
 #pragma omp parallel default(none) firstprivate(solve_error)
   {
+#ifdef _OPENMP
   int tid = omp_get_thread_num();
+#else
+  int tid = 0;
+#endif
   GasState* gas_state_ptr = &(gas_state_vec_[tid]);
 #pragma omp for schedule(dynamic,16)
   for (int i=my_zone_start_;i<my_zone_stop_;i++)
