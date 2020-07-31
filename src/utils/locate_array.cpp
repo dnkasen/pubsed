@@ -190,23 +190,11 @@ bool locate_array::is_equal(locate_array l, bool complain) {
 //---------------------------------------------------------
 int locate_array::locate(const double xval) const
 {
-  // We do this using upper_bound because we've found it's faster
-  // than direct calculation of the index, even for regular grids.
-  // If the direct calculation method is really needed, instead
-  // use locate_array::locate_direct_calc
-  return upper_bound(x_.begin(), x_.end(), xval) - x_.begin();
-}
-
-int locate_array::locate_direct_calc(const double xval) const
-{
-  // Do the locate operation by directly calculating the index, if possible.
-  // This is generally slower than the default locate implementation with
-  // upper_bound.
-  int ind;
   // First handle some trivial cases
   if (size() == 1) return 0;
   if (xval >= maxval()) return size();
   if (xval < minval()) return 0;
+  int ind;
   if (locate_type_ == flex) {
     ind = upper_bound(x_.begin(), x_.end(), xval) - x_.begin();
   }
@@ -221,6 +209,9 @@ int locate_array::locate_direct_calc(const double xval) const
   }
   else {
     std::cerr << "locate_type not recognized, falling back to flex" << std::endl;
+    ind = upper_bound(x_.begin(), x_.end(), xval) - x_.begin();
+  }
+  if (locate_type_ != none && ind != 0 && ind != size() && (left(ind) > xval or right(ind) <= xval)) {
     ind = upper_bound(x_.begin(), x_.end(), xval) - x_.begin();
   }
   return ind;
