@@ -194,6 +194,11 @@ int locate_array::locate(const double xval) const
   // than direct calculation of the index, even for regular grids.
   // If the direct calculation method is really needed, instead
   // use locate_array::locate_direct_calc
+
+  // First handle some trivial cases
+  if (size() == 1) return 0;
+  if (xval >= maxval()) return size();
+  if (xval < minval()) return 0;
   return upper_bound(x_.begin(), x_.end(), xval) - x_.begin();
 }
 
