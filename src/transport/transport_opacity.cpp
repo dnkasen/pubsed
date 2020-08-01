@@ -20,7 +20,6 @@ namespace pc = physical_constants;
 //-----------------------------------------------------------------
 void transport::set_opacity(double dt)
 {
-
   double tend,tstr;
   double get_system_time(void);
 
@@ -28,14 +27,6 @@ void transport::set_opacity(double dt)
   vector<OpacityType> emis(nu_grid_.size());
   vector<OpacityType> scat(nu_grid_.size());
   emis.assign(emis.size(),0.0);
-
-  // always do LTE on first step
-
-  if (first_step_) {
-    for (auto i_gas_state = gas_state_vec_.begin(); i_gas_state != gas_state_vec_.end(); i_gas_state++) {
-      if (first_step_) i_gas_state->use_nlte_ = 0;
-    }
-  }
 
   // zero out opacities, etc...
   for (int i=0;i<grid->n_zones;i++)
@@ -53,10 +44,17 @@ void transport::set_opacity(double dt)
   }
 
 
+    // always do LTE on first step
+    if (first_step_)
+    {
+      for (auto i_gas_state = gas_state_vec_.begin(); i_gas_state != gas_state_vec_.end(); i_gas_state++) {
+        i_gas_state->turn_off_nlte(); }
+    }
+
+
   if (verbose)
     if (solve_Tgas_with_updated_opacities_ && first_step_ == 0)
       printf("# Solving coupled equations for gas state and temperature\n");
-
 
   // loop over my zones to calculate
   // loop to parallelize with OpenMP
@@ -73,74 +71,29 @@ void transport::set_opacity(double dt)
 #endif
     // Private variables for each thread
     GasState* gas_state_ptr = &(gas_state_vec_[my_threadID]);
-    vector<double> X_now(grid->n_elems);
-    radioactive radio_obj;
-    radioactive* radio = &radio_obj;
-    int solve_error = 0;
 
-
+//------------------------------------------
+// loop over rank's zones, solve gas state and calc opacities
+//------------------------------------------
 #pragma omp for
     for (int i=my_zone_start_;i<my_zone_stop_;i++) {
+
       // pointer to current zone for easy access
       zone* z = &(grid->z[i]);
+
+      gas_state_ptr->bulk_grey_opacity_ = z->bulk_grey_opacity;
+      gas_state_ptr->total_grey_opacity_ = z->total_grey_opacity;
+
+      // fill the GasState up with the properties of zone i
+      // and solve for its state.
+      int solve_error = fill_and_solve_gasstate(gas_state_ptr, i);
+      if (solve_error == 1) solve_root_errors += 1;
+      if (solve_error == 2) solve_iter_errors += 1;
 
       //------------------------------------------------------
       // calculate optical photon opacities
       //------------------------------------------------------
 
-      // set up the state of the gas in this zone
-      gas_state_ptr->dens_ = z->rho;
-      gas_state_ptr->temp_ = z->T_gas;
-      gas_state_ptr->time_ = t_now_;
-      if (gas_state_ptr->temp_ < temp_min_value_) gas_state_ptr->temp_ = temp_min_value_;
-      if (gas_state_ptr->temp_ > temp_max_value_) gas_state_ptr->temp_ = temp_max_value_;
-
-      // radioactive decay the composition
-      for (size_t j=0;j<X_now.size();j++) X_now[j] = z->X_gas[j];
-      if (!omit_composition_decay_) {
-        radio->decay_composition(grid->elems_Z,grid->elems_A,X_now,t_now_);
-      }
-
-      gas_state_ptr->set_mass_fractions(X_now);
-
-      gas_state_ptr->bulk_grey_opacity_ = z->bulk_grey_opacity;
-      gas_state_ptr->total_grey_opacity_ = z->total_grey_opacity;
-
-      if (first_step_)
-      {
-        zone* z = &(grid->z[i]);
-        gas_state_ptr->dens_ = z->rho;
-        gas_state_ptr->temp_ = z->T_gas;
-
-        if (gas_state_ptr->total_grey_opacity_ == 0)
-        {
-          // always do LTE on first step, without updating temperature
-          solve_error = gas_state_ptr->solve_state();
-        }
-      }
-
-      else
-      {
-        if (solve_Tgas_with_updated_opacities_)
-        {
-          // gas state solution (LTE or NLTE) solution as well as radiative
-          // equilibrium temperature solve will happen here
-          solve_error = solve_state_and_temperature(gas_state_ptr, i);
-        }
-
-        else
-        {
-          if (gas_state_ptr->total_grey_opacity_ == 0)
-          {
-            solve_error = gas_state_ptr->solve_state(J_nu_[i]);
-          }
-        }
-      }
-
-      if (solve_error == 1) solve_root_errors += 1;
-      if (solve_error == 2) solve_iter_errors += 1;
-
-      //gas_state_ptr->print();
       #pragma omp critical
       if(write_levels) gas_state_ptr->write_levels(i);
 
@@ -205,19 +158,18 @@ void transport::set_opacity(double dt)
 
     // output any solve error
     #pragma omp single
-    if (verbose) 
+    if (verbose)
     {
-      if (solve_root_errors != 0) 
+      if (solve_root_errors != 0)
         std::cerr << "# Warning: root not bracketed in n_e solve in " << solve_root_errors << " zones" << std::endl;
-      if (solve_iter_errors != 0) 
+      if (solve_iter_errors != 0)
         std::cerr << "# Warning: max iterations hit in n_e solve in " << solve_iter_errors << " zones" << std::endl;
     }
   }
   // end OpenMP parallel region
- 
+
   if (solve_Tgas_with_updated_opacities_ && first_step_ == 0) {
     reduce_Tgas(); }
-
 
   reduce_n_elec();
 
@@ -252,11 +204,50 @@ void transport::set_opacity(double dt)
   }
 
   // turn nlte back on after first step, if wanted
-  if (first_step_) {
-    for (auto i_gas_state = gas_state_vec_.begin(); i_gas_state != gas_state_vec_.end(); i_gas_state++) {
-      if (first_step_) i_gas_state->use_nlte_ = use_nlte_;
-    }
+  if (first_step_ && use_nlte_)
+  {
+    for (auto i_gas_state = gas_state_vec_.begin(); i_gas_state != gas_state_vec_.end(); i_gas_state++)
+      if (first_step_) i_gas_state->turn_on_nlte();
   }
+
+}
+
+//-----------------------------------------------------------------
+// This function fills up the GasState ptr with the properties
+// of zone i.  It then solves the state
+//-----------------------------------------------------------------
+int transport::fill_and_solve_gasstate(GasState* gas_state_ptr, int i)
+{
+  zone* z = &(grid->z[i]);
+
+  // set up the state of the gas in this zone
+  gas_state_ptr->dens_ = z->rho;
+  gas_state_ptr->temp_ = z->T_gas;
+  gas_state_ptr->time_ = t_now_;
+  if (gas_state_ptr->temp_ < temp_min_value_) gas_state_ptr->temp_ = temp_min_value_;
+  if (gas_state_ptr->temp_ > temp_max_value_) gas_state_ptr->temp_ = temp_max_value_;
+
+  vector<double> X_now(grid->n_elems);
+  radioactive radio_obj;
+  radioactive* radio = &radio_obj;
+
+  // radioactive decay the composition
+  for (size_t j=0;j<X_now.size();j++) X_now[j] = z->X_gas[j];
+  if (!omit_composition_decay_) {
+    radio->decay_composition(grid->elems_Z,grid->elems_A,X_now,t_now_); }
+  gas_state_ptr->set_mass_fractions(X_now);
+
+  int solve_error = 0;
+
+  // if not doing grey opacity, solve the state
+  if (gas_state_ptr->total_grey_opacity_ == 0)
+  {
+    if (solve_Tgas_with_updated_opacities_)
+      solve_error = solve_state_and_temperature(gas_state_ptr, i);
+    else
+      solve_error = gas_state_ptr->solve_state(J_nu_[i]);
+  }
+  return solve_error;
 }
 
 

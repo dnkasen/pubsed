@@ -17,7 +17,7 @@ namespace pc = physical_constants;
 //----------------------------------------------------------------
 GasState::GasState()
 {
-  use_nlte_ = 0;
+  nlte_turned_on_ = 0;
   e_gamma = 0;
   no_ground_recomb = 0;
   line_velocity_width_ = 0;
@@ -102,14 +102,13 @@ void GasState::initialize
 //-----------------------------------------------------------------
 // Set the atoms to be solved in nlte
 //-----------------------------------------------------------------
-
 void GasState::set_atoms_in_nlte
 (std::vector<int> useatoms)
 {
   if (useatoms.size() == 0)
-    use_nlte_ = 0;
+    nlte_turned_on_ = 0;
   else
-    use_nlte_ = 1;
+    nlte_turned_on_ = 1;
 
   for (int i=0;i<useatoms.size();++i)
   {
@@ -118,7 +117,7 @@ void GasState::set_atoms_in_nlte
       if (elem_Z[j] == useatoms[i])
       {
         atoms[j].set_use_nlte();
-	atoms[j].use_collisions_nlte_ = use_collisions_nlte_;
+	      atoms[j].use_collisions_nlte_ = use_collisions_nlte_;
       }
     }
   }
@@ -193,6 +192,11 @@ double GasState::get_ionization_state()
 //-----------------------------------------------------------
 int GasState::solve_state()
 {
+  if (nlte_turned_on_)
+  {
+    std::cout << "ERROR; no radiation field Jnu passed to GasState NLTE solve\n";
+    return 1;
+  }
   std::vector<SedonaReal> J_nu;
   return solve_state(J_nu);
 }
@@ -217,14 +221,23 @@ int GasState::solve_state(std::vector<SedonaReal>& J_nu)
     double vd = sqrt(2*pc::k*temp_/pc::m_p/elem_A[i]);
     if (line_velocity_width_ > 0) vd = line_velocity_width_;
     atoms[i].line_beta_dop_ = vd/pc::c;
-    // radiative rates
-    if (use_nlte_) atoms[i].calculate_radiative_rates(J_nu);
+
+    // Calculate radiative rates, if using NLTE
+    // and this atom to be treated in NLTE
+    if (nlte_turned_on_ && atoms[i].use_nlte_)
+        atoms[i].calculate_radiative_rates(J_nu);
   }
 
+  // solve for the state of the gas.
+  // This will solve the ion/excite state of each
+  // atom and then iterate electron density until
+  // charge conservation is fulfilled.
+  solve_error_  = 0;
+  // set bounds and tolerance for solving electron density
   double max_ne = 100*dens_/(mu_I*pc::m_p);
   double min_ne = 1e-10*dens_/(mu_I*pc::m_p);;
   double tol    = 1e-3;
-  solve_error_  = 0;
+  // call brent method to solve for n_e
   n_elec_ = ne_brent_method(min_ne,max_ne,tol,J_nu);
 
   return solve_error_;
@@ -245,9 +258,11 @@ double GasState::charge_conservation(double ne,std::vector<SedonaReal> J_nu)
   // loop over all atoms
   for (size_t i=0;i<atoms.size();++i)
   {
-    // Solve the state of the atome with this value of electron density ne
-    if (use_nlte_)
-      atoms[i].solve_state(ne);
+    // Solve the state of the atome with this value of
+    // electron density ne.  Solution will either be in
+    // LTE or NLTE depending on if atoms[i]->use_nlte_ is set
+    if (nlte_turned_on_ && atoms[i].use_nlte_)
+      atoms[i].solve_nlte(ne);
     else
       atoms[i].solve_lte(ne);
 
@@ -414,9 +429,9 @@ void GasState::print_properties()
     std::cout << "# use_line_exp        = " << use_line_expansion_opacity << "\n";
     std::cout << "# use_fuzz_exp        = " << use_fuzz_expansion_opacity << "\n";
 
-    std::cout << "# use_nlte            = " << use_nlte_ << "\n";
+    std::cout << "# use_nlte            = " << nlte_turned_on_ << "\n";
     std::cout << "# use_collisions_nlte = " << use_collisions_nlte_ << "\n";
-    if (use_nlte_)
+    if (nlte_turned_on_)
     {
       int n_in_nlte = 0;
       std::cout << "# These atoms to be treated in non-LTE: ";

@@ -9,8 +9,8 @@ namespace pc = physical_constants;
 
 //-------------------------------------------------------------
 //  Solve for the temperature assuming radiative equilibrium
+//  This function may not work
 //-------------------------------------------------------------
-
 int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
 {
 
@@ -34,7 +34,7 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
     gas_state_ptr->temp_ = z->T_gas;
 
     // For LTE, do an initial solve of the gas state
-    if (gas_state_ptr->use_nlte_ == 0)
+    if (gas_state_ptr->is_nlte_turned_on() == 0)
     {
       solve_error = gas_state_ptr->solve_state();
       gas_state_ptr->computeOpacity(abs_opacity_[i],scat,emis);
@@ -44,24 +44,28 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
     // Additional gas_state solve may also happen here
     grid->z[i].T_gas = temp_brent_method(gas_state_ptr, i,1,solve_error);
 
-    if (gas_state_ptr->use_nlte_ == 0)
+    if (gas_state_ptr->is_nlte_turned_on() == 0)
     {
       // For LTE, do a final solve
       solve_error = gas_state_ptr->solve_state();
     }
 
-    if (gas_state_ptr->use_nlte_)
+    if (gas_state_ptr->is_nlte_turned_on())
     {
       bf_heating[i] = gas_state_ptr->bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
       ff_heating[i] = gas_state_ptr->free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
       bf_cooling[i] = gas_state_ptr->bound_free_cooling_rate(grid->z[i].T_gas);
       ff_cooling[i] = gas_state_ptr->free_free_cooling_rate(grid->z[i].T_gas);
-     coll_cooling[i] = gas_state_ptr->collisional_net_cooling_rate(grid->z[i].T_gas);
+      coll_cooling[i] = gas_state_ptr->collisional_net_cooling_rate(grid->z[i].T_gas);
     }
     return solve_error;
   }
 
 }
+
+//-------------------------------------------------------------
+//  Solve for the temperature assuming radiative equilibrium
+//-------------------------------------------------------------
 
 void transport::solve_eq_temperature()
 {
@@ -78,22 +82,23 @@ void transport::solve_eq_temperature()
   for (int i=my_zone_start_;i<my_zone_stop_;i++)
   {
     if (set_Tgas_to_Trad_ == 1)
-    grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
+      grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
     else
-  {
-      // solve_error won't be updated here because that's for the gas_state solve which isn't happening here
-     grid->z[i].T_gas = temp_brent_method(gas_state_ptr, i,0,solve_error);
-
-	  if (gas_state_ptr->use_nlte_)
     {
-	    bf_heating[i] = gas_state_ptr->bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
-	    ff_heating[i] = gas_state_ptr->free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
-	    bf_cooling[i] = gas_state_ptr->bound_free_cooling_rate(grid->z[i].T_gas);
-	    ff_cooling[i] = gas_state_ptr->free_free_cooling_rate(grid->z[i].T_gas);
-	    coll_cooling[i] = gas_state_ptr->collisional_net_cooling_rate(grid->z[i].T_gas);
-	  }
+      // fill up GasState ptr and solve it's state
+      solve_error = fill_and_solve_gasstate(gas_state_ptr, i);
+      // Solve for radiative equilibrium temperature
+      grid->z[i].T_gas = temp_brent_method(gas_state_ptr, i,0,solve_error);
 
-	}
+	    if (gas_state_ptr->is_nlte_turned_on())
+      {
+	       bf_heating[i] = gas_state_ptr->bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+	       ff_heating[i] = gas_state_ptr->free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+	       bf_cooling[i] = gas_state_ptr->bound_free_cooling_rate(grid->z[i].T_gas);
+	       ff_cooling[i] = gas_state_ptr->free_free_cooling_rate(grid->z[i].T_gas);
+	       coll_cooling[i] = gas_state_ptr->collisional_net_cooling_rate(grid->z[i].T_gas);
+	    }
+	  }
   }
   }
   reduce_Tgas();
@@ -251,19 +256,19 @@ double transport::temp_brent_method(GasState* gas_state_ptr, int cell, int solve
   double c=b;
   double d,e,min1,min2;
   double fa,fb = 0.;
-  if (gas_state_ptr->use_nlte_ == 0)
-    {
-      fa=rad_eq_function_LTE(gas_state_ptr, cell,a,solve_flag,solve_error);
-      fb=rad_eq_function_LTE(gas_state_ptr, cell,b,solve_flag,solve_error);
-    }
+  if (gas_state_ptr->is_nlte_turned_on())
+  {
+    fa=rad_eq_function_NLTE(gas_state_ptr, cell,a,solve_flag,solve_error);
+    fb=rad_eq_function_NLTE(gas_state_ptr, cell,b,solve_flag,solve_error);
+  }
   else
-    {
-      fa=rad_eq_function_NLTE(gas_state_ptr, cell,a,solve_flag,solve_error);
-      fb=rad_eq_function_NLTE(gas_state_ptr, cell,b,solve_flag,solve_error);
-    }
+  {
+    fa=rad_eq_function_LTE(gas_state_ptr, cell,a,solve_flag,solve_error);
+    fb=rad_eq_function_LTE(gas_state_ptr, cell,b,solve_flag,solve_error);
+  }
+
 
   double fc,p,q,r,s,tol1,xm;
-
   //if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0))
   //  printf("Root must be bracketed in zbrent");
   fc=fb;
@@ -317,14 +322,11 @@ double transport::temp_brent_method(GasState* gas_state_ptr, int cell, int solve
     else
       b += SIGN(tol1,xm);
 
-    if (gas_state_ptr->use_nlte_ == 0)
-      {
-	fb=rad_eq_function_LTE(gas_state_ptr, cell,b,solve_flag,solve_error);
-      }
+    if (gas_state_ptr->is_nlte_turned_on())
+  	  fb=rad_eq_function_NLTE(gas_state_ptr, cell,b,solve_flag,solve_error);
     else
-      {
-	fb=rad_eq_function_NLTE(gas_state_ptr, cell,b,solve_flag,solve_error);
-      }
+	    fb=rad_eq_function_LTE(gas_state_ptr, cell,b,solve_flag,solve_error);
+
   }
   printf("Maximum number of iterations exceeded in zbrent");
   return 0.0;

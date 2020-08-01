@@ -93,7 +93,7 @@ verbose = (my_rank == 0);
   gas.time_ = params.getScalar<double>("time");
 
   // opacity parameters
-  gas.use_nlte_ = 0;
+  gas.turn_off_nlte();
   gas.use_electron_scattering_opacity
     = params.getScalar<int>("opacity_electron_scattering");
   gas.use_line_expansion_opacity
@@ -387,4 +387,3 @@ double planck_mean(std::vector<OpacityType> opac)
   double kappa_P = sum/norm/gas.get_density();
   return kappa_P;
 }
-
