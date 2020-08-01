@@ -81,7 +81,6 @@ public:
   void scale(double e);
 
   int    locate(const double) const;
-  int    locate_direct_calc(const double) const;
   int    locate_within_bounds(const double xval) const;
   int    locate_check_bounds(const double xval) const;
 

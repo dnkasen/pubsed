@@ -6,6 +6,8 @@
 -- atomic data files
 data_atomic_file   = "../../data/cmfgen_atomdata.hdf5"
 data_fuzzline_file = ""
+data_max_n_levels  = 0
+data_max_ion_stage = 0
 
 -- grid
 grid_type      = "grid_1D_sphere"  -- grid geometry; must match input model

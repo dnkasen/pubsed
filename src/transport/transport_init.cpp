@@ -195,6 +195,14 @@ void transport::init(ParameterReader* par, grid_general *g)
   atomic_data_ = new AtomicData;
   atomic_data_->initialize(atomdata_file_,nu_grid_);
 
+  // set max ion stage and levels to use
+  int max_ion_stage = params_->getScalar<int>("data_max_ion_stage");
+  if (max_ion_stage > 0)
+    atomic_data_->set_max_ion_stage(max_ion_stage);
+  int max_n_levels = params_->getScalar<int>("data_max_n_levels");
+  if (max_n_levels > 0)
+    atomic_data_->set_max_n_levels(max_n_levels);
+
   // setup the GasState class
 #ifdef _OPENMP
   int max_nthreads = omp_get_max_threads();
