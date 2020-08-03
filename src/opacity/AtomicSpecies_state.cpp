@@ -9,7 +9,7 @@
 #include <gsl/gsl_multiroots.h>
 #include <gsl/gsl_linalg.h>
 #include <iostream>
-+#include <cmath>
+#include <cmath>
 
 #ifdef USE_EIGEN
 #include <Eigen/Dense>
