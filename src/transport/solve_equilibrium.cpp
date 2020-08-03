@@ -66,7 +66,6 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
 //-------------------------------------------------------------
 //  Solve for the temperature assuming radiative equilibrium
 //-------------------------------------------------------------
-
 void transport::solve_eq_temperature()
 {
   int solve_error = 0;
@@ -206,7 +205,7 @@ double transport::rad_eq_function_NLTE(GasState* gas_state_ptr, int c,double T, 
   gas_state_ptr->temp_ = T;
 
   // make sure grey_opacity is not being used
-  if (gas_state_ptr->total_grey_opacity_ != 0)
+  if (z->total_grey_opacity != 0)
   {
     std::cerr << "# ERROR: NLTE solve should not be used with grey opacity\n";
     exit(1);
@@ -214,7 +213,7 @@ double transport::rad_eq_function_NLTE(GasState* gas_state_ptr, int c,double T, 
 
   // if flag set, recompute the entire NLTE problem for this iteration
   if (solve_flag)
-	solve_error = gas_state_ptr->solve_state(J_nu_[c]);
+	  solve_error = gas_state_ptr->solve_state(J_nu_[c]);
 
   // total energy absorbed
   double E_absorbed = gas_state_ptr->free_free_heating_rate(T,J_nu_[c]) +
