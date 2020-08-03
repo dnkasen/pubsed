@@ -9,6 +9,7 @@
 #include <gsl/gsl_multiroots.h>
 #include <gsl/gsl_linalg.h>
 #include <iostream>
++#include <cmath>
 
 #ifdef USE_EIGEN
 #include <Eigen/Dense>
@@ -486,7 +487,7 @@ void AtomicSpecies::set_rates(double ne)
   //printf("------- rates ----------\n");
   for (int i=0;i<n_levels_;++i)
     for (int j=0;j<n_levels_;++j)
-      if (isnan(rates_[i][j]))
+      if (std::isnan(rates_[i][j]))
        printf("%5d %5d %14.5e\n",i,j,rates_[i][j]);
    //printf("\n");
    //for (int i=0;i<n_levels_;++i)
