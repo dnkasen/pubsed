@@ -220,7 +220,7 @@ double transport::rad_eq_function_NLTE(GasState* gas_state_ptr, int c,double T, 
         gas_state_ptr->bound_free_heating_rate(T,J_nu_[c]) ;
 
   // total energy emitted
-  double E_emitted =  E_emitted= gas_state_ptr->free_free_cooling_rate(T) +
+  double E_emitted= gas_state_ptr->free_free_cooling_rate(T) +
         gas_state_ptr->bound_free_cooling_rate(T);
 
   if (gas_state_ptr->use_collisions_nlte_)
