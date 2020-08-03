@@ -2,6 +2,6 @@ CXX   = /usr/bin/mpicxx
 CXXFLAGS = -O3 -pedantic -Wall -std=c++11 -fopenmp
 
 USE_EIGEN=1
-EIG_INC = /usr/include/eigen3/
+EIG_INC =  /home/kasen//eigen3/
 
 include make.exec
