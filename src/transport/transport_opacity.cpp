@@ -240,7 +240,7 @@ int transport::fill_and_solve_gasstate(GasState* gas_state_ptr, int i)
   int solve_error = 0;
 
   // if not doing grey opacity, solve the state
-  if (gas_state_ptr->total_grey_opacity_ == 0)
+  if (z->total_grey_opacity == 0)
   {
     if (solve_Tgas_with_updated_opacities_)
       solve_error = solve_state_and_temperature(gas_state_ptr, i);
