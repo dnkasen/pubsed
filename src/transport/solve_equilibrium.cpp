@@ -20,7 +20,12 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
   vector<OpacityType> scat(nu_grid_.size());
   emis.assign(emis.size(),0.0);
 
-  int solve_error = 0;
+  int root_solve_error_temp = 0; // store total such errors
+  int iter_solve_error_temp = 0; // store total such errors
+  int root_solve_error_ne = 0; // store total such errors
+  int iter_solve_error_ne = 0; // store total such errors
+
+  int gas_solve_error; // stores type of error for single gas solve
 
   // Simple option to set gas temp based on radiation energy density
   if (set_Tgas_to_Trad_ == 1)
@@ -40,40 +45,76 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
     // For LTE, do an initial solve of the gas state
     if (gas_state_ptr->is_nlte_turned_on() == 0)
     {
-      solve_error = gas_state_ptr->solve_state();
+      gas_solve_error = gas_state_ptr->solve_state();
+
+      if (gas_solve_error == 1)
+	{
+	  //	  printf("root not bracketed in n_e solve\n");
+	  root_solve_error_ne++;
+	}
+      if (gas_solve_error == 2)
+	{
+	  //	  printf("max number of iterations reached in n_e solve\n");
+	  iter_solve_error_ne++;
+	}
       gas_state_ptr->computeOpacity(abs_opacity_[i],scat,emis);
       f = &transport::rad_eq_wrapper_LTE;
     }
-    else f = &transport::rad_eq_wrapper_NLTE;
+    else
+      {
+	f = &transport::rad_eq_wrapper_NLTE;
+      }
 
-    // Calculate equilibrium temperature.
-    // Additional gas_state solve may also happen here
-    //    grid->z[i].T_gas = temp_brent_method(gas_state_ptr, i,1,solve_error);
 
     brent_args.gas_state_ptr = gas_state_ptr;
     brent_args.c = i;
     brent_args.solve_flag = 1;
-    brent_args.solve_error = &solve_error;
+    brent_args.solve_error = &gas_solve_error;
 
     brent_solver<transport> solver;
 
     int n; // will store number of brent solver iterations
-    
-    // still using hard-coded brent tolerance eps; that could be set here
-    // lower bracket and upper bracket have been set in .lua files (temperature min and max)
+
     // Calculate equilibrium temperature.
-    // Additional gas_state solve may also happen here
-    grid->z[i].T_gas = solver.solve(*this, f, temp_min_value_,temp_max_value_,0.001, &n);
+    // using hard-coded brent tolerance eps and max allowed iterations; those could be set here
+    // lower bracket and upper bracket have been set in .lua files (temperature min and max)
+    grid->z[i].T_gas = solver.solve(*this, f, temp_min_value_,temp_max_value_,0.001, 100, &n);
+
     if (n == -1)
       {
-	printf("ERROR: Brent failed in temperature solve; root not bracketed properly\n");
-	exit(1);
+	//	printf("root not bracketed in temperature solve\n");
+	root_solve_error_temp++;
       }
+    if (n == -2)
+      {
+	//	printf("max number of iterations reached in temperature solve\n");
+	iter_solve_error_temp++;
+      }
+    if (gas_solve_error == 1)
+      {
+	root_solve_error_ne++;
+      }
+    if (gas_solve_error == 2)
+      {
+	//	printf("max number of iterations reached in temperature solve\n");
+	iter_solve_error_temp++;
+      }
+
 
     if (gas_state_ptr->is_nlte_turned_on() == 0)
     {
       // For LTE, do a final solve
-      solve_error = gas_state_ptr->solve_state();
+      gas_solve_error = gas_state_ptr->solve_state();
+      if (gas_solve_error == -1)
+	{
+	  //printf("root not bracketed in n_e solve\n");
+	  root_solve_error_ne++;
+	}
+      if (gas_solve_error == -2)
+	{
+	  //printf("max number of iterations reached in n_e solve\n");
+	  iter_solve_error_ne++;
+	}
     }
 
     if (gas_state_ptr->is_nlte_turned_on())
@@ -84,7 +125,10 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
       ff_cooling[i] = gas_state_ptr->free_free_cooling_rate(grid->z[i].T_gas);
       coll_cooling[i] = gas_state_ptr->collisional_net_cooling_rate(grid->z[i].T_gas);
     }
-    return solve_error;
+
+    if (root_solve_error_ne > 0 || iter_solve_error_ne > 0 || root_solve_error_temp > 0 || iter_solve_error_temp > 0)
+      gas_solve_error = root_solve_error_ne +  iter_solve_error_ne + root_solve_error_temp + iter_solve_error_temp ;
+    return gas_solve_error;
   }
 
 }
@@ -125,9 +169,9 @@ void transport::solve_eq_temperature()
 
 	    brent_solver<transport> solver;
 	    int n; // will store number of brent solver iterations
-	    // still using hard-coded eps; that could be set here
-	    // lower bracket and uppr bracket have been set in .lua files
-	    grid->z[i].T_gas = solver.solve(*this, f, temp_min_value_,temp_max_value_,0.001, &n);
+	    // using hard-coded brent tolerance eps and max allowed iterations; those could be set here
+	    // lower bracket and upper bracket have been set in .lua files (min and max temp)
+	    grid->z[i].T_gas = solver.solve(*this, f, temp_min_value_,temp_max_value_,0.001, 100, &n);
 
 
 	    if (gas_state_ptr->is_nlte_turned_on())
@@ -231,7 +275,7 @@ double transport::rad_eq_function_LTE(GasState* gas_state_ptr, int c,double T, i
 
 double transport::rad_eq_wrapper_NLTE(double T)
 {
-  return rad_eq_function_NLTE(brent_args.gas_state_ptr, brent_args.c, T, brent_args.solve_flag, brent_args.solve_error);
+  return rad_eq_function_NLTE(brent_args.gas_state_ptr,brent_args.c, T, brent_args.solve_flag, brent_args.solve_error);
 }
 
 //***************************************************************/

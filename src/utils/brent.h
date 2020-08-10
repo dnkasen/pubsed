@@ -15,8 +15,8 @@ class brent_solver
   typedef double (cl::*constraintMemFn)(double);
 
   // This is the interface to the outside world
-  // Takes the class containing the constraint equation, the member function of that class which expresses the constraint equation, the lower bracket for the root, the upper bracket for the root, the desired relative precision for the solution, and an int that will store the number of iterations required by the solver
-  double solve(cl&, constraintMemFn, double, double, double, int*);
+  // Takes the class containing the constraint equation, the member function of that class which expresses the constraint equation, the lower bracket for the root, the upper bracket for the root, the desired relative precision for the solution, the maximum number of allowed iterations, and an int that will store the number of iterations required by the solver
+  double solve(cl&, constraintMemFn, double, double, double, int, int*);
 };
 
 #endif

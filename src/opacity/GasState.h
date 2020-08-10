@@ -15,12 +15,6 @@ class GasState
 
   double charge_conservation(double);
   
-  // for interfacing with brent solver
-  struct brent_arguments
-  {
-    int * solve_error;
-  } brent_args;
-
   locate_array nu_grid_;
   int verbose_;
   int solve_error_;

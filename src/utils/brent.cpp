@@ -11,7 +11,7 @@
 
 // implementation of Brent solver, by Paul Duffell
 template <class cl>
-double brent_solver<cl>::solve(cl& cl_instance, constraintMemFn func, double aa, double bb, double eps, int* n) 
+double brent_solver<cl>::solve(cl& cl_instance, constraintMemFn func, double aa, double bb, double eps, int max_iters, int* n) 
 {
   double a = aa;
   double b = bb;
@@ -70,6 +70,12 @@ double brent_solver<cl>::solve(cl& cl_instance, constraintMemFn func, double aa,
     }
       
     *n = *n+1;
+    if (*n > max_iters)
+      {
+	*n = -2;
+	return(b);
+      }
+      
     if( fb == 0 || fs == 0 || fabs(b-a) < eps * std::min(fabs(a),fabs(b)) ) stillrunning = 0;
 
   }
