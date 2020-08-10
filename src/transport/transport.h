@@ -196,6 +196,7 @@ class transport
   double klein_nishina(double);
   double blackbody_nu(double T, double nu);
   void   reduce_opacities();
+  int    fill_and_solve_gasstate(GasState* gas_state_ptr, int i);
 
   // creation of particles functions
   void   emit_particles(double dt);
@@ -314,7 +315,7 @@ class transport
   void writeCheckpointSpectra(std::string fname);
   void writeCheckpointRNG(std::string fname);
 
-  void readCheckpointParticles(std::vector<particle>& particle_list, 
+  void readCheckpointParticles(std::vector<particle>& particle_list,
       std::string fname, std::string groupname, bool test=false,
       bool all_one_rank=false);
   void readParticleProp(std::string fname, std::string fieldname,

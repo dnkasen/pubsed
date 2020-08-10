@@ -71,7 +71,7 @@ class GasState
   std::vector <double> user_opacity_array_;
 
   // flags for nlte
-  int use_nlte_;
+  int nlte_turned_on_;
   int use_collisions_nlte_;
 
   double bulk_grey_opacity_;    // bulk component of the grey opacity (cm^2/g), which is the same in every zone
@@ -160,6 +160,16 @@ class GasState
   }
   void set_time(double t) {
     time_ = t;
+  }
+
+  void turn_on_nlte() {
+    nlte_turned_on_ = 1;
+  }
+  void turn_off_nlte() {
+    nlte_turned_on_ = 0;
+  }
+  int is_nlte_turned_on() {
+    return nlte_turned_on_;
   }
 
   //***********************************************************
