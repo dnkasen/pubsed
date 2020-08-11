@@ -72,13 +72,14 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
     brent_args.solve_error = &gas_solve_error;
 
     brent_solver<transport> solver;
+    double tol    = 1e-3;
+    int max_iters = 100;
 
     int n; // will store number of brent solver iterations
 
     // Calculate equilibrium temperature.
-    // using hard-coded brent tolerance eps and max allowed iterations; those could be set here
     // lower bracket and upper bracket have been set in .lua files (temperature min and max)
-    grid->z[i].T_gas = solver.solve(*this, f, temp_min_value_,temp_max_value_,0.001, 100, &n);
+    grid->z[i].T_gas = solver.solve(*this, f, temp_min_value_,temp_max_value_,tol, max_iters, &n);
 
     if (n == -1)
       {
@@ -168,10 +169,11 @@ void transport::solve_eq_temperature()
 	    brent_args.solve_error = &solve_error;  // solve_error won't actually be updated here because that's for the gas_state solve which isn't happening here
 
 	    brent_solver<transport> solver;
+	    double tol = 0.001;
+	    int max_iters = 100;
 	    int n; // will store number of brent solver iterations
-	    // using hard-coded brent tolerance eps and max allowed iterations; those could be set here
 	    // lower bracket and upper bracket have been set in .lua files (min and max temp)
-	    grid->z[i].T_gas = solver.solve(*this, f, temp_min_value_,temp_max_value_,0.001, 100, &n);
+	    grid->z[i].T_gas = solver.solve(*this, f, temp_min_value_,temp_max_value_,tol, max_iters, &n);
 
 
 	    if (gas_state_ptr->is_nlte_turned_on())
