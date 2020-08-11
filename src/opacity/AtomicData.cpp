@@ -203,7 +203,7 @@ int AtomicData::read_atomic_data(int z, int max_ion)
   if (atomlist_[z].data_exists_)
     return 0;
 
-  atomlist_[z].max_ion_stage_ = max_ion;
+//  atomlist_[z].max_ion_stage_ = max_ion;
   atomlist_[z].nu_grid_ = &nu_grid_;
 
   if (datafile_version_ == 1)
@@ -267,7 +267,7 @@ int AtomicData::read_newstyle_atomic_data(int z)
   // otherwise data exists, we'll read it in
   atomlist_[z].data_exists_ = true;
 
-  // deterime number of ions
+  // determine number of ions
   int n_tot_ions = 0;
   for (int ion=0;ion < z;++ion)
   {
@@ -281,6 +281,7 @@ int AtomicData::read_newstyle_atomic_data(int z)
   if (atom->n_ions_  > atom->max_ion_stage_)
     atom->n_ions_  = atom->max_ion_stage_;
   atom->ions_.resize(atom->n_ions_);
+
 
   // ----------------------------------------
   // loop over ions and read data

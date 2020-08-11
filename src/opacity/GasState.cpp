@@ -230,27 +230,30 @@ int GasState::solve_state(std::vector<SedonaReal>& J_nu)
         atoms[i].calculate_radiative_rates(J_nu);
   }
 
-
   // solve for the state of the gas.
   // This will solve the ion/excite state of each
   // atom and then iterate electron density until
   // charge conservation is fulfilled.
+
   gasMemFn f = &GasState::charge_conservation;
   solve_error_  = 0;
 
   brent_solver<GasState> solver;
   int n; // will store number of brent solver iterations
   
+
   // set bounds and tolerance for solving electron density
   double max_ne = 100*dens_/(mu_I*pc::m_p);
   double min_ne = 1e-10*dens_/(mu_I*pc::m_p);;
   double tol    = 1e-3;
+
   int max_iters = 100;
   // call brent method to solve for n_e
   n_elec_ = solver.solve(*this, f, min_ne, max_ne,tol,max_iters,&n);
 
   if (n == -1) solve_error_ = 1;
   if (n == -2) solve_error_ = 2;
+
 
   return solve_error_;
 

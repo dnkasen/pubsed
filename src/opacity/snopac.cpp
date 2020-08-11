@@ -387,4 +387,3 @@ double planck_mean(std::vector<OpacityType> opac)
   double kappa_P = sum/norm/gas.get_density();
   return kappa_P;
 }
-

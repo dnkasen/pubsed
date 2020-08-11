@@ -101,7 +101,6 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
 	iter_solve_error_temp++;
       }
 
-
     if (gas_state_ptr->is_nlte_turned_on() == 0)
     {
       // For LTE, do a final solve
@@ -145,60 +144,61 @@ void transport::solve_eq_temperature()
 #pragma omp parallel default(none) firstprivate(solve_error)
   {
 #ifdef _OPENMP
-    int tid = omp_get_thread_num();
+  int tid = omp_get_thread_num();
 #else
-    int tid = 0;
+  int tid = 0;
 #endif
-    GasState* gas_state_ptr = &(gas_state_vec_[tid]);
+  GasState* gas_state_ptr = &(gas_state_vec_[tid]);
 #pragma omp for schedule(dynamic,16)
-    for (int i=my_zone_start_;i<my_zone_stop_;i++)
+  for (int i=my_zone_start_;i<my_zone_stop_;i++)
+  {
+    if (set_Tgas_to_Trad_ == 1)
+      grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
+    else
+    {
+      // fill up GasState ptr and solve it's state
+      solve_error = fill_and_solve_gasstate(gas_state_ptr, i);
+      
+      transportMemFn f;
+      if (gas_state_ptr->is_nlte_turned_on() == 0)
+	{
+	  f = &transport::rad_eq_wrapper_LTE;
+	}
+      else f = &transport::rad_eq_wrapper_NLTE;
+
+      brent_args.gas_state_ptr = gas_state_ptr;
+      brent_args.c = i;
+      brent_args.solve_flag = 0;
+      brent_args.solve_error = &solve_error;  // solve_error won't actually be updated here because that's for the gas_state solve which isn't happening here
+
+      brent_solver<transport> solver;
+      double tol = 0.001;
+      int max_iters = 100;
+      int n; // will store number of brent solver iterations
+      // lower bracket and upper bracket have been set in .lua files (min and max temp)
+      grid->z[i].T_gas = solver.solve(*this, f, temp_min_value_,temp_max_value_,tol, max_iters, &n);
+
+      if (n == -1)
+	{
+	  //	  printf("root not bracketed in n_e solve\n");
+	  solve_root_errors++;
+	}
+      if (n == -2)
+	{
+	  //	  printf("max number of iterations reached in n_e solve\n");
+	  solve_iter_errors++;
+	}
+      
+      if (gas_state_ptr->is_nlte_turned_on())
       {
-	if (set_Tgas_to_Trad_ == 1)
-	  grid->z[i].T_gas = pow(grid->z[i].e_rad/pc::a,0.25);
-	else
-	  {
-
-	    transportMemFn f;
-            if (gas_state_ptr->is_nlte_turned_on() == 0)
-	      {
-		f = &transport::rad_eq_wrapper_LTE;
-	      }
-	    else f = &transport::rad_eq_wrapper_NLTE;
-    
-	    brent_args.gas_state_ptr = gas_state_ptr;
-	    brent_args.c = i;
-	    brent_args.solve_flag = 0;
-	    brent_args.solve_error = &solve_error;  // solve_error won't actually be updated here because that's for the gas_state solve which isn't happening here
-
-	    brent_solver<transport> solver;
-	    double tol = 0.001;
-	    int max_iters = 100;
-	    int n; // will store number of brent solver iterations
-	    // lower bracket and upper bracket have been set in .lua files (min and max temp)
-	    grid->z[i].T_gas = solver.solve(*this, f, temp_min_value_,temp_max_value_,tol, max_iters, &n);
-	    if (n == -1)
-	      {
-		//	  printf("root not bracketed in n_e solve\n");
-		solve_root_errors++;
-	      }
-	    if (n == -2)
-	      {
-		//	  printf("max number of iterations reached in n_e solve\n");
-		solve_iter_errors++;
-	      }
-
-
-	    if (gas_state_ptr->is_nlte_turned_on())
-	      {
-		bf_heating[i] = gas_state_ptr->bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
-		ff_heating[i] = gas_state_ptr->free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
-		bf_cooling[i] = gas_state_ptr->bound_free_cooling_rate(grid->z[i].T_gas);
-		ff_cooling[i] = gas_state_ptr->free_free_cooling_rate(grid->z[i].T_gas);
-		coll_cooling[i] = gas_state_ptr->collisional_net_cooling_rate(grid->z[i].T_gas);
-	      }
-	  }
+	bf_heating[i] = gas_state_ptr->bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+	ff_heating[i] = gas_state_ptr->free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+	bf_cooling[i] = gas_state_ptr->bound_free_cooling_rate(grid->z[i].T_gas);
+	ff_cooling[i] = gas_state_ptr->free_free_cooling_rate(grid->z[i].T_gas);
+	coll_cooling[i] = gas_state_ptr->collisional_net_cooling_rate(grid->z[i].T_gas);
       }
-    reduce_Tgas();
+    }
+  }
   }
   if (solve_root_errors > 0) 
     std::cerr << "# Warning: root not bracketed in n_e solve in " << solve_root_errors << " zones" << std::endl;
@@ -328,7 +328,6 @@ double transport::rad_eq_function_NLTE(GasState* gas_state_ptr, int c,double T, 
   // if flag set, recompute the entire NLTE problem for this iteration
   if (solve_flag)
     *solve_error = gas_state_ptr->solve_state(J_nu_[c]);
-
 
   // total energy absorbed
   double E_absorbed = gas_state_ptr->free_free_heating_rate(T,J_nu_[c]) +
