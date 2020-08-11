@@ -204,6 +204,8 @@ void transport::solve_eq_temperature()
     std::cerr << "# Warning: root not bracketed in n_e solve in " << solve_root_errors << " zones" << std::endl;
   if (solve_iter_errors > 0) 
     std::cerr << "# Warning: max iterations hit in n_e solve in " << solve_iter_errors << " zones" << std::endl;
+
+  reduce_Tgas();
 }
 
 double transport::rad_eq_wrapper_LTE(double T)
