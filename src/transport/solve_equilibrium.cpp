@@ -140,6 +140,8 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
 void transport::solve_eq_temperature()
 {
   int solve_error = 0;
+  int solve_root_errors = 0;
+  int solve_iter_errors = 0;
 #pragma omp parallel default(none) firstprivate(solve_error)
   {
 #ifdef _OPENMP
@@ -174,6 +176,16 @@ void transport::solve_eq_temperature()
 	    int n; // will store number of brent solver iterations
 	    // lower bracket and upper bracket have been set in .lua files (min and max temp)
 	    grid->z[i].T_gas = solver.solve(*this, f, temp_min_value_,temp_max_value_,tol, max_iters, &n);
+	    if (n == -1)
+	      {
+		//	  printf("root not bracketed in n_e solve\n");
+		solve_root_errors++;
+	      }
+	    if (n == -2)
+	      {
+		//	  printf("max number of iterations reached in n_e solve\n");
+		solve_iter_errors++;
+	      }
 
 
 	    if (gas_state_ptr->is_nlte_turned_on())
@@ -188,6 +200,10 @@ void transport::solve_eq_temperature()
       }
     reduce_Tgas();
   }
+  if (solve_root_errors > 0) 
+    std::cerr << "# Warning: root not bracketed in n_e solve in " << solve_root_errors << " zones" << std::endl;
+  if (solve_iter_errors > 0) 
+    std::cerr << "# Warning: max iterations hit in n_e solve in " << solve_iter_errors << " zones" << std::endl;
 }
 
 double transport::rad_eq_wrapper_LTE(double T)
