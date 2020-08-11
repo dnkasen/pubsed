@@ -141,7 +141,7 @@ void transport::solve_eq_temperature()
   int solve_error = 0;
   int solve_root_errors = 0;
   int solve_iter_errors = 0;
-#pragma omp parallel default(none) firstprivate(solve_error)
+#pragma omp parallel default(none) firstprivate(solve_error,solve_root_errors,solve_iter_errors)
   {
 #ifdef _OPENMP
   int tid = omp_get_thread_num();

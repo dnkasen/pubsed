@@ -259,7 +259,6 @@ int transport::fill_and_solve_gasstate(GasState* gas_state_ptr, int i)
       solve_error = solve_state_and_temperature(gas_state_ptr, i);
     else
       solve_error = gas_state_ptr->solve_state(J_nu_[i]);
->>>>>>> 4aa2ab67a2ff216c5434ace3de1fde6ac5226c87
   }
   return solve_error;
 }
