@@ -10,14 +10,14 @@
 #define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember)) // This would be better done with std::invoke, but that requires c++17
 
 // implementation of Brent solver, by Paul Duffell
-template <class cl>
-double brent_solver<cl>::solve(cl& cl_instance, constraintMemFn func, double aa, double bb, double eps, int max_iters, int* n) 
+template <class cl,class args>
+double brent_solver<cl,args>::solve(cl& cl_instance, constraintMemFn func, args& these_args, double aa, double bb, double eps, int max_iters, int* n) 
 {
   double a = aa;
   double b = bb;
 
-  double fa = CALL_MEMBER_FN(cl_instance,func)(a);
-  double fb = CALL_MEMBER_FN(cl_instance,func)(b);
+  double fa = CALL_MEMBER_FN(cl_instance,func)(a,these_args);
+  double fb = CALL_MEMBER_FN(cl_instance,func)(b,these_args);
   *n = 0;
   if( fa*fb >= 0 ){
     //    printf("Brent failed; not bracketed properly\n");
@@ -48,7 +48,7 @@ double brent_solver<cl>::solve(cl& cl_instance, constraintMemFn func, double aa,
     int cond = (s-a)*(s-b) >= 0;
     if( cond ){ s=m; }
 
-    double fs = CALL_MEMBER_FN(cl_instance,func)(s);
+    double fs = CALL_MEMBER_FN(cl_instance,func)(s,these_args);
     c = b;
     fc = fb;
 

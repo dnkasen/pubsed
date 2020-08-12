@@ -66,12 +66,14 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
       }
 
 
+    radeq_brent_arguments brent_args;
+    
     brent_args.gas_state_ptr = gas_state_ptr;
     brent_args.c = i;
     brent_args.solve_flag = 1;
     brent_args.solve_error = &gas_solve_error;
 
-    brent_solver<transport> solver;
+    brent_solver<transport,radeq_brent_arguments> solver;
     double tol    = 1e-3;
     int max_iters = 100;
 
@@ -79,7 +81,7 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
 
     // Calculate equilibrium temperature.
     // lower bracket and upper bracket have been set in .lua files (temperature min and max)
-    grid->z[i].T_gas = solver.solve(*this, f, temp_min_value_,temp_max_value_,tol, max_iters, &n);
+    grid->z[i].T_gas = solver.solve(*this, f, brent_args,temp_min_value_,temp_max_value_,tol, max_iters, &n);
 
     if (n == -1)
       {
@@ -152,7 +154,7 @@ void transport::solve_eq_temperature()
   int solve_iter_errors_temp = 0;
   int solve_root_errors_ne = 0;
   int solve_iter_errors_ne = 0;
-#pragma omp parallel default(none) firstprivate(solve_error,brent_args) shared(solve_root_errors_temp,solve_iter_errors_temp,solve_root_errors_ne,solve_iter_errors_ne)
+#pragma omp parallel default(none) firstprivate(solve_error) shared(solve_root_errors_temp,solve_iter_errors_temp,solve_root_errors_ne,solve_iter_errors_ne)
   {
 #ifdef _OPENMP
   int tid = omp_get_thread_num();
@@ -188,17 +190,19 @@ void transport::solve_eq_temperature()
 	}
       else f = &transport::rad_eq_wrapper_NLTE;
 
+      radeq_brent_arguments brent_args;
+
       brent_args.gas_state_ptr = gas_state_ptr;
       brent_args.c = i;
       brent_args.solve_flag = 0;
       brent_args.solve_error = &solve_error;  // solve_error won't actually be updated here because that's for the gas_state solve which isn't happening here
 
-      brent_solver<transport> solver;
+      brent_solver<transport,radeq_brent_arguments> solver;
       double tol = 0.001;
       int max_iters = 100;
       int n; // will store number of brent solver iterations
       // lower bracket and upper bracket have been set in .lua files (min and max temp)
-      grid->z[i].T_gas = solver.solve(*this, f, temp_min_value_,temp_max_value_,tol, max_iters, &n);
+      grid->z[i].T_gas = solver.solve(*this, f, brent_args, temp_min_value_,temp_max_value_,tol, max_iters, &n);
 
       if (n == -1)
 	{
@@ -229,16 +233,16 @@ void transport::solve_eq_temperature()
     std::cerr << "# Warning: temperature not bracketed in " << solve_root_errors_temp << " zones" << std::endl;
   if (solve_iter_errors_temp > 0) 
     std::cerr << "# Warning: max iterations hit in temperature solve in " << solve_iter_errors_temp << " zones" << std::endl;
-  if (solve_root_errors_temp > 0) 
-    std::cerr << "# Warning: temperature not bracketed in " << solve_root_errors_ne << " zones" << std::endl;
-  if (solve_iter_errors_temp > 0) 
-    std::cerr << "# Warning: max iterations hit in temperature solve in " << solve_iter_errors_ne << " zones" << std::endl;
+  if (solve_root_errors_ne > 0) 
+    std::cerr << "# Warning: n_e not bracketed in " << solve_root_errors_ne << " zones" << std::endl;
+  if (solve_iter_errors_ne > 0) 
+    std::cerr << "# Warning: max iterations hit in n_e solve in " << solve_iter_errors_ne << " zones" << std::endl;
       }
 
   reduce_Tgas();
 }
 
-double transport::rad_eq_wrapper_LTE(double T)
+double transport::rad_eq_wrapper_LTE(double T, radeq_brent_arguments& brent_args)
 {
   return rad_eq_function_LTE(brent_args.gas_state_ptr, brent_args.c, T, brent_args.solve_flag, brent_args.solve_error);
 }
@@ -323,7 +327,7 @@ double transport::rad_eq_function_LTE(GasState* gas_state_ptr, int c,double T, i
 }
 
 
-double transport::rad_eq_wrapper_NLTE(double T)
+double transport::rad_eq_wrapper_NLTE(double T,radeq_brent_arguments& brent_args)
 {
   return rad_eq_function_NLTE(brent_args.gas_state_ptr,brent_args.c, T, brent_args.solve_flag, brent_args.solve_error);
 }

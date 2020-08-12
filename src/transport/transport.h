@@ -40,8 +40,6 @@ using std::vector;
 
 
 
-
-
 class transport
 {
 
@@ -252,14 +250,23 @@ class transport
   double rad_eq_function_LTE(GasState*, int,double,int, int*);
   double rad_eq_function_NLTE(GasState*, int,double,int, int*);
 
-  // for interfacing with brent solver
-  struct brent_arguments
+  //----------------------------------------------------------
+  // for interfacing with brent solver (to solve for rad. eq.)
+  //----------------------------------------------------------
+struct radeq_brent_arguments
   {
     GasState* gas_state_ptr;
     int c;
     int solve_flag;
     int * solve_error;    
-  } brent_args;
+  };
+
+  
+  // Convenience for interfacing with brent solver
+  typedef double (transport::*transportMemFn)(double,radeq_brent_arguments&);
+  
+  double rad_eq_wrapper_LTE(double, radeq_brent_arguments&);
+  double rad_eq_wrapper_NLTE(double, radeq_brent_arguments&);
 
  public:
 
@@ -328,16 +335,13 @@ class transport
   void testCheckpointSpectrum(std::string fname);
 
 
-  //----------------------------------------------------------
-  // for interfacing with brent solver (to solve for rad. eq.)
-  //----------------------------------------------------------
-  double rad_eq_wrapper_LTE(double);
-  double rad_eq_wrapper_NLTE(double);
+
   
 };
 
-// Convenience for interfacing with brent solver
-typedef double (transport::*transportMemFn)(double);
+
+
 
 
 #endif
+

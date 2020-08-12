@@ -8,12 +8,12 @@
 #include "hdf5.h"
 #include "hdf5_hl.h"
 
+
+
 class GasState
 {
 
  private:
-
-  double charge_conservation(double);
   
   locate_array nu_grid_;
   int verbose_;
@@ -23,6 +23,15 @@ class GasState
   std::vector <int> globalLevelList_atom_;
   std::vector <int> globalLevelList_index_;
 
+  struct charge_brent_arguments
+{
+  int dummy;
+};
+
+// Convenience for interfacing with brent solver
+typedef double (GasState::*gasMemFn)(double, charge_brent_arguments&);
+  
+  double charge_conservation(double, charge_brent_arguments&);
 
  public:
 
@@ -254,7 +263,7 @@ class GasState
 
 };
 
-// Convenience for interfacing with brent solver
-typedef double (GasState::*gasMemFn)(double);
+
+
 
 #endif
