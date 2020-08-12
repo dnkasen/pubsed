@@ -20,10 +20,10 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
   vector<OpacityType> scat(nu_grid_.size());
   emis.assign(emis.size(),0.0);
 
-  int root_solve_error_temp = 0; // store total such errors
-  int iter_solve_error_temp = 0; // store total such errors
-  int root_solve_error_ne = 0; // store total such errors
-  int iter_solve_error_ne = 0; // store total such errors
+  int solve_root_errors_temp = 0; // store total such errors
+  int solve_iter_errors_temp = 0; // store total such errors
+  int solve_root_errors_ne = 0; // store total such errors
+  int solve_iter_errors_ne = 0; // store total such errors
 
   int gas_solve_error; // stores type of error for single gas solve
 
@@ -50,12 +50,12 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
       if (gas_solve_error == 1)
 	{
 	  //	  printf("root not bracketed in n_e solve\n");
-	  root_solve_error_ne++;
+	  solve_root_errors_ne++;
 	}
       if (gas_solve_error == 2)
 	{
 	  //	  printf("max number of iterations reached in n_e solve\n");
-	  iter_solve_error_ne++;
+	  solve_iter_errors_ne++;
 	}
       gas_state_ptr->computeOpacity(abs_opacity_[i],scat,emis);
       f = &transport::rad_eq_wrapper_LTE;
@@ -84,21 +84,21 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
     if (n == -1)
       {
 	//	printf("root not bracketed in temperature solve\n");
-	root_solve_error_temp++;
+	solve_root_errors_temp++;
       }
     if (n == -2)
       {
 	//	printf("max number of iterations reached in temperature solve\n");
-	iter_solve_error_temp++;
+	solve_iter_errors_temp++;
       }
     if (gas_solve_error == 1)
       {
-	root_solve_error_ne++;
+	solve_root_errors_ne++;
       }
     if (gas_solve_error == 2)
       {
 	//	printf("max number of iterations reached in temperature solve\n");
-	iter_solve_error_temp++;
+	solve_iter_errors_temp++;
       }
 
     if (gas_state_ptr->is_nlte_turned_on() == 0)
@@ -108,12 +108,12 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
       if (gas_solve_error == -1)
 	{
 	  //printf("root not bracketed in n_e solve\n");
-	  root_solve_error_ne++;
+	  solve_root_errors_ne++;
 	}
       if (gas_solve_error == -2)
 	{
 	  //printf("max number of iterations reached in n_e solve\n");
-	  iter_solve_error_ne++;
+	  solve_iter_errors_ne++;
 	}
     }
 
@@ -126,8 +126,17 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
       coll_cooling[i] = gas_state_ptr->collisional_net_cooling_rate(grid->z[i].T_gas);
     }
 
-    if (root_solve_error_ne > 0 || iter_solve_error_ne > 0 || root_solve_error_temp > 0 || iter_solve_error_temp > 0)
-      gas_solve_error = root_solve_error_ne +  iter_solve_error_ne + root_solve_error_temp + iter_solve_error_temp ;
+    if (solve_root_errors_temp > 0) 
+      std::cerr << "# Warning: temperature not bracketed in " << solve_root_errors_temp << " zones" << std::endl;
+    if (solve_iter_errors_temp > 0) 
+      std::cerr << "# Warning: max iterations hit in temperature solve in " << solve_iter_errors_temp << " zones" << std::endl;
+    if (solve_root_errors_ne > 0) 
+      std::cerr << "# Warning: n_e bracketed in " << solve_root_errors_ne << " zones" << std::endl;
+    if (solve_iter_errors_ne > 0) 
+      std::cerr << "# Warning: max iterations hit in n_e solve in " << solve_iter_errors_ne << " zones" << std::endl;
+
+    if (solve_root_errors_ne > 0 || solve_iter_errors_ne > 0 || solve_root_errors_temp > 0 || solve_iter_errors_temp > 0)
+      gas_solve_error = solve_root_errors_ne +  solve_iter_errors_ne + solve_root_errors_temp + solve_iter_errors_temp ;
     return gas_solve_error;
   }
 
@@ -139,9 +148,11 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
 void transport::solve_eq_temperature()
 {
   int solve_error = 0;
-  int solve_root_errors = 0;
-  int solve_iter_errors = 0;
-#pragma omp parallel default(none) firstprivate(solve_error,solve_root_errors,solve_iter_errors)
+  int solve_root_errors_temp = 0;
+  int solve_iter_errors_temp = 0;
+  int solve_root_errors_ne = 0;
+  int solve_iter_errors_ne = 0;
+#pragma omp parallel default(none) firstprivate(solve_error,brent_args) shared(solve_root_errors_temp,solve_iter_errors_temp,solve_root_errors_ne,solve_iter_errors_ne)
   {
 #ifdef _OPENMP
   int tid = omp_get_thread_num();
@@ -158,6 +169,17 @@ void transport::solve_eq_temperature()
     {
       // fill up GasState ptr and solve it's state
       solve_error = fill_and_solve_gasstate(gas_state_ptr, i);
+
+      if (solve_error == -1)
+	{
+	  //	  printf("root not bracketed in n_e solve\n");
+	  solve_root_errors_ne++;
+	}
+      if (solve_error == -2)
+	{
+	  //	  printf("max number of iterations reached in n_e solve\n");
+	  solve_iter_errors_ne++;
+	}
       
       transportMemFn f;
       if (gas_state_ptr->is_nlte_turned_on() == 0)
@@ -181,12 +203,12 @@ void transport::solve_eq_temperature()
       if (n == -1)
 	{
 	  //	  printf("root not bracketed in n_e solve\n");
-	  solve_root_errors++;
+	  solve_root_errors_temp++;
 	}
       if (n == -2)
 	{
 	  //	  printf("max number of iterations reached in n_e solve\n");
-	  solve_iter_errors++;
+	  solve_iter_errors_temp++;
 	}
       
       if (gas_state_ptr->is_nlte_turned_on())
@@ -200,10 +222,18 @@ void transport::solve_eq_temperature()
     }
   }
   }
-  if (solve_root_errors > 0) 
-    std::cerr << "# Warning: root not bracketed in n_e solve in " << solve_root_errors << " zones" << std::endl;
-  if (solve_iter_errors > 0) 
-    std::cerr << "# Warning: max iterations hit in n_e solve in " << solve_iter_errors << " zones" << std::endl;
+    #pragma omp single
+    if (verbose)
+      {
+  if (solve_root_errors_temp > 0) 
+    std::cerr << "# Warning: temperature not bracketed in " << solve_root_errors_temp << " zones" << std::endl;
+  if (solve_iter_errors_temp > 0) 
+    std::cerr << "# Warning: max iterations hit in temperature solve in " << solve_iter_errors_temp << " zones" << std::endl;
+  if (solve_root_errors_temp > 0) 
+    std::cerr << "# Warning: temperature not bracketed in " << solve_root_errors_ne << " zones" << std::endl;
+  if (solve_iter_errors_temp > 0) 
+    std::cerr << "# Warning: max iterations hit in temperature solve in " << solve_iter_errors_ne << " zones" << std::endl;
+      }
 
   reduce_Tgas();
 }
