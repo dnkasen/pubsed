@@ -255,10 +255,17 @@ int transport::fill_and_solve_gasstate(GasState* gas_state_ptr, int i)
   // if not doing grey opacity, solve the state
   if (z->total_grey_opacity == 0)
   {
-    if (solve_Tgas_with_updated_opacities_)
+    if (solve_Tgas_with_updated_opacities_ && first_step_ == 0)
+      {
+	printf("entering solve_state_and_temperature\n");
       solve_error = solve_state_and_temperature(gas_state_ptr, i);
+      }
     else
+      {
+	printf("entering normal solve_state\n");
       solve_error = gas_state_ptr->solve_state(J_nu_[i]);
+
+      }
   }
   return solve_error;
 }

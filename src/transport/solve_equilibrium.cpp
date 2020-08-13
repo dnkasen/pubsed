@@ -37,14 +37,15 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
   else
   {
     zone* z = &(grid->z[i]);
-    gas_state_ptr->dens_ = z->rho;
-    gas_state_ptr->temp_ = z->T_gas;
+    gas_state_ptr->dens_ = z->rho; // redundant?
+    gas_state_ptr->temp_ = z->T_gas; // redundant?
 
     transportMemFn f;
 
     // For LTE, do an initial solve of the gas state
     if (gas_state_ptr->is_nlte_turned_on() == 0)
     {
+      printf("entering normal solve_state\n");
       gas_solve_error = gas_state_ptr->solve_state();
 
       if (gas_solve_error == 1)
@@ -57,6 +58,7 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
 	  //	  printf("max number of iterations reached in n_e solve\n");
 	  solve_iter_errors_ne++;
 	}
+      printf("computing opacity in solve_state_and_temperature\n");
       gas_state_ptr->computeOpacity(abs_opacity_[i],scat,emis);
       f = &transport::rad_eq_function_LTE;
     }
@@ -74,13 +76,14 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
     brent_args.solve_error = &gas_solve_error;
 
     brent_solver<transport,radeq_brent_args> solver;
-    double tol    = 1e-3;
+    double tol    = 1.e-3;
     int max_iters = 100;
 
     int n; // will store number of brent solver iterations
 
     // Calculate equilibrium temperature.
     // lower bracket and upper bracket have been set in .lua files (temperature min and max)
+    printf("starting brent solve for temperature with solve flag 1\n");
     grid->z[i].T_gas = solver.solve(*this, f, &brent_args,temp_min_value_,temp_max_value_,tol, max_iters, &n);
 
     if (n == -1)
@@ -133,7 +136,7 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
     if (solve_iter_errors_temp > 0) 
       std::cerr << "# Warning: max iterations hit in temperature solve in " << solve_iter_errors_temp << " zones" << std::endl;
     if (solve_root_errors_ne > 0) 
-      std::cerr << "# Warning: n_e bracketed in " << solve_root_errors_ne << " zones" << std::endl;
+      std::cerr << "# Warning: n_e not bracketed in " << solve_root_errors_ne << " zones" << std::endl;
     if (solve_iter_errors_ne > 0) 
       std::cerr << "# Warning: max iterations hit in n_e solve in " << solve_iter_errors_ne << " zones" << std::endl;
 
@@ -170,6 +173,7 @@ void transport::solve_eq_temperature()
     else
     {
       // fill up GasState ptr and solve it's state
+      printf("entering fill_and_solve_gasstate\n");
       solve_error = fill_and_solve_gasstate(gas_state_ptr, i);
 
       if (solve_error == -1)
@@ -198,10 +202,11 @@ void transport::solve_eq_temperature()
       brent_args.solve_error = &solve_error;  // solve_error won't actually be updated here because that's for the gas_state solve which isn't happening here
 
       brent_solver<transport,radeq_brent_args> solver;
-      double tol = 0.001;
+      double tol = 1.e-3;
       int max_iters = 100;
       int n; // will store number of brent solver iterations
       // lower bracket and upper bracket have been set in .lua files (min and max temp)
+      printf("starting brent solve for temperature with solve flag 0\n");
       grid->z[i].T_gas = solver.solve(*this, f, &brent_args, temp_min_value_,temp_max_value_,tol, max_iters, &n);
 
       if (n == -1)
@@ -265,6 +270,8 @@ void transport::solve_eq_temperature()
 double transport::rad_eq_function_LTE(double T, radeq_brent_args* args)
 {
 
+  printf("in rad_eq_functin_LTE, solve flag is %d\n",args->solve_flag);
+ 
   zone* z = &(grid->z[args->c]);
   args->gas_state_ptr->dens_ = z->rho;
   args->gas_state_ptr->temp_ = T;
@@ -279,6 +286,7 @@ double transport::rad_eq_function_LTE(double T, radeq_brent_args* args)
   {
     // if you want to resolve the LTE state on each T iteration:
     // args->*solve_error = args->gas_state_ptr->solve_state();
+    printf("computing opacity in rad_eq_LTE\n");
     args->gas_state_ptr->computeOpacity(abs_opacity_[args->c],scat,emis);
   }
 
@@ -339,6 +347,8 @@ double transport::rad_eq_function_LTE(double T, radeq_brent_args* args)
 double transport::rad_eq_function_NLTE(double T, radeq_brent_args* args)
 {
 
+  printf("in rad_eq_function_NLTE with solve_flag %d\n",args->solve_flag);
+  
   zone* z = &(grid->z[args->c]);
   args->gas_state_ptr->dens_ = z->rho;
   args->gas_state_ptr->temp_ = T;
@@ -352,7 +362,13 @@ double transport::rad_eq_function_NLTE(double T, radeq_brent_args* args)
 
   // if flag set, recompute the entire NLTE problem for this iteration
   if (args->solve_flag)
-    *(args->solve_error) = args->gas_state_ptr->solve_state(J_nu_[args->c]);
+    {
+      printf("solving state in rad_eq_function_NLTE\n");
+    int test = args->gas_state_ptr->solve_state(J_nu_[args->c]);
+    printf("solve error from that solve_state in rad_eq_function_NLTE is %d\n",test);
+    *(args->solve_error)  = test;
+
+    }
 
   // total energy absorbed
   double E_absorbed = args->gas_state_ptr->free_free_heating_rate(T,J_nu_[args->c]) +
