@@ -58,22 +58,22 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
 	  solve_iter_errors_ne++;
 	}
       gas_state_ptr->computeOpacity(abs_opacity_[i],scat,emis);
-      f = &transport::rad_eq_wrapper_LTE;
+      f = &transport::rad_eq_function_LTE;
     }
     else
       {
-	f = &transport::rad_eq_wrapper_NLTE;
+	f = &transport::rad_eq_function_NLTE;
       }
 
 
-    radeq_brent_arguments brent_args;
+    radeq_brent_args brent_args;
     
     brent_args.gas_state_ptr = gas_state_ptr;
     brent_args.c = i;
     brent_args.solve_flag = 1;
     brent_args.solve_error = &gas_solve_error;
 
-    brent_solver<transport,radeq_brent_arguments> solver;
+    brent_solver<transport,radeq_brent_args> solver;
     double tol    = 1e-3;
     int max_iters = 100;
 
@@ -81,7 +81,7 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
 
     // Calculate equilibrium temperature.
     // lower bracket and upper bracket have been set in .lua files (temperature min and max)
-    grid->z[i].T_gas = solver.solve(*this, f, brent_args,temp_min_value_,temp_max_value_,tol, max_iters, &n);
+    grid->z[i].T_gas = solver.solve(*this, f, &brent_args,temp_min_value_,temp_max_value_,tol, max_iters, &n);
 
     if (n == -1)
       {
@@ -186,23 +186,23 @@ void transport::solve_eq_temperature()
       transportMemFn f;
       if (gas_state_ptr->is_nlte_turned_on() == 0)
 	{
-	  f = &transport::rad_eq_wrapper_LTE;
+	  f = &transport::rad_eq_function_LTE;
 	}
-      else f = &transport::rad_eq_wrapper_NLTE;
+      else f = &transport::rad_eq_function_NLTE;
 
-      radeq_brent_arguments brent_args;
+      radeq_brent_args brent_args;
 
       brent_args.gas_state_ptr = gas_state_ptr;
       brent_args.c = i;
       brent_args.solve_flag = 0;
       brent_args.solve_error = &solve_error;  // solve_error won't actually be updated here because that's for the gas_state solve which isn't happening here
 
-      brent_solver<transport,radeq_brent_arguments> solver;
+      brent_solver<transport,radeq_brent_args> solver;
       double tol = 0.001;
       int max_iters = 100;
       int n; // will store number of brent solver iterations
       // lower bracket and upper bracket have been set in .lua files (min and max temp)
-      grid->z[i].T_gas = solver.solve(*this, f, brent_args, temp_min_value_,temp_max_value_,tol, max_iters, &n);
+      grid->z[i].T_gas = solver.solve(*this, f, &brent_args, temp_min_value_,temp_max_value_,tol, max_iters, &n);
 
       if (n == -1)
 	{
@@ -242,12 +242,6 @@ void transport::solve_eq_temperature()
   reduce_Tgas();
 }
 
-double transport::rad_eq_wrapper_LTE(double T, radeq_brent_arguments& brent_args)
-{
-  return rad_eq_function_LTE(brent_args.gas_state_ptr, brent_args.c, T, brent_args.solve_flag, brent_args.solve_error);
-}
-
-
 //***************************************************************/
 // This is the function that expresses radiative equillibrium
 // in a cell (i.e. E_absorbed = E_emitted).  It is used in
@@ -268,11 +262,12 @@ double transport::rad_eq_wrapper_LTE(double T, radeq_brent_arguments& brent_args
 //              compute emission rates
 //
 //************************************************************/
-double transport::rad_eq_function_LTE(GasState* gas_state_ptr, int c,double T, int solve_flag, int *solve_error)
+double transport::rad_eq_function_LTE(double T, radeq_brent_args* args)
 {
-  zone* z = &(grid->z[c]);
-  gas_state_ptr->dens_ = z->rho;
-  gas_state_ptr->temp_ = T;
+
+  zone* z = &(grid->z[args->c]);
+  args->gas_state_ptr->dens_ = z->rho;
+  args->gas_state_ptr->temp_ = T;
 
   // helper variables need for call (will not be used)
   vector<OpacityType> emis(nu_grid_.size());
@@ -280,11 +275,11 @@ double transport::rad_eq_function_LTE(GasState* gas_state_ptr, int c,double T, i
   emis.assign(emis.size(),0.0);
 
   // recalculate opacities based on current T if desired
-  if (solve_flag)
+  if (args->solve_flag)
   {
     // if you want to resolve the LTE state on each T iteration:
-    // *solve_error = gas_state_ptr->solve_state();
-    gas_state_ptr->computeOpacity(abs_opacity_[c],scat,emis);
+    // args->*solve_error = args->gas_state_ptr->solve_state();
+    args->gas_state_ptr->computeOpacity(abs_opacity_[args->c],scat,emis);
   }
 
   // total energy emitted (to be calculated)
@@ -293,16 +288,16 @@ double transport::rad_eq_function_LTE(GasState* gas_state_ptr, int c,double T, i
   // total energy absorbed in zone
   double E_absorbed = 0.;
   // if not solve_flag, use the absorption rate estimated during transport
-  if (solve_flag == 0)
-    E_absorbed = grid->z[c].e_abs;
+  if (args->solve_flag == 0)
+    E_absorbed = grid->z[args->c].e_abs;
 
   // Calculate total emission assuming no frequency (grey) opacity
   if (nu_grid_.size() == 1)
   {
-    E_emitted = 4.0*pc::pi*abs_opacity_[c][0]*pc::sb/pc::pi*pow(T,4);
+    E_emitted = 4.0*pc::pi*abs_opacity_[args->c][0]*pc::sb/pc::pi*pow(T,4);
 
-    if (solve_flag && solve_error == 0)
-      E_absorbed = pc::c *abs_opacity_[c][0] * grid->z[c].e_rad;
+    if (args->solve_flag == 0)
+      E_absorbed = pc::c *abs_opacity_[args->c][0] * grid->z[args->c].e_rad;
   }
 
   // integrate emisison over frequency (angle
@@ -315,21 +310,15 @@ double transport::rad_eq_function_LTE(GasState* gas_state_ptr, int c,double T, i
     double dnu  = nu_grid_.delta(i);
     double nu   = nu_grid_.center(i);
     double B_nu = blackbody_nu(T,nu);
-    double kappa_abs = abs_opacity_[c][i];
+    double kappa_abs = abs_opacity_[args->c][i];
     E_emitted += 4.0*pc::pi*kappa_abs*B_nu*dnu;
-    if (solve_flag == 1)
-      E_absorbed += 4.0*pc::pi*kappa_abs*J_nu_[c][i]*dnu;
+    if (args->solve_flag == 1)
+      E_absorbed += 4.0*pc::pi*kappa_abs*J_nu_[args->c][i]*dnu;
   }
 
   // radiative equillibrium condition: "emission equals absorbtion"
   // return to Brent function to iterate this to zero
   return (E_emitted - E_absorbed);
-}
-
-
-double transport::rad_eq_wrapper_NLTE(double T,radeq_brent_arguments& brent_args)
-{
-  return rad_eq_function_NLTE(brent_args.gas_state_ptr,brent_args.c, T, brent_args.solve_flag, brent_args.solve_error);
 }
 
 //***************************************************************/
@@ -347,12 +336,12 @@ double transport::rad_eq_wrapper_NLTE(double T,radeq_brent_arguments& brent_args
 //              compute emission rates
 //
 //************************************************************/
-double transport::rad_eq_function_NLTE(GasState* gas_state_ptr, int c,double T, int solve_flag, int *solve_error)
+double transport::rad_eq_function_NLTE(double T, radeq_brent_args* args)
 {
 
-  zone* z = &(grid->z[c]);
-  gas_state_ptr->dens_ = z->rho;
-  gas_state_ptr->temp_ = T;
+  zone* z = &(grid->z[args->c]);
+  args->gas_state_ptr->dens_ = z->rho;
+  args->gas_state_ptr->temp_ = T;
 
   // make sure grey_opacity is not being used
   if (z->total_grey_opacity != 0)
@@ -362,19 +351,19 @@ double transport::rad_eq_function_NLTE(GasState* gas_state_ptr, int c,double T, 
   }
 
   // if flag set, recompute the entire NLTE problem for this iteration
-  if (solve_flag)
-    *solve_error = gas_state_ptr->solve_state(J_nu_[c]);
+  if (args->solve_flag)
+    *(args->solve_error) = args->gas_state_ptr->solve_state(J_nu_[args->c]);
 
   // total energy absorbed
-  double E_absorbed = gas_state_ptr->free_free_heating_rate(T,J_nu_[c]) +
-        gas_state_ptr->bound_free_heating_rate(T,J_nu_[c]) ;
+  double E_absorbed = args->gas_state_ptr->free_free_heating_rate(T,J_nu_[args->c]) +
+        args->gas_state_ptr->bound_free_heating_rate(T,J_nu_[args->c]) ;
 
   // total energy emitted
-  double E_emitted= gas_state_ptr->free_free_cooling_rate(T) +
-        gas_state_ptr->bound_free_cooling_rate(T);
+  double E_emitted= args->gas_state_ptr->free_free_cooling_rate(T) +
+        args->gas_state_ptr->bound_free_cooling_rate(T);
 
-  if (gas_state_ptr->use_collisions_nlte_)
-      E_emitted += gas_state_ptr->collisional_net_cooling_rate(T);
+  if (args->gas_state_ptr->use_collisions_nlte_)
+      E_emitted += args->gas_state_ptr->collisional_net_cooling_rate(T);
 
   // radiative equillibrium condition: "emission equals absorbtion"
   // return to Brent function to iterate this to zero

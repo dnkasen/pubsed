@@ -11,13 +11,13 @@
 
 // implementation of Brent solver, by Paul Duffell
 template <class cl,class args>
-double brent_solver<cl,args>::solve(cl& cl_instance, constraintMemFn func, args& these_args, double aa, double bb, double eps, int max_iters, int* n) 
+double brent_solver<cl,args>::solve(cl& cl_instance, constraintMemFn func, args* passed_args, double aa, double bb, double eps, int max_iters, int* n) 
 {
   double a = aa;
   double b = bb;
 
-  double fa = CALL_MEMBER_FN(cl_instance,func)(a,these_args);
-  double fb = CALL_MEMBER_FN(cl_instance,func)(b,these_args);
+  double fa = CALL_MEMBER_FN(cl_instance,func)(a,passed_args);
+  double fb = CALL_MEMBER_FN(cl_instance,func)(b,passed_args);
   *n = 0;
   if( fa*fb >= 0 ){
     //    printf("Brent failed; not bracketed properly\n");
@@ -48,7 +48,7 @@ double brent_solver<cl,args>::solve(cl& cl_instance, constraintMemFn func, args&
     int cond = (s-a)*(s-b) >= 0;
     if( cond ){ s=m; }
 
-    double fs = CALL_MEMBER_FN(cl_instance,func)(s,these_args);
+    double fs = CALL_MEMBER_FN(cl_instance,func)(s,passed_args);
     c = b;
     fc = fb;
 

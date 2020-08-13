@@ -247,26 +247,20 @@ class transport
   // solve equilibrium temperature
   int solve_state_and_temperature(GasState*, int); // calls gas state solve from within interative solution for tempreature. For now, temperature solve is always based on radiative equilibrium
   void solve_eq_temperature();
-  double rad_eq_function_LTE(GasState*, int,double,int, int*);
-  double rad_eq_function_NLTE(GasState*, int,double,int, int*);
 
-  //----------------------------------------------------------
-  // for interfacing with brent solver (to solve for rad. eq.)
-  //----------------------------------------------------------
-struct radeq_brent_arguments
+  struct radeq_brent_args
   {
     GasState* gas_state_ptr;
     int c;
     int solve_flag;
-    int * solve_error;    
+    int *solve_error;    
   };
 
-  
+  double rad_eq_function_LTE(double, radeq_brent_args*);
+  double rad_eq_function_NLTE(double, radeq_brent_args*);
+
   // Convenience for interfacing with brent solver
-  typedef double (transport::*transportMemFn)(double,radeq_brent_arguments&);
-  
-  double rad_eq_wrapper_LTE(double, radeq_brent_arguments&);
-  double rad_eq_wrapper_NLTE(double, radeq_brent_arguments&);
+  typedef double (transport::*transportMemFn)(double,radeq_brent_args*);
 
  public:
 

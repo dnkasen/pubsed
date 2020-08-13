@@ -12,11 +12,11 @@ public:
 
   // Right now only set up for solving equations that work on double precision
   // Could possibly be modified to use SedonaReal?
-  typedef double (cl::*constraintMemFn)(double, args&);
+  typedef double (cl::*constraintMemFn)(double, args*);
 
   // This is the interface to the outside world
   // Takes the class containing the constraint equation, the member function of that class which expresses the constraint equation, the lower bracket for the root, the upper bracket for the root, the desired relative precision for the solution, the maximum number of allowed iterations, and an int that will store the number of iterations required by the solver
-  double solve(cl&, constraintMemFn, args&, double, double, double, int, int*);
+  double solve(cl&, constraintMemFn, args*, double, double, double, int, int*);
 };
 
 #endif
