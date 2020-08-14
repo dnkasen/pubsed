@@ -212,8 +212,6 @@ int GasState::solve_state()
 int GasState::solve_state(std::vector<SedonaReal>& J_nu)
 {
 
-  printf("entered solve_state\n");
-  
   // set key properties of all atoms
   for (size_t i=0;i<atoms.size();++i)
   {
@@ -240,13 +238,10 @@ int GasState::solve_state(std::vector<SedonaReal>& J_nu)
   gasMemFn f = &GasState::charge_conservation;
   solve_error_  = 0;
 
-  //  charge_brent_arguments* brent_args = NULL;
   charge_brent_arguments brent_args;
 
-  
   brent_solver<GasState,charge_brent_arguments> solver;
   int n; // will store number of brent solver iterations
-  
 
   // set bounds and tolerance for solving electron density
   double max_ne = 100*dens_/(mu_I*pc::m_p);
@@ -255,9 +250,7 @@ int GasState::solve_state(std::vector<SedonaReal>& J_nu)
 
   int max_iters = 100;
   // call brent method to solve for n_e
-  printf("entering brent solve for charge conservation, with temperature = %e\n",temp_);
   n_elec_ = solver.solve(*this, f, &brent_args, min_ne, max_ne,tol,max_iters,&n);
-  printf("the brent solve for charge conservation returned n = %d\n", n);
 
   if (n == -1) solve_error_ = 1;
   if (n == -2) solve_error_ = 2;
