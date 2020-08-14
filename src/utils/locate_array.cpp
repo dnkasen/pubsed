@@ -190,6 +190,24 @@ bool locate_array::is_equal(locate_array l, bool complain) {
 //---------------------------------------------------------
 int locate_array::locate(const double xval) const
 {
+  // We do this using upper_bound because we've found it's faster
+  // than direct calculation of the index, even for regular grids.
+  // If the direct calculation method is really needed, instead
+  // use locate_array::locate_direct_calc
+
+  // First handle some trivial cases
+  if (size() == 1) return 0;
+  if (xval >= maxval()) return size();
+  if (xval < minval()) return 0;
+  return upper_bound(x_.begin(), x_.end(), xval) - x_.begin();
+}
+
+int locate_array::locate_direct_calc(const double xval) const
+{
+  // Do the locate operation by directly calculating the index, if possible.
+  // This is generally slower than the default locate implementation with
+  // upper_bound.
+  int ind;
   // First handle some trivial cases
   if (size() == 1) return 0;
   if (xval >= maxval()) return size();
