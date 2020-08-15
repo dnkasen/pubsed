@@ -238,9 +238,9 @@ int GasState::solve_state(std::vector<SedonaReal>& J_nu)
   gasMemFn f = &GasState::charge_conservation;
   solve_error_  = 0;
 
-  charge_brent_arguments brent_args;
+  charge_brent_args brent_args;
 
-  brent_solver<GasState,charge_brent_arguments> solver;
+  brent_solver<GasState,charge_brent_args> solver;
   int n; // will store number of brent solver iterations
 
   // set bounds and tolerance for solving electron density
@@ -266,7 +266,7 @@ int GasState::solve_state(std::vector<SedonaReal>& J_nu)
 // for the root, thus determining N_e.  This equation is
 // basically just the one for charge conservation.
 //-----------------------------------------------------------
-double GasState::charge_conservation(double ne, charge_brent_arguments* args) 
+double GasState::charge_conservation(double ne, charge_brent_args* args) 
 {
   // brent_args not actually used here
   

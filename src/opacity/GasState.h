@@ -23,12 +23,12 @@ class GasState
   std::vector <int> globalLevelList_atom_;
   std::vector <int> globalLevelList_index_;
 
-  struct charge_brent_arguments { }; // Not used here
+  struct charge_brent_args { }; // Not used here
   // Convenience for interfacing with brent solver
-  typedef double (GasState::*gasMemFn)(double, charge_brent_arguments*);
+  typedef double (GasState::*gasMemFn)(double, charge_brent_args*);
 
   
-  double charge_conservation(double, charge_brent_arguments*);
+  double charge_conservation(double, charge_brent_args*);
 
  public:
 

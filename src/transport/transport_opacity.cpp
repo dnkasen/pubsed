@@ -164,16 +164,16 @@ void transport::set_opacity(double dt)
       if (solve_Tgas_with_updated_opacities_)
 	{
 	  if (solve_root_errors != 0) 
-	    std::cerr << "# Warning: root not bracketed in at least one of the brent solves in " << solve_root_errors << " zones" << std::endl;
+	    std::cerr << "# WARNING: root not bracketed in at least one of the brent solves in " << solve_root_errors << " zones" << std::endl;
 	  if (solve_iter_errors != 0) 
-	    std::cerr << "# Warning: max iterations hit in at least one of the brent solves in " << solve_iter_errors << " zones" << std::endl;
+	    std::cerr << "# WARNING: max iterations hit in at least one of the brent solves in " << solve_iter_errors << " zones" << std::endl;
 	}
       else
 	{
 	  if (solve_root_errors != 0) 
-	    std::cerr << "# Warning: root not bracketed in n_e solve in " << solve_root_errors << " zones" << std::endl;
+	    std::cerr << "# WARNING: root not bracketed in n_e solve in " << solve_root_errors << " zones" << std::endl;
 	  if (solve_iter_errors != 0) 
-	    std::cerr << "# Warning: max iterations hit in n_e solve in " << solve_iter_errors << " zones" << std::endl;
+	    std::cerr << "# WARNING: max iterations hit in n_e solve in " << solve_iter_errors << " zones" << std::endl;
 	}
 
     }

@@ -137,8 +137,7 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
     if (solve_iter_errors_ne > 0) 
       std::cerr << "# WARNING: max iterations hit in n_e solve in " << solve_iter_errors_ne << " zones" << std::endl;
 
-    if (solve_root_errors_ne > 0 || solve_iter_errors_ne > 0 || solve_root_errors_temp > 0 || solve_iter_errors_temp > 0)
-      gas_solve_error = solve_root_errors_ne +  solve_iter_errors_ne + solve_root_errors_temp + solve_iter_errors_temp ;
+    gas_solve_error = solve_root_errors_ne +  solve_iter_errors_ne + solve_root_errors_temp + solve_iter_errors_temp ;
     return gas_solve_error;
   }
 

@@ -3,9 +3,8 @@
 #include <cmath>
 #include "brent.h"
 
-// This will work generally for any class where the constraint function being solved is set up to take, as its sole argument, the variable it is solving for.
+// This will work generally for any class where the constraint function being solved is set up to take the variable it is solving for as its first argument, and as its second argument, a struct containing any additional arugments that might change between instances of the solver, such as a zone index.
 // That member function is passed here as func
-// If func requires additional parameters, those can be handled by the class behind the scences. For example, func may itself call another function which takes the additional parameters as arguments. So, this might require wrapping a pre-existing class member function with a new function, passed here as a func, which takes only the one argument
 
 #define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember)) // This would be better done with std::invoke, but that requires c++17
 
