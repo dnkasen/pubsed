@@ -8,14 +8,13 @@
 #include "hdf5.h"
 #include "hdf5_hl.h"
 
+
+
 class GasState
 {
 
  private:
-
-  double ne_brent_method(double,double,double,std::vector<SedonaReal>);
-  double charge_conservation(double,std::vector<SedonaReal>);
-
+  
   locate_array nu_grid_;
   int verbose_;
   int solve_error_;
@@ -24,6 +23,12 @@ class GasState
   std::vector <int> globalLevelList_atom_;
   std::vector <int> globalLevelList_index_;
 
+  struct charge_brent_args { }; // Not used here
+  // Convenience for interfacing with brent solver
+  typedef double (GasState::*gasMemFn)(double, charge_brent_args*);
+
+  
+  double charge_conservation(double, charge_brent_args*);
 
  public:
 
@@ -254,6 +259,8 @@ class GasState
   void write_levels(int iz);
 
 };
+
+
 
 
 #endif

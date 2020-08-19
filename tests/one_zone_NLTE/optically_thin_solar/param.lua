@@ -42,6 +42,7 @@ opacity_free_free     = 1
 opacity_electron_scattering = 1
 line_velocity_width   = 5e7
 
+limits_temp_min = 5000.
 
 
 

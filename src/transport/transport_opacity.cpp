@@ -160,10 +160,22 @@ void transport::set_opacity(double dt)
     #pragma omp single
     if (verbose)
     {
-      if (solve_root_errors != 0)
-        std::cerr << "# Warning: root not bracketed in n_e solve in " << solve_root_errors << " zones" << std::endl;
-      if (solve_iter_errors != 0)
-        std::cerr << "# Warning: max iterations hit in n_e solve in " << solve_iter_errors << " zones" << std::endl;
+
+      if (solve_Tgas_with_updated_opacities_)
+	{
+	  if (solve_root_errors != 0) 
+	    std::cerr << "# WARNING: root not bracketed in at least one of the brent solves in " << solve_root_errors << " zones" << std::endl;
+	  if (solve_iter_errors != 0) 
+	    std::cerr << "# WARNING: max iterations hit in at least one of the brent solves in " << solve_iter_errors << " zones" << std::endl;
+	}
+      else
+	{
+	  if (solve_root_errors != 0) 
+	    std::cerr << "# WARNING: root not bracketed in n_e solve in " << solve_root_errors << " zones" << std::endl;
+	  if (solve_iter_errors != 0) 
+	    std::cerr << "# WARNING: max iterations hit in n_e solve in " << solve_iter_errors << " zones" << std::endl;
+	}
+
     }
   }
   // end OpenMP parallel region
@@ -204,6 +216,7 @@ void transport::set_opacity(double dt)
   }
 
   // turn nlte back on after first step, if wanted
+
   if (first_step_ && use_nlte_)
   {
     for (auto i_gas_state = gas_state_vec_.begin(); i_gas_state != gas_state_vec_.end(); i_gas_state++)
@@ -242,10 +255,14 @@ int transport::fill_and_solve_gasstate(GasState* gas_state_ptr, int i)
   // if not doing grey opacity, solve the state
   if (z->total_grey_opacity == 0)
   {
-    if (solve_Tgas_with_updated_opacities_)
-      solve_error = solve_state_and_temperature(gas_state_ptr, i);
+    if (solve_Tgas_with_updated_opacities_ && first_step_ == 0)
+      {
+	solve_error = solve_state_and_temperature(gas_state_ptr, i);
+      }
     else
-      solve_error = gas_state_ptr->solve_state(J_nu_[i]);
+      {
+	solve_error = gas_state_ptr->solve_state(J_nu_[i]);
+      }
   }
   return solve_error;
 }
