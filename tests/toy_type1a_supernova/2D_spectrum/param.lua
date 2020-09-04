@@ -35,3 +35,6 @@ opacity_epsilon              = 1
 
 -- output files
 output_write_radiation = 0
+
+limits_temp_min = 1e3
+limits_temp_max = 1e6
