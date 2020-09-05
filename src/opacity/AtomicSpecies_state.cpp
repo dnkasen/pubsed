@@ -11,7 +11,7 @@
 #include <iostream>
 #include <cmath>
 
-#ifdef USE_EIGEN
+#if defined(USE_EIGEN) && USE_EIGEN == 1
 #include <Eigen/Dense>
 using namespace Eigen;
 #endif
@@ -178,7 +178,7 @@ int AtomicSpecies::solve_nlte(double ne)
     // printf("----\n");
 
 
-  #ifdef USE_EIGEN
+  #if defined(USE_EIGEN) && USE_EIGEN == 1
   // solve the rate matrix with eigen
   MatrixXd eigen_nlte(n_levels_,n_levels_);
   VectorXd eigen_b(n_levels_);

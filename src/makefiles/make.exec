@@ -42,10 +42,12 @@ CCOPT = -I$(GSL_INC) -I$(LUA_INC) -I$(HDF_INC)
 
 # location of eigen, if not already set
 ifdef USE_EIGEN
+ifeq ($USE_EIGEN,1)
 ifndef EIG_INC
 CCOPT += -I$(EIG_DIR)
 else
 CCOPT += -I$(EIG_INC)
+endif
 endif
 endif
 
