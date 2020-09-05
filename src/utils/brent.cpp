@@ -8,7 +8,8 @@
 
 #define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember)) // This would be better done with std::invoke, but that requires c++17
 
-// implementation of Brent solver, by Paul Duffell
+// implementation of Brent solver, by Nathaniel Roth and Paul Duffell
+
 template <class cl,class args>
 double brent_solver<cl,args>::solve(cl& cl_instance, constraintMemFn func, args* passed_args, double aa, double bb, double eps, int max_iters, int* n) 
 {
@@ -31,55 +32,64 @@ double brent_solver<cl,args>::solve(cl& cl_instance, constraintMemFn func, args*
     fa = fb;
     fb = temp;
   }
-  double c = a;
-  double fc = fa;
-  double s = a;
-  int stillrunning = 1;
-  while( stillrunning ){
-    // printf("%e %e %e %e %d\n",c,fb,a,b,*n); // debugging output 
-    if( fa != fc && fb != fc ){
-      s = a*fb*fc/(fa-fb)/(fa-fc) + b*fc*fa/(fb-fc)/(fb-fa) + c*fa*fb/(fc-fa)/(fc-fb);
-    }else{
-      s = b - fb*(b-a)/(fb-fa);
-    }
+     double c = a;
+   double fc = fa;
+   int stillrunning = 1;
+   bool bisectflag = true;
+   double bdelta = 5.e-16 * std::min(fabs(a),fabs(b)); // maybe could be further optimized?
+   double s;
+   double d;
+   while( stillrunning ){
+     //      if (*n > 0)  printf("%e %e %e %e %e %e %d\n",b,a,c,func(b),func(a),func(c),*n); // debugging output
+      if( fa != fc && fb != fc ){
+	s = a*fb*fc/(fa-fb)/(fa-fc) + b*fc*fa/(fb-fc)/(fb-fa) + c*fa*fb/(fc-fa)/(fc-fb); // inverse quadratic interpolation
+      }else{
+	s = b - fb*(b-a)/(fb-fa); // secant method
+      }
 
-    double m = 0.5*(a+b);
-    int cond = (s-a)*(s-b) >= 0;
-    if( cond ){ s=m; }
+      bool cond1 = (s < (3. * a + b)/4. && s < b) || (s > (3. * a + b)/4. && s > b);
+      bool cond2 = bisectflag && (fabs(s - b) >= fabs(b - c)/2.) ;
+      bool cond3 = !bisectflag && (fabs(s - b) >= fabs(c - d)/2.) ;
+      bool cond4 = bisectflag && (fabs(b - c) < bdelta) ;
+      bool cond5 = !bisectflag && (fabs(c - d) < bdelta);
 
-    double fs = CALL_MEMBER_FN(cl_instance,func)(s,passed_args);
-    c = b;
-    fc = fb;
+      if (cond1 || cond2 || cond3 || cond4 || cond5)
+	{
+	  s = (a + b)/2.;
+	  bisectflag = true;
+	}
+      else
+	{
+	  bisectflag = false;
+	}
 
-    if( fa*fs < 0 ){ 
-      b = s;
-      fb = fs;
-    }else{
-      a = s;
-      fa = fs;
-    }
+      double fs = CALL_MEMBER_FN(cl_instance,func)(s,passed_args);
+      d = c;
+      c = b;
+      fc = fb;
 
-    if( fabs(fa) < fabs(fb) ){
-      double temp = a; 
-      a = b; 
-      b = temp;
-      temp = fa;
-      fa = fb;
-      fb = temp;      
-    }
-      
-    *n = *n+1;
-    if (*n > max_iters)
-      {
-	*n = -2;
-	return(b);
+      if( fa*fs < 0 ){ 
+         b = s;
+	 fb = fs;
+      }else{
+         a = s;
+         fa = fs; 
+      }
+
+      if( fabs(fa) < fabs(fb) ){
+         double temp = a; 
+         a = b; 
+         b = temp;
+         temp = fa;
+         fa = fb;
+         fb = temp;      
       }
       
-    if( fb == 0 || fs == 0 || fabs(b-a) < eps * std::min(fabs(a),fabs(b)) ) stillrunning = 0;
+      *n = *n+1;
+      if( fb == 0. || fs == 0. || fabs(a-b) < eps * std::min(fabs(a),fabs(b)) ) stillrunning = 0;
 
-  }
-  return( b );
-
+   }
+   return( b );
 
 }
 
