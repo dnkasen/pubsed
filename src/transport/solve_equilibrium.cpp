@@ -5,7 +5,6 @@
 #include "physical_constants.h"
 #include "grid_general.h"
 #include "brent.h"
-#include "brent.cpp"
 
 namespace pc = physical_constants;
 

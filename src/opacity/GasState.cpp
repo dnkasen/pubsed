@@ -3,7 +3,6 @@
 #include "physical_constants.h"
 #include "GasState.h"
 #include "brent.h"
-#include "brent.cpp"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
