@@ -515,7 +515,7 @@ int grid_1D_sphere::get_next_zone(const double *x, const double *D, int i, doubl
   // Calculate distance to the outer shell edge
   // using quadratic formula
   double r_o = r_out[i];
-  double l_out = -1*xdotD + sqrt(xdotD*xdotD + r_o*r_o - rsq);
+  double l_out = -1*xdotD + sqrt(xdotD*xdotD + fmax(r_o*r_o - rsq,0.));
 
 
   double r_in;    // radius of the inner shell edge
