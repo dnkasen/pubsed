@@ -266,6 +266,7 @@ ParticleFate transport::propagate_monte_carlo(particle &p, double tstop)
   while (fate == moving)
   {
     // set pointer to current zone
+    p.ind = grid->get_zone(p.x);
     assert(p.ind >= 0);
     zone *zone = &(grid->z[p.ind]);
 
