@@ -34,7 +34,7 @@ public:
   double fb = CALL_MEMBER_FN(cl_instance,func)(b,passed_args);
   *n = 0;
   if( fa*fb >= 0 ){
-    printf("Brent failed; not bracketed properly\n");
+    //printf("Brent failed; not bracketed properly\n");
     *n = -1;
     return(0.0);
   }
