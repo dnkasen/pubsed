@@ -515,8 +515,7 @@ int grid_1D_sphere::get_next_zone(const double *x, const double *D, int i, doubl
   // Calculate distance to the outer shell edge
   // using quadratic formula
   double r_o = r_out[i];
-  double l_out = -1*xdotD + sqrt(xdotD*xdotD + fmax(r_o*r_o - rsq,0.));
-
+  double l_out = -1*xdotD + sqrt(xdotD*xdotD + r_o*r_o - rsq);
 
   double r_in;    // radius of the inner shell edge
   int ind_in;    // index of interior shell
@@ -557,7 +556,8 @@ int grid_1D_sphere::get_next_zone(const double *x, const double *D, int i, doubl
 
   int ind;
    // offset so we don't land *exactly on a boundary
-  double tiny_offset = 1 + 1e-6;
+  double dr = r_out.delta(i);
+  double tiny_offset = dr * (1e-9);
 
   // if l_out is shortest positive distance, set this as distance
   if ((l_out < l_in)||(l_in < 0))
@@ -568,11 +568,13 @@ int grid_1D_sphere::get_next_zone(const double *x, const double *D, int i, doubl
     if (ind == n_zones)
     {
         ind = -2;
-        *l = l_out/tiny_offset;
+        *l = l_out - tiny_offset;
     }
     // else move a tiny bit past outer zone edge
     else
-        *l = l_out*tiny_offset;
+    {
+        *l = l_out + tiny_offset;
+    }
   }
   // otherwise set inward as distance to move
   else
@@ -580,11 +582,13 @@ int grid_1D_sphere::get_next_zone(const double *x, const double *D, int i, doubl
     ind = ind_in;
 
     // if at inner boundary, muve to just outside of it
-    if (ind_in == -1)
-        *l = l_in/tiny_offset;
+    if (ind_in == -1) {
+        *l = l_in - tiny_offset;
+    }
     // otherwise move a tiny past inner zone edge
-    else
-        *l = l_in*tiny_offset;
+    else {
+        *l = l_in + tiny_offset;
+    }
   }
   return ind;
 }
