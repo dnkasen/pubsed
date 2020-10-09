@@ -24,7 +24,7 @@ import subprocess
 machine = "quest"
 nprocs  = "8"
 #send_to = ['daniel.kasen@gmail.com']
-send_to = ['daniel.kasen@gmail.com','nroth@astro.umd.edu','hklion@berkeley.edu','abigail@berkeley.edu','david_khatami@berkeley.edu','kenshen@astro.berkeley.edu','dewillcox@lbl.gov','sricher@ncsu.edu','bennytth@gmail.com','siva.darbha@berkeley.edu']
+send_to = ['daniel.kasen@gmail.com','nathanielroth1@gmail.com','hklion@berkeley.edu','abigail@berkeley.edu','david_khatami@berkeley.edu','kenshen@astro.berkeley.edu','dewillcox@lbl.gov','sricher@ncsu.edu','bennytth@gmail.com','siva.darbha@berkeley.edu']
 result_dir = "/home/kasen/Dropbox/Sedona_Test_Results/"
 
 def main():
