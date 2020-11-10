@@ -54,7 +54,7 @@ source_suffix = '.rst'
 
 
 rst_prolog = """
-.. |sedona| replace:: **sedona**
+.. |sedona| replace:: **Sedona**
 .. |sedona.ex| replace:: *sedona6.ex*
 
 """
