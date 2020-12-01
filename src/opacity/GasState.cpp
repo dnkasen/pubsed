@@ -19,9 +19,10 @@ namespace pc = physical_constants;
 GasState::GasState()
 {
   nlte_turned_on_ = 0;
-  e_gamma = 0;
+  e_gamma_ = 0;
   no_ground_recomb = 0;
   line_velocity_width_ = 0;
+  nonthermal_f_secondary_ = 0;
 }
 
 //----------------------------------------------------------------
@@ -66,6 +67,7 @@ void GasState::initialize
         " in file " << atomdata_file_ << std::endl;
     atoms[i].initialize(elem_Z[i],atomic_data_);
   }
+
 }
 
 //----------------------------------------------------------------
@@ -211,11 +213,16 @@ int GasState::solve_state()
 int GasState::solve_state(std::vector<SedonaReal>& J_nu)
 {
 
+  if (nlte_turned_on_)
+    calculate_nonthermal_fractions();
+
   // set key properties of all atoms
   for (size_t i=0;i<atoms.size();++i)
   {
     atoms[i].n_dens_  = dens_*mass_frac[i]/(elem_A[i]*pc::m_p);
-    atoms[i].e_gamma_ = e_gamma*mass_frac[i];
+
+    double Yi = mass_frac[i];
+    atoms[i].set_nonthermal_energy(Yi*e_gamma_heat_,Yi*e_gamma_ion_,Yi*e_gamma_ex_);
     atoms[i].no_ground_recomb_ = no_ground_recomb;
     atoms[i].gas_temp_ = temp_;
     // line widths
@@ -226,7 +233,7 @@ int GasState::solve_state(std::vector<SedonaReal>& J_nu)
     // Calculate radiative rates, if using NLTE
     // and this atom to be treated in NLTE
     if (nlte_turned_on_ && atoms[i].use_nlte_)
-        atoms[i].calculate_radiative_rates(J_nu);
+      atoms[i].calculate_radiative_rates(J_nu);
   }
 
   // solve for the state of the gas.
@@ -254,9 +261,45 @@ int GasState::solve_state(std::vector<SedonaReal>& J_nu)
   if (n == -1) solve_error_ = 1;
   if (n == -2) solve_error_ = 2;
 
-
   return solve_error_;
 
+}
+
+//-----------------------------------------------------------
+//
+//-----------------------------------------------------------
+void GasState::calculate_nonthermal_fractions()
+{
+  // non-thermal electron energy
+  double E_ev = 1e6;
+  double E_ergs = E_ev*pc::ev_to_ergs;
+
+  // heating (Coloumb) energy loss
+  double omega_p = sqrt(4*pc::pi*n_elec_*pc::e_e*pc::e_e/pc::m_e);
+  double Lheat = 2*pc::pi*pow(pc::e_e,4)*n_elec_/E_ergs;
+  Lheat *= log(2*E_ergs/pc::h_bar/omega_p);
+  if (n_elec_ == 0)
+    Lheat = 0;
+
+  // ionization energy loss
+  double Lion = 0;
+  for (size_t i=0;i<atoms.size();++i)
+    Lion += atoms[i].get_nonthermal_ionization_dep(E_ev);
+  // effect of secondaries
+  Lheat += Lion*nonthermal_f_secondary_/(1 + nonthermal_f_secondary_);
+  Lion  = Lion/(1 + nonthermal_f_secondary_);
+
+  // excitation energy loss (not done yet)
+  double Lex = 0;
+
+  double Ltot = Lheat + Lion + Lex;
+  double eta_heat = Lheat/Ltot;
+  //double eta_ion  = Lion/Ltot;
+  //double eta_ex   = Lex/Ltot;
+
+  e_gamma_heat_ = e_gamma_*eta_heat;
+  e_gamma_ion_  = e_gamma_/Ltot/(1 + nonthermal_f_secondary_);
+  e_gamma_ex_   = e_gamma_/Ltot;
 }
 
 //-----------------------------------------------------------
@@ -265,10 +308,10 @@ int GasState::solve_state(std::vector<SedonaReal>& J_nu)
 // for the root, thus determining N_e.  This equation is
 // basically just the one for charge conservation.
 //-----------------------------------------------------------
-double GasState::charge_conservation(double ne, charge_brent_args* args) 
+double GasState::charge_conservation(double ne, charge_brent_args* args)
 {
   // brent_args not actually used here
-  
+
   // start with charge conservation function f set to zero
   double f  = 0;
   // loop over all atoms

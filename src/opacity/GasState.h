@@ -14,7 +14,7 @@ class GasState
 {
 
  private:
-  
+
   locate_array nu_grid_;
   int verbose_;
   int solve_error_;
@@ -27,7 +27,7 @@ class GasState
   // Convenience for interfacing with brent solver
   typedef double (GasState::*gasMemFn)(double, charge_brent_args*);
 
-  
+
   double charge_conservation(double, charge_brent_args*);
 
  public:
@@ -45,9 +45,14 @@ class GasState
   double n_elec_;                // electron number density (cm^-3)
   double temp_;                  // Temperature (K)
   double time_;                  // Time since Explosion (days)
-  double e_gamma;                // gamma-ray deposited energy
   double mu_I;                   // // mean atomic/ionic mass (not including free electrons). Dimensionless; needs to be multiplied by amu (~ m_p) to get units of grams
   int no_ground_recomb;          // suppress ground recombinations
+  // storage for non-thermal data
+  double e_gamma_;               // gamma-ray deposited energy
+  double e_gamma_heat_;          // deposited energy into heat
+  double e_gamma_ion_;           // deposited energy into ionization
+  double e_gamma_ex_;            // depostide energy into excitation
+  double nonthermal_f_secondary_;
 
   // flags for what opacities to use
   int use_electron_scattering_opacity;
@@ -59,6 +64,7 @@ class GasState
   int use_user_opacity_;
   int use_zone_specific_grey_opacity_;
   double line_velocity_width_;
+
 
   // calculate means
   double get_planck_mean(const std::vector<OpacityType>& x);
@@ -79,6 +85,7 @@ class GasState
   double epsilon_;
   std::vector<int> atom_zero_epsilon_;
 
+  void calculate_nonthermal_fractions();
 
 
   //***********************************************************
