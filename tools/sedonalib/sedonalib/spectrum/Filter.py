@@ -30,11 +30,25 @@ class Filter:
                     if stripped_line:
                         self.FilterDatasets[-1].append(stripped_line.split())
 
+    # Check if filter exists
+    def filter_exists(self,filt):
+        if (filt not in self.Bands):
+            import difflib
+            message = filt + " is not a know filter\n"
+            message += "Did you mean one of: \n"
+            for e in difflib.get_close_matches(filt, self.Bands.keys()):
+                message += "> " + str(e) + "\n"
+            print(self.Bands.keys())
+            print(message)
+            return False
+
+        else:
+            return True
+
     # returns the raw filter transmission curve as {Wavelength (Angstrom), Transmission}
     def getTransmission(self,filt):
         filt_idx = self.Bands[filt]
         return np.array(self.FilterDatasets[filt_idx],dtype=np.float32)
-
 
 
     # returns an interpolation function for the transmission T(lambda)

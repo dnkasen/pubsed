@@ -31,14 +31,14 @@ class SpectrumFile():
 
         # default spectral units
         if (spec_units is None):
-            spec_units = 'hz'
+            spec_units = 'angstrom'
 
         # default time unit
         if (time_units is None):
             time_units = 'day'
 
 
-        # fix up close units
+        # fix up close names for units
         if (spec_units == "angstroms"):
             spec_units = "angstrom"
 
@@ -113,22 +113,23 @@ class SpectrumFile():
             self.L = self.L[..., newaxis]
 
 
-        if (self.spec_units == 'angstrom' and self.n_x > 1):
 
-            for it,im,ip in np.ndindex(self.n_times,self.n_mu,self.n_phi):
-                # change units of luminosity to erg/s/A
-                newL = self.L[it,:,im,ip]*self.x**2/pc.c/pc.cm_to_angs
-                # reverse the order fo the array
-                self.L[it,:,im,ip]  = newL[::-1]
 
-            # change x units to wavelength and flip order
-            newx  = pc.c/self.x*pc.cm_to_angs
-            self.x = newx[::-1]
+    def convert_time_units(self,t,unit=None):
 
-        if (self.time_units == 'day'):
-            self.t       = self.t*pc.sec_to_day
- #           self.t_edges = self.t_edges*pc.sec_to_day
+        if (unit is None):
+            unit = self.time_units
 
+        if (unit == 'day'):
+            return self.t*pc.sec_to_day
+
+    def unconvert_time_units(self,t,unit=None):
+
+        if (unit is None):
+            unit = self.time_units
+
+        if (unit == 'day'):
+            return self.t/pc.sec_to_day
 
     def __str__(self):
 
@@ -150,6 +151,11 @@ class SpectrumFile():
 
     ## return functions
 
+    def get_time_units(self):
+        return self.time_units
+    def get_spec_units(self):
+        return self.spec_units
+
     def get_nu(self):
         return self.nu
     def get_nu_range(self):
@@ -161,7 +167,7 @@ class SpectrumFile():
         return [min(self.lam),max(self.lam)]
 
     def get_time(self):
-        return self.t
+        return convert_time_units(self.t)
 
     def view_lightcurve(self,thisL,view=None):
         """
@@ -179,7 +185,7 @@ class SpectrumFile():
                 return self.t,thisL[:,:,0]
             if (self.n_mu == 1 and self.n_phi > 1):
                 return self.t,thisL[:,0,:]
-            return self.t,thisL
+            return convert_time_units(self.t),thisL
 
 
         # interpolate to particular viewing angle
@@ -213,24 +219,43 @@ class SpectrumFile():
 
         # if no band specified, then return bolometric light curve
         if (band is None):
-            lc = self.get_bolometric_lightcurve()
+            t,lc = self.get_bolometric_lightcurve()
 
 
-        # if band is a string, the return the lightcurve in that filter
-        if (isinstance(band,str)):
+        if not isinstance(band,list):
+            band = [band]
 
-            if (band == "bol" or band == "bolometric"):
-                lc = self.get_bolometric_lightcurve()
-            else:
-                lc = self.get_band_lightcurve(band,magnitudes=magnitudes,view=view)
 
         # if band is a list of two numbers, then return the lightcurve
         # in that filter
-        if (isinstance(band,list)):
-            if (len(band) == 2):
-                lc = self.get_range_lightcurve(band,magnitudes=magnitudes,view=view)
+        if (len(band) == 2 and  type(band[0]) is not str):
+            t,lc = self.get_range_lightcurve(band,magnitudes=magnitudes,view=view)
 
-        return lc
+        else:
+
+            bandlist = []
+            lc = []
+            # loop over all bands in list
+            for this_band in band:
+
+                # check if the band exists
+                if (this_band != 'bol' and this_band != 'bolometric'):
+                    if (not self.filter.filter_exists(this_band)):
+                        print("Filter " + this_band + " does not exist")
+                        continue
+
+                bandlist.append(this_band)
+                if (this_band == "bol" or this_band == "bolometric"):
+                    t,this_lc = self.get_bolometric_lightcurve()
+                else:
+                    t,this_lc = self.get_band_lightcurve(this_band,magnitudes=magnitudes,view=view)
+
+                if (len(lc) == 0):
+                    lc = this_lc
+                else:
+                    lc = np.vstack((lc,this_lc))
+
+        return t,lc,bandlist
 
 
     def get_bolometric_lightcurve(self,view=None,magnitudes=None):
@@ -280,6 +305,14 @@ class SpectrumFile():
         magnitudes :str
 
         """
+
+        if (band == 'bol' or band == 'bolometric'):
+            return get_bolometric_lightcurve(view=view,magnitudes=magnitudes)
+
+        if (not self.filter.filter_exists(band)):
+            print("Filter " + band + " does not exist")
+            return False
+
         filt_norm = self.filter.getNormalization_nu(band,self.x)
         filt_trans = self.filter.transFunc_nu(band)(self.x)
 
@@ -311,7 +344,6 @@ class SpectrumFile():
 
             #set minimum mag to 0
             L_return[np.where(L_return>0)] = 0.
-
 
         return self.view_lightcurve(L_return,view)
 
@@ -435,135 +467,35 @@ class SpectrumFile():
             fout.close()
 
 
-###############
-## OLDER stuff
-##############
-
-
-    def get_band_lc(self,wrange,view=None,angle_average=False,magnitudes=False):
-
-        Lband = np.zeros([self.n_times,self.n_mu,self.n_phi],dtype='d')
-
-        b = (self.x >= wrange[0])*(self.x <= wrange[1])
-        if (sum(b) == 0):
-            message = "Wavelength range for band light curve not in spectrum range"
-            raise ValueError(message)
-
-        # integrate light curve
-        for it,im,ip in np.ndindex(self.n_times,self.n_mu,self.n_phi):
-            Lband[it,im,ip] = np.trapz(self.L[it,b,im,ip],x=self.x[b])
-
-        Lband = Lband/(wrange[1] - wrange[0])
-
-        if (self.n_mu == 1 and self.n_phi == 1):
-            return self.t,Lband[:,0,0]
-        if (self.n_mu > 1 and self.n_phi == 1):
-            return self.t,Lband[:,:,0]
-        if (self.n_mu == 1 and self.n_phi > 1):
-            return self.t,Lband[:,0,:]
-        return self.t,Lband
-
-    def get_bolometric_lc_old(self,view=None,angle_average=False,magnitudes=False):
-
-        # compute bolometric light curve
-        if (self.Lbol is None):
-            self.Lbol = np.zeros([self.n_times,self.n_mu,self.n_phi],dtype='d')
-            self.Lave = np.zeros([self.n_times])
-
-        # integrate bolometric light curve
-        for it,im,ip in np.ndindex(self.n_times,self.n_mu,self.n_phi):
-            if (self.n_x == 1):
-                self.Lbol[it,im,ip] = self.L[it,0,im,ip]
-                self.Lave[it] += self.L[it,0,im,ip]
-            else:
-                self.Lbol[it,im,ip] = np.trapz(self.L[it,:,im,ip],x=self.x)
-                self.Lave[it] += self.Lbol[it,im,ip]
-
-                self.Lave = self.Lave/(1.0*self.n_mu*self.n_phi)
-
-        Lbol = self.Lbol
-        Lave = self.Lave
-
-        thisL = self.Lbol
-        if (angle_average):
-            thisL = self.Lave
-
-        if (magnitudes):
-            thisL = -2.5*np.log10(thisL)+88.697425
-
-        if (self.n_mu == 1 and self.n_phi == 1):
-            return self.t,Lbol #thisL[:,0,0]
-        if (self.n_mu > 1 and self.n_phi == 1):
-            return self.t,thisL[:,:,0]
-
-        # interpolate to particular viewing angle
-        if (view is not None):
-            mu  = view[0]
-            phi = view[1]
-            import bisect
-
-            imu = bisect.bisect_left(self.mu,mu)
-            i1 = imu-1
-            i2 = imu
-            if (i2 == len(self.mu)): i2 = imu-1
-            m1 = self.mu[i1]
-            m2 = self.mu[i2]
-            dm = mu - m1
-
-            jphi = bisect.bisect_left(self.phi,phi)
-            nphi = len(self.phi)
-            if (jphi == 0):
-                j1 = nphi-1
-                j2 = 0
-                p1 = self.phi[j1] - 2.0*np.pi
-                p2 = self.phi[j2]
-            elif (jphi == nphi):
-                j1 = nphi-1
-                j2 = 0
-                p1 = self.phi[j1]
-                p2 = self.phi[j2] + 2.0*np.pi
-            else:
-                j1 = jphi -1
-                j2 = jphi
-                p1 = self.phi[j1]
-                p2 = self.phi[j2]
-
-            p1 = self.phi[j1]
-            p2 = self.phi[j2]
-            if (jphi == len(self.phi)):
-                j2 = jphi - 1
-                j1 = 0
-                p1 = np.pi*2.0 + self.phi[0]
-
-
-            dp = phi - p1
-
-            Llo = self.Lbol[:,i1,j1]
-            Lhi = self.Lbol[:,i2,j1]
-            if (m2 == m1):
-                L1 = Llo
-            else:
-                L1  =   Llo + (Lhi - Llo)*dm/(m2 - m1)
-
-            Llo = self.Lbol[:,i1,j2]
-            Lhi = self.Lbol[:,i2,j2]
-            if (m2 == m1):
-                L2 = Llo
-            else:
-                L2  = Llo + (Lhi - Llo)*dm/(m2 - m1)
-
-            if (p2 == p1):
-                Lint = L1
-            else:
-                Lint = L1 + (L2 - L1)*dp/(p2 - p1)
-
-            thisL = Lint
-
-
-        return self.t,thisL
 
 
 
+
+##############################################
+# Spectrum functions
+##############################################
+
+    def convert_spec_units(self,x,L, unit=None):
+
+        if (unit is None):
+            unit = self.spec_units
+
+        # default
+        newx = x
+        newL = L
+
+        if (unit == 'angstrom'):
+
+            # change units of luminosity to erg/s/A
+            newL = L*x**2/pc.c/pc.cm_to_angs
+            # reverse the order fo the array
+            newL = newL[::-1]
+
+            # change x units to wavelength and flip order
+            newx = pc.c/x*pc.cm_to_angs
+            newx = newx[::-1]
+
+        return(newx,newL)
 
     def get_spectrum(self,time=None,mu=None,phi=None,interpolate=True,angle_average=False):
 
@@ -576,7 +508,11 @@ class SpectrumFile():
 
         # for just a snapshot 1D spectrum
         if (nt == 1 and nmu == 1 and nphi == 1):
-            return self.x, self.L[0,:,0,0]
+            return self.convert_spec_units(self.x, self.L[0,:,0,0])
+
+        if (time is None):
+            time = 1
+        time = self.unconvert_time_units(float(time))
 
         smp = np.zeros((nx,nmu,nphi))
 
@@ -584,6 +520,9 @@ class SpectrumFile():
 
             # interpolate in time
             indt = bisect.bisect_left(self.t,time)
+            if (indt == len(self.t)):
+                indt = indt-1
+
             i1 = indt-1
             i2 = indt
             t1 = self.t[i1]
@@ -602,7 +541,7 @@ class SpectrumFile():
                 indt = bisect.bisect(self.t,time)
                 smp = self.L[indt,:,:,:]
 
-            # interpolate in mu, if wanted
+        # interpolate in mu, if wanted
 #            if (mu is not None):
 #                imu = bisect.bisect_left(self.mu,mu)
 #                i1 = imu-1
@@ -620,45 +559,47 @@ class SpectrumFile():
             for im,ip in np.ndindex(self.n_mu,self.n_phi):
                 Fave += smp[:,im,ip]
             Fave /= 1.0/(1.0*self.n_mu*self.n_phi)
-            return self.x, Fave
+            return self.convert_spec_units(self.x, Fave)
 
         if (nmu == 1 and nphi == 1):
-            return self.x,smp[:,0,0]
+            return self.convert_spec_units(self.x,smp[:,0,0])
         elif (nmu == 1):
-            return self.x,smp[:,0,:]
+            return self.convert_spec_units(self.x,smp[:,0,:])
         else:
-            return self.x,smp[:,:,:]
+            return self.convert_spec_units(self.x,smp[:,:,:])
 
 
-    def get_nuLnu_lc(self,wrange,magnitudes=False):
-        b = (self.x >= wrange[0])*(self.x <= wrange[1])
-        new_x = self.x[b]
-        lc = np.zeros(self.t.size)
-        for i in range(self.t.size):
-            lc[i] = np.trapz(self.L[i,b,0,0],x=new_x)
+    def plot_spectrum(self,time=None,mu=None,phi=None,interpolate=True,
+                    angle_average=False,logx=False,logy=False,logxy=False,
+                    comps=None,norm=True,xrange=None,yrange=None,shift=1.0):
 
+        import matplotlib.pyplot as plt
 
-        if (magnitudes):
-            lc = lc/(wrange[1] - wrange[0])
+        x,L = self.get_spectrum(time,mu,phi,interpolate,angle_average)
+        plt.plot(x,L,color='k',lw=3)
+        maxval = max(L)
 
-        else:
-            lc = lc*0.5*(wrange[0] + wrange[1])/(wrange[1] - wrange[0])
+        if (comps is not None):
+            if not isinstance(comps,list):
+                comps = [comps]
 
-        return self.t,lc
+            legend = ['sedona']
+            for c in comps:
+                print(c)
+                legend.append(c)
+                x,L = np.loadtxt(c,usecols=[0,1],unpack=True)
+                if (norm):
+                    L = L*maxval/max(L)
+                L = L*shift
+                plt.plot(x,L,lw=3)
 
-
-    def get_ABMag(self,band):
-        """
-        returns the AB magnitude light curve, for a given band
-        """
-        lum = np.zeros(self.t.size)
-        dnu = np.ediff1d(self.nu,to_end=0)
-        for i in range(self.time.size):
-            sample_points = self.spec_tnu[i, :]/self.nu*(self.filter.transFunc_nu(band)(self.nu))
-            lum[i] = inte.trapz(sample_points,x=self.nu)
-            lum = lum/self.filter.getNormalization(band,self.nu) #gets Lnu(band)
-            flx = lum/(4.*np.pi*(10.*3.0857e18)**2) #convert to flux at 10pc
-            flx[np.where(flx==0.)] 	= 1e-99 #some small number so not taking log(0)
-            mag = -2.5*np.log10(flx)-48.6 #get the AB magnitude
-            mag[np.where(mag>0)] = 0. #set minimum mag to 0
-            return self.t,mag
+            plt.legend(legend)
+        if (logx or logxy):
+            plt.xscale('log')
+        if (logy or logxy):
+            plt.yscale('log')
+        if (xrange is not None):
+            plt.xlim(xrange)
+        if (yrange is not None):
+            plt.ylim(yrange)
+        plt.show()
