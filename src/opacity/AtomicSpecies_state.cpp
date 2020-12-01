@@ -339,8 +339,6 @@ void AtomicSpecies::calculate_radiative_rates(std::vector<SedonaReal> J_nu)
   }
 }
 
-
-
 //-------------------------------------------------------
 // Set the rates for all possible transitions
 //------------------------------------------------------
@@ -350,6 +348,8 @@ void AtomicSpecies::set_rates(double ne)
   for (int i=0;i<n_levels_;++i)
     for (int j=0;j<n_levels_;++j)
       rates_[i][j] = 0;
+
+
 
   // ------------------------------------------------
   // radiative bound-bound transitions
@@ -393,7 +393,7 @@ void AtomicSpecies::set_rates(double ne)
     // non-thermal (radioactive) bound-bound transitions
     // ------------------------------------------------
     double dE = (Eu - El)*pc::ev_to_ergs;
-    double R_lu = e_gamma_/n_dens_/dE; //*(lines_[l].f_lu/norm);
+    double R_lu = 0; // e_gamma_/n_dens_/dE; //*(lines_[l].f_lu/norm);
     if (dE == 0) R_lu = 0;
     if (ll != 0) R_lu = 0;
 
@@ -418,7 +418,7 @@ void AtomicSpecies::set_rates(double ne)
     // mock it up by not letting the f_lu factor drop below 10^-3
 
     double effective_f_lu = 0.;
-    if (f_lu < 1.e-3) effective_f_lu = 1.e-3;
+    if (f_lu < 0.01) effective_f_lu = 0.01;
     else effective_f_lu = f_lu;
 
     if (use_collisions_nlte_)
@@ -448,8 +448,11 @@ void AtomicSpecies::set_rates(double ne)
     double chi  = adata_->get_ion_chi(istage)- adata_->get_lev_E(i);
     double zeta = chi/pc::k_ev/gas_temp_;
 
-    // collisional ionization rate
+    // ------------------------------------------------
+    // collisional ionization and recomombination rate
     // needs to be multiplied by number of electrons in outer shell
+    // ------------------------------------------------
+
     if (use_collisions_nlte_)
     {
 	    double C_ion = 2.7/zeta/zeta*pow(gas_temp_,-1.5)*exp(-zeta)*ne;
@@ -460,21 +463,30 @@ void AtomicSpecies::set_rates(double ne)
 	    int gc = adata_->get_lev_g(ic);
 	    double C_rec = 5.59080e-16/zeta/zeta*pow(gas_temp_,-3)*gi/gc*ne*ne;
 	    rates_[ic][i] += C_rec;
+      //printf("pc::cl: %d %d %e %e\n",i,ic,C_ion, C_rec);
     }
 
+    // ------------------------------------------------
     // photoionization and radiative recombination
+    // ------------------------------------------------
 
     // suppress recombinations to ground
     if (no_ground_recomb_)
     {
 	     if (adata_->get_lev_E(i) == 0) lev_Rci_[i] = 0.;
     }
+    // debug
+    //lev_Rci_[i] = 0;
     rates_[ic][i] += lev_Rci_[i]*ne;
     rates_[i][ic] += lev_Pic_[i];
 
-    //printf("pc::pi: %d %d %e\n",i,ic,levels_[i].P_ic);
-    //printf("CI: %d %d %e %e\n",i,ic,C_rec,C_ion);
+    //printf("pc::pi: %d %d %e %e\n",i,ic,lev_Pic_[i], lev_Rci_[i]*ne);
 
+    // ------------------------------------------------
+    // non-thermal (radioactive) bound-bound transitions
+    // ------------------------------------------------
+    double G_lc = e_gamma_ion_*adata_->get_nonthermal_ion_cross_section(istage,1e6);
+    rates_[i][ic] += G_lc;
   }
 
    // multiply by rates by lte pop in level coming from
@@ -498,6 +510,23 @@ void AtomicSpecies::set_rates(double ne)
 
 
 
+//-----------------------------------------------------------------
+// Return the non-thermal ionization deposition
+// given an electron with energy E (in eV)
+// returns dE/dl (ergs/cm) = energy loss per cm traveled
+//-----------------------------------------------------------------
+double AtomicSpecies::get_nonthermal_ionization_dep(double E)
+{
+  double lambda = 0;
+  for (int i=0;i<n_ions_;++i)
+  {
+    double Q = adata_->get_nonthermal_ion_cross_section(i,E);
+    double chi = adata_->get_ion_chi(i)*pc::ev_to_ergs;
+    lambda += Q*chi*n_dens_*ionization_fraction(i);
+  }
+  return lambda;
+
+}
 
 
 //-----------------------------------------------------------------

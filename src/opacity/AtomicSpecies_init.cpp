@@ -20,7 +20,6 @@ using namespace std;
 //----------------------------------------------------------------
 AtomicSpecies::AtomicSpecies()
 {
-  e_gamma_            = 0;
   no_ground_recomb_   = 0;
   use_betas_          = 0;
   minimum_extinction_ = 0;
@@ -31,6 +30,10 @@ AtomicSpecies::AtomicSpecies()
   n_ions_              = 0;
 
   adata_  = NULL;
+
+  e_gamma_heat_  = 0;
+  e_gamma_ion_   = 0;
+  e_gamma_ex_    = 0;
 
   // debug -- I hard coded this for now...
   min_level_pop_ = 1e-30;

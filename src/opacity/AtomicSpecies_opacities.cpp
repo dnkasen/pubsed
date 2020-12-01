@@ -180,7 +180,7 @@ double AtomicSpecies::collisional_net_cooling_rate(double ne, double T)
     // should be improved by using real collisional rates for forbidden lines
     double f_lu = adata_->get_line_f(l);
     double effective_f_lu = f_lu;
-    if (f_lu < 1.e-3) effective_f_lu = 1.e-3;
+    if (f_lu < 1.e-2) effective_f_lu = 1.e-2;
 
     double C_up = 3.9*pow(zeta,-1.)*pow(T,-1.5) / ezeta * ne * effective_f_lu;
     if (zeta > 700) C_up = 0.; // be careful about overflow

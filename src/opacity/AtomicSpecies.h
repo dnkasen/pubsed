@@ -47,8 +47,10 @@ public:
   int atomic_number;      // Atomic number of atom
 
   double n_dens_;          // number density of this atom (cm^-3)
-  double e_gamma_;         // radioactive energy deposited (ergs/sec/cm^3)
   double gas_temp_;        // temperature of gas
+  double e_gamma_heat_;    // radioactive energy deposited as heat (ergs/sec/cm^3)
+  double e_gamma_ion_;     // nonthermal energy going into ionization
+  double e_gamma_ex_;      // nonthermal energy going into excitation
 
   double min_level_pop_;        // the minimum level population allowed
   double minimum_extinction_;   // minimum alpha = 1/mfp to calculate
@@ -86,6 +88,7 @@ public:
   int  solve_lte (double ne);
   int  solve_nlte(double ne);
   void print();
+  double get_nonthermal_ionization_dep(double);
 
   // sobolev
   double get_ion_frac();
@@ -141,6 +144,13 @@ public:
     return lev_n_[lev]/lev_lte_[lev];
   }
 
+
+  void set_nonthermal_energy(double Eheat, double Eion, double Eex)
+  {
+    e_gamma_heat_ = Eheat;
+    e_gamma_ion_  = Eion;
+    e_gamma_ex_   = Eex;
+  }
 
  };
 
