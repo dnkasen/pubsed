@@ -66,6 +66,13 @@ struct AtomicPhotoCS
     int i_start;
 };
 
+struct NonThermal_Ion_CS
+{
+  std::vector<double> A, B, C, D;
+  std::vector<double> chi;
+  int n_shells;
+};
+
 
 //---------------------------------------------
 // Holds the data for an individual atoms
@@ -95,8 +102,10 @@ public:
 
   locate_array *nu_grid_;
 
-
   fuzz_line_structure fuzz_lines_; // vector of fuzz lines
+
+  // structure of nonthermal cross-section
+  std::vector<NonThermal_Ion_CS> nt_ion_cs_;
 
   double get_ion_chi(int i) {
     return ions_[i].chi;
@@ -120,6 +129,10 @@ public:
   // get photoionization cross-section of
   // level i at frequency bin inu
   double get_lev_photo_cs(int i, int inu);
+
+  // get non-thermal ionization cross-section
+  double get_nonthermal_ion_cross_section(int i, double E);
+
 
   int is_ground_state(int i)
   {
@@ -195,6 +208,7 @@ public:
   // of all possible atoms
   IndividualAtomData atomlist_[MAX_N_ATOMS];
 
+  // frequency grid
   locate_array nu_grid_;
 
   int initialize(std::string, locate_array ng);

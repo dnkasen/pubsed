@@ -105,6 +105,45 @@ double IndividualAtomData::get_lev_photo_cs(int i, int inu)
 }
 
 
+//-----------------------------------------------
+// Return the cross-section at energy E for ion state i
+// E is in units of eV
+// cross-section returned is in units of cm^2
+// Returns 0 if no data for cross-section, or is invalid index
+//-----------------------------------------------
+double IndividualAtomData::get_nonthermal_ion_cross_section(int i, double E)
+{
+  if (i >= n_ions_) return 0;
+
+  double cs = 0.0;
+  for (int s=0;s<nt_ion_cs_[i].n_shells;++s)
+  {
+    double chi = nt_ion_cs_[i].chi[s];
+    if (E < chi) continue;
+    double u = E/chi;
+    double v = nt_ion_cs_[i].A[s]*(1 - 1.0/u);
+    v += nt_ion_cs_[i].B[s]*(1 - 1.0/u)*(1-1.0/u);
+    v += nt_ion_cs_[i].C[s]*log(u);
+    v += nt_ion_cs_[i].D[s]*log(u)/u;
+
+    v = 1e-14*v/u/chi/chi;
+    cs += v;
+  }
+
+  // if no-data available, use an approximation
+  if (cs == 0)
+  {
+    double chi = get_ion_chi(i);
+    double u = E/chi;
+    double C = 2;
+    cs = 1e-14/u/chi/chi*C*log(u);
+  }
+
+  return cs;
+}
+
+
+
 //------------------------------------------------------------------------
 // Print out general stats on all atomic data read and stored
 //------------------------------------------------------------------------
@@ -535,10 +574,55 @@ int AtomicData::read_newstyle_atomic_data(int z)
    atom->n_ions_   = atom->ions_.size();
    atom->n_lines_  = atom->lines_.size();
 
+   // -------------------------------------
+   // read non_thermal PI cross-section data
+   atom->nt_ion_cs_.resize(atom->n_ions_);
+   for (int i=0;i<atom->n_ions_;++i)
+     atom->nt_ion_cs_[i].n_shells = 0;
+
+   int n_data;
+   status = H5LTread_dataset_int(file_id,"non_thermal_cs/n_data",&n_data);
+   if (status == 0)
+   {
+     int* Z_data = new int[n_data];
+     int* I_data = new int[n_data];
+     double* A_data = new double[n_data];
+     double* B_data = new double[n_data];;
+     double* C_data = new double[n_data];
+     double* D_data = new double[n_data];
+     double* chi_data = new double[n_data];
+     status = H5LTread_dataset_int(file_id,"non_thermal_cs/Z",Z_data);
+     status = H5LTread_dataset_int(file_id,"non_thermal_cs/ion",I_data);
+     status = H5LTread_dataset_double(file_id,"non_thermal_cs/A",A_data);
+     status = H5LTread_dataset_double(file_id,"non_thermal_cs/B",B_data);
+     status = H5LTread_dataset_double(file_id,"non_thermal_cs/C",C_data);
+     status = H5LTread_dataset_double(file_id,"non_thermal_cs/D",D_data);
+     status = H5LTread_dataset_double(file_id,"non_thermal_cs/chi",chi_data);
+
+     for (int i=0;i<n_data;i++)
+     {
+       int ion = I_data[i];
+       if (Z_data[i] != z) continue;
+       if (ion >= atom->n_ions_) continue;
+       atom->nt_ion_cs_[ion].A.push_back(A_data[i]);
+       atom->nt_ion_cs_[ion].B.push_back(B_data[i]);
+       atom->nt_ion_cs_[ion].C.push_back(C_data[i]);
+       atom->nt_ion_cs_[ion].D.push_back(D_data[i]);
+       atom->nt_ion_cs_[ion].chi.push_back(chi_data[i]);
+       atom->nt_ion_cs_[ion].n_shells++;
+     }
+     delete[] A_data;
+     delete[] B_data;
+     delete[] C_data;
+     delete[] D_data;
+     delete[] chi_data;
+     delete[] Z_data;
+     delete[] I_data;
+   }
+
+  // all done
    H5Fclose(file_id);
-
    return 0;
-
 }
 
 
