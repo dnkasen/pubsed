@@ -36,8 +36,8 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
   else
   {
     zone* z = &(grid->z[i]);
-    gas_state_ptr->dens_ = z->rho; 
-    gas_state_ptr->temp_ = z->T_gas; 
+    gas_state_ptr->dens_ = z->rho;
+    gas_state_ptr->temp_ = z->T_gas;
 
     transportMemFn f;
 
@@ -66,7 +66,7 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
 
 
     radeq_brent_args brent_args;
-    
+
     brent_args.gas_state_ptr = gas_state_ptr;
     brent_args.c = i;
     brent_args.solve_flag = 1;
@@ -127,13 +127,13 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
       coll_cooling[i] = gas_state_ptr->collisional_net_cooling_rate(grid->z[i].T_gas);
     }
 
-    if (solve_root_errors_temp > 0) 
+    if (solve_root_errors_temp > 0)
       std::cerr << "# WARNING: temperature not bracketed in " << solve_root_errors_temp << " zones" << std::endl;
-    if (solve_iter_errors_temp > 0) 
+    if (solve_iter_errors_temp > 0)
       std::cerr << "# WARNING: max iterations hit in temperature solve in " << solve_iter_errors_temp << " zones" << std::endl;
-    if (solve_root_errors_ne > 0) 
+    if (solve_root_errors_ne > 0)
       std::cerr << "# WARNING: n_e not bracketed in " << solve_root_errors_ne << " zones" << std::endl;
-    if (solve_iter_errors_ne > 0) 
+    if (solve_iter_errors_ne > 0)
       std::cerr << "# WARNING: max iterations hit in n_e solve in " << solve_iter_errors_ne << " zones" << std::endl;
 
     gas_solve_error = solve_root_errors_ne +  solve_iter_errors_ne + solve_root_errors_temp + solve_iter_errors_temp ;
@@ -180,7 +180,7 @@ void transport::solve_eq_temperature()
 	  //	  printf("max number of iterations reached in n_e solve\n");
 	  solve_iter_errors_ne++;
 	}
-      
+
       transportMemFn f;
       if (gas_state_ptr->is_nlte_turned_on() == 0)
 	{
@@ -212,7 +212,7 @@ void transport::solve_eq_temperature()
 	  //	  printf("max number of iterations reached in n_e solve\n");
 	  solve_iter_errors_temp++;
 	}
-      
+
       if (gas_state_ptr->is_nlte_turned_on())
       {
 	bf_heating[i] = gas_state_ptr->bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
@@ -227,13 +227,13 @@ void transport::solve_eq_temperature()
     #pragma omp single
     if (verbose)
       {
-  if (solve_root_errors_temp > 0) 
+  if (solve_root_errors_temp > 0)
     std::cerr << "# WARNING: temperature not bracketed in " << solve_root_errors_temp << " zones" << std::endl;
-  if (solve_iter_errors_temp > 0) 
+  if (solve_iter_errors_temp > 0)
     std::cerr << "# WARNING: max iterations hit in temperature solve in " << solve_iter_errors_temp << " zones" << std::endl;
-  if (solve_root_errors_ne > 0) 
+  if (solve_root_errors_ne > 0)
     std::cerr << "# WARNING: n_e not bracketed in " << solve_root_errors_ne << " zones" << std::endl;
-  if (solve_iter_errors_ne > 0) 
+  if (solve_iter_errors_ne > 0)
     std::cerr << "# WARNING: max iterations hit in n_e solve in " << solve_iter_errors_ne << " zones" << std::endl;
       }
 
@@ -357,6 +357,8 @@ double transport::rad_eq_function_NLTE(double T, radeq_brent_args* args)
   // total energy absorbed
   double E_absorbed = args->gas_state_ptr->free_free_heating_rate(T,J_nu_[args->c]) +
         args->gas_state_ptr->bound_free_heating_rate(T,J_nu_[args->c]) ;
+  // add in radioactive heating
+  E_absorbed += args->gas_state_ptr->e_gamma_heat_;
 
   // total energy emitted
   double E_emitted= args->gas_state_ptr->free_free_cooling_rate(T) +

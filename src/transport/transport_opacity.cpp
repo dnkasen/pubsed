@@ -163,16 +163,16 @@ void transport::set_opacity(double dt)
 
       if (solve_Tgas_with_updated_opacities_)
 	{
-	  if (solve_root_errors != 0) 
+	  if (solve_root_errors != 0)
 	    std::cerr << "# WARNING: root not bracketed in at least one of the brent solves in " << solve_root_errors << " zones" << std::endl;
-	  if (solve_iter_errors != 0) 
+	  if (solve_iter_errors != 0)
 	    std::cerr << "# WARNING: max iterations hit in at least one of the brent solves in " << solve_iter_errors << " zones" << std::endl;
 	}
       else
 	{
-	  if (solve_root_errors != 0) 
+	  if (solve_root_errors != 0)
 	    std::cerr << "# WARNING: root not bracketed in n_e solve in " << solve_root_errors << " zones" << std::endl;
-	  if (solve_iter_errors != 0) 
+	  if (solve_iter_errors != 0)
 	    std::cerr << "# WARNING: max iterations hit in n_e solve in " << solve_iter_errors << " zones" << std::endl;
 	}
 
@@ -239,6 +239,9 @@ int transport::fill_and_solve_gasstate(GasState* gas_state_ptr, int i)
   gas_state_ptr->time_ = t_now_;
   if (gas_state_ptr->temp_ < temp_min_value_) gas_state_ptr->temp_ = temp_min_value_;
   if (gas_state_ptr->temp_ > temp_max_value_) gas_state_ptr->temp_ = temp_max_value_;
+
+  // set non-thermal (radioactive) energy deposition (erg/s/cm^3)
+  gas_state_ptr->e_gamma_ = z->L_radio_dep;
 
   vector<double> X_now(grid->n_elems);
   radioactive radio_obj;
