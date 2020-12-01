@@ -570,6 +570,24 @@ def write_simple_ion(fname,species,ion,chi,E,g):
     h5f.close()
 
 
+def write_nonthermal_cs(fname,datafile):
+
+    h5f = h5py.File(fname, 'a')
+    nt_group = h5f.create_group("non_thermal_cs")
+
+    nt_group.create_dataset("source",data ="AR92")
+    Z,E,chi,A,B,C,D = np.loadtxt(datafile,unpack=True)
+    nt_group.create_dataset("n_data",data =len(Z))
+    nt_group.create_dataset("Z",data = Z)
+    nt_group.create_dataset("ion",data = Z-E)
+    nt_group.create_dataset("chi",data = chi)
+    nt_group.create_dataset("A",data = A)
+    nt_group.create_dataset("B",data = B)
+    nt_group.create_dataset("C",data = C)
+    nt_group.create_dataset("D",data = D)
+    h5f.close()
+
+
 
 if __name__ == '__main__':
 
@@ -601,6 +619,7 @@ if __name__ == '__main__':
 #                2: 'HE/II/5dec96/he2_osc.dat'}
 #    }
 
+
     # loop over species
     for species, species_data in iteritems(data_sources):
         n_ions = 0
@@ -623,6 +642,8 @@ if __name__ == '__main__':
     E   = [0.0]
     g   = [10.0]
     write_simple_ion(outname,28,0,chi,E,g)
+
+    write_nonthermal_cs(outname,"sigma_ion_AR92.dat")
 
     # write version
     h5f = h5py.File(outname, 'a')
