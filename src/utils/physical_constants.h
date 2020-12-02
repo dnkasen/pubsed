@@ -9,10 +9,12 @@ namespace physical_constants
   const double pi          = 3.14159;          // just pi
   const double c           = 2.99792458e10;    // speed of light (cm/s)
   const double h           = 6.6260755e-27;    // plancks constant (ergs s)
+  const double h_bar       = 1.05457266e-27;   // reduced plancks constant h/(2*pi) (ergs s)
   const double k           = 1.380658e-16;     // boltz constatn (ergs/K)
   const double k_ev        = 8.6173324e-5;     // boltzmann constant (ev/K)
   const double m_p         = 1.67262158e-24;   // proton mass (g)
   const double m_e         = 9.10938188e-28;   // mass of electron (g)
+  const double e_e         = 4.8032068e-10;    // charge of electron (esu)
   const double sb          = 5.6704e-5;        // stefan-boltzmann (ergs cm^-2 s^-1 K^-4) 
   const double a           = 7.5657e-15;       // radiation constant (ergs cm-3 K-4)
   const double G           = 6.67408e-8;       // Newton grav constant (cm^3 g^-1 s^-2)
