@@ -143,6 +143,16 @@ double IndividualAtomData::get_nonthermal_ion_cross_section(int i, double E)
 }
 
 
+//-----------------------------------------------------
+// get the collisional bound-bound rate for line i
+// given a passed temperature T
+// If no tabulated data exists, uses an analytic approx
+//------------------------------------------------------
+double IndividualAtomData::get_collisional_bb_rate(int i, double T)
+{
+
+}
+
 
 //------------------------------------------------------------------------
 // Print out general stats on all atomic data read and stored
@@ -404,7 +414,6 @@ int AtomicData::read_newstyle_atomic_data(int z)
     delete[] E_darr;
 
 
-
     // ---------------------------------------
     // Read and Setup line data
     // ---------------------------------------
@@ -418,6 +427,7 @@ int AtomicData::read_newstyle_atomic_data(int z)
       double *A_darr   = new double[n_tot_lines];
       int *lu_iarr     = new int[n_tot_lines];
       int *ll_iarr     = new int[n_tot_lines];
+      int *col_iarr    = new int[n_tot_lines];
 
       // read line upper level indices
       sprintf(dset,"%s%s",ionname,"line_u");
@@ -432,6 +442,11 @@ int AtomicData::read_newstyle_atomic_data(int z)
       // read line Einstein A
       sprintf(dset,"%s%s",ionname,"line_A");
       status = H5LTread_dataset_double(file_id,dset,A_darr);
+      if (status != 0) return -1;
+
+      // read line index of collisional rate
+      sprintf(dset,"%s%s",ionname,"line_col_id");
+      status = H5LTread_dataset_int(file_id,dset,col_iarr);
       if (status != 0) return -1;
 
       // add in the lines
@@ -476,6 +491,29 @@ int AtomicData::read_newstyle_atomic_data(int z)
         // find index of bin in frequency grid
         // This function will return -1 if out of grid bounds
         lin.bin = nu_grid_.locate_check_bounds(nu);
+
+        // read collisional rate if it exists
+        lin.col_rate = NULL;
+        if (col_iarr[i] != -1)
+        {
+          lin.col_rate = new AtomicCollisionalBB_Rate;
+
+          int n_pts;
+          char cname[1000];
+          sprintf(cname,"%s/collisional_data/col_%d",ionname,col_iarr[i]);
+          sprintf(dset,"%s/n_pts",cname);
+          status = H5LTread_dataset_int(file_id,dset,&n_pts);
+
+          lin.col_rate->E = delta_E;
+          double* tmp = new double[n_pts];
+          sprintf(dset,"%s/T",cname);
+          status = H5LTread_dataset_double(file_id,dset,tmp);
+          lin.col_rate->T.assign(tmp,tmp+n_pts);
+          sprintf(dset,"%s/Omega",cname);
+          status = H5LTread_dataset_double(file_id,dset,tmp);
+          lin.col_rate->O.assign(tmp,tmp+n_pts);
+          delete[] tmp;
+        }
 
         // if in bounds, add into vector
         if (lin.bin >= 0)
@@ -545,14 +583,15 @@ int AtomicData::read_newstyle_atomic_data(int z)
         if (nu < nu_edge) {
           this_cs.s[j] = cs_data.value_at_with_zero_edges(nu); }
         else {
-          this_cs.s[j] = s_edge*pow(nu_edge/nu,3.0);
-  }
+          this_cs.s[j] = s_edge*pow(nu_edge/nu,3.0);  }
       }
-
       // store this cross-section and clean up
       atom->photo_cs_.push_back(this_cs);
       delete [] darray;
     }
+
+
+  // finish loop for reading of ion's data
    }
 
    // add in extra fully ionized state and level
@@ -575,12 +614,14 @@ int AtomicData::read_newstyle_atomic_data(int z)
    atom->n_lines_  = atom->lines_.size();
 
    // -------------------------------------
-   // read non_thermal PI cross-section data
+   // read non_thermal ion cross-section data
+   // -------------------------------------
+
    atom->nt_ion_cs_.resize(atom->n_ions_);
    for (int i=0;i<atom->n_ions_;++i)
      atom->nt_ion_cs_[i].n_shells = 0;
 
-   int n_data;
+   int n_data=0;
    status = H5LTread_dataset_int(file_id,"non_thermal_cs/n_data",&n_data);
    if (status == 0)
    {
@@ -620,9 +661,23 @@ int AtomicData::read_newstyle_atomic_data(int z)
      delete[] I_data;
    }
 
-  // all done
-   H5Fclose(file_id);
-   return 0;
+   // all done
+  H5Fclose(file_id);
+
+/*  for (int i=0;i<atom->n_lines_;++i)
+  {
+    if (atom->lines_[i].col_rate == NULL)
+      std::cout << i << "\t" << "NULL\n";
+    else
+    {
+      std::cout << i  << " " << atom->lines_[i].col_rate->E << "\n";
+      for (int j=0;j<atom->lines_[i].col_rate->T.size();++j)
+        std::cout << atom->lines_[i].col_rate->T[j] << " " << atom->lines_[i].col_rate->O[j] << "\n";
+    }
+  }*/
+  return 0;
+
+
 }
 
 
