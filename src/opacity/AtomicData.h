@@ -148,7 +148,7 @@ public:
   double get_nonthermal_ion_cross_section(int i, double E);
 
   // get collisional bound-bound rate for line i
-  double get_collisional_bb_rate(int i, double T);
+  void get_collisional_bb_rates(int i, double T, double&, double&);
 
   int is_ground_state(int i)
   {

@@ -144,13 +144,75 @@ double IndividualAtomData::get_nonthermal_ion_cross_section(int i, double E)
 
 
 //-----------------------------------------------------
-// get the collisional bound-bound rate for line i
+// get the collisional bound-bound rates for line i
 // given a passed temperature T
+// gives the excitation rate:  C_up
+// and the de-excitaiton rate: C_down
 // If no tabulated data exists, uses an analytic approx
+//
+//
+// Rutten section 3.2.5 (page 52) points out that these van Regemorter
+// rates are only valid for permitted dipole transitions, with f_lu in the
+// range 10^-3 to 1. For forbidden lines with smaller f, he says the
+// collisional transition rates "don't drop much below the values typical
+// of permitted lines." That's not a very precise statement, but we can
+// mock it up by not letting the f_lu factor drop below 10^-2
 //------------------------------------------------------
-double IndividualAtomData::get_collisional_bb_rate(int i, double T)
+void IndividualAtomData::get_collisional_bb_rates
+(int i, double T, double &C_up, double &C_down)
 {
 
+  int ll       = get_line_l(i);
+  int lu       = get_line_u(i);
+  int gl       = get_lev_g(ll);
+  int gu       = get_lev_g(lu);
+  double El    = get_lev_E(ll);
+  double Eu    = get_lev_E(lu);
+  double dE    = (Eu - El)*pc::ev_to_ergs;
+  double zeta  = dE/pc::k/T; // note dE is in ergs
+
+  // get the omega
+  double omega;
+  // analytic approximation
+  if (lines_[i].col_rate == NULL)
+  {
+    double f_lu  = get_line_f(i);
+    int ion      = get_lev_ion(ll);
+
+    double effective_f_lu = 0.;
+    if (f_lu < 0.01) effective_f_lu = 0.01;
+    else effective_f_lu = f_lu;
+
+    if (ion == 0)
+      omega =  2.16*pow(zeta,-1.68)*pow(T,-1.5)* effective_f_lu;
+    else
+      omega =  3.9*pow(zeta,-1.)*pow(T,-1.5)* effective_f_lu;
+  }
+  // tabulated data
+  else
+  {
+    AtomicCollisionalBB_Rate  *col = lines_[i].col_rate;
+    // locate this temperature
+    int ind = upper_bound(col->T.begin(), col->T.end(), T) - col->T.begin() - 1;
+    if (ind < 0) ind = 0;
+
+    int i1,i2;
+    if (ind < col->T.size()-1)
+    {
+      i1    = ind;
+      i2    = ind + 1;
+    }
+    else
+    {
+      i2    = ind;
+      i1    = ind - 1;
+    }
+    // linear interpolation
+    double slope = (col->O[i2]-col->O[i1])/(col->T[i2]-col->T[i1]);
+    omega = col->O[ind] + slope*(T - col->T[i1]);
+  }
+  C_up   = omega*exp(-zeta);
+  C_down = omega*gl/gu;
 }
 
 
