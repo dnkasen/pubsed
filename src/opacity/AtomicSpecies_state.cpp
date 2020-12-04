@@ -350,16 +350,21 @@ void AtomicSpecies::set_rates(double ne)
       rates_[i][j] = 0;
 
 
-
   // ------------------------------------------------
-  // radiative bound-bound transitions
+  //  bound-bound transitions
   // ------------------------------------------------
   for (int l=0;l<n_lines_;l++)
   {
     int ll       = adata_->get_line_l(l);
     int lu       = adata_->get_line_u(l);
+    double El    = adata_->get_lev_E(ll);
+    double Eu    = adata_->get_lev_E(lu);
+    double dE = (Eu - El)*pc::ev_to_ergs;
 
+    // ------------------------------------------------
+    //  radiative bound-bound transitions
     // spontaneous dexcitation + stimulated emission
+    // ------------------------------------------------
     double R_ul = adata_->get_line_Bul(l)*line_J_[l] + adata_->get_line_A(l);
     double R_lu = adata_->get_line_Blu(l)*line_J_[l];
 
@@ -371,29 +376,10 @@ void AtomicSpecies::set_rates(double ne)
     rates_[ll][lu] += R_lu;
     rates_[lu][ll] += R_ul;
 
-   // printf("RR %d %d %e\n",ll,lu,R_lu);
-   // printf("RR %d %d %e\n",lu,ll,R_ul);
-  }
-
-  double norm = 0;
-  for (int l=0;l<n_lines_;l++) norm   += adata_->get_line_f(l);
-
-  for (int l=0;l<n_lines_;l++)
-  {
-    int ll       = adata_->get_line_l(l);
-    int lu       = adata_->get_line_u(l);
-    int gl       = adata_->get_lev_g(ll);
-    int gu       = adata_->get_lev_g(lu);
-    double El    = adata_->get_lev_E(ll);
-    double Eu    = adata_->get_lev_E(lu);
-    double f_lu  = adata_->get_line_f(l);
-
-
     // ------------------------------------------------
     // non-thermal (radioactive) bound-bound transitions
     // ------------------------------------------------
-    double dE = (Eu - El)*pc::ev_to_ergs;
-    double R_lu = 0; // e_gamma_/n_dens_/dE; //*(lines_[l].f_lu/norm);
+    R_lu = 0; // e_gamma_/n_dens_/dE; //*(lines_[l].f_lu/norm);
     if (dE == 0) R_lu = 0;
     if (ll != 0) R_lu = 0;
 
@@ -406,29 +392,10 @@ void AtomicSpecies::set_rates(double ne)
     // ------------------------------------------------
     // collisional bound-bound transitions
     // ------------------------------------------------
-
-    double zeta = dE/pc::k/gas_temp_; // note dE is in ergs
-    double ezeta = exp(zeta);
-
-    // Rutten section 3.2.5 (page 52) points out that these van Regemorter
-    // rates are only valid for permitted dipole transitions, with f_lu in the
-    // range 10^-3 to 1. For forbidden lines with smaller f, he says the
-    // collisional transition rates "don't drop much below the values typical
-    // of permitted lines." That's not a very precise statement, but we can
-    // mock it up by not letting the f_lu factor drop below 10^-3
-
-    double effective_f_lu = 0.;
-    if (f_lu < 0.01) effective_f_lu = 0.01;
-    else effective_f_lu = f_lu;
-
     if (use_collisions_nlte_)
     {
-	    double C_up = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) / ezeta * ne * effective_f_lu;
-      // be careful about possible overflow
-      if (zeta > 700) C_up = 0;
-
-	    double C_down = 3.9*pow(zeta,-1.)*pow(gas_temp_,-1.5) * ne * effective_f_lu * gl/gu;
-
+      double C_up, C_down;
+      adata_->get_collisional_bb_rates(l,gas_temp_,C_up,C_down);
 	    rates_[ll][lu] += C_up;
       rates_[lu][ll] += C_down;
     }
@@ -452,7 +419,6 @@ void AtomicSpecies::set_rates(double ne)
     // collisional ionization and recomombination rate
     // needs to be multiplied by number of electrons in outer shell
     // ------------------------------------------------
-
     if (use_collisions_nlte_)
     {
 	    double C_ion = 2.7/zeta/zeta*pow(gas_temp_,-1.5)*exp(-zeta)*ne;
