@@ -283,19 +283,22 @@ void GasState::calculate_nonthermal_fractions()
 
   // ionization energy loss
   double Lion = 0;
+  double Lex  = 0;
   for (size_t i=0;i<atoms.size();++i)
+  {
     Lion += atoms[i].get_nonthermal_ionization_dep(E_ev);
+    Lex  += atoms[i].get_nonthermal_bb_dep(E_ev);
+  }
   // effect of secondaries
   Lheat += Lion*nonthermal_f_secondary_/(1 + nonthermal_f_secondary_);
   Lion  = Lion/(1 + nonthermal_f_secondary_);
 
   // excitation energy loss (not done yet)
-  double Lex = 0;
-
   double Ltot = Lheat + Lion + Lex;
   double eta_heat = Lheat/Ltot;
   //double eta_ion  = Lion/Ltot;
   //double eta_ex   = Lex/Ltot;
+  //std::cout << "ETAS = " << eta_heat << " " << eta_ion << " " << eta_ex << "\n";
 
   e_gamma_heat_ = e_gamma_*eta_heat;
   e_gamma_ion_  = e_gamma_/Ltot/(1 + nonthermal_f_secondary_);
