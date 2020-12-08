@@ -247,7 +247,7 @@ void IndividualAtomData::get_collisional_bb_rates
       omega = col->O[ind] + slope*(T - col->T[i1]);
     }
   }
-  
+
   C_up   = omega*exp(-zeta);
   // be careful about possible overflow
   if (zeta > 700) C_up = 0;
@@ -1003,6 +1003,9 @@ int AtomicData::read_oldstyle_atomic_data(int z)
 
     // find index of bin in deal
     atom->lines_[i].bin = nu_grid_.locate_within_bounds(nu);
+
+    // pointer to collisional data (not included in oldstyle files)
+      atom->lines_[i].col_rate = NULL;
   }
 
   if (add_last_stage)
@@ -1049,6 +1052,11 @@ int AtomicData::read_oldstyle_atomic_data(int z)
     atom->levels_[i].sigma0 =  6.3e-18;
 
   }
+
+  // fill non-thermal data with empty
+  atom->nt_ion_cs_.resize(atom->n_ions_);
+  for (int i=0;i<atom->n_ions_;++i)
+    atom->nt_ion_cs_[i].n_shells = 0;
 
    H5Fclose(file_id);
    return 0;
