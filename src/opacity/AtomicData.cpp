@@ -144,12 +144,40 @@ double IndividualAtomData::get_nonthermal_ion_cross_section(int i, double E)
 
 
 //-----------------------------------------------------
+// Return the non-thermal bound-bound cross-section
+// for line transition i
+// for an electron of E (in units of eV)
+// cross-section returned is in units of cm^2
+// Uses Van-Regermorter approximation equation
+// (see appendix of Botyanszki and Kasen 2018)
+//---------------------------------------------------
+double IndividualAtomData::get_nonthermal_bb_cross_section(int i, double E)
+{
+  double f_lu  = get_line_f(i);
+  // energy difference in rydbergs
+  double dE    = get_line_dE_eV(i)/pc::rydberg_ev;
+
+  double effective_f_lu = f_lu;
+  if (f_lu < 0.01) effective_f_lu = 0.01;
+
+  // factor of 8 pi/sqrt(3)*pi*a_0**2 (a_0 = bohr radius)
+  double fac = 4.0103404580362e-15;
+  double gaunt = 0.2;
+  double sigma = fac*(pc::rydberg_ev/E)/dE*effective_f_lu*gaunt;
+
+  return sigma;
+}
+
+
+//-----------------------------------------------------
 // get the collisional bound-bound rates for line i
 // given a passed temperature T
 // gives the excitation rate:  C_up
 // and the de-excitaiton rate: C_down
 // If no tabulated data exists, uses an analytic approx
 //
+// units here are cm^3/s -- must multiply by electron density
+// to get rate per ion
 //
 // Rutten section 3.2.5 (page 52) points out that these van Regemorter
 // rates are only valid for permitted dipole transitions, with f_lu in the
@@ -192,26 +220,37 @@ void IndividualAtomData::get_collisional_bb_rates
   else
   {
     AtomicCollisionalBB_Rate  *col = lines_[i].col_rate;
-    // locate this temperature
-    int ind = upper_bound(col->T.begin(), col->T.end(), T) - col->T.begin() - 1;
-    if (ind < 0) ind = 0;
 
-    int i1,i2;
-    if (ind < col->T.size()-1)
-    {
-      i1    = ind;
-      i2    = ind + 1;
-    }
+    // locate this temperature
+    if (T <= col->T[0])
+      omega = col->O[0];
+    else if (T >= col->T.back())
+      omega = col->O.back();
     else
     {
-      i2    = ind;
-      i1    = ind - 1;
+      int ind = upper_bound(col->T.begin(), col->T.end(), T) - col->T.begin() - 1;
+      if (ind < 0) ind = 0;
+
+      int i1,i2;
+      if (ind < col->T.size()-1)
+      {
+        i1    = ind;
+        i2    = ind + 1;
+      }
+      else
+      {
+        i2    = ind;
+        i1    = ind - 1;
+      }
+      // linear interpolation
+      double slope = (col->O[i2]-col->O[i1])/(col->T[i2]-col->T[i1]);
+      omega = col->O[ind] + slope*(T - col->T[i1]);
     }
-    // linear interpolation
-    double slope = (col->O[i2]-col->O[i1])/(col->T[i2]-col->T[i1]);
-    omega = col->O[ind] + slope*(T - col->T[i1]);
   }
+  
   C_up   = omega*exp(-zeta);
+  // be careful about possible overflow
+  if (zeta > 700) C_up = 0;
   C_down = omega*gl/gu;
 }
 

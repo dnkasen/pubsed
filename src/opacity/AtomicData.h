@@ -5,9 +5,11 @@
 
 #include <string>
 #include <vector>
-#include "sedona.h"
-#include "xy_array.h"
+#include "physical_constants.h"
 #include "locate_array.h"
+#include "xy_array.h"
+
+namespace pc = physical_constants;
 
 struct fuzz_line_structure
 {
@@ -147,6 +149,9 @@ public:
   // get non-thermal ionization cross-section for ion i
   double get_nonthermal_ion_cross_section(int i, double E);
 
+  // get non-thermal bound-bound cross-section for line i
+  double get_nonthermal_bb_cross_section(int i, double E);
+
   // get collisional bound-bound rate for line i
   void get_collisional_bb_rates(int i, double T, double&, double&);
 
@@ -182,6 +187,13 @@ public:
   int get_line_bin(int i) {
     return lines_[i].bin;
   }
+  double get_line_dE_ergs(int i) {
+    return lines_[i].nu*pc::h;
+  }
+  double get_line_dE_eV(int i) {
+    return lines_[i].nu*pc::h*pc::ergs_to_ev;
+  }
+
   int get_n_fuzz_lines() {
     return fuzz_lines_.n_lines;
   }
