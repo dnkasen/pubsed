@@ -164,29 +164,13 @@ double AtomicSpecies::collisional_net_cooling_rate(double ne, double T)
   {
     int lu  = adata_->get_line_u(l);
     int ll  = adata_->get_line_l(l);
-    double El = adata_->get_lev_E(ll);
-    double Eu = adata_->get_lev_E(lu);
-    double gl = 1.0*adata_->get_lev_g(ll);
-    double gu = 1.0*adata_->get_lev_g(lu);
-
     double ndown   = n_dens_ * lev_n_[ll];
     double nup     = n_dens_ * lev_n_[lu];
+    double dE = adata_->get_line_dE_ergs(l);
 
-    double dE = (Eu - El)*pc::ev_to_ergs;
-    double zeta = dE/pc::k/T;
-    double ezeta = exp(zeta);
-
-    // floor oscillator strengths so that forbidden lines can contribute.
-    // should be improved by using real collisional rates for forbidden lines
-    double f_lu = adata_->get_line_f(l);
-    double effective_f_lu = f_lu;
-    if (f_lu < 1.e-2) effective_f_lu = 1.e-2;
-
-    double C_up = 3.9*pow(zeta,-1.)*pow(T,-1.5) / ezeta * ne * effective_f_lu;
-    if (zeta > 700) C_up = 0.; // be careful about overflow
-    double C_down = 3.9*pow(zeta,-1.)*pow(T,-1.5) * ne * effective_f_lu * gl/gu;
-
-    collisional_net_cooling += dE * (ndown * C_up - nup * C_down);
+    double C_up, C_down;
+    adata_->get_collisional_bb_rates(l,T,C_up,C_down);
+    collisional_net_cooling += dE * ne *(ndown * C_up - nup * C_down);
   }
 
   //bound-free collisional transitions:
