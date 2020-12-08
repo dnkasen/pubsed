@@ -81,10 +81,10 @@ def add_col(out_fname,lev_fname,col_fname,species,ion,remove_J=True):
         lev_l = lev_c.index(configs[0])
         lev_u = lev_c.index(configs[1])
 
-        print(configs[0],configs[1],lev_l,lev_u)
+        print(configs[0],configs[1],lev_l,lev_u,lev_g[lev_l])
         data.pop(0)
         coldata = np.array(data,dtype='d')
-        coldata = 8.63e-08*coldata/temps**0.5*np.exp(-1.967/pc.k_ev/temps/1e4)/5.0
+        coldata = 8.63e-08*coldata/temps**0.5/lev_g[lev_l]
 
         col_group = fout.create_group(str(species) +'/' + str(ion) + '/' + str(cnt))
         col_group.create_dataset("T", data=temps*1e4)
@@ -92,25 +92,40 @@ def add_col(out_fname,lev_fname,col_fname,species,ion,remove_J=True):
         col_group.create_dataset("lev_l",data=lev_l)
         col_group.create_dataset("lev_u",data=lev_u)
 
-        cnt += 1
+#        plt.plot(temps*1e4,coldata,'o')
+#        T = temps*1e4
+#        a = np.polyfit(T,coldata,4)
+#        print(a)
+#        afit = a[4] + a[3]*T + a[2]*T**2 + a[1]*T**3 + a[0]*T**4.0
+#        plt.plot(T,afit)
+#        plt.ion()
+#        plt.yscale('log')
+#        plt.show()
+        print(species,ion,cnt)
+#        j = input()
+#        exit(0)
+#        plt.clf()
 
+        cnt += 1
+    ion_group.create_dataset("n_data",data=cnt)
 
 out_fname = 'cmfgen_col_data.h5'
 
-col_fname = 'OXY/I/20sep11/oi_col'
-lev_fname = 'OXY/I/20sep11/oi_osc_op'
+base = '/Users/kasen//data/cmfgen_atomic_raw/'
+col_fname = base + 'OXY/I/20sep11/oi_col'
+lev_fname = base + 'OXY/I/20sep11/oi_osc_mchf'
 species = '8'
 ion     = '0'
 add_col(out_fname,lev_fname,col_fname,species,ion)
 
-col_fname = 'CA/II/30oct12/ca2col.dat'
-lev_fname = 'CA/II/30oct12/ca2_osc.dat'
+col_fname = base + 'CA/II/30oct12/ca2col.dat'
+lev_fname = base + 'CA/II/30oct12/ca2_osc_split.dat'
 species = '20'
 ion     = '1'
 add_col(out_fname,lev_fname,col_fname,species,ion)
 
-col_fname = 'FE/II/10sep16/fe2_col.dat'
-lev_fname = 'FE/II/10sep16/fe2_osc'
+col_fname = base + 'FE/II/10sep16/fe2_col.dat'
+lev_fname = base + 'FE/II/10sep16/fe2_osc'
 species = '26'
 ion     = '1'
 add_col(out_fname,lev_fname,col_fname,species,ion,remove_J=False)
