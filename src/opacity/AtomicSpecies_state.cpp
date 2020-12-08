@@ -379,15 +379,10 @@ void AtomicSpecies::set_rates(double ne)
     // ------------------------------------------------
     // non-thermal (radioactive) bound-bound transitions
     // ------------------------------------------------
-    R_lu = 0; // e_gamma_/n_dens_/dE; //*(lines_[l].f_lu/norm);
+    R_lu = e_gamma_ex_*adata_->get_nonthermal_bb_cross_section(l,1e6);
     if (dE == 0) R_lu = 0;
-    if (ll != 0) R_lu = 0;
-
-    // add into rates
-    // debug -- turning off non-thermal rates for now
     //rates_[ll][lu] += R_lu;
-
-    // printf("GR %d %d %e %e %e\n",ll,lu,R_lu,e_gamma,dE);
+//    if (ll != 0) R_lu = 0;
 
     // ------------------------------------------------
     // collisional bound-bound transitions
@@ -396,8 +391,8 @@ void AtomicSpecies::set_rates(double ne)
     {
       double C_up, C_down;
       adata_->get_collisional_bb_rates(l,gas_temp_,C_up,C_down);
-	    rates_[ll][lu] += C_up;
-      rates_[lu][ll] += C_down;
+	    rates_[ll][lu] += C_up*ne;
+      rates_[lu][ll] += C_down*ne;
     }
   }
 
@@ -491,8 +486,26 @@ double AtomicSpecies::get_nonthermal_ionization_dep(double E)
     lambda += Q*chi*n_dens_*ionization_fraction(i);
   }
   return lambda;
-
 }
+
+//-----------------------------------------------------------------
+// Return the non-thermal ionization deposition
+// given an electron with energy E (in eV)
+// returns dE/dl (ergs/cm) = energy loss per cm traveled
+//-----------------------------------------------------------------
+double AtomicSpecies::get_nonthermal_bb_dep(double E)
+{
+  double lambda = 0;
+  for (int i=0;i<n_lines_;++i)
+  {
+    int ll = adata_->get_line_l(i);
+    double sigma = adata_->get_nonthermal_bb_cross_section(i,E);
+    double dE = adata_->get_line_dE_ergs(i);
+    lambda += sigma*dE*n_dens_*lev_n_[ll];
+  }
+  return lambda;
+}
+
 
 
 //-----------------------------------------------------------------
