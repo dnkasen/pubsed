@@ -6,6 +6,7 @@
 #include <fstream>
 #include "hdf5.h"
 #include "hdf5_hl.h"
+#include <algorithm>
 
 namespace pc = physical_constants;
 
@@ -228,7 +229,7 @@ void IndividualAtomData::get_collisional_bb_rates
       omega = col->O.back();
     else
     {
-      int ind = upper_bound(col->T.begin(), col->T.end(), T) - col->T.begin() - 1;
+      int ind = std::upper_bound(col->T.begin(), col->T.end(), T) - col->T.begin() - 1;
       if (ind < 0) ind = 0;
 
       int i1,i2;
