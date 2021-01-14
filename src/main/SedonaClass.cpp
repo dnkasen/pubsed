@@ -492,7 +492,7 @@ int SedonaClass::do_checkpoint_simulation_time() {
 }
 
 int SedonaClass::do_checkpoint_triggered() {
-  char checkpoint_next_file[] = "checkpoint_next";
+  char checkpoint_next_file[] = "checkpoint_now";
   std::ifstream fs_next(checkpoint_next_file);
   if (fs_next.is_open()) {
     std::remove(checkpoint_next_file);
