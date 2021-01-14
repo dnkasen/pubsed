@@ -430,6 +430,7 @@ int SedonaClass::do_checkpoint_now(int chk_force) {
   int chk_walltime = do_checkpoint_walltime();
   int chk_end = do_checkpoint_before_end();
   int chk_simtime = do_checkpoint_simulation_time();
+  int chk_triggered = do_checkpoint_triggered();
   int chk_total = chk_timestep + chk_walltime + chk_end + chk_simtime + chk_force;
   return chk_total;
 }
@@ -486,6 +487,16 @@ int SedonaClass::do_checkpoint_simulation_time() {
     if (t_ >= last_chk_simtime_ + chk_simtime_interval_) {
       return 1;
     }
+  }
+  return 0;
+}
+
+int SedonaClass::do_checkpoint_triggered() {
+  char checkpoint_next_file[] = "checkpoint_next";
+  std::ifstream fs_next(checkpoint_next_file);
+  if (fs_next.is_open()) {
+    std::remove(checkpoint_next_file);
+    return 1;
   }
   return 0;
 }
