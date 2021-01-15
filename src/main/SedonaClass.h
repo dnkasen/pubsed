@@ -68,6 +68,7 @@ private:
   int do_checkpoint_walltime();
   int do_checkpoint_before_end();
   int do_checkpoint_simulation_time();
+  int do_checkpoint_triggered();
 
   // write a checkpoint file with numbered name
   void write_checkpoint(int i_chk);
