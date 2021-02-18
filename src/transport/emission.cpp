@@ -128,6 +128,10 @@ void transport::initialize_particles(int init_particles)
   if (verbose) cout << "# init with " << init_particles << " total particles ";
   if (verbose) cout << "(" << my_n_emit << " per MPI proc)\n";
   if (my_n_emit == 0) return;
+  
+  // for monochromatic emission
+  double nu_emit = params_->getScalar<double>("particles_init_photon_frequency");
+  bool blackbody = (nu_emit == 0);
 
   // set up emission distribution across zones
   double E_sum = 0;
@@ -138,13 +142,33 @@ void transport::initialize_particles(int init_particles)
     double E_zone = grid->z[i].e_rad*grid->zone_volume(i);
     zone_emission_cdf_.set_value(i,E_zone);
     E_sum += E_zone;
-    // setup blackbody emissivity for initialization
-    for (int j=0;j<ng;j++)
+    
+    if(blackbody)
     {
-      double nu_m = nu_grid_.center(j);
-      double emis = blackbody_nu(T,nu_m)*nu_grid_.delta(j);
-      emissivity_[i].set_value(j,emis);
+      // setup blackbody emissivity for initialization
+      for (int j=0;j<ng;j++)
+      {
+        double nu_m = nu_grid_.center(j);
+        double emis = blackbody_nu(T,nu_m)*nu_grid_.delta(j);
+        emissivity_[i].set_value(j,emis);
+      }
     }
+    else
+    {
+      // do monochromatic emission
+      for (int j=0;j<ng;j++)
+      {
+        if(nu_grid_.left(j) <= nu_emit && nu_grid_.right(j) >= nu_emit)
+        {
+          emissivity_[i].set_value(j,1);
+        }
+        else
+        {
+          emissivity_[i].set_value(j,0);
+        }
+      }
+    }
+    
     emissivity_[i].normalize();
   }
   zone_emission_cdf_.normalize();

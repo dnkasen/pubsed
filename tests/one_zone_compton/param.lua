@@ -23,6 +23,7 @@ core_n_emit          = 0
 particles_n_emit_thermal  = 0
 core_radius          = 0.
 particles_n_initialize  = 1e4
+particles_init_photon_frequency = 2.08366179e14;
 
 -- output spectrum
 spectrum_nu_grid   		    = transport_nu_grid
@@ -39,9 +40,3 @@ opacity_bound_free    = 0
 opacity_free_free     = 0
 opacity_electron_scattering = 1
 opacity_compton_scatter_photons = 1
-
-
-
-
-
-
