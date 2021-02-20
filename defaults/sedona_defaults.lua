@@ -82,6 +82,7 @@ particles_max_total = 1e7
 particles_n_emit_radioactive   = 0
 particles_n_emit_thermal       = 0
 particles_n_initialize         = 0
+particles_init_photon_frequency = 0
 particles_n_emit_pointsources  = 0
 particles_pointsource_file     = ""
 particles_last_iter_pump        = 1
