@@ -81,6 +81,7 @@ core_fix_luminosity   = 0
 particles_max_total = 1e7
 particles_n_emit_radioactive   = 0
 particles_n_emit_thermal       = 0
+particles_n_emit_thermal_perzone = 0
 particles_n_initialize         = 0
 particles_init_photon_frequency = 0
 particles_n_emit_pointsources  = 0
