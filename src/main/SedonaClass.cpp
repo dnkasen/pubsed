@@ -431,7 +431,7 @@ int SedonaClass::do_checkpoint_now(int chk_force) {
   int chk_end = do_checkpoint_before_end();
   int chk_simtime = do_checkpoint_simulation_time();
   int chk_triggered = do_checkpoint_triggered();
-  int chk_total = chk_timestep + chk_walltime + chk_end + chk_simtime + chk_force;
+  int chk_total = chk_timestep + chk_walltime + chk_end + chk_simtime + chk_force + chk_triggered;
   return chk_total;
 }
 
