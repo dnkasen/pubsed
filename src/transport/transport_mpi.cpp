@@ -22,9 +22,15 @@ void transport::wipe_radiation()
     grid->z[i].e_rad  = 0;
     grid->z[i].e_abs  = 0;
     grid->z[i].L_radio_dep = 0;
-    if (store_Jnu_)
+
+    if (store_Jnu_cmf_)
       for (int j=0;j<nu_grid_.size();j++)
-        J_nu_[i][j] = 0;
+        J_nu_cmf[i][j] = 0;
+
+    if (store_Jnu_labframe_)
+      for (int j=0;j<nu_grid_.size();j++)
+        J_nu_labframe[i][j] = 0;
+    
     grid->z[i].L_radio_emit = 0;
     grid->z[i].fx_rad = 0;
     grid->z[i].fy_rad = 0;
@@ -366,7 +372,7 @@ void transport::reduce_opacities()
     if (nz_per_block < 1)  nz_per_block  = 1;
 
     // new block size
-    if (store_Jnu_)
+    if (store_Jnu_cmf_)
     {
       blocksize = ng;
       double *src = new double[blocksize];
@@ -375,12 +381,33 @@ void transport::reduce_opacities()
       {
         for (int j=0;j<blocksize;j++)
         {
-        src[j] = J_nu_[i][j];
+        src[j] = J_nu_cmf[i][j];
         dst[j] = 0.0;
         }
         MPI_Allreduce(src,dst,blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
         for (int j=0;j<blocksize;j++)
-          J_nu_[i][j] = dst[j]/MPI_nprocs;
+          J_nu_cmf[i][j] = dst[j]/MPI_nprocs;
+      }
+      delete[] src;
+      delete[] dst;
+    }
+
+        // new block size
+    if (store_Jnu_labframe_)
+    {
+      blocksize = ng;
+      double *src = new double[blocksize];
+      double *dst = new double[blocksize];
+      for (int i=0;i<nz;i++)
+      {
+        for (int j=0;j<blocksize;j++)
+        {
+        src[j] = J_nu_labframe[i][j];
+        dst[j] = 0.0;
+        }
+        MPI_Allreduce(src,dst,blocksize,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+        for (int j=0;j<blocksize;j++)
+          J_nu_labframe[i][j] = dst[j]/MPI_nprocs;
       }
       delete[] src;
       delete[] dst;
@@ -424,17 +451,17 @@ void transport::reduce_opacities()
     //grid->z[i].fy_rad  /= vol*pc::c*dt;
     //grid->z[i].fz_rad  /= vol*pc::c*dt;
 
-    if ((nu_grid_.size() == 1)||(!store_Jnu_))
+    if ((nu_grid_.size() == 1)||(!store_Jnu_labframe))
     {
-      grid->z[i].e_rad = J_nu_[i][0]/(vol*dt*pc::c);
+      grid->z[i].e_rad = J_nu_labframe[i][0]/(vol*dt*pc::c);
     }
     else
     {
       double esum = 0;
       for (int j=0;j<nu_grid_.size();j++)
       {
-        J_nu_[i][j] /= vol*dt*4*pc::pi*nu_grid_.delta(j);
-        esum += J_nu_[i][j]*nu_grid_.delta(j)*4*pc::pi/pc::c;
+        J_nu_labframe[i][j] /= vol*dt*4*pc::pi*nu_grid_.delta(j);
+        esum += J_nu_labframe[i][j]*nu_grid_.delta(j)*4*pc::pi/pc::c;
       }
       grid->z[i].e_rad = esum;
     }

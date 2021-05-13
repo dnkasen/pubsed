@@ -104,9 +104,13 @@ void transport::step(double dt)
       for (int i=0;i<grid->n_zones;++i)
       {
         grid->z[i].e_rad *= fac;
-        if (store_Jnu_)
+        if (store_Jnu_cmf)
          for (size_t j=0;j<nu_grid_.size();++j)
-            J_nu_[i][j] *= fac;
+            J_nu_cmf[i][j] *= fac;
+
+	if (store_Jnu_labframe)
+         for (size_t j=0;j<nu_grid_.size();++j)
+            J_nu_labframe[i][j] *= fac;
       }
     }
     else {
@@ -370,12 +374,19 @@ ParticleFate transport::propagate_monte_carlo(particle &p, double tstop)
     {
       #pragma omp atomic
       zone->e_abs  += this_E*dshift*(continuum_opac_cmf)*eps_absorb_cmf*dshift * zone->eps_imc;
-      if (store_Jnu_)
+      if (store_Jnu_cmf)
 	     #pragma omp atomic
-	      J_nu_[p.ind][i_nu] += this_E;
+	      J_nu_cmf[p.ind][i_nu] += this_E * dshift * dshift;
       else
 	     #pragma omp atomic
-	      J_nu_[p.ind][0] += this_E;
+	      J_nu_cmf[p.ind][0] += this_E * dshift * dshift;
+
+      if (store_Jnu_labframe)
+	     #pragma omp atomic
+	      J_nu_labframe[p.ind][i_nu] += this_E;
+      else
+	     #pragma omp atomic
+	      J_nu_labframe[p.ind][0] += this_E;
     }
 
      // tally radiation force

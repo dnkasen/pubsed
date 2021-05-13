@@ -269,9 +269,18 @@ void transport::init(ParameterReader* par, grid_general *g)
   // parameters for storing opacities
   omit_scattering_ = params_->getScalar<int>("opacity_no_scattering");
   store_Jnu_ = params_->getScalar<int>("transport_store_Jnu");
-  // sanity check
-  if ((!store_Jnu_)&&(use_nlte_))
-    std::cerr << "WARNING: not storing Jnu while using NLTE; Bad idea!\n";
+  store_Jnu_cmf_ = params_->getScalar<int>("transport_store_Jnu_cmf");
+  store_Jnu_labframe_ = params_->getScalar<int>("transport_store_Jnu_cmf");
+
+    // sanity check
+  if (use_nlte_&&(!store_Jnu_cmf))
+    std::cerr << "WARNING: not storing Jnu cmf while using NLTE; Bad idea!\n";
+
+  // more checks
+  if (store_Jnu_cmf && !store_Jnu)
+    {
+      std::cerr << "WARNING: Letting option store_Jnu_cmf over-ride obsolete option store_Jnu. To avoid storing Jnu, set transport_store_Jnu_cmf to 0\n";
+    }
 
   // allocate memory for opacity/emissivity variables
   planck_mean_opacity_.resize(grid->n_zones);
@@ -291,10 +300,11 @@ void transport::init(ParameterReader* par, grid_general *g)
   abs_opacity_.resize(grid->n_zones);
   if (!omit_scattering_) scat_opacity_.resize(grid->n_zones);
   emissivity_.resize(grid->n_zones);
-  J_nu_.resize(grid->n_zones);
+  J_nu_cmf.resize(grid->n_zones);
+  J_nu_labframe.resize(grid->n_zones);
   n_freq_variables += 2;
   if (!omit_scattering_) n_freq_variables +=1;
-  if (store_Jnu_) n_freq_variables += 1;
+  if (store_Jnu_cmf_ || store_Jnu_labrame_) n_freq_variables += 1;
 
   for (int i=0; i<grid->n_zones;  i++)
   {
@@ -317,12 +327,23 @@ void transport::init(ParameterReader* par, grid_general *g)
     emissivity_[i].resize(nu_grid_.size());
 
     // allocate Jnu (radiation field)
-    if (store_Jnu_)
+    if (store_Jnu_cmf_)
     {
-      J_nu_[i].resize(nu_grid_.size());
+      J_nu_cmf[i].resize(nu_grid_.size());
     }
     else
-      J_nu_[i].resize(1);
+    {
+      J_nu_cmf[i].resize(1);
+    }
+    if (store_Jnu_labframe_)
+    {
+      J_nu_labframe[i].resize(nu_grid_.size());
+    }
+    else
+    {
+      J_nu_labframe[i].resize(1);
+    }
+	
   }
   compton_opac.resize(grid->n_zones);
   photoion_opac.resize(grid->n_zones);

@@ -234,11 +234,17 @@ void transport::write_radiation_file(int iw)
     for (int j=0;j<n_nu;j++)  tmp_array[j] = emissivity_[i].get_value(j)/nu_grid_.delta(j);
     H5LTmake_dataset(zone_id,"emissivity",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
-    // write radiation field J
+    // write radiation field J_cmf
     for (int j=0;j<n_nu;j++)  {
-      if (store_Jnu_) tmp_array[j] = J_nu_[i][j];
+      if (store_Jnu_cmf) tmp_array[j] = J_nu_cmf[i][j];
       else tmp_array[j] = 0; }
-    H5LTmake_dataset(zone_id,"Jnu",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
+    H5LTmake_dataset(zone_id,"Jnu_cmf",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
+
+    // write radiation field J_labframe
+    for (int j=0;j<n_nu;j++)  {
+      if (store_Jnu_labframe) tmp_array[j] = J_nu_labframe[i][j];
+      else tmp_array[j] = 0; }
+    H5LTmake_dataset(zone_id,"Jnu_labframe",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
 
     // if (write_levels)
     // {

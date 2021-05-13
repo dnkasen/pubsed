@@ -264,7 +264,7 @@ int transport::fill_and_solve_gasstate(GasState* gas_state_ptr, int i)
       }
     else
       {
-	solve_error = gas_state_ptr->solve_state(J_nu_[i]);
+	solve_error = gas_state_ptr->solve_state(J_nu_cmf[i]);
       }
   }
   return solve_error;

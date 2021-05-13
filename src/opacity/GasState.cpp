@@ -208,6 +208,7 @@ int GasState::solve_state()
 // Solve for the gas state (excitation/ionization)
 // the level populations will be stored internally for
 // further calculations
+// Expects J_nu in *comoving frame*
 // Returns: any error
 //-----------------------------------------------------------
 int GasState::solve_state(std::vector<SedonaReal>& J_nu)

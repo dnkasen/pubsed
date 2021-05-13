@@ -41,8 +41,9 @@ ParticleFate transport::discrete_diffuse_IMD(particle &p, double dt)
     #pragma omp atomic
     zone->e_abs += p.e*ddmc_P_abs_[p.ind];
     //zone->e_rad += p.e*ddmc_P_stay_[p.ind];
-    #pragma omp atomic
-    J_nu_[p.ind][0] += p.e*ddmc_P_stay_[p.ind]*dt*pc::c;
+    if (store_Jnu_labframe_)
+        #pragma omp atomic
+        J_nu_labframe[p.ind][0] += p.e*ddmc_P_stay_[p.ind]*dt*pc::c;
 
     // total probability of diffusing in some direction
     double P_diff = ddmc_P_up_[p.ind]  + ddmc_P_dn_[p.ind];
@@ -253,8 +254,14 @@ ParticleFate transport::discrete_diffuse_DDMC(particle &p, double tstop)
     // tally the contribution of zone's radiation energy
     // only one factor of dshift above because opacity is in cmf,
     // just need to covert p.e from lab to cmf.
-    #pragma omp atomic
-    J_nu_[p.ind][0] += p.e*this_d;
+    if (store_Jnu_labframe_)
+       #pragma omp atomic
+       J_nu_labframe[p.ind][0] += p.e*this_d;
+
+    if (store_Jnu_cmf_)
+       #pragma omp atomic
+       J_nu_cmf[p.ind][0] += p.e*this_d * dshift * dshift;
+    
     #pragma omp atomic
     grid->z[p.ind].e_abs  += (p.e*dshift)*this_d*sigma_i*eps_i_cmf;
 
@@ -645,8 +652,10 @@ ParticleFate transport::discrete_diffuse_RandomWalk(particle &p, double t_stop)
     //#pragma omp atomic
     //zone->e_abs += p.e*ddmc_P_abs_[p.ind];
     //zone->e_rad += p.e*ddmc_P_stay_[p.ind];
-    #pragma omp atomic
-    J_nu_[p.ind][0] += p.e*dt_step*pc::c;
+    if (store_Jnu_labframe_)
+       #pragma omp atomic
+       J_nu_labframe[p.ind][0] += p.e*dt_step*pc::c;
+
     #pragma omp atomic
     grid->z[p.ind].e_abs  += p.e*dt_step*pc::c*planck_mean_opacity_[p.ind];
 

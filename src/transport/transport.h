@@ -82,7 +82,9 @@ class transport
   int    first_step_;
   int    verbose;
   int    omit_scattering_;
-  int    store_Jnu_;
+  int    store_Jnu_;  // kept for backwards compability. Acts like store_jnu_cmf
+  int    store_Jnu_cmf_;
+  int    store_Jnu_labframe_;
   int    core_fix_luminosity_;
   double maximum_opacity_;
   int    last_iteration_;
@@ -155,7 +157,8 @@ class transport
   vector< vector<OpacityType> >       scat_opacity_;
   vector<OpacityType> planck_mean_opacity_;
   vector<OpacityType> rosseland_mean_opacity_;
-  vector< vector<SedonaReal> > J_nu_;
+  vector< vector<SedonaReal> > J_nu_cmf;
+  vector< vector<SedonaReal> > J_nu_labframe;
   vector<SedonaReal> compton_opac;
   vector<SedonaReal> photoion_opac;
 

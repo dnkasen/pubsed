@@ -120,8 +120,8 @@ int transport::solve_state_and_temperature(GasState* gas_state_ptr, int i)
 
     if (gas_state_ptr->is_nlte_turned_on())
     {
-      bf_heating[i] = gas_state_ptr->bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
-      ff_heating[i] = gas_state_ptr->free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+      bf_heating[i] = gas_state_ptr->bound_free_heating_rate(grid->z[i].T_gas,J_nu_cmf[i]);
+      ff_heating[i] = gas_state_ptr->free_free_heating_rate(grid->z[i].T_gas,J_nu_cmf[i]);
       bf_cooling[i] = gas_state_ptr->bound_free_cooling_rate(grid->z[i].T_gas);
       ff_cooling[i] = gas_state_ptr->free_free_cooling_rate(grid->z[i].T_gas);
       coll_cooling[i] = gas_state_ptr->collisional_net_cooling_rate(grid->z[i].T_gas);
@@ -215,8 +215,8 @@ void transport::solve_eq_temperature()
 
       if (gas_state_ptr->is_nlte_turned_on())
       {
-	bf_heating[i] = gas_state_ptr->bound_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
-	ff_heating[i] = gas_state_ptr->free_free_heating_rate(grid->z[i].T_gas,J_nu_[i]);
+	bf_heating[i] = gas_state_ptr->bound_free_heating_rate(grid->z[i].T_gas,J_nu_cmf[i]);
+	ff_heating[i] = gas_state_ptr->free_free_heating_rate(grid->z[i].T_gas,J_nu_cmf[i]);
 	bf_cooling[i] = gas_state_ptr->bound_free_cooling_rate(grid->z[i].T_gas);
 	ff_cooling[i] = gas_state_ptr->free_free_cooling_rate(grid->z[i].T_gas);
 	coll_cooling[i] = gas_state_ptr->collisional_net_cooling_rate(grid->z[i].T_gas);
@@ -311,7 +311,7 @@ double transport::rad_eq_function_LTE(double T, radeq_brent_args* args)
     double kappa_abs = abs_opacity_[args->c][i];
     E_emitted += 4.0*pc::pi*kappa_abs*B_nu*dnu;
     if (args->solve_flag == 1)
-      E_absorbed += 4.0*pc::pi*kappa_abs*J_nu_[args->c][i]*dnu;
+      E_absorbed += 4.0*pc::pi*kappa_abs*J_nu_cmf[args->c][i]*dnu;
   }
 
   // radiative equillibrium condition: "emission equals absorbtion"
@@ -351,12 +351,12 @@ double transport::rad_eq_function_NLTE(double T, radeq_brent_args* args)
   // if flag set, recompute the entire NLTE problem for this iteration
   if (args->solve_flag)
     {
-     *(args->solve_error) = args->gas_state_ptr->solve_state(J_nu_[args->c]);
+     *(args->solve_error) = args->gas_state_ptr->solve_state(J_nu_cmf[args->c]);
     }
 
   // total energy absorbed
-  double E_absorbed = args->gas_state_ptr->free_free_heating_rate(T,J_nu_[args->c]) +
-        args->gas_state_ptr->bound_free_heating_rate(T,J_nu_[args->c]) ;
+  double E_absorbed = args->gas_state_ptr->free_free_heating_rate(T,J_nu_cmf[args->c]) +
+        args->gas_state_ptr->bound_free_heating_rate(T,J_nu_cmf[args->c]) ;
   // add in radioactive heating
   E_absorbed += args->gas_state_ptr->e_gamma_heat_;
 
