@@ -451,6 +451,14 @@ void transport::reduce_opacities()
     //grid->z[i].fy_rad  /= vol*pc::c*dt;
     //grid->z[i].fz_rad  /= vol*pc::c*dt;
 
+    if (store_Jnu_cmf_)
+      {
+	for (int j=0;j<nu_grid_.size();j++)
+	  {
+	    J_nu_cmf[i][j] /= vol*dt*4*pc::pi*nu_grid_.delta(j);
+	  }
+      }
+
     if ((nu_grid_.size() == 1)||(!store_Jnu_labframe_))
     {
       grid->z[i].e_rad = J_nu_labframe[i][0]/(vol*dt*pc::c);
