@@ -136,12 +136,12 @@ void transport::compton_scatter(particle *p)
 void transport::sample_MB_vector(double T, double* v_e, double* p_d)
 {
 
+  double v_tot = sqrt(2. * pc::k * T /pc::m_e) * mb_dv * (mb_cdf_.sample(rangen.uniform()) + rangen.uniform() );
+
   while (true)
   {
 
     // if you prefer, you could also rejection sample to get v_tot.
-
-    double v_tot = sqrt(2. * pc::k * T /pc::m_e) * mb_dv * (mb_cdf_.sample(rangen.uniform()) + rangen.uniform() );
 
     double mu  = 1. - 2.0*rangen.uniform();
     double phi = 2.0*pc::pi*rangen.uniform();
