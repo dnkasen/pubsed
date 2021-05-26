@@ -5,9 +5,11 @@
 
 #include <string>
 #include <vector>
-#include "sedona.h"
-#include "xy_array.h"
+#include "physical_constants.h"
 #include "locate_array.h"
+#include "xy_array.h"
+
+namespace pc = physical_constants;
 
 struct fuzz_line_structure
 {
@@ -27,6 +29,15 @@ struct AtomicIon
   double chi;         // ionization energy, in eV
 };
 
+struct AtomicCollisionalBB_Rate
+{
+  std::vector<double> T;
+  std::vector<double> O;
+  double E;
+  int line_id;
+  int lev_u, lev_d;
+};
+
 struct AtomicLine
 {
   int lu,ll;           // index of upper/lower level
@@ -36,6 +47,9 @@ struct AtomicLine
   double B_ul;         // Einstein B coeficient
   double B_lu;         // Einstein B coeficient
   int    bin;          // index of the nu grid bin
+
+  // pointer to collisional rate; is NULL if non-existant
+  AtomicCollisionalBB_Rate  *col_rate;
 };
 
 struct AtomicLevel
@@ -74,6 +88,7 @@ struct NonThermal_Ion_CS
 };
 
 
+
 //---------------------------------------------
 // Holds the data for an individual atoms
 //---------------------------------------------
@@ -93,6 +108,7 @@ public:
   std::vector<AtomicLine>    lines_;       // array of line data
   std::vector<AtomicIon>     ions_;        // array of ion data
   std::vector<AtomicPhotoCS> photo_cs_;    // array of cross-section
+
 
   int n_ions_;              // Number of ionic stages considered
   int n_levels_;            // number of energy levels
@@ -130,9 +146,14 @@ public:
   // level i at frequency bin inu
   double get_lev_photo_cs(int i, int inu);
 
-  // get non-thermal ionization cross-section
+  // get non-thermal ionization cross-section for ion i
   double get_nonthermal_ion_cross_section(int i, double E);
 
+  // get non-thermal bound-bound cross-section for line i
+  double get_nonthermal_bb_cross_section(int i, double E);
+
+  // get collisional bound-bound rate for line i
+  void get_collisional_bb_rates(int i, double T, double&, double&);
 
   int is_ground_state(int i)
   {
@@ -166,6 +187,13 @@ public:
   int get_line_bin(int i) {
     return lines_[i].bin;
   }
+  double get_line_dE_ergs(int i) {
+    return lines_[i].nu*pc::h;
+  }
+  double get_line_dE_eV(int i) {
+    return lines_[i].nu*pc::h*pc::ergs_to_ev;
+  }
+
   int get_n_fuzz_lines() {
     return fuzz_lines_.n_lines;
   }

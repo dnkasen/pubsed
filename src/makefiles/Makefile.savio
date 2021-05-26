@@ -1,4 +1,4 @@
 CXX  = mpicxx
-CXXFLAGS = -O3  -DMPICH_IGNORE_CXX_SEEK -std=c++0x
+CXXFLAGS = -O3 -fopenmp -DMPICH_IGNORE_CXX_SEEK -std=c++11 -ldl
 
 include make.exec

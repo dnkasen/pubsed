@@ -331,7 +331,8 @@ void transport::reduce_opacities()
 #else
 
   if (MPI_nprocs == 1) return;
-  if (params_->getScalar<int>("particles_n_emit_thermal") == 0) return;
+  if (params_->getScalar<int>("particles_n_emit_thermal") == 0 &&
+      params_->getScalar<int>("particles_n_emit_thermal_perzone") == 0) return;
 
   //=************************************************
   // do zone scalar

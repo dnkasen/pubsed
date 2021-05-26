@@ -89,7 +89,7 @@ public:
   int  solve_nlte(double ne);
   void print();
   double get_nonthermal_ionization_dep(double);
-
+  double get_nonthermal_bb_dep(double);
   // sobolev
   double get_ion_frac();
   double compute_sobolev_tau(int i, double time);

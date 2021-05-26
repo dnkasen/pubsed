@@ -220,9 +220,11 @@ class CollisionalData:
     def __init__(self,id):
 
         self.id = id
-        self.type = "J"
+        self.type = ""
         self.O = []
         self.T = []
+        self.lu = 0
+        self.ll = 0
 
 class CrossSection:
 
@@ -247,7 +249,7 @@ class CMFGENDataReader:
         self._read_data(base + '/' + fn)
         self._convert_index()
         self._read_photoion_data(species,ion)
-        self._read_collisional_data("namehere")
+        self._read_collisional_data("cmfgen_col_data.h5",species,ion)
 
     ## Read in level, line data of ion
     def _read_data(self, fn):
@@ -427,7 +429,6 @@ class CMFGENDataReader:
             n_cs = np.array(fin["1/0/n_cs"])
             for i in range(n_cs):
                 base = str(species) + "/" + str(ion) + "/cs_" + str(i) + "/"
-                print(base)
                 cs = CrossSection(i)
                 cs.E = np.array(fin[base + "E_ev"])
                 cs.s = np.array(fin[base + "sigma"])
@@ -445,21 +446,29 @@ class CMFGENDataReader:
     ## Read in photoionizaiton cross-section
     ## data from file
     ####################################
-    def _read_collisional_data(self,fname):
-
-        # Need to have this read a CMFGEN collisional
-        # data file and put all the data into
-        # this array of subclasses
-        # For now -- just file with faked data
+    def _read_collisional_data(self,fname,species,ion):
 
         self.col_data  = []
 
+        print("col data for " + str(species) + " " + str(ion))
+        # open hdf5 file
+        fin = h5py.File(fname,'r')
+        base = str(species) + '/' + str(ion) + '/'
+        if (not base + "n_data" in fin):
+            return
+
+        n_data = int(np.array(fin[base + 'n_data']))
+
+
         # faked up for now
-        for i in range(0,3):
+        for i in range(n_data):
+            name = base + '/' + str(i) + '/'
             col = CollisionalData(i)
-            col.T = np.arange(3000,10000,200)
-            col.O = 1.0/col.T
-            col.type = "J"
+            col.T = np.array(fin[name + 'T'])
+            col.O = np.array(fin[name + 'C'])
+            col.type = "cmfgen"
+            col.ll = int(np.array(fin[name + 'lev_l']))
+            col.lu = int(np.array(fin[name + 'lev_u']))
             self.col_data.append(col)
 
     ####################################
@@ -512,13 +521,35 @@ class CMFGENDataReader:
 
         # write collisional data
         col_group = ion_group.create_group("collisional_data")
+        cnt = 0
+        line_col_id = np.full(self.nlines,-1)
         for col in self.col_data:
-            cbase = "col_" + str(col.id) + "/"
+
+            # find line ID
+            line_id = -1
+            for i in range(self.nlines):
+                if (self.line_l[i] == col.ll and self.line_u[i] == col.lu):
+                    line_id = i
+                    line_col_id[i] = cnt
+                    break
+            if (line_id < 0):
+                print('no line associated with transition ', col.ll+1, col.lu+1)
+                continue
+
+            cbase = "col_" + str(cnt) + "/"
             col_group.create_group(cbase)
             col_group.create_dataset(cbase+"type",data = col.type)
-            col_group.create_dataset(cbase+"O",data = col.O)
+            col_group.create_dataset(cbase+"Omega",data = col.O)
+            col_group.create_dataset(cbase+"lev_l",data = col.ll)
+            col_group.create_dataset(cbase+"lev_u",data = col.lu)
+            col_group.create_dataset(cbase+"line_id",data=line_id)
             col_group.create_dataset(cbase+"T",data = col.T)
             col_group.create_dataset(cbase+"n_pts",data = len(col.T),dtype='i')
+
+            cnt += 1
+
+        # write index of collision id
+        ion_group.create_dataset("line_col_id", data=line_col_id)
 
         h5f.close()
 
@@ -625,7 +656,10 @@ if __name__ == '__main__':
         n_ions = 0
         # loop over ions
         for ion, ion_data_file in iteritems(species_data):
+#            if (species != '8'): continue
+#            if (ion-1 != 0): continue
             print(species,ion-1,ion_data_file)
+
             s = CMFGENDataReader(base_dir,ion_data_file,species,ion-1)
             s.write_to_file(outname,species,ion-1)
             n_ions += 1

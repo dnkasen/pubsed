@@ -6,6 +6,7 @@
 #include <fstream>
 #include "hdf5.h"
 #include "hdf5_hl.h"
+#include <algorithm>
 
 namespace pc = physical_constants;
 
@@ -142,6 +143,117 @@ double IndividualAtomData::get_nonthermal_ion_cross_section(int i, double E)
   return cs;
 }
 
+
+//-----------------------------------------------------
+// Return the non-thermal bound-bound cross-section
+// for line transition i
+// for an electron of E (in units of eV)
+// cross-section returned is in units of cm^2
+// Uses Van-Regermorter approximation equation
+// (see appendix of Botyanszki and Kasen 2018)
+//---------------------------------------------------
+double IndividualAtomData::get_nonthermal_bb_cross_section(int i, double E)
+{
+  double f_lu  = get_line_f(i);
+  // energy difference in rydbergs
+  double dE    = get_line_dE_eV(i)/pc::rydberg_ev;
+
+  double effective_f_lu = f_lu;
+  if (f_lu < 0.01) effective_f_lu = 0.01;
+
+  // factor of 8 pi/sqrt(3)*pi*a_0**2 (a_0 = bohr radius)
+  double fac = 4.0103404580362e-15;
+  double gaunt = 0.2;
+  double sigma = fac*(pc::rydberg_ev/E)/dE*effective_f_lu*gaunt;
+
+  return sigma;
+}
+
+
+//-----------------------------------------------------
+// get the collisional bound-bound rates for line i
+// given a passed temperature T
+// gives the excitation rate:  C_up
+// and the de-excitaiton rate: C_down
+// If no tabulated data exists, uses an analytic approx
+//
+// units here are cm^3/s -- must multiply by electron density
+// to get rate per ion
+//
+// Rutten section 3.2.5 (page 52) points out that these van Regemorter
+// rates are only valid for permitted dipole transitions, with f_lu in the
+// range 10^-3 to 1. For forbidden lines with smaller f, he says the
+// collisional transition rates "don't drop much below the values typical
+// of permitted lines." That's not a very precise statement, but we can
+// mock it up by not letting the f_lu factor drop below 10^-2
+//------------------------------------------------------
+void IndividualAtomData::get_collisional_bb_rates
+(int i, double T, double &C_up, double &C_down)
+{
+
+  int ll       = get_line_l(i);
+  int lu       = get_line_u(i);
+  int gl       = get_lev_g(ll);
+  int gu       = get_lev_g(lu);
+  double El    = get_lev_E(ll);
+  double Eu    = get_lev_E(lu);
+  double dE    = (Eu - El)*pc::ev_to_ergs;
+  double zeta  = dE/pc::k/T; // note dE is in ergs
+
+  // get the omega
+  double omega;
+  // analytic approximation
+  if (lines_[i].col_rate == NULL)
+  {
+    double f_lu  = get_line_f(i);
+    int ion      = get_lev_ion(ll);
+
+    double effective_f_lu = 0.;
+    if (f_lu < 0.01) effective_f_lu = 0.01;
+    else effective_f_lu = f_lu;
+
+    if (ion == 0)
+      omega =  2.16*pow(zeta,-1.68)*pow(T,-1.5)* effective_f_lu;
+    else
+      omega =  3.9*pow(zeta,-1.)*pow(T,-1.5)* effective_f_lu;
+  }
+  // tabulated data
+  else
+  {
+    AtomicCollisionalBB_Rate  *col = lines_[i].col_rate;
+
+    // locate this temperature
+    if (T <= col->T[0])
+      omega = col->O[0];
+    else if (T >= col->T.back())
+      omega = col->O.back();
+    else
+    {
+      int ind = std::upper_bound(col->T.begin(), col->T.end(), T) - col->T.begin() - 1;
+      if (ind < 0) ind = 0;
+
+      int i1,i2;
+      if (ind < col->T.size()-1)
+      {
+        i1    = ind;
+        i2    = ind + 1;
+      }
+      else
+      {
+        i2    = ind;
+        i1    = ind - 1;
+      }
+      // linear interpolation
+      double slope = (col->O[i2]-col->O[i1])/(col->T[i2]-col->T[i1]);
+      omega = col->O[ind] + slope*(T - col->T[i1]);
+    }
+  }
+
+  C_up   = omega*exp(-zeta);
+  // be careful about possible overflow
+  if (zeta > 700) C_up = 0;
+  C_down = omega*gl/gu;
+}
 
 
 //------------------------------------------------------------------------
@@ -404,7 +516,6 @@ int AtomicData::read_newstyle_atomic_data(int z)
     delete[] E_darr;
 
 
-
     // ---------------------------------------
     // Read and Setup line data
     // ---------------------------------------
@@ -418,6 +529,7 @@ int AtomicData::read_newstyle_atomic_data(int z)
       double *A_darr   = new double[n_tot_lines];
       int *lu_iarr     = new int[n_tot_lines];
       int *ll_iarr     = new int[n_tot_lines];
+      int *col_iarr    = new int[n_tot_lines];
 
       // read line upper level indices
       sprintf(dset,"%s%s",ionname,"line_u");
@@ -432,6 +544,11 @@ int AtomicData::read_newstyle_atomic_data(int z)
       // read line Einstein A
       sprintf(dset,"%s%s",ionname,"line_A");
       status = H5LTread_dataset_double(file_id,dset,A_darr);
+      if (status != 0) return -1;
+
+      // read line index of collisional rate
+      sprintf(dset,"%s%s",ionname,"line_col_id");
+      status = H5LTread_dataset_int(file_id,dset,col_iarr);
       if (status != 0) return -1;
 
       // add in the lines
@@ -476,6 +593,29 @@ int AtomicData::read_newstyle_atomic_data(int z)
         // find index of bin in frequency grid
         // This function will return -1 if out of grid bounds
         lin.bin = nu_grid_.locate_check_bounds(nu);
+
+        // read collisional rate if it exists
+        lin.col_rate = NULL;
+        if (col_iarr[i] != -1)
+        {
+          lin.col_rate = new AtomicCollisionalBB_Rate;
+
+          int n_pts;
+          char cname[1000];
+          sprintf(cname,"%s/collisional_data/col_%d",ionname,col_iarr[i]);
+          sprintf(dset,"%s/n_pts",cname);
+          status = H5LTread_dataset_int(file_id,dset,&n_pts);
+
+          lin.col_rate->E = delta_E;
+          double* tmp = new double[n_pts];
+          sprintf(dset,"%s/T",cname);
+          status = H5LTread_dataset_double(file_id,dset,tmp);
+          lin.col_rate->T.assign(tmp,tmp+n_pts);
+          sprintf(dset,"%s/Omega",cname);
+          status = H5LTread_dataset_double(file_id,dset,tmp);
+          lin.col_rate->O.assign(tmp,tmp+n_pts);
+          delete[] tmp;
+        }
 
         // if in bounds, add into vector
         if (lin.bin >= 0)
@@ -545,14 +685,15 @@ int AtomicData::read_newstyle_atomic_data(int z)
         if (nu < nu_edge) {
           this_cs.s[j] = cs_data.value_at_with_zero_edges(nu); }
         else {
-          this_cs.s[j] = s_edge*pow(nu_edge/nu,3.0);
-  }
+          this_cs.s[j] = s_edge*pow(nu_edge/nu,3.0);  }
       }
-
       // store this cross-section and clean up
       atom->photo_cs_.push_back(this_cs);
       delete [] darray;
     }
+
+
+  // finish loop for reading of ion's data
    }
 
    // add in extra fully ionized state and level
@@ -575,12 +716,14 @@ int AtomicData::read_newstyle_atomic_data(int z)
    atom->n_lines_  = atom->lines_.size();
 
    // -------------------------------------
-   // read non_thermal PI cross-section data
+   // read non_thermal ion cross-section data
+   // -------------------------------------
+
    atom->nt_ion_cs_.resize(atom->n_ions_);
    for (int i=0;i<atom->n_ions_;++i)
      atom->nt_ion_cs_[i].n_shells = 0;
 
-   int n_data;
+   int n_data=0;
    status = H5LTread_dataset_int(file_id,"non_thermal_cs/n_data",&n_data);
    if (status == 0)
    {
@@ -620,9 +763,23 @@ int AtomicData::read_newstyle_atomic_data(int z)
      delete[] I_data;
    }
 
-  // all done
-   H5Fclose(file_id);
-   return 0;
+   // all done
+  H5Fclose(file_id);
+
+/*  for (int i=0;i<atom->n_lines_;++i)
+  {
+    if (atom->lines_[i].col_rate == NULL)
+      std::cout << i << "\t" << "NULL\n";
+    else
+    {
+      std::cout << i  << " " << atom->lines_[i].col_rate->E << "\n";
+      for (int j=0;j<atom->lines_[i].col_rate->T.size();++j)
+        std::cout << atom->lines_[i].col_rate->T[j] << " " << atom->lines_[i].col_rate->O[j] << "\n";
+    }
+  }*/
+  return 0;
+
+
 }
 
 
@@ -847,6 +1004,9 @@ int AtomicData::read_oldstyle_atomic_data(int z)
 
     // find index of bin in deal
     atom->lines_[i].bin = nu_grid_.locate_within_bounds(nu);
+
+    // pointer to collisional data (not included in oldstyle files)
+      atom->lines_[i].col_rate = NULL;
   }
 
   if (add_last_stage)
@@ -893,6 +1053,11 @@ int AtomicData::read_oldstyle_atomic_data(int z)
     atom->levels_[i].sigma0 =  6.3e-18;
 
   }
+
+  // fill non-thermal data with empty
+  atom->nt_ion_cs_.resize(atom->n_ions_);
+  for (int i=0;i<atom->n_ions_;++i)
+    atom->nt_ion_cs_[i].n_shells = 0;
 
    H5Fclose(file_id);
    return 0;
