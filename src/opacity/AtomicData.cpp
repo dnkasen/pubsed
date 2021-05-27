@@ -93,7 +93,13 @@ double IndividualAtomData::get_lev_photo_cs(int i, int inu)
     double nu_t = levels_[i].nu_t;
     if (nu < nu_t) return 0;
     double fac = levels_[i].nu_t/nu;
-    return levels_[i].sigma0*fac*fac*fac;
+
+    double E_ion = levels_[i].E_ion;
+    double E_ground = ions_[levels_[i].ion].chi;
+    double n_eff = pow(1 - (E_ground - E_ion)/E_ground,-0.5);
+    double s_fac = n_eff/(levels_[i].ion+1)/(levels_[i].ion + 1);
+    
+    return levels_[i].sigma0 * s_fac * fac*fac*fac;
   }
 
   // if frequency bin is less than threshorld, cs = 0
