@@ -239,7 +239,8 @@ void transport::write_radiation_file(int iw)
 	// write radiation field J_cmf
 	for (int j=0;j<n_nu;j++)  
 	  tmp_array[j] = J_nu_cmf[i][j];
-	H5LTmake_dataset(zone_id,"Jnu_cmf",RANK,dims,H5T_NATIVE_FLOAT,tmp_array);
+	H5LTmake_dataset(zone_id,"Jnu",RANK,dims,H5T_NATIVE_FLOAT,tmp_array); // Naming this Jnu rather than Jnu_cmf for backwards compability
+	                                                                      // In other words, 'Jnu' by default means 'Jnu_cmf" in output
       }
     if (store_Jnu_labframe_)
       {
